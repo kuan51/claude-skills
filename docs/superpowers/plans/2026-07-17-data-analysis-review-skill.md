@@ -382,32 +382,18 @@ git commit -m "feat: add report template and deterministic report builder"
 - Create: `agents/findings-reconciler.md`
 - Create: `agents/thesis-auditor.md`
 - Create: `agents/extra-reviewer.md`
+- Create: `test/helpers/frontmatter.js`
 - Test: `test/agents-frontmatter.test.js`
 
 **Interfaces:**
-- Produces: 7 registered subagent types (`data-quality-reviewer`, `statistical-methodologist`, `domain-alignment-reviewer`, `reproducibility-auditor`, `findings-reconciler`, `thesis-auditor`, `extra-reviewer`), each with `tools: Read, Grep, Glob, Bash`. `workflow.js` (Task 5) references these exact names via its `agentType` option.
+- Produces: 7 registered subagent types (`data-quality-reviewer`, `statistical-methodologist`, `domain-alignment-reviewer`, `reproducibility-auditor`, `findings-reconciler`, `thesis-auditor`, `extra-reviewer`), each with `tools: Read, Grep, Glob, Bash`. `workflow.js` (Task 5) references these exact names via its `agentType` option. Also produces `parseFrontmatter(fileContents: string) -> Record<string,string>` in `test/helpers/frontmatter.js`, reused by Task 6's `test/skill-frontmatter.test.js` instead of duplicating the parser.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Create the shared frontmatter-parsing helper**
 
-Create `test/agents-frontmatter.test.js`:
+Create `test/helpers/frontmatter.js`:
 ```js
 'use strict';
-const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-
-const AGENTS_DIR = path.join(__dirname, '..', 'agents');
-const REQUIRED_TOOLS = 'Read, Grep, Glob, Bash';
-const EXPECTED_NAMES = [
-  'data-quality-reviewer',
-  'statistical-methodologist',
-  'domain-alignment-reviewer',
-  'reproducibility-auditor',
-  'findings-reconciler',
-  'thesis-auditor',
-  'extra-reviewer',
-];
 
 function parseFrontmatter(fileContents) {
   const match = fileContents.match(/^---\n([\s\S]*?)\n---/);
@@ -420,6 +406,32 @@ function parseFrontmatter(fileContents) {
   }
   return fields;
 }
+
+module.exports = { parseFrontmatter };
+```
+
+- [ ] **Step 2: Write the failing test**
+
+Create `test/agents-frontmatter.test.js`:
+```js
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { parseFrontmatter } = require('./helpers/frontmatter.js');
+
+const AGENTS_DIR = path.join(__dirname, '..', 'agents');
+const REQUIRED_TOOLS = 'Read, Grep, Glob, Bash';
+const EXPECTED_NAMES = [
+  'data-quality-reviewer',
+  'statistical-methodologist',
+  'domain-alignment-reviewer',
+  'reproducibility-auditor',
+  'findings-reconciler',
+  'thesis-auditor',
+  'extra-reviewer',
+];
 
 test('every expected agent file exists with the restricted, read-only tool set', () => {
   for (const name of EXPECTED_NAMES) {
@@ -446,12 +458,12 @@ test('no extra agent files exist beyond the expected roster', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 3: Run the test to verify it fails**
 
 Run: `node --test test/agents-frontmatter.test.js`
 Expected: FAIL — `missing agents/data-quality-reviewer.md`
 
-- [ ] **Step 3: Create the four fixed-role agents**
+- [ ] **Step 4: Create the four fixed-role agents**
 
 Create `agents/data-quality-reviewer.md`:
 ```markdown
@@ -519,7 +531,7 @@ Where possible, actually re-run the pipeline or a representative piece of it (vi
 Return each finding with a severity (`low`, `medium`, `high`), the specific claim, and the concrete evidence (file:line, or command output showing non-determinism) that supports it.
 ```
 
-- [ ] **Step 4: Create the reconciliation and cross-compare agents**
+- [ ] **Step 5: Create the reconciliation and cross-compare agents**
 
 Create `agents/findings-reconciler.md`:
 ```markdown
@@ -559,7 +571,7 @@ Compare what the project claims to what the independent review actually found. R
 - A verdict: `Supported` (the claim matches), `Partially Supported` (directionally right but overstated, understated, or missing a caveat), `Unsupported` (the independent finding contradicts the claim), or `Not Addressed` (the project's own files never made a claim on this topic).
 ```
 
-- [ ] **Step 5: Create the generic extra-reviewer agent**
+- [ ] **Step 6: Create the generic extra-reviewer agent**
 
 Create `agents/extra-reviewer.md`:
 ```markdown
@@ -578,15 +590,15 @@ Where possible, run real queries or scripts against the data (via Bash) to indep
 Return each finding with a severity (`low`, `medium`, `high`), the specific claim, and the concrete evidence (file:line, or command output) that supports it.
 ```
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [ ] **Step 7: Run the test to verify it passes**
 
 Run: `node --test test/agents-frontmatter.test.js`
 Expected: PASS (2 tests, 0 failures)
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add agents/ test/agents-frontmatter.test.js
+git add agents/ test/agents-frontmatter.test.js test/helpers/frontmatter.js
 git commit -m "feat: add the 7 restricted-tool reviewer agent types"
 ```
 
@@ -789,7 +801,7 @@ git commit -m "feat: add the parallel-EDA -> reconcile -> parallel-cross-compare
 - Test: `test/skill-frontmatter.test.js`
 
 **Interfaces:**
-- Consumes: `lib/domain-signals.js` CLI (Task 2), `lib/report-builder.js` CLI (Task 3), `workflow.js` (Task 5), the 7 agent type names (Task 4), the 5 domain-signal keys `clinical`/`financial`/`fairness`/`time_series`/`causal` (Task 2) which `references/extra-roles.md` must key its personas by.
+- Consumes: `lib/domain-signals.js` CLI (Task 2), `lib/report-builder.js` CLI (Task 3), `workflow.js` (Task 5), the 7 agent type names (Task 4), the 5 domain-signal keys `clinical`/`financial`/`fairness`/`time_series`/`causal` (Task 2) which `references/extra-roles.md` must key its personas by, and `test/helpers/frontmatter.js`'s `parseFrontmatter` (Task 4) for its own frontmatter test.
 - Produces: the invocable skill itself.
 
 - [ ] **Step 1: Write the canned extra-role personas**
@@ -845,20 +857,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { parseFrontmatter } = require('./helpers/frontmatter.js');
 
 const SKILL_PATH = path.join(__dirname, '..', 'skills', 'data-analysis-review', 'SKILL.md');
-
-function parseFrontmatter(fileContents) {
-  const match = fileContents.match(/^---\n([\s\S]*?)\n---/);
-  assert.ok(match, 'file must start with YAML frontmatter delimited by ---');
-  const fields = {};
-  for (const line of match[1].split('\n')) {
-    const idx = line.indexOf(':');
-    if (idx === -1) continue;
-    fields[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
-  }
-  return fields;
-}
 
 test('SKILL.md exists with valid frontmatter', () => {
   assert.ok(fs.existsSync(SKILL_PATH), 'missing skills/data-analysis-review/SKILL.md');
@@ -1109,3 +1110,4 @@ No commit for this task -- it verifies Tasks 1-6's already-committed output and 
 - **Spec coverage:** every section of the design spec (plugin layout, gating flow, analysis engine, report/save behavior, agent tool restrictions, blindness-by-omission, scope-discipline instruction) maps to a task above.
 - **Refinement found during planning:** the spec described cross-compare paths as a per-topic map, but reconciled topics are free-text strings only known once the `Workflow` run reaches the reconcile phase -- they can't be looked up in a map built before the run starts. Task 5/6 instead pass a flat `conclusionPaths` list to every cross-compare call and let that agent find the relevant part itself; `thesis-auditor`'s verdict enum gained a fourth option, `Not Addressed`, for topics the project's own files never discuss. This satisfies the spec's substantive requirement (each cross-compare agent receives the project's own conclusion path(s) relevant to its topic) without requiring foreknowledge of reconciler-invented topic names -- the spec explicitly deferred the exact `Workflow` script mechanics to implementation.
 - **Type consistency:** `findings[].{severity, claim, evidence, required_execution}` (Task 5's `FINDINGS_SCHEMA`) matches what `report-builder.js` (Task 3) reads in `renderFindings`. `reconciled[].{topic, finding, evidence}` and `disagreements[].{topic, description, roles_involved}` (Task 5) match `renderDisagreements` (Task 3). `crossCompare[].{topic, project_claim, independent_finding, discrepancy, verdict}` (Task 5) matches `renderCrossCompare` (Task 3). Agent type names in `workflow.js`'s `roster` (Task 5) match the `name:` frontmatter in every `agents/*.md` file (Task 4) exactly. `eda[].label` (added via `ROLE_LABELS` / `e.label` in Task 5) matches what `renderFindings` (Task 3) prefers over the raw `key`.
+- **Pre-flight review finding (resolved with the project owner before execution):** Tasks 4 and 6 both needed a `parseFrontmatter` helper. Rather than duplicate it verbatim across `test/agents-frontmatter.test.js` and `test/skill-frontmatter.test.js`, Task 4 now creates a shared `test/helpers/frontmatter.js` that both test files `require`.
