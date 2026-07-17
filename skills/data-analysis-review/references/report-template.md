@@ -1,4 +1,4 @@
-﻿# Data Analysis Review: {{PROJECT_NAME}}
+# Data Analysis Review: {{PROJECT_NAME}}
 
 **Reviewed:** {{REVIEW_DATE}}
 

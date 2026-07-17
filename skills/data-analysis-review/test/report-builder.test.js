@@ -1,6 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { buildReport } = require('../lib/report-builder.js');
 
 const TEMPLATE = '# {{PROJECT_NAME}}\n\n{{THESIS}}\n\n{{FINDINGS}}\n\n{{VERDICT_ACCURACY}}';
@@ -41,4 +43,16 @@ test('renders findings grouped by role with severity and evidence', () => {
 test('falls back to placeholder text when a section has no data', () => {
   const out = buildReport(TEMPLATE, { projectName: 'Empty Project' });
   assert.ok(out.includes('_No independent findings recorded._'));
+});
+
+test('builds from the real template file without a leading BOM', () => {
+  const templatePath = path.join(__dirname, '..', 'references', 'report-template.md');
+  const templateText = fs.readFileSync(templatePath, 'utf8');
+  const out = buildReport(templateText, {
+    projectName: 'Real Template Project',
+    thesis: 'Verify the on-disk template renders cleanly.',
+  });
+  assert.ok(!out.startsWith('﻿'), 'output must not start with a BOM character');
+  assert.ok(out.includes('## Thesis & Goals'));
+  assert.ok(out.includes('## Overall Verdicts'));
 });
