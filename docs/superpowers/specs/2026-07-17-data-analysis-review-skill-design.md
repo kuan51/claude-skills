@@ -61,13 +61,13 @@ This runs interactively in the main conversation, before the analysis engine sta
 
    This split is what keeps the later independent-EDA phase blind — see below.
 3. **Establish the business/project thesis**, before anything else downstream. If it isn't clearly documented, ask the user directly. The thesis and goals anchor every subsequent phase; nothing else proceeds on a guessed thesis.
-4. **Search installed skills/plugins.** Scan the already-injected list of available skills for matches to the project's detected domain/stack (e.g. notebooks + pandas → `scientific-skills:exploratory-data-analysis`, `data:statistical-analysis`, `data:validate-data`, `scientific-skills:peer-review`). Present candidates via `AskUserQuestion` (multiSelect) for the user to confirm which to load.
+4. **Search installed skills/plugins.** Scan the already-injected list of available skills for matches to the project's detected domain/stack (e.g. notebooks + pandas → `scientific-skills:exploratory-data-analysis`, `data:statistical-analysis`, `data:validate-data`, `scientific-skills:peer-review`). Present candidates via `AskUserQuestion` (multiSelect) for the user to confirm which to load. Confirmed skills are consulted by the main thread when it constructs each phase-1 agent's prompt (relevant guidance excerpted/inlined as plain text) — subagents do not get live `Skill` tool access themselves, consistent with the scope-discipline principle below: they use exactly what they're handed, not what they could go looking for.
 5. **Confirm the reviewer roster.** The 4 fixed roles are always included. If the project shows domain signals warranting specialized review (e.g. clinical, financial, fairness-sensitive, time-series-forecasting data), offer the user a choice between:
    - **Canned extras** — fast, static personas from `references/extra-roles.md`, no network dependency.
    - **Deep-research-sourced extras** — invoke the `deep-research` skill (`Skill({skill: "deep-research", args: "<domain-specific research question>"})`) to get cited, domain-grounded recommendations for what a specialized reviewer should check, then turn the findings into persona briefs.
 
    This is always the user's choice, never automatic — deep-research adds real latency, tokens, and a network dependency, so it's an offered upgrade, not a default tax on routine reviews. Either way, the final roster (fixed 4 + any confirmed extras) is confirmed via `AskUserQuestion` (multiSelect).
-6. **Confirm save preference.** Ask yes/no whether to save the final report at the end, with a default path (`docs/data-analysis-review/<date>-review.md`) the user can override. If declined, the report will only be shown in chat.
+6. **Confirm save preference.** Ask yes/no whether to save the final report at the end, with a default path (`docs/data-analysis-review/<YYYY-MM-DD>-review.md`) the user can override. If declined, the report will only be shown in chat.
 7. **Final gate: `ExitPlanMode`.** The plan body restates the confirmed thesis/goals, hierarchy findings, skills-to-load, reviewer roster (with rationale/citations for any deep-research-sourced extras), and save preference. Approving this single gate confirms everything at once — there is no separate, redundant confirmation step immediately before it.
 
 ## Analysis Engine (`Workflow` tool)
@@ -117,6 +117,7 @@ None outstanding — every design decision above was explicitly confirmed during
 - The precise domain-signal heuristics used in gating step 5 (what counts as "specialized enough" to offer extras).
 - The exact `Workflow` script (`workflow.js`) implementing the phases described above, including the JSON schemas for each phase's structured output.
 - Content of `references/extra-roles.md` (the canned extra personas) and `references/report-template.md`.
+- The exact mechanism for excerpting confirmed-skill guidance into phase-1 agent prompts (principle is fixed — main thread digests, subagents don't get live `Skill` tool access — the excerpting logic itself is an implementation detail).
 
 ## Verification
 
