@@ -103,6 +103,9 @@ const A = typeof args === 'string' ? JSON.parse(args) : args
 // agent -- let alone one wielding Bash -- is ever dispatched.
 function assertSandboxed(paths, sandboxRoot, label) {
   const root = String(sandboxRoot || '').replace(/\\/g, '/').replace(/\/+$/, '')
+  if (!root) {
+    throw new Error(`Refusing to run: sandboxRoot is missing or empty -- SKILL.md step 8 must produce a real sandbox directory and pass it as args.sandboxRoot before calling this workflow. (Checking ${label}.)`)
+  }
   for (const p of paths || []) {
     const norm = String(p).replace(/\\/g, '/').replace(/\/+$/, '')
     if (norm !== root && !norm.startsWith(root + '/')) {

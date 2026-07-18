@@ -36,7 +36,7 @@ This is a two-part process: an interactive gating phase (this conversation, plan
    - The 4 fixed roles (`data-quality-reviewer`, `statistical-methodologist`, `domain-alignment-reviewer`, `reproducibility-auditor`) are always included.
    - Concatenate the project's README/docs text into a temp file and run `node "${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/lib/domain-signals.js" <temp-file>` to detect specialized-domain signals (`clinical`, `financial`, `fairness`, `time_series`, `causal`). `CLAUDE_PLUGIN_ROOT` is this plugin's own installed directory -- use it for every script invocation in this skill, since the current working directory is the project being reviewed, not the plugin.
    - If any signals are found, ask the user (`AskUserQuestion`) whether to add extra reviewer roles using either:
-     - **Canned personas** from `references/extra-roles.md` (fast, no network), keyed by the same signal keys -- use each entry's `Label` and `Persona` verbatim.
+     - **Canned personas** from `${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/references/extra-roles.md` (fast, no network), keyed by the same signal keys -- use each entry's `Label` and `Persona` verbatim.
      - **Deep-research-sourced personas** -- call `Skill({skill: "deep-research", args: "<a specific question about review considerations/checklists for this project's detected domain>"})`, turn the cited findings into a persona brief, and compose a short human-readable label for it.
    - Confirm the final roster (fixed 4 + any chosen extras) via `AskUserQuestion` (multiSelect).
 
