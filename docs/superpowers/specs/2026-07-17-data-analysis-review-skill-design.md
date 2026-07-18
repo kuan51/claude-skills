@@ -139,5 +139,16 @@ from the original project root to the copy root). Every agent — including the
 original project's path is never given to any analysis agent. This is the same "blindness by
 omission" principle already used to keep independent-EDA agents from seeing the project's own
 conclusions, applied here to the project's own location. Tool restriction (no Write/Edit/Agent)
-remains in place as defense-in-depth, but the sandbox copy — not the tool restriction — is what
-now makes the non-mutation guarantee structurally true.
+remains in place as defense-in-depth.
+
+**Correction (same-day re-review):** the paragraph above originally claimed this made the
+guarantee "structurally true." That overstated it — as written, closure depended on `SKILL.md`
+step 8 actually running before the `Workflow` call; nothing stopped an operator from skipping it
+or pasting an original path into `args` by mistake, which is a procedural guarantee, not a
+structural one (the same category the original Critical finding judged insufficient). The fix
+for *that* gap: `workflow.js` now takes a `sandboxRoot` argument and asserts every path in
+`fixedRolePaths`, `extras[].paths`, and `conclusionPaths` falls inside it, throwing before a
+single agent is dispatched if not. The guarantee is therefore enforced twice — procedurally by
+`SKILL.md` step 8's rewrite, and structurally by `workflow.js` refusing to proceed on any
+unsandboxed path — so a skipped or incomplete rewrite now fails loudly instead of silently
+reaching the original project.

@@ -96,6 +96,28 @@ function buildEdaPrompt(role, thesis) {
 
 const A = typeof args === 'string' ? JSON.parse(args) : args
 
+// Structural enforcement of the sandbox-by-copy guarantee (SKILL.md step 8): this mirrors the
+// boundary check already tested in lib/sandbox-paths.js's rewritePath, inlined here because
+// Workflow scripts have no filesystem/require access to import it directly. If SKILL.md failed
+// to sandbox a path (or an operator pasted an original path by mistake), refuse before a single
+// agent -- let alone one wielding Bash -- is ever dispatched.
+function assertSandboxed(paths, sandboxRoot, label) {
+  const root = String(sandboxRoot || '').replace(/\\/g, '/').replace(/\/+$/, '')
+  for (const p of paths || []) {
+    const norm = String(p).replace(/\\/g, '/').replace(/\/+$/, '')
+    if (norm !== root && !norm.startsWith(root + '/')) {
+      throw new Error(`Refusing to run: ${label} path "${p}" is not inside the sandbox root "${sandboxRoot}" -- SKILL.md step 8 must rewrite every path into the sandbox copy before calling this workflow.`)
+    }
+  }
+}
+
+assertSandboxed(A.fixedRolePaths.dataQuality, A.sandboxRoot, 'fixedRolePaths.dataQuality')
+assertSandboxed(A.fixedRolePaths.statistical, A.sandboxRoot, 'fixedRolePaths.statistical')
+assertSandboxed(A.fixedRolePaths.domainAlignment, A.sandboxRoot, 'fixedRolePaths.domainAlignment')
+assertSandboxed(A.fixedRolePaths.reproducibility, A.sandboxRoot, 'fixedRolePaths.reproducibility')
+;(A.extras || []).forEach((e) => assertSandboxed(e.paths, A.sandboxRoot, `extras.${e.key}`))
+assertSandboxed(A.conclusionPaths, A.sandboxRoot, 'conclusionPaths')
+
 phase('Independent EDA')
 
 // NOTE: agentType strings below are bare names (e.g. 'data-quality-reviewer'). Once this plugin
