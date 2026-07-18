@@ -29,23 +29,25 @@ This design was produced via the `superpowers:brainstorming` process: one-questi
 Full plugin structure (chosen over a bare skill folder, so the custom subagent roles are properly registered and reusable):
 
 ```
-.claude-plugin/
-  plugin.json                      # name: data-analysis-review, description, version
-skills/
+plugins/
   data-analysis-review/
-    SKILL.md                       # gating flow (plan mode) + when/how to invoke the analysis workflow
-    references/
-      report-template.md           # final report skeleton
-      extra-roles.md               # canned personas for common optional extra reviewer roles
-    workflow.js                    # the Workflow script for the analysis engine
-agents/
-  data-quality-reviewer.md         # fixed role: data integrity/quality
-  statistical-methodologist.md     # fixed role: statistical rigor
-  domain-alignment-reviewer.md     # fixed role: business/thesis alignment
-  reproducibility-auditor.md       # fixed role: code & reproducibility
-  findings-reconciler.md           # barrier role: cross-role contradiction check
-  thesis-auditor.md                # cross-compare role (invoked once per topic)
-  extra-reviewer.md                # generic reusable role for confirmed optional extras
+    .claude-plugin/
+      plugin.json                      # name: data-analysis-review, description, version
+    skills/
+      data-analysis-review/
+        SKILL.md                       # gating flow (plan mode) + when/how to invoke the analysis workflow
+        references/
+          report-template.md           # final report skeleton
+          extra-roles.md               # canned personas for common optional extra reviewer roles
+        workflow.js                    # the Workflow script for the analysis engine
+    agents/
+      data-quality-reviewer.md         # fixed role: data integrity/quality
+      statistical-methodologist.md     # fixed role: statistical rigor
+      domain-alignment-reviewer.md     # fixed role: business/thesis alignment
+      reproducibility-auditor.md       # fixed role: code & reproducibility
+      findings-reconciler.md           # barrier role: cross-role contradiction check
+      thesis-auditor.md                # cross-compare role (invoked once per topic)
+      extra-reviewer.md                # generic reusable role for confirmed optional extras
 ```
 
 **Tool access (structural guarantee):** all 7 agent types declare `Tools: Read, Grep, Glob, Bash` — no `Write`, `Edit`, or `Agent`. This makes "never modifies the project" and "never spawns its own subagents" guarantees enforced by construction, not just by prompt instruction. It closes a gap found during design review: the optional "extra" reviewer roles were originally going to run on the general-purpose agent type (full tool access, including `Agent`), which would have let them spawn their own Explore subagents and potentially break the independent-review blindness. Routing extras through the shared `extra-reviewer` type (persona supplied per-call in the prompt, not baked into the agent file) closes that gap without proliferating agent files for every possible extra.
@@ -152,3 +154,24 @@ single agent is dispatched if not. The guarantee is therefore enforced twice —
 `SKILL.md` step 8's rewrite, and structurally by `workflow.js` refusing to proceed on any
 unsandboxed path — so a skipped or incomplete rewrite now fails loudly instead of silently
 reaching the original project.
+
+## Addendum: Marketplace Restructuring + Agent Namespacing (2026-07-17, same-day follow-up)
+
+The repo this plugin lives in (`claude-skills`) is a growing marketplace intended to hold other,
+unrelated plugins over time — not a single-purpose repo. The original layout put this plugin's
+`.claude-plugin/plugin.json`, `agents/`, and `skills/data-analysis-review/` directly at the repo
+root, which cannot accommodate a second plugin (there's nowhere to put a second `plugin.json` or
+`agents/` directory without collision). Fix: this plugin now lives entirely under
+`plugins/data-analysis-review/` (see the updated Plugin Layout section above), and the root
+`.claude-plugin/marketplace.json`'s `source` field points at that subdirectory instead of `"./"`.
+No internal file needed a path-reference edit for this move: the two root-level test files that
+referenced `agents/`/`skills/` did so via `path.join(__dirname, '..', ...)`, which still resolves
+correctly once moved as a unit; `SKILL.md` and `workflow.js` already referenced their own sibling
+files via `${CLAUDE_PLUGIN_ROOT}`, which points at wherever this plugin's own root ends up.
+
+Separately, `workflow.js`'s 7 custom `agentType` strings are now namespaced as
+`data-analysis-review:<agent-name>`, closing the previously-open question of whether this plugin's
+agents resolve bare or namespaced once installed. This is still not confirmed by an actual
+install of this specific plugin (see the post-install verification checklist in
+`.superpowers/sdd/progress.md`), but is now backed by consistent evidence across 4 independently
+inspected installed plugins rather than left as an unresolved guess.

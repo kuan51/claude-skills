@@ -9,7 +9,7 @@
       "name": "data-analysis-review",
       "description": "Empirical, objective review of a data science project: independently re-derives findings from raw data and code, then checks whether the project's own stated conclusions hold up. All analysis -- including code execution -- runs against a disposable copy of the project, so the original is never modified.",
       "version": "0.1.0",
-      "source": "./",
+      "source": "./plugins/data-analysis-review",
       "author": {
         "name": "claude-skills"
       }

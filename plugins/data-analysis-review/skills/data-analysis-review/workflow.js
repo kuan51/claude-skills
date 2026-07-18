@@ -123,17 +123,21 @@ assertSandboxed(A.conclusionPaths, A.sandboxRoot, 'conclusionPaths')
 
 phase('Independent EDA')
 
-// NOTE: agentType strings below are bare names (e.g. 'data-quality-reviewer'). Once this plugin
-// is installed, sibling plugins in this environment register agents as '<plugin>:<agent>' --
-// these may need a 'data-analysis-review:' prefix. Unverified until post-install testing; see
-// docs/superpowers/plans/2026-07-17-data-analysis-review-skill.md and the final-review notes
-// in .superpowers/sdd/progress.md for context.
+// Namespaced as 'data-analysis-review:<agent-name>' to match this plugin's own plugin.json
+// "name" field, mirroring the pattern observed in 4 independently-installed plugins in this
+// environment (each plugin's agents resolve as '<that plugin's own name>:<agent-name>'). Not
+// yet confirmed against a real install of THIS plugin -- carry that into the post-install smoke
+// test (see docs/superpowers/plans/2026-07-17-data-analysis-review-skill.md and
+// .superpowers/sdd/progress.md). If this plugin's agents turn out to resolve bare instead, a
+// wrong guess here fails loudly (every agent() call throws "agent type not found", zero agents
+// dispatched) rather than silently misrouting -- this was evaluated and accepted as the better
+// failure mode versus a bare reference risking a same-named agent from an unrelated plugin.
 const roster = [
-  { key: 'data_quality', agentType: 'data-quality-reviewer', paths: A.fixedRolePaths.dataQuality, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.data_quality },
-  { key: 'statistical', agentType: 'statistical-methodologist', paths: A.fixedRolePaths.statistical, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.statistical },
-  { key: 'domain_alignment', agentType: 'domain-alignment-reviewer', paths: A.fixedRolePaths.domainAlignment, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.domain_alignment },
-  { key: 'reproducibility', agentType: 'reproducibility-auditor', paths: A.fixedRolePaths.reproducibility, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.reproducibility },
-  ...((A.extras || []).map((e) => ({ key: e.key, agentType: 'extra-reviewer', paths: e.paths, persona: e.persona, label: e.label }))),
+  { key: 'data_quality', agentType: 'data-analysis-review:data-quality-reviewer', paths: A.fixedRolePaths.dataQuality, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.data_quality },
+  { key: 'statistical', agentType: 'data-analysis-review:statistical-methodologist', paths: A.fixedRolePaths.statistical, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.statistical },
+  { key: 'domain_alignment', agentType: 'data-analysis-review:domain-alignment-reviewer', paths: A.fixedRolePaths.domainAlignment, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.domain_alignment },
+  { key: 'reproducibility', agentType: 'data-analysis-review:reproducibility-auditor', paths: A.fixedRolePaths.reproducibility, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.reproducibility },
+  ...((A.extras || []).map((e) => ({ key: e.key, agentType: 'data-analysis-review:extra-reviewer', paths: e.paths, persona: e.persona, label: e.label }))),
 ].map((role) => ({ ...role, label: role.label || ROLE_LABELS[role.key] || role.key }))
 
 const edaResults = await parallel(
@@ -158,7 +162,7 @@ const reconcilePrompt = [
 const reconciled = await agent(reconcilePrompt, {
   label: 'reconcile',
   phase: 'Reconcile',
-  agentType: 'findings-reconciler',
+  agentType: 'data-analysis-review:findings-reconciler',
   schema: RECONCILE_SCHEMA,
 })
 
@@ -178,7 +182,7 @@ const crossCompareResults = await parallel(
     return agent(prompt, {
       label: `cross-compare:${topic.topic}`,
       phase: 'Cross-Compare',
-      agentType: 'thesis-auditor',
+      agentType: 'data-analysis-review:thesis-auditor',
       schema: CROSS_COMPARE_SCHEMA,
     })
   })
