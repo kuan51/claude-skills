@@ -7,7 +7,7 @@ description: Use when asked to review, audit, or sanity-check a data science pro
 
 ## Overview
 
-Performs an empirical, objective review of a data science project in the current working directory: independently re-derives findings from the project's raw data and code (blind to its own stated conclusions), then explicitly checks whether those conclusions actually hold up. Never modifies the reviewed project -- the only possible write action is one optional output report, and only if the user opts in.
+Performs an empirical, objective review of a data science project in the current working directory: independently re-derives findings from the project's raw data and code (blind to its own stated conclusions), then explicitly checks whether those conclusions actually hold up. Never modifies the reviewed project: all analysis -- including any code execution -- runs against a disposable copy made before the analysis engine starts, and agents are only ever given paths inside that copy, never the original. The only possible write to the original project is one optional output report, and only if the user opts in.
 
 ## When NOT to use
 
@@ -46,7 +46,13 @@ This is a two-part process: an interactive gating phase (this conversation, plan
 
 ### Part 2: Analysis engine (after `ExitPlanMode` approval)
 
-8. **Run the Workflow.** Read `skills/data-analysis-review/workflow.js` and pass its contents as the `script` parameter to the `Workflow` tool, with `args` set to:
+8. **Sandbox the project before any analysis.** Copy the entire project directory to a fresh temporary directory outside the project (e.g. your scratchpad, or the system temp directory) -- every agent in the analysis engine, including any Bash execution the `reproducibility-auditor` performs, must only ever see paths inside this copy. Then rewrite every path destined for `args` (below) from the original project root to the copy root:
+   ```
+   node skills/data-analysis-review/lib/sandbox-paths.js <project-root> <sandbox-root> <path1> [path2 ...]
+   ```
+   This prints the rewritten paths as a JSON array, in the same order given. Use the rewritten paths -- never the originals -- for every entry in `fixedRolePaths`, `extras[].paths`, and `conclusionPaths` below. After the Workflow run finishes (step 10), delete the temporary copy.
+
+9. **Run the Workflow.** Read `skills/data-analysis-review/workflow.js` and pass its contents as the `script` parameter to the `Workflow` tool, with `args` set to:
    ```js
    {
      thesis: "<confirmed thesis and goals text>",
@@ -66,17 +72,17 @@ This is a two-part process: an interactive gating phase (this conversation, plan
    }
    ```
 
-9. **Wait for the Workflow result.** It returns `{ eda, reconciled, disagreements, crossCompare }`.
+10. **Wait for the Workflow result.** It returns `{ eda, reconciled, disagreements, crossCompare }`.
 
-10. **Build the report.** Write the Workflow's result to a JSON file in the scratchpad directory, adding these fields before running the builder: `projectName`, `reviewDate`, `thesis`, `scope` (roster used, skills loaded, execution limitations hit), and your own written verdicts for `verdictAccuracy`, `verdictCohesiveness`, and `verdictRationale` -- each a qualitative verdict plus the evidence from `reconciled`/`crossCompare` that supports it. Add `recommendations` if there are any non-blocking follow-ups worth flagging. Then run:
+11. **Build the report.** Write the Workflow's result to a JSON file in the scratchpad directory, adding these fields before running the builder: `projectName`, `reviewDate`, `thesis`, `scope` (roster used, skills loaded, execution limitations hit), and your own written verdicts for `verdictAccuracy`, `verdictCohesiveness`, and `verdictRationale` -- each a qualitative verdict plus the evidence from `reconciled`/`crossCompare` that supports it. Add `recommendations` if there are any non-blocking follow-ups worth flagging. Then run:
     ```
     node skills/data-analysis-review/lib/report-builder.js skills/data-analysis-review/references/report-template.md <path-to-result.json>
     ```
 
-11. **Present the report** in the conversation. If the user opted in during step 6, write it to the confirmed path (the only write action this skill ever takes against the reviewed project) -- do not also commit it; that's the user's call.
+12. **Present the report** in the conversation. If the user opted in during step 6, write it to the confirmed path (the only write action this skill ever takes against the reviewed project) -- do not also commit it; that's the user's call.
 
 ## Guarantees
 
-- No project file is ever modified. All 7 custom agent types (`agents/*.md`) are restricted to `Read, Grep, Glob, Bash` -- no `Write`, `Edit`, or `Agent`.
+- No project file is ever modified. All analysis -- including any code execution -- runs against a disposable copy made in step 8; agents are only ever given paths inside that copy, never the original project's path. All 7 custom agent types (`agents/*.md`) are also restricted to `Read, Grep, Glob, Bash` -- no `Write`, `Edit`, or `Agent` -- as defense in depth.
 - Independent-EDA agents never receive the project's own conclusion-artifact paths -- they literally aren't told those paths exist.
 - Every agent prompt in the analysis engine includes a scope-discipline instruction: use only the files you were given, don't Glob/Grep for more, don't spawn subagents.

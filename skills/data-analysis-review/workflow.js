@@ -94,19 +94,26 @@ function buildEdaPrompt(role, thesis) {
   return parts.join('\n\n')
 }
 
+const A = typeof args === 'string' ? JSON.parse(args) : args
+
 phase('Independent EDA')
 
+// NOTE: agentType strings below are bare names (e.g. 'data-quality-reviewer'). Once this plugin
+// is installed, sibling plugins in this environment register agents as '<plugin>:<agent>' --
+// these may need a 'data-analysis-review:' prefix. Unverified until post-install testing; see
+// docs/superpowers/plans/2026-07-17-data-analysis-review-skill.md and the final-review notes
+// in .superpowers/sdd/progress.md for context.
 const roster = [
-  { key: 'data_quality', agentType: 'data-quality-reviewer', paths: args.fixedRolePaths.dataQuality, guidance: args.skillGuidanceExcerpts && args.skillGuidanceExcerpts.data_quality },
-  { key: 'statistical', agentType: 'statistical-methodologist', paths: args.fixedRolePaths.statistical, guidance: args.skillGuidanceExcerpts && args.skillGuidanceExcerpts.statistical },
-  { key: 'domain_alignment', agentType: 'domain-alignment-reviewer', paths: args.fixedRolePaths.domainAlignment, guidance: args.skillGuidanceExcerpts && args.skillGuidanceExcerpts.domain_alignment },
-  { key: 'reproducibility', agentType: 'reproducibility-auditor', paths: args.fixedRolePaths.reproducibility, guidance: args.skillGuidanceExcerpts && args.skillGuidanceExcerpts.reproducibility },
-  ...((args.extras || []).map((e) => ({ key: e.key, agentType: 'extra-reviewer', paths: e.paths, persona: e.persona, label: e.label }))),
+  { key: 'data_quality', agentType: 'data-quality-reviewer', paths: A.fixedRolePaths.dataQuality, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.data_quality },
+  { key: 'statistical', agentType: 'statistical-methodologist', paths: A.fixedRolePaths.statistical, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.statistical },
+  { key: 'domain_alignment', agentType: 'domain-alignment-reviewer', paths: A.fixedRolePaths.domainAlignment, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.domain_alignment },
+  { key: 'reproducibility', agentType: 'reproducibility-auditor', paths: A.fixedRolePaths.reproducibility, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.reproducibility },
+  ...((A.extras || []).map((e) => ({ key: e.key, agentType: 'extra-reviewer', paths: e.paths, persona: e.persona, label: e.label }))),
 ].map((role) => ({ ...role, label: role.label || ROLE_LABELS[role.key] || role.key }))
 
 const edaResults = await parallel(
   roster.map((role) => () =>
-    agent(buildEdaPrompt(role, args.thesis), {
+    agent(buildEdaPrompt(role, A.thesis), {
       label: `eda:${role.key}`,
       phase: 'Independent EDA',
       agentType: role.agentType,
@@ -139,7 +146,7 @@ const crossCompareResults = await parallel(
       `Topic: ${topic.topic}`,
       `Independent finding: ${topic.finding}`,
       `Evidence: ${topic.evidence}`,
-      `The project's own conclusion/report file(s), and ONLY these:\n${(args.conclusionPaths || []).map((p) => `- ${p}`).join('\n')}`,
+      `The project's own conclusion/report file(s), and ONLY these:\n${(A.conclusionPaths || []).map((p) => `- ${p}`).join('\n')}`,
       SCOPE_DISCIPLINE,
       "Read the project's own files and find the part (if any) relevant to this specific topic. Compare what it claims to the independent finding above. If the files don't address this topic at all, say so and use the verdict `Not Addressed`. Otherwise return the discrepancy (if any) and a verdict.",
     ].join('\n\n')

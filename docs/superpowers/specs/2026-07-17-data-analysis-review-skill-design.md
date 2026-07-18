@@ -123,3 +123,21 @@ None outstanding — every design decision above was explicitly confirmed during
 
 - **Spec self-review** (this document): placeholder scan, internal consistency, scope, and ambiguity check — see commit history for this file.
 - **Implementation verification** (once built): actually run the skill against a small sample data-science project directory and confirm — the gating flow asks the right questions in order; the `Workflow` analysis engine runs all phases and returns well-formed structured results; the final report matches the template; and, critically, that no project file is ever modified and no file beyond the single opted-in report is written.
+
+## Addendum: Non-Mutation Mechanism (2026-07-17, post-final-review fix)
+
+The final whole-branch review found that tool restriction alone (no `Write`/`Edit`/`Agent`) did
+not make the "never modifies the reviewed project" guarantee structurally true: all 7 agent
+types retain `Bash`, and the `reproducibility-auditor` role legitimately needs it to re-run
+pipelines/notebooks for empirical verification — an operation that can mutate tracked project
+files in place (e.g. re-executing a notebook rewrites its `.ipynb` file).
+
+Fix: `SKILL.md`'s gating flow now copies the entire project to a disposable temporary directory
+before the analysis engine runs (`lib/sandbox-paths.js` rewrites every path handed to `args`
+from the original project root to the copy root). Every agent — including the
+`reproducibility-auditor`'s Bash execution — only ever receives paths inside that copy; the
+original project's path is never given to any analysis agent. This is the same "blindness by
+omission" principle already used to keep independent-EDA agents from seeing the project's own
+conclusions, applied here to the project's own location. Tool restriction (no Write/Edit/Agent)
+remains in place as defense-in-depth, but the sandbox copy — not the tool restriction — is what
+now makes the non-mutation guarantee structurally true.
