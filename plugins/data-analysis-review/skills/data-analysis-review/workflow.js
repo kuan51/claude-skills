@@ -114,10 +114,7 @@ function assertSandboxed(paths, sandboxRoot, label) {
   }
 }
 
-assertSandboxed(A.fixedRolePaths.dataQuality, A.sandboxRoot, 'fixedRolePaths.dataQuality')
-assertSandboxed(A.fixedRolePaths.statistical, A.sandboxRoot, 'fixedRolePaths.statistical')
-assertSandboxed(A.fixedRolePaths.domainAlignment, A.sandboxRoot, 'fixedRolePaths.domainAlignment')
-assertSandboxed(A.fixedRolePaths.reproducibility, A.sandboxRoot, 'fixedRolePaths.reproducibility')
+Object.entries(A.fixedRolePaths).forEach(([key, paths]) => assertSandboxed(paths, A.sandboxRoot, `fixedRolePaths.${key}`))
 ;(A.extras || []).forEach((e) => assertSandboxed(e.paths, A.sandboxRoot, `extras.${e.key}`))
 assertSandboxed(A.conclusionPaths, A.sandboxRoot, 'conclusionPaths')
 
