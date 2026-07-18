@@ -5,12 +5,19 @@ matters, not limited to any one domain.
 
 ## Installing
 
+This is a Claude Code plugin marketplace — the same slash commands work wherever you're running
+Claude Code: the CLI, the desktop app, or the web app (claude.ai/code).
+
 Add this repo as a marketplace, then install whichever plugins you want:
 
 ```
-/plugin marketplace add <this-repo-url-or-path>
+/plugin marketplace add kuan51/claude-skills
 /plugin install data-analysis-review
 ```
+
+(Use the full URL, `/plugin marketplace add https://github.com/kuan51/claude-skills`, if your
+client doesn't resolve the `owner/repo` shorthand.) Restart Claude Code, or start a new session,
+so it picks up the newly installed plugin.
 
 ## Plugins
 
