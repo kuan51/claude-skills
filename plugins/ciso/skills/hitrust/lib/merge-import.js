@@ -1,5 +1,11 @@
 'use strict';
 
+// HITRUST-e1/MyCSF-specific by design, not incidental hardcoding: this module parses MyCSF's
+// exact e1 export column headers and wholesale-replaces the e1 tier's controls. There is no
+// generic "import a licensed assessment export" mechanism to extract here -- a future
+// certification (SOC 2, ISO 27001, ...) needs its own sibling import module for its own export
+// format, not a generalized version of this one.
+
 const fs = require('fs');
 const path = require('path');
 const { parseE1Export } = require('./xlsx-lite.js');

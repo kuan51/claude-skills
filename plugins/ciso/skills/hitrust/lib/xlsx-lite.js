@@ -1,5 +1,9 @@
 'use strict';
 
+// HITRUST-e1/MyCSF-specific by design, not incidental hardcoding: this reader targets the exact
+// slice of OOXML SpreadsheetML MyCSF's e1 export uses (see merge-import.js's parseE1Export call).
+// A future certification's import path is a new sibling module, not a generalization of this one.
+
 // Minimal, Node-stdlib-only (.xlsx is a standard ZIP container) reader for the small slice of
 // OOXML SpreadsheetML this plugin needs: shared strings + a single worksheet. No npm dependency.
 
