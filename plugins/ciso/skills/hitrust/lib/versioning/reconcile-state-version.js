@@ -45,8 +45,9 @@ function buildDefaultControl(entry) {
   };
 }
 
-// Reconciles `state.json`'s hitrust/<tierKey> tier against `newStructure` (a newer-version
-// structure file for the same tier). Never destructive:
+// Reconciles `state.json`'s <certKey>/<tierKey> tier against `newStructure` (a newer-version
+// structure file for the same tier). `certKey` is required -- this function is certification-
+// agnostic and has no default to guess. Never destructive:
 //   - unchanged ids: assessment/roadmap left completely untouched.
 //   - modified ids: assessment/roadmap left untouched, but structural fields (everything except
 //     the state-only bookkeeping fields above) are refreshed from `newStructure`, and a new
@@ -56,12 +57,12 @@ function buildDefaultControl(entry) {
 //     produce (status "not_assessed", empty roadmap, etc).
 //   - removed ids: the entire existing control object -- assessment/roadmap and all -- is moved to
 //     `tier.archivedControls[id]` rather than being dropped.
-function reconcileStateVersion(stateJsonPath, tierKey, newStructure) {
+function reconcileStateVersion(stateJsonPath, certKey, tierKey, newStructure) {
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
-  const tier = state?.certifications?.hitrust?.tiers?.[tierKey];
+  const tier = state?.certifications?.[certKey]?.tiers?.[tierKey];
   if (!tier) {
     throw new Error(
-      `Tier hitrust/${tierKey} is not registered in state.json -- nothing to reconcile. Run register-tier.js first.`
+      `Tier ${certKey}/${tierKey} is not registered in state.json -- nothing to reconcile. Run register-tier.js first.`
     );
   }
   if (!tier.controls) tier.controls = {};
@@ -109,14 +110,14 @@ function reconcileStateVersion(stateJsonPath, tierKey, newStructure) {
 module.exports = { reconcileStateVersion, toStructuralEntry, buildDefaultControl, STATE_ONLY_FIELDS };
 
 if (require.main === module) {
-  const [stateJsonPath, tierKey, newStructurePath] = process.argv.slice(2);
-  if (!stateJsonPath || !tierKey || !newStructurePath) {
-    console.error('Usage: node reconcile-state-version.js <state.json path> <tier> <new-structure-file>');
+  const [stateJsonPath, certKey, tierKey, newStructurePath] = process.argv.slice(2);
+  if (!stateJsonPath || !certKey || !tierKey || !newStructurePath) {
+    console.error('Usage: node reconcile-state-version.js <state.json path> <certKey> <tier> <new-structure-file>');
     process.exit(1);
   }
   try {
     const newStructure = JSON.parse(fs.readFileSync(path.resolve(newStructurePath), 'utf8'));
-    const result = reconcileStateVersion(path.resolve(stateJsonPath), tierKey, newStructure);
+    const result = reconcileStateVersion(path.resolve(stateJsonPath), certKey, tierKey, newStructure);
     console.log(JSON.stringify(result, null, 2));
   } catch (err) {
     console.error(err.message);

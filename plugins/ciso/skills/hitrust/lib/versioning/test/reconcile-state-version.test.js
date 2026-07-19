@@ -130,7 +130,7 @@ const NEW_STRUCTURE = {
 
 test('reconcileStateVersion: unchanged control is left completely untouched', () => {
   const stateJsonPath = makeTempState(buildInitialState());
-  reconcileStateVersion(stateJsonPath, 'e1', NEW_STRUCTURE);
+  reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
 
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const a = state.certifications.hitrust.tiers.e1.controls['CTRL-A'];
@@ -141,7 +141,7 @@ test('reconcileStateVersion: unchanged control is left completely untouched', ()
 
 test('reconcileStateVersion: modified control gets needsReview=true, updated fields, and untouched assessment/roadmap', () => {
   const stateJsonPath = makeTempState(buildInitialState());
-  reconcileStateVersion(stateJsonPath, 'e1', NEW_STRUCTURE);
+  reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
 
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const b = state.certifications.hitrust.tiers.e1.controls['CTRL-B'];
@@ -156,7 +156,7 @@ test('reconcileStateVersion: modified control gets needsReview=true, updated fie
 
 test('reconcileStateVersion: added control is seeded with correct not_assessed defaults', () => {
   const stateJsonPath = makeTempState(buildInitialState());
-  reconcileStateVersion(stateJsonPath, 'e1', NEW_STRUCTURE);
+  reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
 
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const d = state.certifications.hitrust.tiers.e1.controls['CTRL-D'];
@@ -172,7 +172,7 @@ test('reconcileStateVersion: added control is seeded with correct not_assessed d
 
 test('reconcileStateVersion: removed control is archived (with assessment data intact), not deleted', () => {
   const stateJsonPath = makeTempState(buildInitialState());
-  reconcileStateVersion(stateJsonPath, 'e1', NEW_STRUCTURE);
+  reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
 
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const tier = state.certifications.hitrust.tiers.e1;
@@ -188,7 +188,7 @@ test('reconcileStateVersion: removed control is archived (with assessment data i
 
 test('reconcileStateVersion: bumps controlSetVersion and returns an accurate summary', () => {
   const stateJsonPath = makeTempState(buildInitialState());
-  const summary = reconcileStateVersion(stateJsonPath, 'e1', NEW_STRUCTURE);
+  const summary = reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
 
   assert.deepEqual(summary, { carriedForward: 2, needsReview: 1, added: 1, archived: 1 });
 
@@ -199,12 +199,47 @@ test('reconcileStateVersion: bumps controlSetVersion and returns an accurate sum
 test('reconcileStateVersion: throws a clear error if the tier is not registered yet', () => {
   const stateJsonPath = makeTempState({ certifications: {}, interviewSessions: [] });
   assert.throws(
-    () => reconcileStateVersion(stateJsonPath, 'e1', NEW_STRUCTURE),
+    () => reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE),
     /not registered/
   );
 });
 
 test('reconcileStateVersion: throws before writing anything if certifications.hitrust is entirely absent', () => {
   const stateJsonPath = makeTempState({ interviewSessions: [] });
-  assert.throws(() => reconcileStateVersion(stateJsonPath, 'e1', NEW_STRUCTURE), /not registered/);
+  assert.throws(() => reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE), /not registered/);
+});
+
+test('reconcileStateVersion is parameterized by certKey -- reconciling one certification does not touch another', () => {
+  const state = buildInitialState();
+  state.certifications.soc2 = {
+    displayName: 'SOC 2 Type II',
+    activeTier: 'type2',
+    tiers: {
+      type2: {
+        controlSetVersion: '2017',
+        sourceAuthority: 'structural-only',
+        importedFrom: null,
+        importedAt: null,
+        controls: {
+          'CC1.1': seededControl({
+            id: 'CC1.1',
+            type: 'Organizational',
+            level: 1,
+            relatedControlCode: 'CC1.1',
+            relatedControlName: 'Control Environment',
+            legacyCategoryPrefix: 'CC1',
+          }),
+        },
+        archivedControls: {},
+      },
+    },
+  };
+  const stateJsonPath = makeTempState(state);
+
+  reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
+
+  const after = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  assert.equal(after.certifications.soc2.tiers.type2.controlSetVersion, '2017', 'soc2 must be untouched by a hitrust/e1 reconciliation');
+  assert.equal(after.certifications.soc2.tiers.type2.controls['CC1.1'].relatedControlName, 'Control Environment');
+  assert.equal(after.certifications.hitrust.tiers.e1.controlSetVersion, NEW_VERSION, 'hitrust/e1 itself still reconciles as before');
 });
