@@ -128,6 +128,50 @@ const NEW_STRUCTURE = {
   ],
 };
 
+// A second, fake certification (not a real HITRUST tier) used to prove reconcileStateVersion's
+// certKey parameter is load-bearing rather than hardcoded to 'hitrust'. Shared by both the
+// "reconciling one cert doesn't touch another" test and the "certKey='soc2' actually reconciles
+// soc2" test below, so the ~20-line seed isn't duplicated.
+function seedSoc2Tier() {
+  return {
+    displayName: 'SOC 2 Type II',
+    activeTier: 'type2',
+    tiers: {
+      type2: {
+        controlSetVersion: '2017',
+        sourceAuthority: 'structural-only',
+        importedFrom: null,
+        importedAt: null,
+        controls: {
+          'CC1.1': seededControl({
+            id: 'CC1.1',
+            type: 'Organizational',
+            level: 1,
+            relatedControlCode: 'CC1.1',
+            relatedControlName: 'Control Environment',
+            legacyCategoryPrefix: 'CC1',
+          }),
+        },
+        archivedControls: {},
+      },
+    },
+  };
+}
+
+// Fictional newer structure for soc2/type2 -- produces a real diff (one modified, one added)
+// against the CC1.1 seeded by seedSoc2Tier(), the same way NEW_STRUCTURE does for hitrust/e1.
+const SOC2_NEW_VERSION = 'v2022-test';
+const SOC2_NEW_STRUCTURE = {
+  tier: 'type2',
+  controlSetVersion: SOC2_NEW_VERSION,
+  controls: [
+    // CC1.1 relatedControlName changed -- becomes "modified" (needsReview).
+    { id: 'CC1.1', type: 'Organizational', level: 1, relatedControlCode: 'CC1.1', relatedControlName: 'Control Environment (revised)', legacyCategoryPrefix: 'CC1' },
+    // CC1.2 is new -- becomes "added".
+    { id: 'CC1.2', type: 'Organizational', level: 1, relatedControlCode: 'CC1.2', relatedControlName: 'Board Independence', legacyCategoryPrefix: 'CC1' },
+  ],
+};
+
 test('reconcileStateVersion: unchanged control is left completely untouched', () => {
   const stateJsonPath = makeTempState(buildInitialState());
   reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
@@ -211,29 +255,7 @@ test('reconcileStateVersion: throws before writing anything if certifications.hi
 
 test('reconcileStateVersion is parameterized by certKey -- reconciling one certification does not touch another', () => {
   const state = buildInitialState();
-  state.certifications.soc2 = {
-    displayName: 'SOC 2 Type II',
-    activeTier: 'type2',
-    tiers: {
-      type2: {
-        controlSetVersion: '2017',
-        sourceAuthority: 'structural-only',
-        importedFrom: null,
-        importedAt: null,
-        controls: {
-          'CC1.1': seededControl({
-            id: 'CC1.1',
-            type: 'Organizational',
-            level: 1,
-            relatedControlCode: 'CC1.1',
-            relatedControlName: 'Control Environment',
-            legacyCategoryPrefix: 'CC1',
-          }),
-        },
-        archivedControls: {},
-      },
-    },
-  };
+  state.certifications.soc2 = seedSoc2Tier();
   const stateJsonPath = makeTempState(state);
 
   reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
@@ -242,4 +264,25 @@ test('reconcileStateVersion is parameterized by certKey -- reconciling one certi
   assert.equal(after.certifications.soc2.tiers.type2.controlSetVersion, '2017', 'soc2 must be untouched by a hitrust/e1 reconciliation');
   assert.equal(after.certifications.soc2.tiers.type2.controls['CC1.1'].relatedControlName, 'Control Environment');
   assert.equal(after.certifications.hitrust.tiers.e1.controlSetVersion, NEW_VERSION, 'hitrust/e1 itself still reconciles as before');
+});
+
+test('reconcileStateVersion with certKey="soc2" reconciles soc2 itself and leaves hitrust untouched (certKey is load-bearing)', () => {
+  const state = buildInitialState();
+  Object.assign(state.certifications, { soc2: seedSoc2Tier() });
+  const stateJsonPath = makeTempState(state);
+
+  const summary = reconcileStateVersion(stateJsonPath, 'soc2', 'type2', SOC2_NEW_STRUCTURE);
+
+  const after = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  // soc2 WAS reconciled by the certKey='soc2' call:
+  assert.equal(after.certifications.soc2.tiers.type2.controlSetVersion, SOC2_NEW_VERSION, 'soc2 controlSetVersion must bump when soc2 is the reconciled cert');
+  assert.equal(after.certifications.soc2.tiers.type2.controls['CC1.1'].needsReview, true, 'CC1.1 must be flagged needsReview after a soc2 reconcile');
+  assert.equal(after.certifications.soc2.tiers.type2.controls['CC1.1'].relatedControlName, 'Control Environment (revised)');
+  assert.ok(after.certifications.soc2.tiers.type2.controls['CC1.2'], 'CC1.2 must be added to soc2');
+  assert.equal(summary.added, 1);
+  assert.equal(summary.needsReview, 1);
+  // hitrust must be COMPLETELY untouched when soc2 is the reconciled cert:
+  assert.equal(after.certifications.hitrust.tiers.e1.controlSetVersion, OLD_VERSION, 'hitrust must be untouched when reconciling soc2');
+  assert.equal(after.certifications.hitrust.tiers.e1.controls['CTRL-B'].needsReview, undefined, 'hitrust CTRL-B must not be flagged by a soc2 reconcile');
+  assert.ok(after.certifications.hitrust.tiers.e1.controls['CTRL-C'], 'hitrust CTRL-C must not be archived by a soc2 reconcile');
 });
