@@ -747,7 +747,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
         // Same fallback key as computeRollups() in render-dashboard.js --
         // keep these identical or a control with a missing prefix would be
         // grouped under a different key than its rollup/anchor expects.
-        const byDomain = groupBy(controls, function (c) { return (c && (c.legacyCategoryPrefix || c.domain)) || 'unknown'; });
+        const byDomain = groupBy(controls, function (c) { return (c && (c.domainKey || c.legacyCategoryPrefix || c.domain)) || 'unknown'; });
         const domainKeys = Object.keys(byDomain).sort();
 
         drilldownHtml += '<section class="cert-section" id="section-' + certKey + '-' + tierKey + '">';
