@@ -49,26 +49,32 @@ function computeDomains(structure) {
   return Array.from(new Set(structure.controls.map((c) => c.domainKey || c.legacyCategoryPrefix || c.domain))).sort();
 }
 
-// Reads <stateJsonPath>, registers/merges the e1 tier from `structure` (defaults to the bundled
-// e1.v11.8.structure.json), and writes the result back. Safe to re-run: existing controls and an
-// existing interview session are never touched, only ids missing from state get added.
-function registerTier(stateJsonPath, structure) {
+// Reads <stateJsonPath>, registers/merges `tierKey` from `structure` under
+// state.certifications[certKey] (creating that certification entry with `certDisplayName` if it
+// doesn't exist yet), and writes the result back. Safe to re-run: existing controls and an
+// existing interview session are never touched, only ids missing from state get added. `certKey`
+// and `certDisplayName` are both required -- there is no default, since a generic registration
+// function cannot guess which certification (or its human-readable name) a caller means.
+function registerTier(stateJsonPath, structure, certKey, certDisplayName) {
+  if (!certKey) throw new Error('registerTier: certKey is required (e.g. "hitrust")');
+  if (!certDisplayName) throw new Error('registerTier: certDisplayName is required (e.g. "HITRUST CSF")');
+
   const resolvedStructure = structure || loadStructure();
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
 
   if (!state.certifications) state.certifications = {};
-  if (!state.certifications.hitrust) {
-    state.certifications.hitrust = {
-      displayName: 'HITRUST CSF',
+  if (!state.certifications[certKey]) {
+    state.certifications[certKey] = {
+      displayName: certDisplayName,
       activeTier: resolvedStructure.tier,
       tiers: {},
     };
   }
-  const hitrust = state.certifications.hitrust;
-  if (!hitrust.tiers) hitrust.tiers = {};
+  const certEntry = state.certifications[certKey];
+  if (!certEntry.tiers) certEntry.tiers = {};
 
   const tierKey = resolvedStructure.tier;
-  let tier = hitrust.tiers[tierKey];
+  let tier = certEntry.tiers[tierKey];
   const isNewTier = !tier;
 
   // The structure file declares its own authority level ("structural-only" for e1's real-but-
@@ -85,7 +91,7 @@ function registerTier(stateJsonPath, structure) {
       controls: {},
       archivedControls: {},
     };
-    hitrust.tiers[tierKey] = tier;
+    certEntry.tiers[tierKey] = tier;
   }
   if (!tier.controls) tier.controls = {};
   if (!tier.archivedControls) tier.archivedControls = {};
@@ -100,12 +106,12 @@ function registerTier(stateJsonPath, structure) {
 
   if (!Array.isArray(state.interviewSessions)) state.interviewSessions = [];
   const hasSession = state.interviewSessions.some(
-    (s) => s.certification === 'hitrust' && s.tier === tierKey
+    (s) => s.certification === certKey && s.tier === tierKey
   );
   if (!hasSession) {
     const now = new Date().toISOString();
     state.interviewSessions.push({
-      certification: 'hitrust',
+      certification: certKey,
       tier: tierKey,
       startedAt: now,
       lastUpdatedAt: now,
@@ -136,9 +142,9 @@ function resolveStructurePath(tierArg) {
 module.exports = { registerTier, defaultControl, computeDomains, loadStructure, resolveStructurePath, STRUCTURE_FILE };
 
 if (require.main === module) {
-  const [targetDir, tierArg] = process.argv.slice(2);
-  if (!targetDir) {
-    console.error('Usage: node register-tier.js <target-dir> [<tier: e1|i1|r2, or a structure-file path>]');
+  const [targetDir, certKey, certDisplayName, tierArg] = process.argv.slice(2);
+  if (!targetDir || !certKey || !certDisplayName) {
+    console.error('Usage: node register-tier.js <target-dir> <certKey> <certDisplayName> [<tier: e1|i1|r2, or a structure-file path>]');
     process.exit(1);
   }
   const stateJsonPath = path.join(targetDir, 'state.json');
@@ -152,7 +158,7 @@ if (require.main === module) {
     process.exit(1);
   }
   try {
-    const result = registerTier(stateJsonPath, loadStructure(structurePath));
+    const result = registerTier(stateJsonPath, loadStructure(structurePath), certKey, certDisplayName);
     console.log(JSON.stringify(result, null, 2));
   } catch (err) {
     console.error(err.message);

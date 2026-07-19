@@ -25,7 +25,7 @@ const TINY_STRUCTURE = {
 
 test('fresh registration builds an id-keyed controls object with every field defaulted', () => {
   const stateJsonPath = makeTempState();
-  const result = registerTier(stateJsonPath, TINY_STRUCTURE);
+  const result = registerTier(stateJsonPath, TINY_STRUCTURE, 'hitrust', 'HITRUST CSF');
   assert.equal(result.added, 2);
   assert.equal(result.isNewTier, true);
 
@@ -66,7 +66,7 @@ test('computeDomains returns the sorted, deduped set of legacyCategoryPrefix val
 
 test('additive re-registration does not clobber an existing control\'s assessment/roadmap', () => {
   const stateJsonPath = makeTempState();
-  registerTier(stateJsonPath, TINY_STRUCTURE);
+  registerTier(stateJsonPath, TINY_STRUCTURE, 'hitrust', 'HITRUST CSF');
 
   // Simulate an already-assessed control.
   let state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
@@ -78,7 +78,7 @@ test('additive re-registration does not clobber an existing control\'s assessmen
   fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2));
 
   // Re-run registration with the same structure -- must be a no-op for existing controls.
-  const result = registerTier(stateJsonPath, TINY_STRUCTURE);
+  const result = registerTier(stateJsonPath, TINY_STRUCTURE, 'hitrust', 'HITRUST CSF');
   assert.equal(result.added, 0);
   assert.equal(result.isNewTier, false);
 
@@ -134,7 +134,7 @@ test('additive registration adds only ids missing from state, leaving pre-existi
   };
   fs.writeFileSync(stateJsonPath, JSON.stringify(preSeeded, null, 2));
 
-  const result = registerTier(stateJsonPath, TINY_STRUCTURE);
+  const result = registerTier(stateJsonPath, TINY_STRUCTURE, 'hitrust', 'HITRUST CSF');
   assert.equal(result.added, 1); // only CTRL-B is new
   assert.equal(result.isNewTier, false);
 
@@ -163,7 +163,7 @@ test('the bundled e1.v11.8.structure.json loads and registers its public-sourced
   assert.ok(structure.controls.length > 20 && structure.controls.length <= 44, `expected a plausible e1 count, got ${structure.controls.length}`);
 
   const stateJsonPath = makeTempState();
-  const result = registerTier(stateJsonPath, structure);
+  const result = registerTier(stateJsonPath, structure, 'hitrust', 'HITRUST CSF');
   assert.equal(result.added, structure.controls.length);
 
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
@@ -200,7 +200,7 @@ const TINY_I1_STRUCTURE = {
 
 test('registering an i1-shaped (topic-level) structure preserves domain/topicLabel/citations fields', () => {
   const stateJsonPath = makeTempState();
-  const result = registerTier(stateJsonPath, TINY_I1_STRUCTURE);
+  const result = registerTier(stateJsonPath, TINY_I1_STRUCTURE, 'hitrust', 'HITRUST CSF');
   assert.equal(result.added, 2);
 
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
@@ -243,4 +243,26 @@ test('resolveStructurePath: no argument defaults to e1 (backward compatibility)'
 test('resolveStructurePath: anything else is treated as a direct path to a structure file', () => {
   const resolved = resolveStructurePath('/some/custom/dir/my-structure.json');
   assert.equal(resolved, path.resolve('/some/custom/dir/my-structure.json'));
+});
+
+test('registerTier is parameterized by certKey/certDisplayName -- a second certification lands independently of hitrust', () => {
+  const stateJsonPath = makeTempState();
+  registerTier(stateJsonPath, TINY_STRUCTURE, 'hitrust', 'HITRUST CSF');
+  registerTier(stateJsonPath, TINY_STRUCTURE, 'soc2', 'SOC 2 Type II');
+
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  assert.ok(state.certifications.hitrust, 'hitrust must still be registered');
+  assert.ok(state.certifications.soc2, 'a second certification must register independently');
+  assert.equal(state.certifications.soc2.displayName, 'SOC 2 Type II');
+  assert.deepEqual(Object.keys(state.certifications.soc2.tiers.e1.controls).sort(), ['CTRL-A', 'CTRL-B']);
+  assert.equal(state.certifications.hitrust.tiers.e1.controls['CTRL-A'].assessment.status, 'not_assessed');
+
+  const sessions = state.interviewSessions.map((s) => s.certification).sort();
+  assert.deepEqual(sessions, ['hitrust', 'soc2']);
+});
+
+test('registerTier throws if certKey or certDisplayName is missing', () => {
+  const stateJsonPath = makeTempState();
+  assert.throws(() => registerTier(stateJsonPath, TINY_STRUCTURE), /certKey is required/);
+  assert.throws(() => registerTier(stateJsonPath, TINY_STRUCTURE, 'hitrust'), /certDisplayName is required/);
 });
