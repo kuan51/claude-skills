@@ -236,6 +236,13 @@ test('markCategoryComplete is safe to call again on an already-completed categor
   assert.deepEqual(session.domainsCompleted, ['01']);
 });
 
+test('applyAssessment and markCategoryComplete throw if certKey is missing', () => {
+  const stateJsonPath = makeTempState();
+  seedState(stateJsonPath, [CTRL_A]);
+  assert.throws(() => applyAssessment(stateJsonPath, undefined, 'e1', 'CTRL-A', { status: 'gap' }), /certKey is required/);
+  assert.throws(() => markCategoryComplete(stateJsonPath, undefined, 'e1', '01'), /certKey is required/);
+});
+
 test('applyAssessment and markCategoryComplete are parameterized by certKey -- a second certification is independent of hitrust', () => {
   const stateJsonPath = makeTempState();
   const state = {

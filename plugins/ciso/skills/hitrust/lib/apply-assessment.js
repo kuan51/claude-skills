@@ -20,6 +20,8 @@ function isBlank(value) {
 // On success, always stamps assessment.assessedAt, regardless of status (including "defer").
 // `certKey` is required -- this function is certification-agnostic and has no default to guess.
 function applyAssessment(stateJsonPath, certKey, tierKey, controlId, payload) {
+  if (!certKey) throw new Error('applyAssessment: certKey is required (e.g. "hitrust")');
+
   const { status, justification, currentState, estimatedCloseness } = payload || {};
 
   if (!VALID_INPUT_STATUSES.includes(status)) {
@@ -78,6 +80,8 @@ function categoryKeyFor(c) {
 // compatibility), this is whatever key computeDomains() produced -- usually a modern domainKey
 // ("01".."19"), not literally always a legacy category prefix.
 function markCategoryComplete(stateJsonPath, certKey, tierKey, legacyCategoryPrefix) {
+  if (!certKey) throw new Error('markCategoryComplete: certKey is required (e.g. "hitrust")');
+
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const tier = state?.certifications?.[certKey]?.tiers?.[tierKey];
   if (!tier || !tier.controls) {

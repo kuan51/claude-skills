@@ -119,8 +119,6 @@ function baseState(controlsById) {
   };
 }
 
-module.exports = { renderClientSide, makeControl, baseState };
-
 // A real e1 domain (domainKey "11") that mixes controls carrying legacyCategoryPrefix with
 // controls that don't -- this exact shape is what commit 3c238d8's client/server grouping-key
 // mismatch split into two groups instead of one.

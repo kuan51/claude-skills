@@ -240,6 +240,11 @@ test('reconcileStateVersion: bumps controlSetVersion and returns an accurate sum
   assert.equal(state.certifications.hitrust.tiers.e1.controlSetVersion, NEW_VERSION);
 });
 
+test('reconcileStateVersion: throws if certKey is missing', () => {
+  const stateJsonPath = makeTempState(buildInitialState());
+  assert.throws(() => reconcileStateVersion(stateJsonPath, undefined, 'e1', NEW_STRUCTURE), /certKey is required/);
+});
+
 test('reconcileStateVersion: throws a clear error if the tier is not registered yet', () => {
   const stateJsonPath = makeTempState({ certifications: {}, interviewSessions: [] });
   assert.throws(

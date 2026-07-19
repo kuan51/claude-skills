@@ -58,6 +58,8 @@ function buildDefaultControl(entry) {
 //   - removed ids: the entire existing control object -- assessment/roadmap and all -- is moved to
 //     `tier.archivedControls[id]` rather than being dropped.
 function reconcileStateVersion(stateJsonPath, certKey, tierKey, newStructure) {
+  if (!certKey) throw new Error('reconcileStateVersion: certKey is required (e.g. "hitrust")');
+
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const tier = state?.certifications?.[certKey]?.tiers?.[tierKey];
   if (!tier) {
