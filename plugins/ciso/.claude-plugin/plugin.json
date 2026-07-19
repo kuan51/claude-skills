@@ -1,0 +1,8 @@
+{
+  "name": "ciso",
+  "version": "0.1.0",
+  "description": "Organizes work toward security certifications (starting with HITRUST CSF e1), tracked via a persistent local HTML dashboard. Ships only structural control metadata; actual requirement wording is imported per-org at runtime from a user-supplied file and stored only in the consuming project's local, gitignored data -- never in this repo.",
+  "author": {
+    "name": "claude-skills"
+  }
+}

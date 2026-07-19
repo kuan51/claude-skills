@@ -13,6 +13,15 @@
       "author": {
         "name": "claude-skills"
       }
+    },
+    {
+      "name": "ciso",
+      "description": "Organizes work toward security certifications (starting with HITRUST CSF e1), tracked via a persistent local HTML dashboard. Ships only structural control metadata; actual requirement wording is imported per-org at runtime and never stored in this repo.",
+      "version": "0.1.0",
+      "source": "./plugins/ciso",
+      "author": {
+        "name": "claude-skills"
+      }
     }
   ]
 }

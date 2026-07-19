@@ -13,6 +13,7 @@ Add this repo as a marketplace, then install whichever plugins you want:
 ```
 /plugin marketplace add kuan51/claude-skills
 /plugin install data-analysis-review
+/plugin install ciso
 ```
 
 (Use the full URL, `/plugin marketplace add https://github.com/kuan51/claude-skills`, if your
@@ -24,6 +25,8 @@ so it picks up the newly installed plugin.
 - **[data-analysis-review](plugins/data-analysis-review/)** — empirical, objective review of a
   data science project: independently re-derives findings from raw data and code, then checks
   whether the project's own stated conclusions hold up.
+- **[ciso](plugins/ciso/)** — organizes work toward security certifications (starting with
+  HITRUST CSF e1), tracked via a persistent local HTML dashboard.
 
 ## Adding a new plugin
 

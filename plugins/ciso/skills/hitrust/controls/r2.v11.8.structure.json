@@ -1,0 +1,181 @@
+{
+  "tier": "r2",
+  "controlSetVersion": "v11.8",
+  "sourceAuthority": "public-topic-level",
+  "nonAuthoritative": true,
+  "compiledAt": "2026-07-18T00:00:00.000Z",
+  "baselineRef": "i1.v11.8.structure.json",
+  "maturityDimensions": [
+    "Policy",
+    "Procedure",
+    "Implemented",
+    "Measured",
+    "Managed"
+  ],
+  "coverageNote": "r2 uses i1's full baseline plus risk-tailored additions determined by an organization's own risk-scoping factors (records volume, internet accessibility, regulatory exposure, BYOD, wireless use, third-party access, and more) -- there is no fixed r2 control list. The entries below are ILLUSTRATIVE EXAMPLES of the kinds of risk-tailored additions r2 can pull in, drawn from HITRUST's own public risk-factor documentation and secondary sources, each carrying the domain it would layer onto -- never a complete or authoritative r2 scope for any real organization. r2 also scores multiple maturity dimensions (see maturityDimensions) per control, not just Implemented. Real r2 scope and maturity requirements are set by HITRUST's own risk-factor questionnaire (in MyCSF) or a licensed assessor.",
+  "controls": [
+    {
+      "id": "r2-illustrative-01-01",
+      "domain": "Information Protection Program",
+      "domainKey": "01",
+      "topicLabel": "Regulatory-driven program documentation add-ons (illustrative only)",
+      "topicSummary": "HITRUST's own r2 assessment page describes r2 as tailoring control selection to an organization's risk profile, including regulatory obligations (it names HIPAA, GDPR, PCI DSS, NIST and others among 60+ mapped authoritative sources) alongside factors like system complexity and data sensitivity. As one illustrative example (not a fixed or exhaustive rule), an organization whose risk profile pulls in a specific regulatory factor -- e.g., GDPR applicability -- could see its Information Protection Program-level policy/governance documentation extended with additional authoritative-source-mapped elements under r2, whereas i1's curated control set would not include that tailoring.",
+      "citations": [
+        "https://hitrustalliance.net/assessments-and-certifications/r2"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-02-01",
+      "domain": "Endpoint Protection",
+      "domainKey": "02",
+      "topicLabel": "BYOD Risk Factor Expanding Endpoint-Related Requirements (r2 example)",
+      "topicSummary": "HITRUST's published r2 risk-factor list includes a factor asking whether the organization allows personally-owned devices (BYOD) to connect to in-scope assets; when this factor applies, it is used to pull additional endpoint-related control requirements into that organization's r2 scope beyond the fixed i1 baseline. This is illustrative only -- r2's actual added controls depend on the organization's full risk-factor profile, not a fixed list.",
+      "citations": [
+        "https://help.mycsf.net/factors/"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-04-01",
+      "domain": "Mobile Device Security",
+      "domainKey": "04",
+      "topicLabel": "Mobile-Device Usage as an r2 Risk-Scoping Factor (illustrative of the mechanism, not a fixed added control)",
+      "topicSummary": "HITRUST's own description of its risk-based tailoring approach lists whether mobile devices are used within a system as one of several system-level risk factors that can raise the applicable level of security requirements an organization must meet under a risk-tailored (r2) assessment, alongside factors like internet accessibility or third-party data exchange. This illustrates how mobile-device use feeds into r2's general risk-scoping mechanism -- it is not a specific fixed control added to the Mobile Device Security domain, and the actual resulting requirements vary by an organization's full risk profile.",
+      "citations": [
+        "https://hitrustalliance.net/hubfs/CSF%20Versions/CSF%20v11.5/Introduction%20to%20HITRUST%20CSF%20v11.5.0.pdf"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-05-01",
+      "domain": "Wireless Security",
+      "domainKey": "05",
+      "topicLabel": "Wireless-in-scope as an r2 inherent risk factor",
+      "topicSummary": "For risk-based r2 assessments, whether wireless networks are actually used within the assessed environment is one of the inherent risk factors HITRUST uses to decide which additional control requirements apply -- so an organization with wireless in its assessment scope can be tailored a broader set of wireless-related requirements than one without. This is illustrative of how r2 scales this domain's depth to an organization's actual risk profile rather than applying one fixed list, and is not a definitive or exhaustive statement of r2's wireless-related additions.",
+      "citations": [
+        "https://socreports.com/hitrust/hitrust-risk-based-2-year-r2-validated-assessments"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-07-01",
+      "domain": "Vulnerability Management",
+      "domainKey": "07",
+      "topicLabel": "Example: Formal, Validated Penetration Testing Program (Risk-Tailored at r2)",
+      "topicSummary": "As an illustrative example only -- not a fixed or exhaustive rule -- secondary sources describe r2 assessments (unlike i1) as the tier where a documented penetration-testing program is explicitly validated on-site: pentest scope/methodology documentation, reports dated within the assessment evidence window, remediation tracking, and retest confirmation. i1, by contrast, is described as only expecting vulnerability scanning to be 'in place,' with pentest evidence treated as optional supporting material rather than a validated requirement. Whether pentesting actually applies at any tier depends on the organization's specific risk factors and assessed scope, not the assessment tier alone.",
+      "citations": [
+        "https://www.softwaresecured.com/guides-and-checklists/hitrust-csf-penetration-testing-requirements-guide",
+        "https://deepstrike.io/blog/hitrust-certification-penetration-testing"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-08-01",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Example: PCI DSS / Cloud-Specific Network Segmentation Add-Ons",
+      "topicSummary": "As an EXAMPLE only: secondary guidance suggests that when an r2 assessment optionally incorporates an authoritative source like PCI DSS, or scopes in cloud-hosted systems, additional segmentation-style validation (e.g., cardholder-data-environment isolation, or cloud VPC/security-group/subnet configuration review) can be layered onto the baseline Network Protection controls. This is offered as one possible illustration of risk/regulatory-driven tailoring, not a definitive or exhaustive set of r2 additions.",
+      "citations": [
+        "https://www.softwaresecured.com/guides-and-checklists/hitrust-csf-penetration-testing-requirements-guide",
+        "https://hitrustalliance.net/assessments-and-certifications/r2"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-08-02",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Example: Risk-Factor-Tailored Network Scope (Internet-Facing & Wireless Risk Factors)",
+      "topicSummary": "As an EXAMPLE only: official HITRUST advisory material indicates r2 assessments tailor which requirements apply based on inherent risk factors of the assessed environment, such as whether in-scope systems are Internet-accessible or whether wireless networks are used in scope, meaning organizations with those characteristics can face additional or adjusted network-protection requirements compared to organizations without them. This is illustrative of r2's risk-based tailoring mechanism, not a fixed or exhaustive list of added controls.",
+      "citations": [
+        "https://hitrustalliance.net/advisories/haa-2021-012-i1-introduction-and-r2-enhancements",
+        "https://hitrustalliance.net/assessments-and-certifications/r2"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-09-01",
+      "domain": "Transmission Protection",
+      "domainKey": "09",
+      "topicLabel": "Example: NIST-validated (FIPS 140-2/140-3) cryptographic modules",
+      "topicSummary": "Public vendor/advisory commentary discusses HITRUST's reliance on NIST SP 800-53-aligned guidance as effectively requiring FIPS-validated cryptographic modules rather than merely 'strong' algorithms in some assessment contexts. This is offered only as an illustrative example of how a risk-tailored (r2) assessment could layer a more rigorous, validated-module expectation onto the base transmission-protection/encryption topic for certain organizational risk profiles -- not as a fixed or universal r2 addition.",
+      "citations": [
+        "https://www.safelogic.com/blog/hitrust-90"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-13-01",
+      "domain": "Education, Training, and Awareness",
+      "domainKey": "13",
+      "topicLabel": "Example: sector/compliance-specific awareness content layered in via r2 risk tailoring",
+      "topicSummary": "EXAMPLE ONLY, not exhaustive or definitive. HITRUST r2 tailors its control set to an organization's risk profile and can incorporate additional authoritative sources (e.g., PCI DSS for organizations handling payment card data) on top of baseline requirements. Since some of those sources carry their own formal security-awareness-program expectations, an r2 assessment for such an organization could layer sector-specific awareness content onto the training domain beyond what a generic i1 assessment requires. Real r2 additions depend entirely on the organization's own risk-scoping and are not fixed.",
+      "citations": [
+        "https://hitrustalliance.net/assessments-and-certifications/r2",
+        "https://www.bemopro.com/compliance-requirements/hitrust"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-14-01",
+      "domain": "Third-Party Assurance",
+      "domainKey": "14",
+      "topicLabel": "Example: Recursive Subprocessor Accountability for PHI-Handling Business Associates",
+      "topicSummary": "As one illustrative, organization-profile-dependent example (not a fixed or exhaustive r2 addition): a healthcare Business Associate pursuing an r2 assessment may be expected to extend the same third-party assurance discipline down to its own subcontractors or subprocessors that touch protected health information -- keeping an inventory of those parties and collecting their security questionnaires or independent assessment/certification reports -- mirroring what a covered entity expects of the Business Associate itself.",
+      "citations": [
+        "https://screenata.com/resources/blog/business-associate-hitrust-requirements-complete-evidence-checklist",
+        "https://www.ispartnersllc.com/blog/hitrust-csf-certification-bas/"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-17-01",
+      "domain": "Risk Management",
+      "domainKey": "17",
+      "topicLabel": "Risk-Profile-Driven Regulatory/Privacy Overlays (e.g., GDPR, CCPA, PCI DSS)",
+      "topicSummary": "HITRUST's own r2 materials describe control selection as tailored to an organization's risk profile, technology environment, and regulatory exposure, with the option to map in additional authoritative sources such as GDPR, CCPA, HIPAA, or PCI DSS. For an organization with material privacy or payment-card risk, this could plausibly layer extra data-handling or privacy-specific risk factors on top of this domain's baseline risk-assessment requirements. Presented purely as an illustrative example, not a fixed or exhaustive list of r2 additions. Note: a closely related illustration also appears under Data Protection and Privacy below, applying the same GDPR/CCPA/PCI DSS overlay mechanism to that domain's substantive controls rather than to the risk-assessment process itself.",
+      "citations": [
+        "https://hitrustalliance.net/assessments-and-certifications/r2"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    },
+    {
+      "id": "r2-illustrative-19-01",
+      "domain": "Data Protection and Privacy",
+      "domainKey": "19",
+      "topicLabel": "Example: Regulatory/Privacy Overlay via r2 Risk-Based Tailoring (e.g., GDPR, CCPA)",
+      "topicSummary": "As an illustrative example only: unlike i1's fixed, privacy-agnostic control set, an r2 assessment can be tailored based on an organization's inherent risk factors and regulatory scope to layer in privacy- or jurisdiction-specific requirements -- for instance provisions aligned to GDPR for international personal data or CCPA for California consumer data -- alongside the core security controls touching this domain. This is one possible tailoring outcome among many, not a fixed or exhaustive r2 addition.",
+      "citations": [
+        "https://socreports.com/hitrust/hitrust-risk-based-2-year-r2-validated-assessments",
+        "https://blog.rsisecurity.com/how-hitrust-is-growing-its-privacy-controls-for-greater-security/",
+        "https://hitrustalliance.net/advisories/haa-2021-012-i1-introduction-and-r2-enhancements"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true,
+      "exampleOnly": true
+    }
+  ]
+}

@@ -1,0 +1,957 @@
+{
+  "tier": "i1",
+  "controlSetVersion": "v11.8",
+  "sourceAuthority": "public-topic-level",
+  "nonAuthoritative": true,
+  "compiledAt": "2026-07-18T00:00:00.000Z",
+  "coverageNote": "Topic-level, paraphrased, non-authoritative. Compiled via a research fan-out across all 19 HITRUST assessment domains, followed by a dedupe/reconcile pass and a dual-pass adversarial verification (checking citation resolution, tier/baseline-overlap attribution, and precision-overclaiming) before anything shipped -- see this plugin's hitrust-controls-compiler skill for the process. Citations lean on a mix of official HITRUST Alliance pages, HITRUST-authorized-assessor firm write-ups, and independent secondary analyses (including one recurring author's HITRUST i1 breakdown series on LinkedIn for roughly a third of entries) -- none of it is MyCSF-derived or verbatim. Treat this as a starting map for planning, not ground truth: consult MyCSF or an authorized HITRUST assessor for exact requirement statement text, control codes, and counts before relying on it for a real assessment.",
+  "controls": [
+    {
+      "id": "i1-01-01",
+      "domain": "Information Protection Program",
+      "domainKey": "01",
+      "topicLabel": "HR-security elements folded into the program (screening, acceptable use, discipline)",
+      "topicSummary": "The same source lists employee screening and disciplinary mechanisms plus acceptable-use policies as part of this domain's i1-level content -- i.e., workforce-facing governance controls (pre-access screening/terms of employment, rules for acceptable use of information assets, and a disciplinary process for violations) are bundled into the Information Protection Program domain rather than living in a separate HR-only bucket.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-01-02",
+      "domain": "Information Protection Program",
+      "domainKey": "01",
+      "topicLabel": "Information Protection Program governance & policy documentation",
+      "topicSummary": "Public write-ups describe this domain as requiring a formally governed program, not just one static policy: a named accountable owner (typically a CISO-level role), a defined scope, and a documented review/approval/communication cadence (baseline annual, plus triggered reviews after reorganizations, new regulations, or major incidents) for the whole supporting policy set. One assessor commentary on the v11 i1 update notes the domain's overall requirement count decreased from the prior CSF version but still expects a 'comprehensive set of policies that are reviewed, revised, approved and communicated on a regular cadence,' with standard policy templates often needing rework to satisfy this.",
+      "citations": [
+        "https://www.securityscientist.net/blog/hitrust-information-protection-program-policy-template/",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-01-03",
+      "domain": "Information Protection Program",
+      "domainKey": "01",
+      "topicLabel": "Information security roles, responsibilities & organizational coordination",
+      "topicSummary": "Beyond having a written policy, the domain is described as requiring that information-security roles and responsibilities be explicitly assigned across management and staff, with mechanisms for management and users to coordinate on security expectations so accountability is real and not merely documented.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-02-01",
+      "domain": "Endpoint Protection",
+      "domainKey": "02",
+      "topicLabel": "Anti-Spam / Phishing Filtering at Network and Endpoint Layers",
+      "topicSummary": "A separate, heavily-weighted requirement calls for anti-spam and phishing filtering enforced both at the network/gateway layer and at the individual endpoint, described by one advisory write-up as the second-largest requirement in the domain by evaluative-element count.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-02-02",
+      "domain": "Endpoint Protection",
+      "domainKey": "02",
+      "topicLabel": "Mobile Code Controls (download/execution restrictions)",
+      "topicSummary": "A dedicated requirement restricts the download and execution of unauthorized mobile code (e.g., browser scripts, macros, executable content), which one write-up characterizes as aligned in spirit with NIST SP 800-171 mobile-code guidance.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-02-03",
+      "domain": "Endpoint Protection",
+      "domainKey": "02",
+      "topicLabel": "Unattended Equipment / Session Lock Protection",
+      "topicSummary": "Requires technical controls that protect unattended, logged-in endpoints -- such as automatic screensaver activation and session lockout after a period of inactivity -- to prevent unauthorized use of an active session. This is a technical/automated control distinct from the workforce-policy-driven clean-desk/clear-screen practice addressed separately under Access Control.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-03-01",
+      "domain": "Portable Media Security",
+      "domainKey": "03",
+      "topicLabel": "Encryption of Data on Portable/Removable Media",
+      "topicSummary": "Sensitive or covered information stored on removable/portable media must be encrypted so it is unreadable if the media is lost or stolen, with any exceptions to this encryption requirement formally authorized and documented by management.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://compyl.com/blog/guide-to-the-19-hitrust-domains/"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-03-02",
+      "domain": "Portable Media Security",
+      "domainKey": "03",
+      "topicLabel": "Media Handling: Sanitization, Usage Tracking, and Malware Scanning on Insertion",
+      "topicSummary": "Where portable media is permitted, organizations are expected to sanitize devices before reuse/disposal, maintain visibility into where and how media is used (inventory/tracking), and have endpoint anti-malware tooling scan removable media automatically when it is connected.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-03-03",
+      "domain": "Portable Media Security",
+      "domainKey": "03",
+      "topicLabel": "Portable Media Use Policy & Technical Enforcement",
+      "topicSummary": "Organizations are expected to permit portable/removable media (USB drives, CDs/DVDs, backup tapes, etc.) only where there is a genuine business need, and where media use is disallowed, that restriction must be backed by technical endpoint controls (e.g., device/port blocking) rather than policy language alone.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://compyl.com/blog/guide-to-the-19-hitrust-domains/"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-03-04",
+      "domain": "Portable Media Security",
+      "domainKey": "03",
+      "topicLabel": "Protection of Media During Physical Transit",
+      "topicSummary": "The v11 i1 domain adds requirements around safeguarding portable media and equipment while being physically transported off-site (e.g., backup media or shipped hardware), which one analysis frames as a new emphasis versus the domain's prior, more classification-oriented wording.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-04-01",
+      "domain": "Mobile Device Security",
+      "domainKey": "04",
+      "topicLabel": "Device Integrity/Configuration Expectations for High-Risk Travel",
+      "topicSummary": "i1 introduces device-integrity and hardened-configuration expectations for mobile devices carried into geographic regions considered higher-risk. This kind of control theme (special device handling for travel to high-risk areas) also appears among the security standards HITRUST harmonizes from, which is consistent with -- though not proof of the exact wording of -- the i1 requirement.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://csf.tools/reference/nist-sp-800-53/r4/cm/cm-2/cm-2-7/"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-04-02",
+      "domain": "Mobile Device Security",
+      "domainKey": "04",
+      "topicLabel": "Formal Mobile Device Inventory",
+      "topicSummary": "i1 expects organizations to maintain a documented, current inventory of the mobile devices authorized to store or access organizational information, supporting accountability over what devices are in use.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-04-03",
+      "domain": "Mobile Device Security",
+      "domainKey": "04",
+      "topicLabel": "Prevention of Rooted/Jailbroken Mobile Device Use",
+      "topicSummary": "The i1 baseline adds a device-integrity expectation that organizations prevent use of mobile devices whose operating systems have been rooted or jailbroken for accessing organizational resources, since a compromised OS can undermine other mobile safeguards such as encryption or passcodes.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-04-04",
+      "domain": "Mobile Device Security",
+      "domainKey": "04",
+      "topicLabel": "Teleworking and Remote-Use Mobile Device Protections",
+      "topicSummary": "This topic covers safeguards for mobile devices used outside a controlled office setting, such as session lock/timeout controls and privacy screens intended to reduce exposure from shoulder-surfing or an unattended device while working remotely or in public.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-05-01",
+      "domain": "Wireless Security",
+      "domainKey": "05",
+      "topicLabel": "Disabling unused wireless capability on hardware",
+      "topicSummary": "For systems or equipment without a genuine business need for wireless connectivity, i1 expects the wireless radio to be turned off at the hardware or firmware level (e.g., in BIOS) rather than simply left unconfigured, removing an otherwise unmonitored attack surface.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-05-02",
+      "domain": "Wireless Security",
+      "domainKey": "05",
+      "topicLabel": "Minimum-strength wireless encryption",
+      "topicSummary": "The domain requires wireless traffic to be protected with a sufficiently strong encryption protocol, with secondary write-ups pointing to modern WPA2/AES-class protection as the expected baseline rather than legacy, weaker wireless encryption schemes.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-05-03",
+      "domain": "Wireless Security",
+      "domainKey": "05",
+      "topicLabel": "Segmentation of wireless networks from wired/production networks",
+      "topicSummary": "i1 expects wireless network segments to be logically separated from the wired production environment so that a compromised wireless segment does not provide a direct path into core systems.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-05-04",
+      "domain": "Wireless Security",
+      "domainKey": "05",
+      "topicLabel": "Wireless equipment configuration hardening and key rotation",
+      "topicSummary": "i1 expects organizations to move wireless access points and related gear off factory/vendor-default settings (default admin logins, default SNMP community strings, default pre-shared keys) and to periodically rotate wireless keys and shared secrets rather than leaving initial values in place indefinitely.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-06-01",
+      "domain": "Configuration Management",
+      "domainKey": "06",
+      "topicLabel": "Change Management (Formal Change Control Process)",
+      "topicSummary": "Requires a documented, controlled process for proposing, risk-assessing, testing, approving, and deploying changes to production systems and their configurations, with rollback planning and verification that the result still matches the organization's approved system baseline.",
+      "citations": [
+        "https://blog.rsisecurity.com/what-are-the-19-hitrust-domains/",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://www.paubox.com/blog/hitrust-configuration-management"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-06-02",
+      "domain": "Configuration Management",
+      "domainKey": "06",
+      "topicLabel": "Configuration Baselines, Hardening & Periodic Configuration Audit",
+      "topicSummary": "Covers establishing secure, hardened baseline configuration standards for systems and infrastructure, then periodically reviewing live configurations against those baselines to detect and remediate unauthorized drift.",
+      "citations": [
+        "https://blog.rsisecurity.com/what-are-the-19-hitrust-domains/",
+        "https://www.barradvisory.com/resource/hitrust-domains-101/"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-06-03",
+      "domain": "Configuration Management",
+      "domainKey": "06",
+      "topicLabel": "Supply Chain / Outsourced Development Change Control",
+      "topicSummary": "Extends change-control expectations to third-party and outsourced software components, expecting vendors to be held accountable (often contractually) for secure coding practices and timely remediation of vulnerabilities in code or components they supply.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-07-01",
+      "domain": "Vulnerability Management",
+      "domainKey": "07",
+      "topicLabel": "Asset Inventory & Discovery",
+      "topicSummary": "The domain expects organizations to maintain a comprehensive, actively-audited inventory of the systems, applications, and components that make up their environment, including current software versions and supported/patch status, with mechanisms to validate the inventory stays current over time. A secondary write-up on the v11 i1 domain breakdown describes this as needing an \"extremely robust inventory\" subject to regular audit, since knowing what assets exist is the prerequisite for scanning and patching them -- and that inventory data in turn feeds decisions about what needs to be updated, replaced, or reviewed under change control.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-07-02",
+      "domain": "Vulnerability Management",
+      "domainKey": "07",
+      "topicLabel": "Patch Management for Enterprise Software",
+      "topicSummary": "A distinct emphasis on keeping enterprise software packages current through automated patch-management tooling, rather than relying purely on manual update cycles. Secondary write-ups treat this as closely paired with, but separately called out from, general vulnerability identification.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://www.softwaresecured.com/guides-and-checklists/hitrust-csf-penetration-testing-requirements-guide"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-07-03",
+      "domain": "Vulnerability Management",
+      "domainKey": "07",
+      "topicLabel": "Technical Vulnerability Identification & Remediation Process",
+      "topicSummary": "Organizations are expected to run a defined process for finding technical vulnerabilities across infrastructure and applications and resolving them in a timely, risk-informed way, with an explicit push toward automated tooling rather than ad hoc manual tracking. One secondary source frames unpatched or unremediated systems found during review as a direct compliance gap against this area.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://www.softwaresecured.com/guides-and-checklists/hitrust-csf-penetration-testing-requirements-guide"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-08-01",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Advanced Perimeter Threat Defenses (IDS/IPS, DDoS, Reputation Filtering, Outbound Proxy Enforcement)",
+      "topicSummary": "Beyond basic firewalling, the domain appears to expect intrusion detection/prevention capability, DDoS mitigation, IP-reputation-based filtering, and routing of outbound internet traffic through an authenticated, content-inspecting proxy capable of session logging and allow/block-listing of sites.",
+      "citations": [
+        "https://blog.rsisecurity.com/what-are-the-19-hitrust-domains/",
+        "https://hitrustalliance.net/blog/q3-2024-threat-adaptive-evaluation-for-the-hitrust-i1-assessment",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-08-02",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Network Segmentation & Documented Security Domains",
+      "topicSummary": "The i1 domain expects the network to be divided into distinct zones or security domains (e.g., a DMZ for internet-facing systems, isolation of guest Wi-Fi from corporate networks, separation of production from dev/test), with the zoning derived from a documented risk assessment rather than ad hoc segmentation.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://www.softwaresecured.com/guides-and-checklists/hitrust-csf-penetration-testing-requirements-guide"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-08-03",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Network Service & Device-Access Controls (VoIP Security, Port-Based Device Authentication)",
+      "topicSummary": "The domain appears to extend to protecting voice-over-IP network traffic and to authenticating devices before granting them network access (e.g., 802.1x-style port-based authentication), rather than trusting any device that physically connects to the network.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-08-04",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Perimeter/Gateway Firewalls Validating Traffic Flow",
+      "topicSummary": "Firewalls or security gateways are expected at internal and external network control points to validate source and destination addresses and enforce boundary rule sets, in a default-deny posture rather than default-allow.",
+      "citations": [
+        "https://hitrustalliance.net/blog/q3-2024-threat-adaptive-evaluation-for-the-hitrust-i1-assessment",
+        "https://blog.rsisecurity.com/what-are-the-19-hitrust-domains/"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-08-05",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Secure Remote Network Access (VPN / Zero-Trust Gateways)",
+      "topicSummary": "Remote connections into the corporate network are expected to require multi-factor authentication and be brokered through VPN or zero-trust style gateways/proxies, often placed in a segmented DMZ, with sessions logged and access requests authorized against policy to limit lateral movement once connected.",
+      "citations": [
+        "https://www.strac.io/blog/hitrust-domains",
+        "https://hoop.dev/blog/hitrust-certification-for-secure-remote-access",
+        "https://hoop.dev/blog/hitrust-compliance-for-remote-access-proxies"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-09-01",
+      "domain": "Transmission Protection",
+      "domainKey": "09",
+      "topicLabel": "Cryptographic key management",
+      "topicSummary": "Beyond encrypting data in motion, this area covers governing the lifecycle of the keys used for that encryption -- how keys are generated and stored (commonly via a dedicated key-management service), rotated on a defined schedule, and restricted to authorized users/systems with logging of key-access activity.",
+      "citations": [
+        "https://censinet.com/perspectives/ultimate-guide-hitrust-encryption-cloud-systems",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-09-02",
+      "domain": "Transmission Protection",
+      "domainKey": "09",
+      "topicLabel": "Email transmission / anti-spoofing controls",
+      "topicSummary": "This topic addresses email as a transmission channel: filtering suspicious inbound messages and risky attachment or file types at the network perimeter, and using domain-level email-authentication mechanisms (commonly discussed as SPF, DKIM, and DMARC) so recipients can verify a message's origin and that it wasn't altered or spoofed.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-10-01",
+      "domain": "Password Management",
+      "domainKey": "10",
+      "topicLabel": "Differentiated Password Parameters for Privileged/Administrative Accounts",
+      "topicSummary": "Secondary guidance consistently distinguishes standard user password rules from a stricter tier applied to privileged, administrative, or service accounts — describing tighter rotation windows, longer minimum lengths, and larger reuse-history windows for these higher-risk accounts, sometimes alongside suggestions to move toward key- or token-based authentication with automated secret rotation for service accounts.",
+      "citations": [
+        "https://blog.rsisecurity.com/a-guide-to-hitrust-password-requirements-and-best-practices/",
+        "https://www.accountablehq.com/post/hitrust-password-requirements-length-complexity-rotation-and-mfa-explained"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-10-02",
+      "domain": "Password Management",
+      "domainKey": "10",
+      "topicLabel": "Password Construction & Complexity Standards",
+      "topicSummary": "Sets baseline rules for how a password must be built — most commonly cited as a minimum length around eight characters plus resistance to easily guessed values (e.g., passwords derived from personal information or common dictionary words) — rather than a precise numeric 'password strength' score. Secondary commentary on the i1 assessment describes this whole domain as relatively compact in requirement count, but historically one of the harder domains for organizations to fully satisfy in practice.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://www.hcinnovationgroup.com/cybersecurity/compliance/news/55271778/hitrust-password-management-domain-remains-a-challenge-to-secure",
+        "https://blog.rsisecurity.com/a-guide-to-hitrust-password-requirements-and-best-practices/"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-10-03",
+      "domain": "Password Management",
+      "domainKey": "10",
+      "topicLabel": "Password Expiration / Rotation Cadence",
+      "topicSummary": "Calls for passwords to be changed on a recurring cycle, with secondary sources commonly citing a roughly 90-day cadence for standard user accounts and a shorter cycle (around 60 days) for higher-privilege accounts. More recent assessor commentary notes a broader industry shift toward event-driven, risk-based rotation (e.g., triggered by suspected compromise or a role change) rather than pure calendar-based expiry.",
+      "citations": [
+        "https://www.enzoic.com/blog/hitrust-password/",
+        "https://www.accountablehq.com/post/hitrust-password-requirements-length-complexity-rotation-and-mfa-explained"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-10-04",
+      "domain": "Password Management",
+      "domainKey": "10",
+      "topicLabel": "Password History & Reuse / Change-Composition Rules",
+      "topicSummary": "Limits how much a new password can resemble recent ones — commonly cited as barring reuse of a set number of prior passwords (e.g., the last several) and requiring a minimum number of characters to differ from the previous value — alongside restrictions on strings of repeated or consecutive characters.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://blog.rsisecurity.com/a-guide-to-hitrust-password-requirements-and-best-practices/",
+        "https://www.accountablehq.com/post/hitrust-password-requirements-length-complexity-rotation-and-mfa-explained"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-10-05",
+      "domain": "Password Management",
+      "domainKey": "10",
+      "topicLabel": "Protected Password Storage, Transmission & Enforcement Mechanism",
+      "topicSummary": "Expects passwords to never be held or sent in plaintext — stored only as salted, adaptively-hashed values and transmitted over encrypted channels — and expects this to be enforced through an actual password-management mechanism or tooling rather than relying solely on a written policy.",
+      "citations": [
+        "https://www.enzoic.com/blog/hitrust-password/",
+        "https://blog.rsisecurity.com/a-guide-to-hitrust-password-requirements-and-best-practices/"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-11-01",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Access Review and Revocation Lifecycle",
+      "topicSummary": "Requires periodic recertification of who has access to what, plus prompt removal or downgrade of access when someone leaves the organization or changes roles. One public breakdown reports that the review cadence was loosened in the current CSF version from a prior split between shorter admin and standard-user review windows to at least annual for all account types.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-11-02",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Multi-Factor Authentication for Privileged and Remote Operations",
+      "topicSummary": "The domain requires multi-factor authentication as a distinct, verifiable control layered on top of basic sign-in credentials, applied particularly to administrative/sensitive operations and remote access paths, rather than relying on password strength alone.",
+      "citations": [
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-11-03",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Privileged and Administrative Account Controls",
+      "topicSummary": "i1 calls for tighter controls specifically over default, root, and administrative accounts: separating privileged permission sets from standard user access, restricting root/administrator use to exceptional 'break-glass' scenarios, and logging every privileged action or role assumption so administrative activity is individually traceable.",
+      "citations": [
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-11-04",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Session Controls, Account Lockout & Individual Accountability",
+      "topicSummary": "Covers enforcing unique, individually attributable user accounts, locking accounts after repeated failed sign-in attempts, requiring periodic re-authentication or token rotation for active sessions, and providing audited, logged remote administrative access (e.g., session-recording tooling) rather than open network shell ports. One public breakdown also notes that a prior requirement to display a login warning banner was dropped in the current CSF version.",
+      "citations": [
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-11-05",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "User Registration, Authorization & Role-Based Least Privilege",
+      "topicSummary": "The Access Control domain expects that user access be formally requested, authorized, and provisioned per role, with permissions scoped to the minimum needed for the job function rather than broad or shared entitlements (e.g., cloud IAM roles/policies scoped narrowly per workload). Public breakdowns describe Access Control as the largest domain in the i1 set by requirement count under CSF v11, underscoring how central access governance is to the assessment -- though this is a general v11 characterization, not something independently confirmed against v11.8 specifically.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-11-06",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Workstation Session Physical/Visual Security (Clean Desk & Clear Screen)",
+      "topicSummary": "The domain also addresses physical and visual exposure of information at the workstation level — clearing desks of sensitive material and locking or blanking screens when a workstation is unattended. One breakdown describes this as the largest individual requirement in the domain by evaluative-element count, and a public cloud implementation guide notes it is satisfied through workforce policy and HR process rather than technical cloud configuration -- distinguishing it from the automated endpoint session-lock control addressed separately under Endpoint Protection.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-12-01",
+      "domain": "Audit Logging and Monitoring",
+      "domainKey": "12",
+      "topicLabel": "Audit log content and event capture",
+      "topicSummary": "Covers what activity must be captured in logs — actions like logins, access to data, changes, and deletions — along with enough surrounding detail (who did it, when, on what system, and whether it succeeded or failed) to reconstruct what happened during a later investigation.",
+      "citations": [
+        "https://feeds.trussed.ai/blog/hipaa-hitrust-audit-log-protection",
+        "https://www.barradvisory.com/resource/hitrust-domains-101/"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-12-02",
+      "domain": "Audit Logging and Monitoring",
+      "domainKey": "12",
+      "topicLabel": "Audit log retention policy and availability",
+      "topicSummary": "Covers establishing a defined retention period for how long audit logs must be kept, and ensuring logs remain accessible and available — not just stored — so they can be retrieved for review or investigation when needed.",
+      "citations": [
+        "https://www.paubox.com/blog/hitrust-audit-logging-monitoring"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-12-03",
+      "domain": "Audit Logging and Monitoring",
+      "domainKey": "12",
+      "topicLabel": "Centralized, automated log monitoring (SIEM-type capability)",
+      "topicSummary": "Pushes organizations to aggregate logs from across systems into a central platform and use automated tooling (e.g., a SIEM or equivalent) to analyze activity and surface anomalies, rather than relying on manual, siloed review of individual system logs.",
+      "citations": [
+        "https://feeds.trussed.ai/blog/hipaa-hitrust-audit-log-protection"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-12-04",
+      "domain": "Audit Logging and Monitoring",
+      "domainKey": "12",
+      "topicLabel": "Clock/time synchronization across systems",
+      "topicSummary": "Requires that systems producing logs keep their clocks synchronized to a common time source within a tight tolerance, so events recorded on different systems can be correlated and sequenced accurately during analysis.",
+      "citations": [
+        "https://feeds.trussed.ai/blog/hipaa-hitrust-audit-log-protection"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-12-05",
+      "domain": "Audit Logging and Monitoring",
+      "domainKey": "12",
+      "topicLabel": "Logging of privileged/administrative user activity",
+      "topicSummary": "Focuses specifically on capturing and reviewing actions taken by accounts with elevated or administrative privileges, since misuse of privileged access is a higher-risk scenario warranting dedicated log coverage beyond ordinary user activity.",
+      "citations": [
+        "https://www.paubox.com/blog/hitrust-audit-logging-monitoring"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-13-01",
+      "domain": "Education, Training, and Awareness",
+      "domainKey": "13",
+      "topicLabel": "General workforce security awareness training program",
+      "topicSummary": "A recurring, documented cybersecurity awareness training program required for the entire workforce, intended to build a security-conscious culture and reduce human-error-driven breaches; completion is expected to be tracked as assessment evidence.",
+      "citations": [
+        "https://www.barradvisory.com/wp-content/uploads/2023/08/The-19-HITRUST-Domains-A-Comprehensive-Approach-to-Information-Security.pdf",
+        "https://www.island.io/content/compliance/hitrust"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-13-02",
+      "domain": "Education, Training, and Awareness",
+      "domainKey": "13",
+      "topicLabel": "Phishing-recognition training built into onboarding, tracked and reportable",
+      "topicSummary": "HITRUST's own commentary on i1 control coverage describes a dedicated requirement that phishing-recognition training be built into the new-hire onboarding process, be documented and tracked, and specifically instruct staff on how to recognize and report suspected phishing attempts. HITRUST frames this as existing i1 coverage against account-compromise-style attack activity.",
+      "citations": [
+        "https://hitrustalliance.net/blog/q2-2024-threat-adaptive-evaluation-for-the-hitrust-i1-assessment"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-13-03",
+      "domain": "Education, Training, and Awareness",
+      "domainKey": "13",
+      "topicLabel": "Role-specific / elevated-access training with individual completion tracking",
+      "topicSummary": "Beyond generic annual awareness sessions, organizations are expected to layer in targeted training for personnel whose roles involve elevated system access or sensitive data handling, delivered at onboarding and reinforced with periodic refreshers, with individual-level completion records maintained as evidence for assessors.",
+      "citations": [
+        "https://www.bemopro.com/compliance-requirements/hitrust"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-14-01",
+      "domain": "Third-Party Assurance",
+      "domainKey": "14",
+      "topicLabel": "Ongoing Oversight of Third-Party Service Delivery and Relationship Lifecycle",
+      "topicSummary": "Beyond initial vetting, the organization is expected to keep watching how a third party actually performs over the life of the relationship -- reviewing service delivery and any changes to what's being provided -- and to have a defined path for addressing or ending a relationship when a vendor falls short of expectations.",
+      "citations": [
+        "https://blog.rsisecurity.com/how-to-leverage-hitrust-for-third-party-risk-management/",
+        "https://www.securityscientist.net/blog/hitrust-third-party-assurance-policy-template/"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-14-02",
+      "domain": "Third-Party Assurance",
+      "domainKey": "14",
+      "topicLabel": "Security Obligations Embedded in Third-Party Agreements",
+      "topicSummary": "Before a vendor relationship begins, the organization is expected to document its security and data-handling expectations in the contract or agreement itself, so it has a concrete, enforceable basis for holding the third party to the same standards it applies internally.",
+      "citations": [
+        "https://blog.rsisecurity.com/how-to-leverage-hitrust-for-third-party-risk-management/",
+        "https://www.securityscientist.net/blog/hitrust-third-party-assurance-policy-template/"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-14-03",
+      "domain": "Third-Party Assurance",
+      "domainKey": "14",
+      "topicLabel": "Third-Party Risk Identification & Risk-Tiered Due Diligence",
+      "topicSummary": "The organization is expected to identify and keep track of the third parties (vendors, service providers, contractors) that can reach its systems or sensitive information, rank how much risk each one poses, and scale the depth of vetting and ongoing oversight to that risk level rather than treating every vendor the same way.",
+      "citations": [
+        "https://hitrustalliance.net/third-party-risk-management",
+        "https://www.strac.io/blog/hitrust-domains",
+        "https://www.barradvisory.com/resource/hitrust-domains-101/"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-15-01",
+      "domain": "Incident Management",
+      "domainKey": "15",
+      "topicLabel": "Evidence Collection & Retention for Investigations/Legal Proceedings",
+      "topicSummary": "Organizations are expected to collect and retain evidence generated during an incident in a manner that supports later investigation or legal proceedings, treating forensic preservation as a distinct discipline from incident containment itself.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-15-02",
+      "domain": "Incident Management",
+      "domainKey": "15",
+      "topicLabel": "Formal Incident Response Plan & Program Governance",
+      "topicSummary": "i1 expects a documented, approved incident response plan that assigns clear roles and responsibilities and defines how incidents are communicated to personnel and management, moving beyond a bare statement of responsibilities toward a governed program.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://docs.alertlogic.com/analyze/reports/compliance/HITRUST-CSF-11.0.htm"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-15-03",
+      "domain": "Incident Management",
+      "domainKey": "15",
+      "topicLabel": "Incident Response Testing & Lessons-Learned Continuous Improvement",
+      "topicSummary": "The plan must be periodically tested (e.g., via simulations), with findings from both tests and real incidents formally reviewed and fed back into the incident response plan to drive measurable improvement over time.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://docs.alertlogic.com/analyze/reports/compliance/HITRUST-CSF-11.0.htm"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-15-04",
+      "domain": "Incident Management",
+      "domainKey": "15",
+      "topicLabel": "Phased Technical Incident-Handling Capability & Supporting Tooling",
+      "topicSummary": "i1 calls for a structured incident-handling capability spanning detection, analysis, containment, eradication, and recovery, supported by workflow or dedicated incident-response tooling rather than ad hoc handling.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://docs.alertlogic.com/analyze/reports/compliance/HITRUST-CSF-11.0.htm"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-15-05",
+      "domain": "Incident Management",
+      "domainKey": "15",
+      "topicLabel": "Points of Contact & Accessible Incident Reporting Channels",
+      "topicSummary": "Organizations must maintain and communicate points of contact and reporting mechanisms so personnel can easily recognize and report suspected security incidents or weaknesses without confusion about who to notify.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://docs.alertlogic.com/analyze/reports/compliance/HITRUST-CSF-11.0.htm"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-16-01",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Backup and recovery-point management",
+      "topicSummary": "Requires regular, automated backup of data and systems supporting in-scope operations, with defined recovery points and verification that backups can actually be restored, so data loss from a disruptive event stays within an acceptable window.",
+      "citations": [
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf",
+        "https://www.strac.io/blog/hitrust-domains"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-16-02",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Business impact analysis and continuity risk assessment",
+      "topicSummary": "The domain expects organizations to identify which systems and processes are critical to operations and to assign recovery expectations -- how quickly a system must be restored and how much data loss is tolerable -- based on the business impact of an outage, rather than relying only on a general information-security risk assessment.",
+      "citations": [
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf",
+        "https://www.strac.io/blog/hitrust-domains"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-16-03",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Continuity and disaster recovery planning & communications",
+      "topicSummary": "HITRUST i1 expects organizations to maintain a documented, approved business continuity and disaster recovery plan for in-scope systems, including defined roles/responsibilities and a crisis-communication approach for notifying stakeholders during a disruption. This governance artifact sits above the technical recovery mechanisms and must be kept current as an organizational deliverable rather than simply implied by having resilient infrastructure.",
+      "citations": [
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf",
+        "https://www.strac.io/blog/hitrust-domains",
+        "https://360advanced.com/hitrust-certification-requirements-what-you-need-to-know/"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-16-04",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Resilience, redundancy and alternate-processing capability",
+      "topicSummary": "Organizations are expected to architect critical systems so a disruptive event does not fully interrupt operations -- through redundant components, geographic or environment diversity, and automated failover -- and to have a defined alternate means of processing or recovering the system within agreed recovery objectives.",
+      "citations": [
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-16-05",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Testing, exercising and maintenance of continuity/DR plans",
+      "topicSummary": "The domain requires periodic validation that continuity and recovery plans actually work -- through activities such as recovery/failover drills or tabletop exercises -- and that plans are updated based on test results, incidents, or environment changes, rather than being a one-time paper exercise.",
+      "citations": [
+        "https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/whitepapers/compliance/HITRUST_i1_Compliance_Guide_on_AWS.pdf",
+        "https://www.strac.io/blog/hitrust-domains",
+        "https://360advanced.com/hitrust-certification-requirements-what-you-need-to-know/"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-17-01",
+      "domain": "Risk Management",
+      "domainKey": "17",
+      "topicLabel": "Continuous Risk Management Program & Lifecycle Integration",
+      "topicSummary": "Beyond a point-in-time assessment, the domain expects an ongoing risk-management program executed at planned intervals, with risk considerations feeding into change-management decisions and into the selection of preventive, detective, corrective, and compensating controls during system development or acquisition.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-17-02",
+      "domain": "Risk Management",
+      "domainKey": "17",
+      "topicLabel": "Incident/BC Point-of-Contact Lists and External Threat-Intelligence Monitoring",
+      "topicSummary": "Additional requirements in this domain call for maintaining current point-of-contact listings to support incident response and business continuity efforts, and for drawing on external situational-awareness sources such as threat-intelligence feeds and industry information-sharing groups.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-17-03",
+      "domain": "Risk Management",
+      "domainKey": "17",
+      "topicLabel": "Security Engineering Principles Across the Systems Engineering Lifecycle",
+      "topicSummary": "A dedicated requirement sets expectations for applying sound security-engineering practices throughout a system's engineering lifecycle; secondary sources note this applies even to organizations that only acquire systems from vendors rather than developing software in-house.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-18-01",
+      "domain": "Physical and Environmental Security",
+      "domainKey": "18",
+      "topicLabel": "Environmental & Utility Resiliency Controls",
+      "topicSummary": "This topic concerns protecting facilities and the equipment inside them from environmental and utility-related disruption -- redundancy for electrical power and other supporting utilities, HVAC/climate conditions suitable for IT equipment, fire suppression, and protection against natural hazards such as flooding or lightning. Multiple secondary sources describe this as a distinct thread within the domain's physical/environmental scope.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://blog.rsisecurity.com/datacenter-physical-environmental-security-best-practices/"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-18-02",
+      "domain": "Physical and Environmental Security",
+      "domainKey": "18",
+      "topicLabel": "Facility Perimeter & Secure Area Controls",
+      "topicSummary": "This topic area is about establishing physical security perimeters around locations that house sensitive systems or data, controlling and monitoring defined entry/exit points into those zones, and keeping public-facing areas such as delivery and loading docks isolated from spaces where sensitive information is processed or stored. Secondary write-ups describing i1's Physical and Environmental Security domain frame this as one of the domain's core organizing themes, alongside broader facility-level protections like disaster-recovery site security.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://blog.rsisecurity.com/datacenter-physical-environmental-security-best-practices/",
+        "https://www.strac.io/blog/hitrust-domains"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-18-03",
+      "domain": "Physical and Environmental Security",
+      "domainKey": "18",
+      "topicLabel": "Media & Equipment Disposal / Sanitization",
+      "topicSummary": "This area addresses protecting media and equipment across their lifecycle before disposal or reuse -- appropriately encrypting or otherwise protecting sensitive media, sanitizing or overwriting storage before disposal, and choosing a disposal method proportionate to data sensitivity, extended in secondary descriptions to cover secure removal of decommissioned equipment as well as media.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben",
+        "https://blog.rsisecurity.com/what-are-the-19-hitrust-domains/",
+        "https://blog.rsisecurity.com/datacenter-physical-environmental-security-best-practices/"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-18-04",
+      "domain": "Physical and Environmental Security",
+      "domainKey": "18",
+      "topicLabel": "Visitor, Vendor & Maintenance Personnel Access Management",
+      "topicSummary": "This area covers identifying and authorizing non-employee personnel -- visitors, contractors, maintenance and vendor technicians -- before granting them physical access, and logging/monitoring that access while they are on site, including around diagnostic or maintenance tool use. A secondary write-up on the i1 framework specifically calls out this sub-area as more evaluatively detailed than organizations tend to expect.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-19-01",
+      "domain": "Data Protection and Privacy",
+      "domainKey": "19",
+      "topicLabel": "Data Retention & Secure Disposal",
+      "topicSummary": "This topic covers establishing and enforcing formal retention schedules for data and secure destruction/disposal procedures once data or media is no longer needed or its retention period has lapsed.",
+      "citations": [
+        "https://www.strac.io/blog/hitrust-domains"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-19-02",
+      "domain": "Data Protection and Privacy",
+      "domainKey": "19",
+      "topicLabel": "Encryption of Data At Rest / In Transit & Key Management",
+      "topicSummary": "The domain requires a defined policy on acceptable encryption mechanisms and enforcement of encryption for sensitive data both while stored and while being transmitted, paired with key-management practices to support those controls.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben",
+        "https://www.tonic.ai/blog/guide-to-data-masking-hitrust-certification"
+      ],
+      "baselineOverlap": "true",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-19-03",
+      "domain": "Data Protection and Privacy",
+      "domainKey": "19",
+      "topicLabel": "Masking/De-identification of Production Data in Non-Production Environments",
+      "topicSummary": "Controls in this area aim to prevent unmasked production sensitive data (e.g., health or personal identifiers) from being copied into development, test, or other non-production systems, favoring techniques like static masking, tokenization, or format-preserving encryption.",
+      "citations": [
+        "https://www.tonic.ai/blog/guide-to-data-masking-hitrust-certification",
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "false",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "i1-19-04",
+      "domain": "Data Protection and Privacy",
+      "domainKey": "19",
+      "topicLabel": "Restriction on Use of Open Source Software",
+      "topicSummary": "A secondary source describes an i1 requirement that organizations restrict use of open source software components according to organization-defined limitations, which the author characterizes as a somewhat unusual placement inside the data protection domain (arguably closer to supply-chain/licensing risk than data protection per se).",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-i1-framework-breakdown-csf-v11-edition-richard-rieben"
+      ],
+      "baselineOverlap": "unsure",
+      "nonAuthoritative": true
+    }
+  ]
+}
