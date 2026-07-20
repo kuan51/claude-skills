@@ -1,6 +1,7 @@
 ---
 name: hitrust-controls-compiler
 description: Use when compiling or refreshing the public, non-authoritative topic-level HITRUST e1/i1 control structure files shipped in the ciso plugin -- e.g. after a new HITRUST CSF framework version ships, or to close a coverage gap in an existing compile. r2's full structure is out of scope for this skill until its own dedicated pass (its real scope is 2000+ entries, an order of magnitude beyond e1/i1).
+disable-model-invocation: true
 ---
 
 # HITRUST Controls Compiler
