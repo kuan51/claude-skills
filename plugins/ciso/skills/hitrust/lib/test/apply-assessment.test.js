@@ -416,11 +416,32 @@ test('applyAssessment on r2 rejects a per-dimension call once whole-control not_
   const reversed = applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'not_assessed' });
   assert.equal(reversed.status, null);
   assert.equal(reversed.maturity.implemented.status, 'not_assessed');
+  for (const dim of ['policy', 'procedure', 'implemented', 'measured', 'managed']) {
+    assert.equal(reversed.maturity[dim].assessedAt, null, `reversing NA must clear assessedAt on "${dim}", or it reads as touched`);
+  }
 
   const afterReverse = applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', {
     status: 'met', justification: 'Now implemented.', dimension: 'implemented',
   });
   assert.equal(afterReverse.maturity.implemented.status, 'met');
+});
+
+test('markCategoryComplete still requires a real assessment after a whole-control NA is engaged then reversed', () => {
+  const stateJsonPath = makeTempState();
+  seedR2State(stateJsonPath, [R2_CTRL_A]);
+
+  applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'not_applicable' });
+  applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'not_assessed' });
+
+  assert.throws(
+    () => markCategoryComplete(stateJsonPath, 'hitrust', 'r2', '01'),
+    /never assessed/,
+    'a reversed-and-left-alone control must not read as touched'
+  );
+
+  applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'gap', dimension: 'implemented' });
+  const session = markCategoryComplete(stateJsonPath, 'hitrust', 'r2', '01');
+  assert.deepEqual(session.domainsCompleted, ['01']);
 });
 
 test('markCategoryComplete on r2 only requires the implemented dimension (or whole-control not_applicable) to be assessed', () => {

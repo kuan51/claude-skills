@@ -56,14 +56,17 @@ function applyR2Assessment(control, stateJsonPath, state, payload) {
         'A whole-control r2 call (no dimension) only accepts status "not_applicable" (to mark the whole control not applicable) or "not_assessed" (to reverse that)'
       );
     }
-    const now = new Date().toISOString();
-    control.assessment.status = storedStatus === 'not_applicable' ? 'not_applicable' : null;
+    const isEngagingNa = storedStatus === 'not_applicable';
+    control.assessment.status = isEngagingNa ? 'not_applicable' : null;
     for (const dim of R2_DIMENSIONS) {
       control.assessment.maturity[dim] = {
         status: storedStatus,
         justification: null,
         inProgress: { currentState: null, estimatedCloseness: null },
-        assessedAt: now,
+        // Only the engage path is a real assessment event. Reversing back to not_assessed
+        // must clear assessedAt, or isControlTouched() below still reads the control as
+        // touched even though it has never actually been assessed on any dimension.
+        assessedAt: isEngagingNa ? new Date().toISOString() : null,
       };
     }
     fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
