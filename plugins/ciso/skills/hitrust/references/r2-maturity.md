@@ -1,0 +1,9 @@
+# r2 maturity dimensions (deepening beyond Implemented)
+
+Context: r2 is the only tier that scores five PRISMA maturity dimensions per control (Policy, Procedure, Implemented, Measured, Managed) instead of one flat status -- see `docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md`. The default r2 interview pass assesses **only the `implemented` dimension** (see the "r2: default pass is Implemented-only" note in [Interview](interview.md)); this file covers going deeper, which is always optional.
+
+**Deepening a control (optional, any time):** if the user wants to go beyond Implemented for a specific r2 control or domain, repeat [Interview](interview.md) Part 1's plan-mode Q&A loop for that control, once per remaining dimension, then commit each with the same `apply-assessment.js` call shape but `"dimension"` set to the dimension just answered (e.g. `"dimension": "policy"`). A **hard validation** applies: `managed` can never be marked `"met"` until `measured` is already `"met"` on that control (HITRUST's own PRISMA rule -- Managed can't outscore Measured) -- `apply-assessment.js` throws if this is attempted, so ask about `measured` before `managed` when deepening.
+
+**Whole-control not applicable:** omit `dimension` entirely and pass `{"status": "not_applicable"}` to mark a control not applicable across all five dimensions at once (this is the only whole-control call r2 supports). To reverse it, call again with no `dimension` and `{"status": "not_assessed"}`.
+
+**Domain completion is Implemented-only:** the group-completion call (Interview Part 2 step 9) only requires every control's `implemented` dimension (or whole-control not_applicable) to be resolved -- deepening the other four dimensions is optional progress that never blocks a domain from completing.
