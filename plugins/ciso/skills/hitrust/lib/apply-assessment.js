@@ -9,21 +9,16 @@ const fs = require('fs');
 const VALID_INPUT_STATUSES = ['met', 'in_progress', 'gap', 'not_applicable', 'defer', 'not_assessed'];
 const STATUS_MAP = { defer: 'not_assessed' };
 
+// r2's five PRISMA maturity dimensions. Duplicated locally rather than imported from
+// register-tier.js, mirroring reconcile-state-version.js's existing "small local
+// re-implementation... so this file's module boundary stays independent" precedent.
+const R2_DIMENSIONS = ['policy', 'procedure', 'implemented', 'measured', 'managed'];
+
 function isBlank(value) {
   return value === undefined || value === null || String(value).trim() === '';
 }
 
-// Mechanical backstop for the two hard interview rules. Throws (making NO changes to the file)
-// before any read/write happens if:
-//   - status === "met" and justification is missing/empty/whitespace-only
-//   - status === "in_progress" and either currentState or estimatedCloseness is missing/blank
-// On success, always stamps assessment.assessedAt, regardless of status (including "defer").
-// `certKey` is required -- this function is certification-agnostic and has no default to guess.
-function applyAssessment(stateJsonPath, certKey, tierKey, controlId, payload) {
-  if (!certKey) throw new Error('applyAssessment: certKey is required (e.g. "hitrust")');
-
-  const { status, justification, currentState, estimatedCloseness } = payload || {};
-
+function validatePayloadShape(status, justification, currentState, estimatedCloseness) {
   if (!VALID_INPUT_STATUSES.includes(status)) {
     throw new Error(
       `Invalid status "${status}" -- expected one of: met, in_progress, gap, not_applicable, defer`
@@ -37,12 +32,93 @@ function applyAssessment(stateJsonPath, certKey, tierKey, controlId, payload) {
       'Both currentState and estimatedCloseness are required when status is "in_progress"'
     );
   }
+}
+
+// r2 controls store a `maturity` object (one entry per PRISMA dimension) instead of e1/i1's flat
+// `assessment.status` -- see docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md.
+// `payload.dimension` selects which of the 5 dimensions this call targets; omitting it is a
+// whole-control call, which only accepts status "not_applicable" (engage -- short-circuits all 5
+// dimensions to not_applicable) or "not_assessed" (reverse -- clears the whole-control state back
+// to null and resets all 5 dimensions to not_assessed).
+function applyR2Assessment(control, stateJsonPath, state, payload) {
+  const { status, justification, currentState, estimatedCloseness, dimension } = payload;
+  const storedStatus = STATUS_MAP[status] || status;
+
+  if (!control.assessment || !control.assessment.maturity) {
+    throw new Error(
+      `Control "${control.id}" does not have an r2 maturity shape -- was it registered before this schema existed? Re-run register-tier.js.`
+    );
+  }
+
+  if (dimension === undefined || dimension === null) {
+    if (storedStatus !== 'not_applicable' && storedStatus !== 'not_assessed') {
+      throw new Error(
+        'A whole-control r2 call (no dimension) only accepts status "not_applicable" (to mark the whole control not applicable) or "not_assessed" (to reverse that)'
+      );
+    }
+    const now = new Date().toISOString();
+    control.assessment.status = storedStatus === 'not_applicable' ? 'not_applicable' : null;
+    for (const dim of R2_DIMENSIONS) {
+      control.assessment.maturity[dim] = {
+        status: storedStatus,
+        justification: null,
+        inProgress: { currentState: null, estimatedCloseness: null },
+        assessedAt: now,
+      };
+    }
+    fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
+    return control.assessment;
+  }
+
+  if (!R2_DIMENSIONS.includes(dimension)) {
+    throw new Error(`Invalid dimension "${dimension}" -- expected one of: ${R2_DIMENSIONS.join(', ')}`);
+  }
+  if (storedStatus === 'not_applicable') {
+    throw new Error('Per-dimension not_applicable is not supported for r2 -- use a whole-control call (omit dimension) instead');
+  }
+  if (control.assessment.status === 'not_applicable') {
+    throw new Error('This control is marked whole-control not_applicable -- reverse it first (call with no dimension and status "not_assessed")');
+  }
+  if (dimension === 'managed' && storedStatus === 'met' && control.assessment.maturity.measured.status !== 'met') {
+    throw new Error('"managed" cannot be marked "met" until "measured" is "met" -- HITRUST\'s PRISMA model never scores Managed higher than Measured');
+  }
+
+  const dim = control.assessment.maturity[dimension];
+  dim.status = storedStatus;
+  dim.justification = isBlank(justification) ? null : String(justification).trim();
+  if (storedStatus === 'in_progress') {
+    dim.inProgress = { currentState: String(currentState).trim(), estimatedCloseness: String(estimatedCloseness).trim() };
+  } else {
+    dim.inProgress = { currentState: null, estimatedCloseness: null };
+  }
+  dim.assessedAt = new Date().toISOString();
+
+  fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
+  return control.assessment;
+}
+
+// Mechanical backstop for the two hard interview rules. Throws (making NO changes to the file)
+// before any read/write happens if:
+//   - status === "met" and justification is missing/empty/whitespace-only
+//   - status === "in_progress" and either currentState or estimatedCloseness is missing/blank
+// On success, always stamps the relevant assessedAt (the control's own for e1/i1, or the targeted
+// dimension's for r2), regardless of status (including "defer").
+// `certKey` is required -- this function is certification-agnostic and has no default to guess.
+function applyAssessment(stateJsonPath, certKey, tierKey, controlId, payload) {
+  if (!certKey) throw new Error('applyAssessment: certKey is required (e.g. "hitrust")');
+
+  const { status, justification, currentState, estimatedCloseness } = payload || {};
+  validatePayloadShape(status, justification, currentState, estimatedCloseness);
 
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const tier = state?.certifications?.[certKey]?.tiers?.[tierKey];
   const control = tier && tier.controls && tier.controls[controlId];
   if (!control) {
     throw new Error(`Control "${controlId}" not found in ${certKey}/${tierKey} -- register the tier first.`);
+  }
+
+  if (tierKey === 'r2') {
+    return applyR2Assessment(control, stateJsonPath, state, payload || {});
   }
 
   const storedStatus = STATUS_MAP[status] || status;
@@ -72,6 +148,19 @@ function categoryKeyFor(c) {
   return (c && (c.domainKey || c.legacyCategoryPrefix || c.domain)) || 'unknown';
 }
 
+// A control counts as "touched" for domain-completion purposes once its Implemented dimension (r2)
+// or its single flat status (e1/i1) has been assessed, or the whole control is marked
+// not_applicable. Deepening r2's other 4 dimensions is opt-in progress that never blocks a domain
+// from completing -- see the r2 maturity architecture design spec.
+function isControlTouched(control, isR2) {
+  if (isR2) {
+    if (control.assessment && control.assessment.status === 'not_applicable') return true;
+    const impl = control.assessment && control.assessment.maturity && control.assessment.maturity.implemented;
+    return !!(impl && impl.assessedAt !== null && impl.assessedAt !== undefined);
+  }
+  return !!(control.assessment && control.assessment.assessedAt !== null && control.assessment.assessedAt !== undefined);
+}
+
 // Throws if any control in `categoryKey` still has assessedAt === null (something was
 // missed between the interview Q&A and the apply step -- a hard stop, not a silent skip). On
 // success, moves the category from domainsRemaining to domainsCompleted for the matching
@@ -88,15 +177,14 @@ function markCategoryComplete(stateJsonPath, certKey, tierKey, legacyCategoryPre
     throw new Error(`Tier ${certKey}/${tierKey} not found in state.json`);
   }
 
+  const isR2 = tierKey === 'r2';
   const controlsInCategory = Object.values(tier.controls).filter(
     (c) => categoryKeyFor(c) === legacyCategoryPrefix
   );
   if (controlsInCategory.length === 0) {
     throw new Error(`No controls found for category "${legacyCategoryPrefix}" in ${certKey}/${tierKey}`);
   }
-  const untouched = controlsInCategory.filter(
-    (c) => !c.assessment || c.assessment.assessedAt === null || c.assessment.assessedAt === undefined
-  );
+  const untouched = controlsInCategory.filter((c) => !isControlTouched(c, isR2));
   if (untouched.length > 0) {
     throw new Error(
       `Category "${legacyCategoryPrefix}" has ${untouched.length} control(s) never assessed (assessedAt is null): ${untouched

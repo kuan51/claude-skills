@@ -296,3 +296,147 @@ test('applyAssessment and markCategoryComplete are parameterized by certKey -- a
   const hitrustSession = afterComplete.interviewSessions.find((s) => s.certification === 'hitrust');
   assert.deepEqual(hitrustSession.domainsRemaining, ['01'], 'hitrust session must be untouched by the soc2 category completion');
 });
+
+const R2_CTRL_A = {
+  id: 'r2-01-01', domain: 'Information Protection Program', domainKey: '01',
+  topicLabel: 'Formal penetration testing', topicSummary: 'x',
+  citations: ['https://example.com'], applicabilityTier: 'universal', nonAuthoritative: true,
+};
+const R2_CTRL_B = {
+  id: 'r2-02-01', domain: 'Endpoint Protection', domainKey: '02',
+  topicLabel: 'BYOD baseline', topicSummary: 'y',
+  citations: ['https://example.com'], applicabilityTier: 'conditional',
+  conditionalOn: 'applies if BYOD is permitted', nonAuthoritative: true,
+};
+
+function seedR2State(stateJsonPath, controlDefs) {
+  const controls = {};
+  for (const def of controlDefs) {
+    controls[def.id] = defaultControl(def, 'public-topic-level', 'r2');
+  }
+  const state = {
+    certifications: {
+      hitrust: {
+        displayName: 'HITRUST CSF',
+        activeTier: 'r2',
+        tiers: {
+          r2: {
+            controlSetVersion: 'v11.8',
+            sourceAuthority: 'public-topic-level',
+            importedFrom: null,
+            importedAt: null,
+            controls,
+            archivedControls: {},
+          },
+        },
+      },
+    },
+    interviewSessions: [
+      {
+        certification: 'hitrust',
+        tier: 'r2',
+        startedAt: '2026-01-01T00:00:00.000Z',
+        lastUpdatedAt: '2026-01-01T00:00:00.000Z',
+        domainsCompleted: [],
+        domainsRemaining: Array.from(new Set(controlDefs.map((c) => c.domainKey))).sort(),
+        status: 'in_progress',
+      },
+    ],
+  };
+  fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2));
+}
+
+test('applyAssessment on r2 with dimension "implemented" writes only that dimension, leaving others not_assessed', () => {
+  const stateJsonPath = makeTempState();
+  seedR2State(stateJsonPath, [R2_CTRL_A]);
+
+  const result = applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', {
+    status: 'met', justification: 'Pentest completed and remediated.', dimension: 'implemented',
+  });
+
+  assert.equal(result.maturity.implemented.status, 'met');
+  assert.equal(result.maturity.implemented.justification, 'Pentest completed and remediated.');
+  assert.ok(result.maturity.implemented.assessedAt);
+  assert.equal(result.maturity.policy.status, 'not_assessed');
+  assert.equal(result.maturity.policy.assessedAt, null);
+  assert.equal(result.status, null, 'whole-control status stays null for a per-dimension call');
+});
+
+test('applyAssessment on r2 throws when marking "managed" met before "measured" is met', () => {
+  const stateJsonPath = makeTempState();
+  seedR2State(stateJsonPath, [R2_CTRL_A]);
+
+  assert.throws(
+    () => applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', {
+      status: 'met', justification: 'Fully managed.', dimension: 'managed',
+    }),
+    /[Mm]anaged.*[Mm]easured/
+  );
+
+  applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', {
+    status: 'met', justification: 'Measured via KPIs.', dimension: 'measured',
+  });
+  const result = applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', {
+    status: 'met', justification: 'Fully managed.', dimension: 'managed',
+  });
+  assert.equal(result.maturity.managed.status, 'met');
+});
+
+test('applyAssessment on r2 rejects a per-dimension not_applicable', () => {
+  const stateJsonPath = makeTempState();
+  seedR2State(stateJsonPath, [R2_CTRL_A]);
+  assert.throws(
+    () => applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'not_applicable', dimension: 'implemented' }),
+    /whole-control/
+  );
+});
+
+test('applyAssessment on r2 with no dimension engages whole-control not_applicable across all 5 dimensions', () => {
+  const stateJsonPath = makeTempState();
+  seedR2State(stateJsonPath, [R2_CTRL_A]);
+
+  const result = applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'not_applicable' });
+  assert.equal(result.status, 'not_applicable');
+  for (const dim of ['policy', 'procedure', 'implemented', 'measured', 'managed']) {
+    assert.equal(result.maturity[dim].status, 'not_applicable');
+    assert.ok(result.maturity[dim].assessedAt);
+  }
+});
+
+test('applyAssessment on r2 rejects a per-dimension call once whole-control not_applicable, until reversed', () => {
+  const stateJsonPath = makeTempState();
+  seedR2State(stateJsonPath, [R2_CTRL_A]);
+  applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'not_applicable' });
+
+  assert.throws(
+    () => applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'met', justification: 'x', dimension: 'implemented' }),
+    /reverse it first/
+  );
+
+  const reversed = applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'not_assessed' });
+  assert.equal(reversed.status, null);
+  assert.equal(reversed.maturity.implemented.status, 'not_assessed');
+
+  const afterReverse = applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', {
+    status: 'met', justification: 'Now implemented.', dimension: 'implemented',
+  });
+  assert.equal(afterReverse.maturity.implemented.status, 'met');
+});
+
+test('markCategoryComplete on r2 only requires the implemented dimension (or whole-control not_applicable) to be assessed', () => {
+  const stateJsonPath = makeTempState();
+  seedR2State(stateJsonPath, [R2_CTRL_A, R2_CTRL_B]);
+
+  assert.throws(() => markCategoryComplete(stateJsonPath, 'hitrust', 'r2', '01'), /never assessed/);
+
+  applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', { status: 'gap', dimension: 'implemented' });
+  const session = markCategoryComplete(stateJsonPath, 'hitrust', 'r2', '01');
+  assert.deepEqual(session.domainsCompleted, ['01']);
+
+  applyAssessment(stateJsonPath, 'hitrust', 'r2', 'r2-01-01', {
+    status: 'in_progress', currentState: 'draft policy', estimatedCloseness: 'half done', dimension: 'policy',
+  });
+  const stateAfter = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  const stillSession = stateAfter.interviewSessions.find((s) => s.tier === 'r2');
+  assert.deepEqual(stillSession.domainsCompleted, ['01'], 'deepening a dimension after the domain completes must not un-complete it');
+});
