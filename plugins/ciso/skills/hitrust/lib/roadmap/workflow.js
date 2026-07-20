@@ -67,16 +67,39 @@ const RESULT_SCHEMA = {
   },
 }
 
-// Builds the research prompt from whatever descriptive fields the control object carries beyond
-// `id` -- e1 controls carry relatedControlCode/relatedControlName/legacyCategoryPrefix/
-// justification/inProgressNotes, i1/r2 carry topicLabel/topicSummary/domain instead. Rather than
-// assuming one tier's exact field names, every non-id field is serialized as-is so this workflow
-// stays correct across tiers (and any future certification) without a code change.
+// Fail-closed allowlist of the ONLY control fields permitted to leave the local project and reach
+// this web-tool-holding research agent. Inlined verbatim from
+// skills/hitrust/lib/roadmap/sanitize-control.js because this Workflow-tool script has no
+// require/import access (see the top-of-file note) -- sanitize-control.js is the tested source of
+// truth and sanitize-control.test.js asserts this inline copy matches it, mirroring this repo's
+// R2_DIMENSIONS duplication-with-sync-comment precedent. Anything NOT listed here -- an org's
+// `justification`, its in-progress posture notes, any licensed `statementText` -- is org-private
+// and must never egress; the interview never sends them (see hitrust SKILL.md Roadmap step 2), and
+// this allowlist is the mechanical backstop if some caller ever passes them anyway.
+const SUBJECT_FIELDS = [
+  'relatedControlCode',
+  'relatedControlName',
+  'legacyCategoryPrefix',
+  'topicLabel',
+  'topicSummary',
+  'domain',
+  'domainKey',
+]
+
+// Builds the research prompt from ONLY the control's subject fields (see SUBJECT_FIELDS) -- the
+// public "what this control is about" metadata a vendor researcher needs. Field names vary by tier
+// (e1 uses relatedControlCode/relatedControlName; i1/r2 use topicLabel/topicSummary/domain), so
+// every present subject field is serialized as-is and absent ones are skipped, keeping this correct
+// across tiers and future certifications without a code change.
 function buildPrompt(control) {
-  const { id, ...descriptiveFields } = control || {}
+  const c = control || {}
+  const descriptiveFields = {}
+  for (const field of SUBJECT_FIELDS) {
+    if (c[field] !== undefined && c[field] !== null) descriptiveFields[field] = c[field]
+  }
   return [
     'You are researching budget-appropriate vendor, SaaS, and open-source solutions for a single security-certification control gap.',
-    `Control id: ${id}`,
+    `Control id: ${c.id}`,
     `Everything else known about this control (field names vary by certification/tier -- use whatever is present):\n${JSON.stringify(descriptiveFields, null, 2)}`,
     budgetGuidanceText,
     SOURCING_DISCIPLINE,

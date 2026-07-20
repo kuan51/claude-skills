@@ -51,7 +51,10 @@ and install the plugin.
 - **Nothing license-restricted ships in this repo.** HITRUST's verbatim requirement-statement
   wording lives only in your own local, gitignored project data, imported from your own MyCSF
   export — never hardcoded here.
-- **Nothing about your organization ever leaves your project.** Assessment status, justifications,
-  and vendor picks are local-only by default.
+- **Your organization's posture never leaves your project.** Assessment status, your written
+  justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
+  project data. The one flow that reaches the internet — background vendor research for gaps — is
+  sent *only* a control's generic public subject (its topic label/code and domain), never your
+  justifications or posture notes; a fail-closed allowlist in the research workflow enforces this.
 - **No "met" without a reason.** The interview mechanically refuses to record a control as met
   without a justification, or as in-progress without a current-state and estimated-closeness note.
