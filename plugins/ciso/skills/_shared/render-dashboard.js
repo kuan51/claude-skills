@@ -22,6 +22,10 @@ const path = require('path');
 // treated as open-ended), so it's safe to bake this list in.
 const STATUSES = ['not_assessed', 'met', 'in_progress', 'gap', 'not_applicable'];
 
+// r2's five PRISMA maturity dimensions. Duplicated locally per this codebase's established
+// cross-file-independence precedent (see reconcile-state-version.js).
+const MATURITY_DIMENSIONS = ['policy', 'procedure', 'implemented', 'measured', 'managed'];
+
 // Exact token the template must contain. Both sides (this file and
 // dashboard-template.html) are owned by this same change, so an exact,
 // space-free match is intentional -- if this ever fails to find the marker,
@@ -34,22 +38,51 @@ function emptyStatusCounts() {
   return counts;
 }
 
+// r2 controls carry assessment.maturity instead of a flat assessment.status. For rollup purposes
+// (gauges, byStatus counts), the "effective" status/assessedAt is always the Implemented
+// dimension -- the one dimension e1/i1 also solely measure -- so e1/i1/r2 domain gauges stay
+// directly comparable. See docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md.
+function effectiveStatus(assessment) {
+  if (assessment && assessment.maturity) {
+    return (assessment.maturity.implemented && assessment.maturity.implemented.status) || 'not_assessed';
+  }
+  return (assessment && assessment.status) || null;
+}
+function effectiveAssessedAt(assessment) {
+  if (assessment && assessment.maturity) {
+    return assessment.maturity.implemented && assessment.maturity.implemented.assessedAt;
+  }
+  return assessment && assessment.assessedAt;
+}
+
 // Aggregates one flat list of control objects into the counts/percentages
 // shape used for both the tier-level rollup and each per-domain rollup.
 function summarizeControls(controls) {
   const byStatus = emptyStatusCounts();
   let total = 0;
   let assessedCount = 0;
+  let maturityControlCount = 0;
+  let maturityAssessedDimensions = 0;
 
   for (const control of controls) {
     total += 1;
-    const status = control && control.assessment && control.assessment.status;
+    const assessment = control && control.assessment;
+
+    const status = effectiveStatus(assessment);
     if (status && Object.prototype.hasOwnProperty.call(byStatus, status)) {
       byStatus[status] += 1;
     }
-    const assessedAt = control && control.assessment && control.assessment.assessedAt;
+    const assessedAt = effectiveAssessedAt(assessment);
     if (assessedAt != null) {
       assessedCount += 1;
+    }
+
+    if (assessment && assessment.maturity) {
+      maturityControlCount += 1;
+      for (const dim of MATURITY_DIMENSIONS) {
+        const dimStatus = assessment.maturity[dim] && assessment.maturity[dim].status;
+        if (dimStatus && dimStatus !== 'not_assessed') maturityAssessedDimensions += 1;
+      }
     }
   }
 
@@ -62,8 +95,13 @@ function summarizeControls(controls) {
   const assessedPercent = total === 0
     ? 0
     : Math.round((100 * assessedCount) / total);
+  // Only meaningful for r2-shaped groups (controls carrying assessment.maturity); null for e1/i1,
+  // which have no per-dimension maturity to measure depth of.
+  const maturityDepthPercent = maturityControlCount === 0
+    ? null
+    : Math.round((100 * maturityAssessedDimensions) / (maturityControlCount * MATURITY_DIMENSIONS.length));
 
-  return { total, byStatus, applicableTotal, compliancePercent, assessedPercent };
+  return { total, byStatus, applicableTotal, compliancePercent, assessedPercent, maturityDepthPercent };
 }
 
 /**

@@ -192,6 +192,80 @@ test('computeRollups: groups by `domain` (not legacyCategoryPrefix) for topic-le
   assert.equal(tier.byDomain['Endpoint Protection'].total, 1);
 });
 
+function makeR2Control(overrides) {
+  const notAssessed = () => ({
+    status: 'not_assessed', justification: null,
+    inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: null,
+  });
+  return Object.assign(
+    {
+      id: 'r2-01-01', domain: 'Information Protection Program', domainKey: '01',
+      topicLabel: 'x', topicSummary: 'y', citations: ['https://example.com'],
+      applicabilityTier: 'universal', nonAuthoritative: true,
+      statementText: null, statementSource: 'public-topic-level',
+      assessment: {
+        status: null,
+        maturity: {
+          policy: notAssessed(), procedure: notAssessed(), implemented: notAssessed(),
+          measured: notAssessed(), managed: notAssessed(),
+        },
+      },
+      roadmap: { budgetTier: null, vendorResearch: [], recommendation: null, status: 'not_started' },
+    },
+    overrides
+  );
+}
+
+test('computeRollups: r2 controls compute compliance/assessed from the Implemented dimension only, plus a maturityDepthPercent gauge', () => {
+  const state = {
+    certifications: {
+      hitrust: {
+        displayName: 'HITRUST CSF',
+        activeTier: 'r2',
+        tiers: {
+          r2: {
+            controlSetVersion: 'v11.8',
+            sourceAuthority: 'public-topic-level',
+            controls: {
+              c0: makeR2Control({
+                id: 'c0',
+                assessment: {
+                  status: null,
+                  maturity: {
+                    policy: { status: 'met', justification: 'ok', inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: '2020-01-01T00:00:00.000Z' },
+                    procedure: { status: 'not_assessed', justification: null, inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: null },
+                    implemented: { status: 'met', justification: 'ok', inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: '2020-01-01T00:00:00.000Z' },
+                    measured: { status: 'not_assessed', justification: null, inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: null },
+                    managed: { status: 'not_assessed', justification: null, inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: null },
+                  },
+                },
+              }),
+              c1: makeR2Control({ id: 'c1' }),
+            },
+            archivedControls: {},
+          },
+        },
+      },
+    },
+  };
+
+  const rollups = computeRollups(state);
+  const tier = rollups.hitrust.r2;
+
+  assert.equal(tier.total, 2);
+  assert.equal(tier.byStatus.met, 1, 'compliance counts only the Implemented dimension');
+  assert.equal(tier.compliancePercent, 50);
+  assert.equal(tier.assessedPercent, 50);
+  // c0 has 2 of 5 dimensions assessed (policy, implemented); c1 has 0 of 5 -- (2+0)/(2*5) = 20%.
+  assert.equal(tier.maturityDepthPercent, 20);
+});
+
+test('computeRollups: maturityDepthPercent is null for e1/i1 tiers (no maturity shape)', () => {
+  const state = baseState({ c0: makeControl({ id: 'c0' }) });
+  const rollups = computeRollups(state);
+  assert.equal(rollups.hitrust.e1.maturityDepthPercent, null);
+});
+
 // ---------------------------------------------------------------------------
 // escapeForInlineScript / injectData -- XSS and $-pattern safety
 // ---------------------------------------------------------------------------
