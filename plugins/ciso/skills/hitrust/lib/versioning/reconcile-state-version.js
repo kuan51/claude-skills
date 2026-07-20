@@ -11,6 +11,11 @@ const { diffStructureVersions } = require('./diff-structure-versions.js');
 // object, so a naive field-by-field compare would flag it as a difference every time).
 const STATE_ONLY_FIELDS = ['assessment', 'roadmap', 'statementText', 'statementSource', 'needsReview'];
 
+// r2's five PRISMA maturity dimensions. Duplicated locally, per this file's own established
+// precedent of re-implementing register-tier.js's default shape independently (see the comment
+// on buildDefaultControl below).
+const R2_DIMENSIONS = ['policy', 'procedure', 'implemented', 'measured', 'managed'];
+
 function toStructuralEntry(control) {
   const entry = {};
   for (const key of Object.keys(control || {})) {
@@ -24,18 +29,34 @@ function toStructuralEntry(control) {
 // register-tier.js. Structural fields are copied opaquely from `entry` -- whatever shape the
 // tier's structure file uses (e1's relatedControlCode/relatedControlName/legacyCategoryPrefix, or
 // i1/r2's topicLabel/topicSummary/domain/citations/nonAuthoritative) -- rather than naming them
-// individually, since this script must not assume e1's exact field names.
-function buildDefaultControl(entry) {
+// individually, since this script must not assume e1's exact field names. `tierKey === 'r2'`
+// seeds the 5-dimension maturity object instead of a flat status, matching register-tier.js.
+function buildDefaultControl(entry, tierKey) {
+  const assessment = tierKey === 'r2'
+    ? {
+        status: null,
+        maturity: R2_DIMENSIONS.reduce((acc, dim) => {
+          acc[dim] = {
+            status: 'not_assessed',
+            justification: null,
+            inProgress: { currentState: null, estimatedCloseness: null },
+            assessedAt: null,
+          };
+          return acc;
+        }, {}),
+      }
+    : {
+        status: 'not_assessed',
+        justification: null,
+        inProgress: { currentState: null, estimatedCloseness: null },
+        assessedAt: null,
+      };
+
   return {
     ...entry,
     statementText: null,
     statementSource: 'structural-only',
-    assessment: {
-      status: 'not_assessed',
-      justification: null,
-      inProgress: { currentState: null, estimatedCloseness: null },
-      assessedAt: null,
-    },
+    assessment,
     roadmap: {
       budgetTier: null,
       vendorResearch: [],
@@ -88,7 +109,7 @@ function reconcileStateVersion(stateJsonPath, certKey, tierKey, newStructure) {
 
   // added: seed fresh defaults.
   for (const id of diff.added) {
-    tier.controls[id] = buildDefaultControl(newById.get(id));
+    tier.controls[id] = buildDefaultControl(newById.get(id), tierKey);
   }
 
   // removed: archive the entire existing control object -- never dropped.

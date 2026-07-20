@@ -291,3 +291,111 @@ test('reconcileStateVersion with certKey="soc2" reconciles soc2 itself and leave
   assert.equal(after.certifications.hitrust.tiers.e1.controls['CTRL-B'].needsReview, undefined, 'hitrust CTRL-B must not be flagged by a soc2 reconcile');
   assert.ok(after.certifications.hitrust.tiers.e1.controls['CTRL-C'], 'hitrust CTRL-C must not be archived by a soc2 reconcile');
 });
+
+function seededR2Control(entry, maturityOverrides) {
+  const maturity = {};
+  for (const dim of ['policy', 'procedure', 'implemented', 'measured', 'managed']) {
+    maturity[dim] = (maturityOverrides && maturityOverrides[dim]) || {
+      status: 'not_assessed', justification: null,
+      inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: null,
+    };
+  }
+  return {
+    ...entry,
+    statementText: null,
+    statementSource: 'public-topic-level',
+    assessment: { status: null, maturity },
+    roadmap: { budgetTier: null, vendorResearch: [], recommendation: null, status: 'not_started' },
+  };
+}
+
+function r2Entry(overrides) {
+  return Object.assign(
+    {
+      id: 'r2-01-01', domain: 'Information Protection Program', domainKey: '01',
+      topicLabel: 'x', topicSummary: 'y', citations: ['https://example.com'],
+      applicabilityTier: 'universal', nonAuthoritative: true,
+    },
+    overrides
+  );
+}
+
+test('reconcileStateVersion: an added r2 control is seeded with the not_assessed maturity shape', () => {
+  const stateJsonPath = makeTempState({
+    certifications: {
+      hitrust: {
+        displayName: 'HITRUST CSF',
+        activeTier: 'r2',
+        tiers: {
+          r2: {
+            controlSetVersion: 'v11.8',
+            sourceAuthority: 'public-topic-level',
+            importedFrom: null,
+            importedAt: null,
+            controls: { 'r2-01-01': seededR2Control(r2Entry()) },
+            archivedControls: {},
+          },
+        },
+      },
+    },
+    interviewSessions: [],
+  });
+
+  const newStructure = {
+    tier: 'r2',
+    controlSetVersion: 'v99.0.0-test',
+    controls: [
+      r2Entry(),
+      r2Entry({ id: 'r2-01-02', topicLabel: 'new topic', applicabilityTier: 'conditional', conditionalOn: 'applies if X' }),
+    ],
+  };
+
+  reconcileStateVersion(stateJsonPath, 'hitrust', 'r2', newStructure);
+
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  const added = state.certifications.hitrust.tiers.r2.controls['r2-01-02'];
+  assert.ok(added, 'r2-01-02 should have been added');
+  assert.equal(added.assessment.status, null);
+  assert.equal(added.assessment.maturity.implemented.status, 'not_assessed');
+  assert.equal(added.assessment.maturity.managed.assessedAt, null);
+});
+
+test('reconcileStateVersion: a removed r2 control is archived with its maturity data intact', () => {
+  const stateJsonPath = makeTempState({
+    certifications: {
+      hitrust: {
+        displayName: 'HITRUST CSF',
+        activeTier: 'r2',
+        tiers: {
+          r2: {
+            controlSetVersion: 'v11.8',
+            sourceAuthority: 'public-topic-level',
+            importedFrom: null,
+            importedAt: null,
+            controls: {
+              'r2-01-01': seededR2Control(r2Entry(), {
+                implemented: {
+                  status: 'met', justification: 'Done.',
+                  inProgress: { currentState: null, estimatedCloseness: null },
+                  assessedAt: '2026-01-01T00:00:00.000Z',
+                },
+              }),
+            },
+            archivedControls: {},
+          },
+        },
+      },
+    },
+    interviewSessions: [],
+  });
+
+  const newStructure = { tier: 'r2', controlSetVersion: 'v99.0.0-test', controls: [] };
+  reconcileStateVersion(stateJsonPath, 'hitrust', 'r2', newStructure);
+
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  assert.equal(state.certifications.hitrust.tiers.r2.controls['r2-01-01'], undefined);
+  const archived = state.certifications.hitrust.tiers.r2.archivedControls['r2-01-01'];
+  assert.ok(archived, 'r2-01-01 should be archived');
+  assert.equal(archived.assessment.maturity.implemented.status, 'met');
+  assert.equal(archived.assessment.maturity.implemented.justification, 'Done.');
+});
