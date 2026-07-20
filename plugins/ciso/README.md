@@ -30,13 +30,21 @@ and install the plugin.
    doesn't need to be a security-focused repo).
 2. Run `ciso:init` — scaffolds `docs/ciso/state.json` and `docs/ciso/dashboard.html`, and adds
    `docs/ciso/` to that project's `.gitignore` so nothing sensitive ever gets committed.
+   **Under the hood:** this is your scoreboard — a plain HTML file you open directly in any
+   browser (no server), and everything about your organization stays local to the project.
 3. Run `ciso:hitrust` — registers the HITRUST e1 control set (public-sourced, topic-level, v11.8),
    optionally imports your own licensed MyCSF export to get the exact requirement wording, then
    walks you through a control-by-control interview (inside a real plan-mode session, chunked so
-   you can stop and resume across multiple sittings).
+   you can stop and resume across multiple sittings). **Under the hood:** for each control it asks
+   *met / in progress / gap / not applicable / defer*, and mechanically refuses to record a "met"
+   without a written justification. As soon as a category turns up gaps, it kicks off
+   budget-appropriate vendor/tooling research **in the background** — so it never blocks the
+   interview — and merges the findings into the dashboard once they land.
 4. Open `docs/ciso/dashboard.html` in any browser — birds-eye progress across all tracked
-   certifications, and a drill-down into every control's status, justification, and (once you've
-   run the roadmap phase) vendor research.
+   certifications, and a drill-down into every control's status, justification, and (once the
+   roadmap research lands) vendor research. **Under the hood:** every sub-batch of answers
+   regenerates this file, so an interrupted session never loses more than the handful of controls
+   in flight.
 
 ## Guarantees
 
