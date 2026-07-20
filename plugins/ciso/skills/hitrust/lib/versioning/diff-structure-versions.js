@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { isDeepStrictEqual } = require('util');
 
 // Compares two structure files (the `{ tier, controlSetVersion, controls: [...] }` shape produced
 // for e1/i1/r2 -- see register-tier.js) and classifies every control id as added/removed/
@@ -57,32 +58,14 @@ function diffFields(oldEntry, newEntry) {
   fieldNames.delete('id');
   const changed = [];
   for (const field of fieldNames) {
-    if (!deepEqual(oldEntry ? oldEntry[field] : undefined, newEntry ? newEntry[field] : undefined)) {
+    if (!isDeepStrictEqual(oldEntry ? oldEntry[field] : undefined, newEntry ? newEntry[field] : undefined)) {
       changed.push(field);
     }
   }
   return changed.sort();
 }
 
-function deepEqual(a, b) {
-  if (a === b) return true;
-  if (typeof a !== typeof b) return false;
-  if (a === null || b === null) return a === b;
-  if (typeof a !== 'object') return false; // primitives already covered by a === b above
-
-  if (Array.isArray(a) || Array.isArray(b)) {
-    if (!Array.isArray(a) || !Array.isArray(b)) return false;
-    if (a.length !== b.length) return false;
-    return a.every((val, i) => deepEqual(val, b[i]));
-  }
-
-  const aKeys = Object.keys(a);
-  const bKeys = Object.keys(b);
-  if (aKeys.length !== bKeys.length) return false;
-  return aKeys.every((key) => deepEqual(a[key], b[key]));
-}
-
-module.exports = { diffStructureVersions, deepEqual };
+module.exports = { diffStructureVersions };
 
 if (require.main === module) {
   const [oldStructurePath, newStructurePath] = process.argv.slice(2);
