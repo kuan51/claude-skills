@@ -58,3 +58,12 @@ and install the plugin.
   justifications or posture notes; a fail-closed allowlist in the research workflow enforces this.
 - **No "met" without a reason.** The interview mechanically refuses to record a control as met
   without a justification, or as in-progress without a current-state and estimated-closeness note.
+
+## Architecture
+
+ciso is a **generic tracking core + one certification module** (today, HITRUST). The core —
+scaffolding, registration, the assessment gate, versioning, background vendor research, and the
+dashboard — is certification-agnostic and keyed by `certKey`; HITRUST supplies the control data, the
+org-facing flow, and its licensed-export import. To see the exact core/module boundary and the
+contract for adding a second certification (SOC 2, ISO 27001, …), read
+[ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
