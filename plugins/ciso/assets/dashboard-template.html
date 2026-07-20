@@ -257,6 +257,15 @@
     transition: transform 0.15s ease;
   }
   details[open] .disclosure { transform: rotate(90deg); }
+  /* Separate class (not .disclosure) for the maturity-block's own triangle: it nests inside the
+     category-group's <details>, and details[open] .disclosure is a descendant selector that would
+     otherwise rotate this nested triangle whenever the OUTER category-group is open, regardless of
+     whether this inner <details> itself is open. */
+  .maturity-disclosure {
+    display: inline-block; font-family: var(--mono); color: var(--paper-faint);
+    transition: transform 0.15s ease;
+  }
+  .maturity-block details[open] .maturity-disclosure { transform: rotate(90deg); }
   .cat-stats { font-family: var(--mono); font-size: 11.5px; color: var(--paper-faint); }
   details.category-group[open] > summary { border-bottom: 1px solid var(--line); }
 
@@ -314,6 +323,16 @@
   .roadmap-list { margin: 2px 0 0 20px; padding: 0; }
 
   .no-matches { padding: 16px 18px; color: var(--paper-faint); font-style: italic; }
+
+  .maturity-block { margin-top: 4px; }
+  .maturity-block summary {
+    cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
+  }
+  .maturity-block summary::-webkit-details-marker { display: none; }
+  .maturity-detail {
+    display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding-top: 8px;
+    border-top: 1px dotted var(--line-bright);
+  }
 
   ::selection { background: var(--gold-wash); color: var(--paper); }
 
@@ -492,9 +511,69 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     return '<div class="roadmap"><h4>Roadmap</h4>' + rows + '</div>';
   }
 
-  function renderControlRow(control) {
+  // r2's five PRISMA maturity dimensions. Duplicated locally, mirroring this project's
+  // established cross-file-independence convention (see reconcile-state-version.js).
+  const MATURITY_DIMENSIONS = ['policy', 'procedure', 'implemented', 'measured', 'managed'];
+  const MATURITY_LABELS = {
+    policy: 'Policy', procedure: 'Procedure', implemented: 'Implemented', measured: 'Measured', managed: 'Managed'
+  };
+
+  // r2 controls carry assessment.maturity (5 independently-assessed dimensions) instead of e1/i1's
+  // flat assessment.status/justification/inProgress/assessedAt. Every place this template shows
+  // "the" current assessment of a control (status tag, justification, in-progress detail,
+  // assessed-at stamp) uses r2's Implemented dimension -- the same one e1/i1 solely measure -- so
+  // the primary control-row view reads identically across all three tiers. The full 5-dimension
+  // breakdown is rendered separately, below, only for r2 controls.
+  function effectiveAssessment(control) {
     const assessment = control.assessment || {};
-    const status = assessment.status || 'not_assessed';
+    if (assessment.maturity) {
+      const impl = assessment.maturity.implemented || {};
+      return {
+        status: impl.status || 'not_assessed',
+        justification: impl.justification || null,
+        inProgress: impl.inProgress || { currentState: null, estimatedCloseness: null },
+        assessedAt: impl.assessedAt || null,
+      };
+    }
+    return {
+      status: assessment.status || 'not_assessed',
+      justification: assessment.justification || null,
+      inProgress: assessment.inProgress || { currentState: null, estimatedCloseness: null },
+      assessedAt: assessment.assessedAt || null,
+    };
+  }
+
+  // Renders the "N / 5 maturity dims" badge + expandable full breakdown for an r2 control. Only
+  // called when control.assessment.maturity exists.
+  function renderMaturityBreakdown(maturity) {
+    const assessedCount = MATURITY_DIMENSIONS.filter(function (dim) {
+      return maturity[dim] && maturity[dim].status !== 'not_assessed';
+    }).length;
+
+    let html = '<div class="maturity-block"><details><summary>';
+    html += '<span class="maturity-disclosure">&#9656;</span>';
+    html += '<span class="tag gold mono">' + assessedCount + ' / ' + MATURITY_DIMENSIONS.length + ' maturity dims</span>';
+    html += '</summary><div class="maturity-detail">';
+    for (const dim of MATURITY_DIMENSIONS) {
+      const d = maturity[dim] || { status: 'not_assessed' };
+      html += '<div class="roadmap-row"><span class="roadmap-label">' + esc(MATURITY_LABELS[dim]) + '</span>' + statusTag(d.status) + '</div>';
+      if (d.justification) {
+        html += '<div class="roadmap-row"><span class="roadmap-label"></span><span>' + esc(d.justification) + '</span></div>';
+      }
+      if (d.status === 'in_progress' && d.inProgress) {
+        const ip = d.inProgress;
+        html += '<div class="roadmap-row"><span class="roadmap-label"></span><span>' +
+          (ip.currentState ? esc(ip.currentState) : '<span class="placeholder">Not recorded</span>') + ' &mdash; ' +
+          (ip.estimatedCloseness ? esc(ip.estimatedCloseness) : '<span class="placeholder">Not recorded</span>') + '</span></div>';
+      }
+    }
+    html += '</div></details></div>';
+    return html;
+  }
+
+  function renderControlRow(control) {
+    const assessment = effectiveAssessment(control);
+    const status = assessment.status;
     const type = control.type || 'Unknown';
     const level = control.level != null ? control.level : null;
 
@@ -557,6 +636,10 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       html += '<div class="control-field mono"><span class="field-label" style="font-family:var(--mono)">Assessed at</span>' + esc(assessment.assessedAt) + '</div>';
     }
 
+    if (control.assessment && control.assessment.maturity) {
+      html += renderMaturityBreakdown(control.assessment.maturity);
+    }
+
     html += renderRoadmap(control.roadmap);
     html += '</div>';
     return html;
@@ -595,7 +678,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
 
   function renderOverviewCard(certKey, cert, tierKey, tier, rollup, state, cardIndex) {
     const isActive = cert.activeTier === tierKey;
-    const rollupSafe = rollup || { compliancePercent: 0, assessedPercent: 0, byDomain: {} };
+    const rollupSafe = rollup || { compliancePercent: 0, assessedPercent: 0, maturityDepthPercent: null, byDomain: {} };
 
     let html = '<div class="cert-card panel" style="animation-delay:' + (cardIndex * 70) + 'ms">';
     html += '<div class="tag-row">';
@@ -625,6 +708,11 @@ const CISO_DATA = /*__CISO_DATA__*/null;
 
     html += '<div class="gauge"><div class="gauge-label"><span>Assessed</span><b>' + rollupSafe.assessedPercent + '%</b></div>';
     html += '<div class="gauge-track"><div class="gauge-fill assessed" style="width:' + rollupSafe.assessedPercent + '%"></div></div></div>';
+
+    if (rollupSafe.maturityDepthPercent != null) {
+      html += '<div class="gauge"><div class="gauge-label"><span>Maturity depth</span><b>' + rollupSafe.maturityDepthPercent + '%</b></div>';
+      html += '<div class="gauge-track"><div class="gauge-fill assessed" style="width:' + rollupSafe.maturityDepthPercent + '%"></div></div></div>';
+    }
 
     const domainKeys = Object.keys(rollupSafe.byDomain || {}).sort();
     if (domainKeys.length > 0) {

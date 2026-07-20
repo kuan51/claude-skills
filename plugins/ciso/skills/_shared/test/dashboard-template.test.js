@@ -197,3 +197,104 @@ test('a rendered control row includes its id, control name, status tag, and just
   assert.ok(drilldownsHtml.includes('st-met'), 'the "met" status tag class must be present');
   assert.ok(drilldownsHtml.includes('Documented and reviewed annually.'), 'justification must be rendered');
 });
+
+function makeR2Control(overrides) {
+  const notAssessed = () => ({
+    status: 'not_assessed', justification: null,
+    inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: null,
+  });
+  return Object.assign(
+    {
+      id: 'r2-01-01', domain: 'Information Protection Program', domainKey: '01',
+      topicLabel: 'Formal penetration testing', topicSummary: 'Documented pentest program.',
+      citations: ['https://example.com'], applicabilityTier: 'universal', nonAuthoritative: true,
+      statementText: null, statementSource: 'public-topic-level',
+      assessment: {
+        status: null,
+        maturity: {
+          policy: notAssessed(), procedure: notAssessed(), implemented: notAssessed(),
+          measured: notAssessed(), managed: notAssessed(),
+        },
+      },
+      roadmap: { budgetTier: null, vendorResearch: [], recommendation: null, status: 'not_started' },
+    },
+    overrides
+  );
+}
+
+function baseR2State(controlsById) {
+  return {
+    schemaVersion: '1.0.0',
+    generatedAt: '2020-01-01T00:00:00.000Z',
+    organization: { name: 'Example Test Org' },
+    certifications: {
+      hitrust: {
+        displayName: 'HITRUST CSF',
+        activeTier: 'r2',
+        tiers: {
+          r2: {
+            controlSetVersion: 'v11.8',
+            sourceAuthority: 'public-topic-level',
+            importedFrom: null,
+            importedAt: null,
+            controls: controlsById,
+            archivedControls: {},
+          },
+        },
+      },
+    },
+    interviewSessions: [],
+  };
+}
+
+test('a shallow r2 control (only Implemented assessed) shows a 1 / 5 maturity dims badge', () => {
+  const notAssessed = () => ({
+    status: 'not_assessed', justification: null,
+    inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: null,
+  });
+  const state = baseR2State({
+    c1: makeR2Control({
+      assessment: {
+        status: null,
+        maturity: {
+          policy: notAssessed(),
+          procedure: notAssessed(),
+          implemented: { status: 'met', justification: 'Pentest completed.', inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: '2026-01-01T00:00:00.000Z' },
+          measured: notAssessed(),
+          managed: notAssessed(),
+        },
+      },
+    }),
+  });
+
+  const { drilldownsHtml } = renderClientSide(state);
+
+  assert.ok(drilldownsHtml.includes('1 / 5 maturity dims'), 'badge must show 1 of 5 dimensions assessed');
+  assert.ok(drilldownsHtml.includes('Pentest completed.'), "Implemented dimension's justification must render in the primary assessment field");
+  assert.ok(drilldownsHtml.includes('>Policy<'), 'the maturity breakdown must list the Policy dimension label');
+  assert.ok(drilldownsHtml.includes('>Managed<'), 'the maturity breakdown must list the Managed dimension label');
+});
+
+test('a fully deepened r2 control (all 5 dimensions assessed) shows a 5 / 5 maturity dims badge', () => {
+  const fullMaturity = {};
+  for (const dim of ['policy', 'procedure', 'implemented', 'measured', 'managed']) {
+    fullMaturity[dim] = {
+      status: 'met', justification: dim + ' satisfied.',
+      inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: '2026-01-01T00:00:00.000Z',
+    };
+  }
+  const state = baseR2State({ c1: makeR2Control({ assessment: { status: null, maturity: fullMaturity } }) });
+
+  const { drilldownsHtml } = renderClientSide(state);
+  assert.ok(drilldownsHtml.includes('5 / 5 maturity dims'));
+});
+
+test('the overview card shows a Maturity depth gauge for r2 but not for e1', () => {
+  const r2State = baseR2State({ c1: makeR2Control() });
+  const { overviewHtml: r2Overview } = renderClientSide(r2State);
+  assert.ok(r2Overview.includes('Maturity depth'), 'r2 overview card must show the maturity depth gauge');
+
+  const e1State = baseState({ c1: makeControl({ id: 'c1' }) });
+  const { overviewHtml: e1Overview } = renderClientSide(e1State);
+  assert.ok(!e1Overview.includes('Maturity depth'), 'e1 overview card must not show the maturity depth gauge');
+});
