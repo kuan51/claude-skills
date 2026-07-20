@@ -402,6 +402,17 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     });
   }
 
+  // sourceUrls arrive from background web research and citations from imported
+  // data -- only http(s) may become a clickable link. Anything else (e.g. a
+  // javascript: URL smuggled through research output) renders as inert text,
+  // so link safety never depends on browser javascript:-navigation policy.
+  function linkify(url) {
+    if (/^https?:\/\//i.test(String(url).trim())) {
+      return '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(url) + '</a>';
+    }
+    return esc(url);
+  }
+
   function humanize(token) {
     if (token == null || token === '') return '';
     return String(token)
@@ -490,9 +501,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
               if (v.estCost) line += ' &mdash; ' + esc(v.estCost);
               if (v.fitNotes) line += '<br>' + esc(v.fitNotes);
               if (Array.isArray(v.sourceUrls) && v.sourceUrls.length > 0) {
-                line += '<br>' + v.sourceUrls.map(function (u) {
-                  return '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(u) + '</a>';
-                }).join(' ');
+                line += '<br>' + v.sourceUrls.map(linkify).join(' ');
               }
               return '<li>' + line + '</li>';
             }
@@ -613,7 +622,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     if (Array.isArray(control.citations) && control.citations.length > 0) {
       html += '<div class="control-field"><span class="field-label">Sources</span><ul class="citation-list">';
       html += control.citations.map(function (url) {
-        return '<li><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(url) + '</a></li>';
+        return '<li>' + linkify(url) + '</li>';
       }).join('');
       html += '</ul></div>';
     }

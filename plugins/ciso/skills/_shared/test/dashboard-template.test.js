@@ -289,6 +289,30 @@ test('a fully deepened r2 control (all 5 dimensions assessed) shows a 5 / 5 matu
   assert.ok(drilldownsHtml.includes('5 / 5 maturity dims'));
 });
 
+test('only http(s) URLs become links; a javascript: URL renders as inert text in citations and vendor sourceUrls', () => {
+  const state = baseR2State({
+    c1: makeR2Control({
+      citations: ['https://example.com/real-source', 'javascript:alert(1)'],
+      roadmap: {
+        budgetTier: 'lean',
+        vendorResearch: [
+          { name: 'Acme Pentest Co', sourceUrls: ['javascript:alert(2)', 'https://acme.example/pricing'] },
+        ],
+        recommendation: null,
+        status: 'complete',
+      },
+    }),
+  });
+
+  const { drilldownsHtml } = renderClientSide(state);
+
+  assert.ok(drilldownsHtml.includes('href="https://example.com/real-source"'), 'https citation must render as a link');
+  assert.ok(drilldownsHtml.includes('href="https://acme.example/pricing"'), 'https sourceUrl must render as a link');
+  assert.ok(!drilldownsHtml.includes('href="javascript:'), 'a javascript: URL must never become an href');
+  assert.ok(drilldownsHtml.includes('javascript:alert(1)'), 'the rejected citation must still be visible as inert text');
+  assert.ok(drilldownsHtml.includes('javascript:alert(2)'), 'the rejected sourceUrl must still be visible as inert text');
+});
+
 test('the overview card shows a Maturity depth gauge for r2 but not for e1', () => {
   const r2State = baseR2State({ c1: makeR2Control() });
   const { overviewHtml: r2Overview } = renderClientSide(r2State);
