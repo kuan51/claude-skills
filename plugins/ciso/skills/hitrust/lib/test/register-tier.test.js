@@ -292,3 +292,45 @@ test('the bundled r2.v11.8.structure.json entries are concrete, assessable contr
     assert.match(control.id, /^r2-\d{2}-\d{2}$/, `${control.id} must use the r2-<domainKey>-<NN> id format`);
   }
 });
+
+test('defaultControl seeds an r2 control with a null top-level status and all 5 maturity dimensions not_assessed', () => {
+  const entry = {
+    id: 'r2-01-01', domain: 'Information Protection Program', domainKey: '01',
+    topicLabel: 'x', topicSummary: 'y', citations: ['https://example.com'],
+    applicabilityTier: 'universal', nonAuthoritative: true,
+  };
+  const control = defaultControl(entry, 'public-topic-level', 'r2');
+
+  assert.equal(control.assessment.status, null);
+  assert.deepEqual(
+    Object.keys(control.assessment.maturity).sort(),
+    ['implemented', 'managed', 'measured', 'policy', 'procedure']
+  );
+  for (const dim of Object.keys(control.assessment.maturity)) {
+    assert.deepEqual(control.assessment.maturity[dim], {
+      status: 'not_assessed', justification: null,
+      inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: null,
+    });
+  }
+});
+
+test('defaultControl without tierKey (e1/i1) keeps the existing flat assessment shape', () => {
+  const control = defaultControl({ id: 'CTRL-A', legacyCategoryPrefix: '01' });
+  assert.equal(control.assessment.status, 'not_assessed');
+  assert.equal(control.assessment.maturity, undefined);
+});
+
+test('registering the bundled r2.v11.8.structure.json seeds every control with the maturity shape', () => {
+  const structure = loadStructure(resolveStructurePath('r2'));
+  const stateJsonPath = makeTempState();
+  const result = registerTier(stateJsonPath, structure, 'hitrust', 'HITRUST CSF');
+  assert.equal(result.added, structure.controls.length);
+
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  const tier = state.certifications.hitrust.tiers.r2;
+  for (const id of Object.keys(tier.controls)) {
+    const control = tier.controls[id];
+    assert.equal(control.assessment.status, null, `${id} must have a null top-level status`);
+    assert.ok(control.assessment.maturity && control.assessment.maturity.implemented, `${id} must have a maturity.implemented dimension`);
+  }
+});

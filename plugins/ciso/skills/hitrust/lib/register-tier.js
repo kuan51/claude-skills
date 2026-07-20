@@ -10,25 +10,50 @@ function loadStructure(structureFilePath) {
   return JSON.parse(raw);
 }
 
+const R2_DIMENSIONS = ['policy', 'procedure', 'implemented', 'measured', 'managed'];
+
+function defaultMaturityDimension() {
+  return {
+    status: 'not_assessed',
+    justification: null,
+    inProgress: { currentState: null, estimatedCloseness: null },
+    assessedAt: null,
+  };
+}
+
 // Builds a control record with every field defaulted per the docs/ciso/state.json contract.
 // Preserves every field already on `entry` (id/type/level/relatedControlCode/relatedControlName/
-// legacyCategoryPrefix for e1; id/domain/topicLabel/topicSummary/citations/baselineOverlap/
+// legacyCategoryPrefix for e1; id/domain/topicLabel/topicSummary/citations/applicabilityTier/
 // nonAuthoritative for i1/r2's topic-level shape) via spread, rather than enumerating a fixed
 // e1-shaped field list -- this is what lets the same registration path work for both structure
 // shapes without the dashboard silently losing i1/r2-specific fields. `sourceAuthority` is the
 // tier's declared authority level ("structural-only" for e1, "public-topic-level" for i1/r2),
 // used as this control's initial `statementSource` too (they start in lockstep; e1's per-control
 // statementSource then advances independently to "imported" as export rows get matched).
-function defaultControl(entry, sourceAuthority) {
+// `tierKey === 'r2'` seeds a five-dimension `maturity` object (Policy/Procedure/Implemented/
+// Measured/Managed, each independently assessable) instead of a flat status -- r2 is the only
+// HITRUST tier that scores multiple PRISMA maturity dimensions; e1/i1 keep the flat shape since
+// they are officially Implemented-only. See docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md.
+function defaultControl(entry, sourceAuthority, tierKey) {
+  const assessment = tierKey === 'r2'
+    ? {
+        status: null,
+        maturity: R2_DIMENSIONS.reduce((acc, dim) => {
+          acc[dim] = defaultMaturityDimension();
+          return acc;
+        }, {}),
+      }
+    : {
+        status: 'not_assessed',
+        justification: null,
+        inProgress: { currentState: null, estimatedCloseness: null },
+        assessedAt: null,
+      };
+
   return Object.assign({}, entry, {
     statementText: null,
     statementSource: sourceAuthority || 'structural-only',
-    assessment: {
-      status: 'not_assessed',
-      justification: null,
-      inProgress: { currentState: null, estimatedCloseness: null },
-      assessedAt: null,
-    },
+    assessment,
     roadmap: {
       budgetTier: null,
       vendorResearch: [],
@@ -99,7 +124,7 @@ function registerTier(stateJsonPath, structure, certKey, certDisplayName) {
   let added = 0;
   for (const entry of resolvedStructure.controls) {
     if (!Object.prototype.hasOwnProperty.call(tier.controls, entry.id)) {
-      tier.controls[entry.id] = defaultControl(entry, tierSourceAuthority);
+      tier.controls[entry.id] = defaultControl(entry, tierSourceAuthority, tierKey);
       added += 1;
     }
   }
