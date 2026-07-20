@@ -6,7 +6,7 @@
   "compiledAt": "2026-07-19T00:00:00.000Z",
   "baselineRef": "i1.v11.8.structure.json",
   "maturityDimensions": ["Policy", "Procedure", "Implemented", "Measured", "Managed"],
-  "coverageNote": "r2 uses i1's full baseline plus risk-tailored additions determined by an organization's own risk-scoping factors (records volume, internet accessibility, regulatory exposure, BYOD, wireless use, third-party access, and more) -- there is no fixed r2 control list. The 46 entries below are a curated, non-authoritative sample proving out the r2 maturity-dimension schema (see docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md) and giving every one of the 19 assessment domains at least one topic -- still a small fraction of the real pool, which exceeds 2,000 requirement statements. Each entry carries applicabilityTier (\"universal\": applies to the typical organization pursuing r2 certification, vs. \"conditional\": depends on a specific risk factor, named in conditionalOn) so the dashboard/roadmap can surface near-universal topics first. r2 also scores multiple maturity dimensions per control (see maturityDimensions), not just Implemented -- see the design spec for how this plugin models that without overclaiming HITRUST's real weighted PRISMA scoring. Real r2 scope and maturity requirements are set by HITRUST's own risk-factor questionnaire (in MyCSF) or a licensed assessor.",
+  "coverageNote": "r2 uses i1's full baseline plus risk-tailored additions determined by an organization's own risk-scoping factors (records volume, internet accessibility, regulatory exposure, BYOD, wireless use, third-party access, and more) -- there is no fixed r2 control list. The 62 entries below are a curated, non-authoritative sample proving out the r2 maturity-dimension schema (see docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md) and giving every one of the 19 assessment domains at least one topic -- still a small fraction of the real pool, which exceeds 2,000 requirement statements. Each entry carries applicabilityTier (\"universal\": applies to the typical organization pursuing r2 certification, vs. \"conditional\": depends on a specific risk factor, named in conditionalOn) so the dashboard/roadmap can surface near-universal topics first. r2 also scores multiple maturity dimensions per control (see maturityDimensions), not just Implemented -- see the design spec for how this plugin models that without overclaiming HITRUST's real weighted PRISMA scoring. Real r2 scope and maturity requirements are set by HITRUST's own risk-factor questionnaire (in MyCSF) or a licensed assessor.",
   "controls": [
     {
       "id": "r2-01-01",
@@ -593,6 +593,211 @@
       "citations": ["https://www.upguard.com/blog/mass-data-security-law"],
       "applicabilityTier": "conditional",
       "conditionalOn": "applies to organizations handling personal information of Massachusetts residents under 201 CMR 17.00",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-09-02",
+      "domain": "Transmission Protection",
+      "domainKey": "09",
+      "topicLabel": "TLS 1.3 with forward secrecy for data in transit",
+      "topicSummary": "Beyond a general 'TLS 1.2 or higher' floor for encrypting sensitive data in transit, some organizations (particularly those at higher HITRUST implementation levels due to regulatory exposure or data sensitivity) tighten configuration to require TLS 1.3 with forward secrecy and disable deprecated protocols/ciphers, going further than i1's general in-transit encryption baseline.",
+      "citations": [
+        "https://www.island.io/content/compliance/hitrust",
+        "https://censinet.com/perspectives/hipaa-encryption-vs-other-standards-clinical-apps"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations at higher HITRUST implementation levels (driven by higher sensitive-data volume or regulatory exposure, e.g., healthcare/telehealth or federal data) where transmission-protocol configuration is tightened beyond the general TLS 1.2 floor",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-03-03",
+      "domain": "Portable Media Security",
+      "domainKey": "03",
+      "topicLabel": "FedRAMP/NIST 800-53 media sanitization rigor",
+      "topicSummary": "Where FedRAMP is brought into r2 scope as an authoritative source, portable/removable media handling must meet the more prescriptive NIST 800-53 Media Protection (MP) family expectations -- sanitization techniques (clearing, purging, cryptographic erasure, or destruction) scaled to information sensitivity before disposal, release, or reuse -- beyond i1's general encryption-and-business-justification baseline for removable media.",
+      "citations": [
+        "https://www.fedramp.gov/2026/reference/controls/media-protection/",
+        "https://csf.tools/reference/nist-sp-800-53/r5/mp/mp-6/"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations that select FedRAMP as an applicable authoritative source (e.g., cloud service providers serving federal agencies)",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-03-04",
+      "domain": "Portable Media Security",
+      "domainKey": "03",
+      "topicLabel": "HIPAA-driven media accountability and disposal controls",
+      "topicSummary": "For organizations bringing HIPAA into r2 scope, portable media and hardware handling ePHI must follow the Security Rule's Device and Media Controls: a maintained record of media movement and custody, a retrievable backup of ePHI made before equipment is moved, and defined procedures for final disposal and removal of ePHI before media reuse -- a more specific compliance regimen layered onto i1's general removable-media baseline.",
+      "citations": ["https://www.law.cornell.edu/cfr/text/45/164.310"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations that select HIPAA as an applicable regulatory factor",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-05-03",
+      "domain": "Wireless Security",
+      "domainKey": "05",
+      "topicLabel": "PCI DSS rogue access point scanning",
+      "topicSummary": "For organizations handling payment card data, at least quarterly scanning or an equivalent wireless intrusion detection capability must identify unauthorized/rogue wireless access points near the cardholder data environment -- an obligation that PCI DSS guidance holds applies even where the organization does not use wireless technology or formally prohibits it, a detection-focused topic distinct from r2-05-01/r2-05-02's authentication and segmentation controls.",
+      "citations": [
+        "https://www.accessagility.com/blog/pci-data-security-standard-dss-and-rogue-wifi-wireless-access-points",
+        "https://pcidssguide.com/pci-dss-rogue-wireless-access-point-protection/"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations that store, process, or transmit payment card (cardholder) data subject to PCI DSS",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-05-04",
+      "domain": "Wireless Security",
+      "domainKey": "05",
+      "topicLabel": "FedRAMP/NIST 800-53 wireless access authorization rigor",
+      "topicSummary": "Where FedRAMP is brought into r2 scope, wireless access must meet NIST 800-53's AC-18 expectations: documented configuration and connection requirements per wireless technology type, formal pre-connection authorization, and (at higher baselines) disabling of unused wireless capability and antenna/power calibration to limit signal bleed outside organization-controlled space -- a more prescriptive authorization regimen than i1's general wireless-use baseline.",
+      "citations": ["https://www.fedramp.gov/2026/reference/controls/access-control/"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations that select FedRAMP as an applicable authoritative source (e.g., cloud service providers serving federal agencies)",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-10-03",
+      "domain": "Password Management",
+      "domainKey": "10",
+      "topicLabel": "Compromised/breached-password screening at reset",
+      "topicSummary": "New or changed passwords are checked against a blocklist of known-compromised, breached, or commonly-guessed values (aligned to NIST SP 800-63B Revision 4's screening mandate) and rejected if found, extending r2's password topics beyond a static composition/rotation policy into an ongoing, actively-verified screening practice.",
+      "citations": ["https://www.enzoic.com/blog/nist-sp-800-63b-rev4/"],
+      "applicabilityTier": "universal",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-10-04",
+      "domain": "Password Management",
+      "domainKey": "10",
+      "topicLabel": "Regulatory-source-specific password parameter sets",
+      "topicSummary": "Where a specific authoritative source with its own prescriptive password rules is brought into r2 scope -- for example CMS's Acceptable Risk Safeguards, which tiers minimum length, complexity, and reuse-history rules by system impact level, or IRS Publication 1075 -- password parameters for in-scope systems are set to that source's documented specifications rather than a single organization-wide baseline policy.",
+      "citations": ["https://security.cms.gov/learn/password-requirements"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies where a specific authoritative source (e.g., CMS ARS, IRS Publication 1075) with its own prescriptive password requirements is in scope",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-13-03",
+      "domain": "Education, Training, and Awareness",
+      "domainKey": "13",
+      "topicLabel": "Simulated phishing testing with tracked metrics",
+      "topicSummary": "Beyond delivering awareness training content, a recurring simulated-phishing testing program tracks metrics such as click rate, report rate, and repeat-offender trends over successive campaigns and feeds them back into training -- supporting r2's Measured maturity dimension in a way that goes past i1's Implemented-only expectation that training simply occurred.",
+      "citations": ["https://www.adaptivesecurity.com/blog/measure-phishing-simulation-program"],
+      "applicabilityTier": "universal",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-13-04",
+      "domain": "Education, Training, and Awareness",
+      "domainKey": "13",
+      "topicLabel": "Safe-AI-use awareness content for in-scope AI systems",
+      "topicSummary": "For organizations bringing AI systems into r2 scope (for example through HITRUST's AI Security Assessment ai1/ai2 add-on or AI Risk Management Assessment), awareness content should be extended to cover safe and permitted use of AI tools and the data-leakage risk of unsanctioned 'shadow AI' use -- a complement to r2-13-02's focus on resisting AI-driven social engineering, since this topic instead addresses the workforce's own use of AI tools rather than defending against AI-powered attacks.",
+      "citations": [
+        "https://www.ispartnersllc.com/blog/hitrust-ai-risk-management-program/",
+        "https://hitrustalliance.net/assessments-and-certifications/airiskmanagementassessment"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations bringing AI systems into scope (e.g., via HITRUST's AI Security Assessment or AI Risk Management Assessment)",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-16-03",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Offshore data residency for recovery sites",
+      "topicSummary": "For organizations whose scoped operations are classified as 'offshore' under HITRUST's geographic risk factor (anything outside the U.S., including Canada and Mexico), alternate processing/storage sites and disaster-recovery arrangements are expected to carry additional documented cross-border data-handling and accountability considerations, beyond i1's baseline expectation of simply arranging an alternate site.",
+      "citations": [
+        "https://help.mycsf.net/factors/",
+        "https://www.compliancepoint.com/healthcare/scoping-your-hitrust-assessment/"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations whose scoped systems/facilities are classified as offshore (outside the U.S., including Canada/Mexico) under HITRUST's geographic risk factor",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-16-04",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Cloud-native multi-region recovery with defined RTO/RPO",
+      "topicSummary": "For organizations whose in-scope systems are cloud-hosted, disaster-recovery arrangements are expected to replicate backups to a separate cloud region or account and operate against documented recovery time and recovery point objectives, an automated and cloud-specific extension of i1's baseline alternate-site and periodic-restoration-testing expectations.",
+      "citations": [
+        "https://arpio.io/building-for-cloud-compliance-and-disaster-recovery/",
+        "https://dashsdk.com/resource/achieving-disaster-recovery-compliance-for-aws-workloads/"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies if in-scope systems are cloud-hosted",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-17-03",
+      "domain": "Risk Management",
+      "domainKey": "17",
+      "topicLabel": "AI-specific risk incorporated into the risk management program",
+      "topicSummary": "Organizations that use, develop, or operate AI tools within scope are expected to fold AI-specific risk -- how AI systems are governed and whether risk tolerance and mitigation are commensurate with the AI in use -- into the organization's risk assessment process, reflecting HITRUST's newer AI Risk Management Assessment (aligned to NIST/ISO AI risk-management guidance) and, for certifiable AI Security assessments, risk management evaluated alongside other domains when paired with a core r2 assessment.",
+      "citations": [
+        "https://hitrustalliance.net/ai-hub",
+        "https://blog.rsisecurity.com/what-are-the-hitrust-ai-security-assessments/"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations that use, develop, or operate AI systems within the assessed environment",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-17-04",
+      "domain": "Risk Management",
+      "domainKey": "17",
+      "topicLabel": "Formal third-party inherent-risk tiering in the risk assessment",
+      "topicSummary": "Where the organization depends materially on third-party vendors, its risk assessment methodology is expected to formally tier vendors by inherent risk -- based on factors like data sensitivity/volume handled, fourth-party involvement, and business impact of compromise -- and match the level of assurance sought from each vendor to that tier, rather than applying a single uniform vendor-review approach.",
+      "citations": [
+        "https://hitrustalliance.net/blog/using-the-hitrust-framework-to-manage-and-mitigate-third-party-risks",
+        "https://censinet.com/perspectives/hitrust-certification-third-party-risk-assessment-role"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations with material dependence on third-party vendors that handle sensitive data or perform in-scope functions",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-17-05",
+      "domain": "Risk Management",
+      "domainKey": "17",
+      "topicLabel": "FedRAMP/NIST 800-53 risk-assessment rigor",
+      "topicSummary": "Where FedRAMP is brought into r2 scope as an authoritative source, the risk assessment process is expected to meet the more prescriptive NIST 800-53 Risk Assessment family expectations, including formal system security categorization, vulnerability scanning integrated into the assessment, and supply-chain/threat-intelligence-informed risk identification, beyond i1's more general risk-assessment baseline.",
+      "citations": [
+        "https://www.fedramp.gov/2026/reference/controls/risk-assessment/"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations that select FedRAMP as an applicable authoritative source (e.g., cloud service providers serving federal agencies)",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-18-03",
+      "domain": "Physical and Environmental Security",
+      "domainKey": "18",
+      "topicLabel": "PCI DSS physical-security rigor for the cardholder data environment",
+      "topicSummary": "For organizations handling payment card data, physical spaces housing the cardholder data environment are expected to distinguish visitor badges from staff credentials, escort visitors in sensitive areas, and retain visitor logs and video surveillance covering sensitive entry points for a minimum retention period (commonly three months), a more prescriptive, PCI DSS-sourced regimen layered onto i1's general visitor/vendor access-tracking baseline.",
+      "citations": [
+        "https://pcidssguide.com/pci-dss-requirement-9-through-physical-security/",
+        "https://blog.rsisecurity.com/restricting-physical-access-to-cardholder-data-pci-dss-req-9/"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations that store, process, or transmit payment card (cardholder) data subject to PCI DSS",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "r2-18-04",
+      "domain": "Physical and Environmental Security",
+      "domainKey": "18",
+      "topicLabel": "CMS ARS infrastructure and emergency-power protection rigor",
+      "topicSummary": "Where CMS ARS (Acceptable Risk Safeguards) is brought into r2 scope as an authoritative source, facilities are expected to meet its more prescriptive physical/environmental protection expectations -- including restricted access to power and HVAC infrastructure, clearly marked emergency power-off switches, UPS and generator-backed emergency power, and monitored fire-detection/suppression systems -- beyond i1's more general facility-security baseline.",
+      "citations": [
+        "https://security.cms.gov/policy-guidance/physical-environmental-protection-pe"
+      ],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations that select CMS ARS as an applicable authoritative source (e.g., Medicare Administrative Contractors or CMS data-handling systems)",
       "nonAuthoritative": true
     }
   ]
