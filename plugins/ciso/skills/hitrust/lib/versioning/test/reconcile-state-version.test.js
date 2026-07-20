@@ -258,6 +258,22 @@ test('reconcileStateVersion: throws before writing anything if certifications.hi
   assert.throws(() => reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE), /not registered/);
 });
 
+test('reconcileStateVersion: throws before writing anything if the tier was populated from a licensed import', () => {
+  const initial = buildInitialState();
+  initial.certifications.hitrust.tiers.e1.sourceAuthority = 'imported';
+  initial.certifications.hitrust.tiers.e1.importedFrom = 'export.xlsx';
+  const stateJsonPath = makeTempState(initial);
+  const before = fs.readFileSync(stateJsonPath, 'utf8');
+
+  assert.throws(
+    () => reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE),
+    /licensed import/
+  );
+
+  const after = fs.readFileSync(stateJsonPath, 'utf8');
+  assert.equal(after, before, 'an imported tier must be left byte-identical, not partially reconciled');
+});
+
 test('reconcileStateVersion is parameterized by certKey -- reconciling one certification does not touch another', () => {
   const state = buildInitialState();
   state.certifications.soc2 = seedSoc2Tier();

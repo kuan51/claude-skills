@@ -88,6 +88,11 @@ function reconcileStateVersion(stateJsonPath, certKey, tierKey, newStructure) {
       `Tier ${certKey}/${tierKey} is not registered in state.json -- nothing to reconcile. Run register-tier.js first.`
     );
   }
+  if (tier.sourceAuthority === 'imported') {
+    throw new Error(
+      `Tier ${certKey}/${tierKey} was populated from a licensed import (real MyCSF Unique IDs) -- reconciling against the bundled public structure (synthetic ids) would match nothing and misclassify every imported control as removed. Import a new licensed export for this version instead of reconciling.`
+    );
+  }
   if (!tier.controls) tier.controls = {};
   if (!tier.archivedControls) tier.archivedControls = {};
 
