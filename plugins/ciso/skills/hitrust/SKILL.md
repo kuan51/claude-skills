@@ -1,6 +1,7 @@
 ---
 name: hitrust
 description: Use when registering HITRUST CSF controls (e1, i1, or r2) into ciso tracking, importing a MyCSF requirements export, running the control-by-control assessment interview, researching vendor solutions for gaps, or reconciling a HITRUST framework version upgrade.
+allowed-tools: Read, Write, Bash, AskUserQuestion, EnterPlanMode, ExitPlanMode, Workflow
 ---
 
 # HITRUST CSF

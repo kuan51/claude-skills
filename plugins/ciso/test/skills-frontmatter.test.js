@@ -78,4 +78,14 @@ for (const file of skillFiles) {
       );
     }
   });
+
+  test(`${dirName}/SKILL.md declares a least-privilege allowed-tools list`, () => {
+    const fields = parseFrontmatter(fs.readFileSync(file, 'utf8'));
+    // allowed-tools is additive pre-approval (tools usable without a permission prompt during the
+    // invoking turn), not a restriction -- so declaring it can only reduce prompts, never break a
+    // flow. Every ciso skill declares the minimal set it actually drives so its scripted node runs
+    // don't each prompt. See https://code.claude.com/docs/en/skills#pre-approve-tools-for-a-skill
+    const tools = fields['allowed-tools'];
+    assert.ok(tools && tools.trim().length > 0, `${dirName}: must declare a non-empty allowed-tools list`);
+  });
 }

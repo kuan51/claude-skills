@@ -1,6 +1,7 @@
 ---
 name: init
 description: Use when setting up ciso security-certification tracking in a project for the first time, or when its state file or dashboard is missing and needs to be scaffolded.
+allowed-tools: Read, Bash, AskUserQuestion
 ---
 
 # CISO Init
