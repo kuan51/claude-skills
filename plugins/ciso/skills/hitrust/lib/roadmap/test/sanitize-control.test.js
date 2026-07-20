@@ -74,4 +74,18 @@ test('workflow.js inlines the same SUBJECT_FIELDS list', () => {
     SUBJECT_FIELDS,
     'workflow.js SUBJECT_FIELDS must stay in sync with sanitize-control.js'
   );
+
+  // Matching the list is not enough -- buildPrompt must actually USE it. workflow.js can't be
+  // require()'d (ESM + injected Workflow globals), so pin its behavior by source: it must iterate
+  // SUBJECT_FIELDS and must NOT reintroduce the old fail-open spread. Without this, a future edit
+  // could restore `...descriptiveFields` while leaving the const declared -- this test would stay
+  // green and posture prose would silently egress again (the exact bug this change fixed).
+  assert.ok(
+    workflowSrc.includes('for (const field of SUBJECT_FIELDS)'),
+    'buildPrompt must iterate SUBJECT_FIELDS, not spread every field'
+  );
+  assert.ok(
+    !workflowSrc.includes('...descriptiveFields'),
+    'workflow.js must not spread all non-id fields (the removed fail-open egress path)'
+  );
 });
