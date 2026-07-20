@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Defense-in-depth: the data island below is built from a local, org-controlled
+     state.json, but is still untrusted free text (justifications, imported
+     requirement wording, etc). Allow only inline script/style (this file is
+     fully self-contained) and block all network egress, so even a rendering
+     bug here cannot exfiltrate anything. The regenerator that fills in
+     CISO_DATA also escapes < > & in the JSON before substitution -- see
+     render-dashboard.js for why that alone isn't enough and this file's own
+     esc() helper is still required for everything written into the DOM. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>Security Certification Dashboard</title>
+<style>
+  :root {
+    --ink: #0b0f14;
+    --ink-raised: #10161d;
+    --ink-inset: #0e1319;
+    --line: #263140;
+    --line-bright: #3d5066;
+    --paper: #e9e3d4;
+    --paper-dim: #93a0ac;
+    --paper-faint: #5a6674;
+    --gold: #d7a44b;
+    --gold-bright: #eac06e;
+    --gold-wash: rgba(215, 164, 75, 0.12);
+
+    --c-met: #5fa583;
+    --c-met-wash: rgba(95, 165, 131, 0.14);
+    --c-progress: #d7a44b;
+    --c-progress-wash: rgba(215, 164, 75, 0.14);
+    --c-gap: #c96652;
+    --c-gap-wash: rgba(201, 102, 82, 0.14);
+    --c-na: #6d7a8c;
+    --c-na-wash: rgba(109, 122, 140, 0.14);
+    --c-unassessed: #4a5568;
+
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+    --mono: "Cascadia Code", "SF Mono", ui-monospace, Consolas, "Liberation Mono", Menlo, monospace;
+
+    --cut: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { color-scheme: dark; }
+
+  body {
+    margin: 0;
+    color: var(--paper);
+    font: 16px/1.55 var(--serif);
+    background-color: var(--ink);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(147, 160, 172, 0.055) 0, rgba(147, 160, 172, 0.055) 1px, transparent 1px, transparent 34px),
+      repeating-linear-gradient(90deg, rgba(147, 160, 172, 0.055) 0, rgba(147, 160, 172, 0.055) 1px, transparent 1px, transparent 34px),
+      radial-gradient(ellipse 900px 500px at 15% -10%, var(--gold-wash), transparent 60%);
+    background-attachment: fixed, fixed, fixed;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  a { color: var(--gold-bright); text-decoration-color: rgba(234, 192, 110, 0.4); }
+  a:hover { text-decoration-color: var(--gold-bright); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin: 0 0 6px;
+  }
+
+  /* ---------- Masthead ---------- */
+
+  header.masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 40px clamp(20px, 4vw, 56px) 28px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  header.masthead::before {
+    content: '';
+    position: absolute; left: 0; right: 0; top: 0;
+    height: 3px;
+    background: repeating-linear-gradient(90deg, var(--gold) 0 22px, transparent 22px 30px);
+    opacity: 0.55;
+  }
+  header.masthead h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+  .masthead-stamp {
+    border: 1px solid var(--line-bright);
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--paper-dim);
+    line-height: 1.7;
+    text-align: right;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
+  }
+  .masthead-stamp .stamp-org { color: var(--paper); font-family: var(--serif); font-size: 14px; }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 32px clamp(20px, 4vw, 56px) 80px; }
+
+  /* ---------- Empty state ---------- */
+
+  .empty-state {
+    border: 1px dashed var(--line-bright);
+    padding: 48px 32px;
+    text-align: center;
+    color: var(--paper-dim);
+    background: var(--ink-raised);
+  }
+  .empty-state code {
+    font-family: var(--mono); background: var(--gold-wash); color: var(--gold-bright);
+    padding: 2px 7px; border: 1px solid rgba(215, 164, 75, 0.35);
+  }
+
+  /* ---------- Panels (clipped-corner "instrument" cards) ---------- */
+
+  .panel {
+    background: var(--ink-raised);
+    border: 1px solid var(--line);
+    clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+  }
+
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  section.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+    margin-bottom: 32px;
+  }
+  .cert-card {
+    padding: 20px 22px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+    animation: rise-in 0.5s ease-out backwards;
+  }
+  .cert-card h2 { margin: 0; font-size: 19px; font-weight: 400; }
+  .cert-card .subline { color: var(--paper-dim); font-size: 13px; }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 8px; border: 1px solid var(--line-bright); color: var(--paper-dim);
+    white-space: nowrap;
+  }
+  .tag.gold { border-color: var(--gold); color: var(--gold-bright); background: var(--gold-wash); }
+
+  .status-tag { border-width: 1px; border-style: solid; }
+  .status-tag.st-met            { color: var(--c-met);      border-color: var(--c-met);      background: var(--c-met-wash); }
+  .status-tag.st-in_progress    { color: var(--c-progress); border-color: var(--c-progress); background: var(--c-progress-wash); }
+  .status-tag.st-gap            { color: var(--c-gap);      border-color: var(--c-gap);      background: var(--c-gap-wash); }
+  .status-tag.st-not_applicable { color: var(--c-na);       border-color: var(--c-na);       background: var(--c-na-wash); }
+  .status-tag.st-not_assessed   { color: var(--paper-faint); border-color: var(--line-bright); border-style: dashed; }
+
+  /* ---------- Gauges ---------- */
+
+  .gauge { font-size: 12px; }
+  .gauge-label { display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--paper-dim); }
+  .gauge-label b { font-family: var(--mono); font-weight: 400; color: var(--paper); }
+  .gauge-track {
+    position: relative; height: 9px; background: var(--ink-inset);
+    border: 1px solid var(--line); overflow: hidden;
+  }
+  .gauge-track::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(0,0,0,0.35) calc(10% - 1px) 10%);
+  }
+  .gauge-fill { height: 100%; transition: width 0.4s ease; }
+  .gauge-fill.compliance { background: linear-gradient(90deg, #3d7c5f, var(--c-met)); }
+  .gauge-fill.assessed { background: linear-gradient(90deg, #b3852f, var(--gold)); }
+
+  .domain-bars { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+  .domain-bar-link { text-decoration: none; color: inherit; display: block; }
+  .domain-bar-link .gauge-label { transition: color 0.15s ease; }
+  .domain-bar-link:hover .gauge-label { color: var(--gold-bright); }
+  .domain-bar-link:hover .gauge-label b { color: var(--gold-bright); }
+
+  .session-chip {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.02em;
+    padding: 5px 10px; border: 1px solid var(--line-bright); color: var(--paper-dim);
+    width: fit-content;
+  }
+  .session-chip.done { border-color: var(--c-met); color: var(--c-met); }
+
+  .jump-link { font-size: 13px; margin-top: 2px; }
+
+  /* ---------- Filter toolbar ---------- */
+
+  .control-bar {
+    padding: 14px 18px;
+    display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end;
+    margin-bottom: 24px;
+    position: sticky; top: 12px; z-index: 3;
+    backdrop-filter: blur(6px);
+    background: rgba(16, 22, 29, 0.92);
+  }
+  .control-bar label {
+    display: flex; flex-direction: column; gap: 5px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--paper-faint);
+  }
+  .control-bar select, .control-bar input {
+    font: 14px var(--serif);
+    padding: 7px 9px; border: 1px solid var(--line-bright);
+    background: var(--ink-inset); color: var(--paper); min-width: 160px;
+  }
+  .control-bar select:focus, .control-bar input:focus {
+    outline: none; border-color: var(--gold);
+  }
+  .control-bar .search-field { flex: 1 1 240px; }
+  .control-bar .search-field input { width: 100%; font-family: var(--mono); font-size: 13px; }
+  .filter-count { font-family: var(--mono); font-size: 12px; color: var(--paper-faint); margin-left: auto; align-self: center; }
+
+  /* ---------- Drill-down sections ---------- */
+
+  .cert-section { margin-bottom: 40px; }
+  .cert-section > h2 {
+    font-size: 20px; font-weight: 400;
+    border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 16px;
+  }
+
+  details.category-group {
+    border: 1px solid var(--line);
+    margin-bottom: 10px;
+    background: var(--ink-raised);
+  }
+  details.category-group > summary {
+    padding: 13px 18px; cursor: pointer; list-style: none;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  details.category-group > summary::-webkit-details-marker { display: none; }
+  .cat-title { display: flex; align-items: baseline; gap: 12px; }
+  .cat-num {
+    font-family: var(--mono); font-size: 22px; color: var(--gold-bright);
+    min-width: 2ch; text-align: right;
+  }
+  .cat-name { font-size: 15px; }
+  .disclosure {
+    display: inline-block; font-family: var(--mono); color: var(--paper-faint);
+    transition: transform 0.15s ease;
+  }
+  details[open] .disclosure { transform: rotate(90deg); }
+  /* Separate class (not .disclosure) for the maturity-block's own triangle: it nests inside the
+     category-group's <details>, and details[open] .disclosure is a descendant selector that would
+     otherwise rotate this nested triangle whenever the OUTER category-group is open, regardless of
+     whether this inner <details> itself is open. */
+  .maturity-disclosure {
+    display: inline-block; font-family: var(--mono); color: var(--paper-faint);
+    transition: transform 0.15s ease;
+  }
+  .maturity-block details[open] .maturity-disclosure { transform: rotate(90deg); }
+  .cat-stats { font-family: var(--mono); font-size: 11.5px; color: var(--paper-faint); }
+  details.category-group[open] > summary { border-bottom: 1px solid var(--line); }
+
+  .control-list { padding: 4px 0; }
+
+  .control-row {
+    display: flex; flex-direction: column; gap: 7px;
+    padding: 14px 18px 14px 22px;
+    border-bottom: 1px solid var(--line);
+    border-left: 3px solid var(--c-unassessed);
+  }
+  .control-row:last-child { border-bottom: none; }
+  .control-row.hidden-by-filter { display: none; }
+  .control-row[data-status="met"]            { border-left-color: var(--c-met); }
+  .control-row[data-status="in_progress"]    { border-left-color: var(--c-progress); }
+  .control-row[data-status="gap"]            { border-left-color: var(--c-gap); }
+  .control-row[data-status="not_applicable"] { border-left-color: var(--c-na); }
+
+  .control-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .control-id { font-size: 11.5px; color: var(--paper-faint); }
+  .control-name { font-size: 15.5px; }
+  .control-code { color: var(--paper-dim); }
+
+  /* Non-authoritative content (i1/r2 topic-level, publicly-researched) must never read as
+     equivalent-confidence to e1's real structural data -- a distinct amber-bordered notice,
+     never blended into the normal text color, at both the tier-card and per-control level. */
+  .non-auth-banner, .non-auth-note {
+    border: 1px solid var(--c-progress); background: var(--c-progress-wash); color: var(--paper);
+    font-size: 12.5px; padding: 8px 10px; margin-top: 2px;
+  }
+  .non-auth-note { font-size: 11.5px; font-style: italic; color: var(--paper-dim); border: none; background: none; padding: 4px 0 0; margin: 0; }
+  .citation-list { margin: 4px 0 0 20px; padding: 0; font-size: 12.5px; }
+  .citation-list a { word-break: break-all; }
+
+  .control-field { font-size: 14px; }
+  .field-label {
+    display: block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--paper-faint); margin-bottom: 3px;
+  }
+  .placeholder { color: var(--paper-faint); font-style: italic; }
+  .requirement-text { color: var(--paper-dim); font-size: 13.5px; }
+
+  .in-progress-block {
+    padding: 10px 12px; border: 1px dashed var(--c-progress); background: var(--c-progress-wash);
+    font-size: 13.5px; display: flex; flex-direction: column; gap: 3px;
+  }
+
+  .roadmap { margin-top: 4px; border-top: 1px dotted var(--line-bright); padding-top: 10px; }
+  .roadmap h4 {
+    margin: 0 0 8px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--paper-faint); font-weight: 400;
+  }
+  .roadmap-row { display: flex; gap: 10px; font-size: 13.5px; margin-bottom: 5px; flex-wrap: wrap; }
+  .roadmap-label { color: var(--paper-faint); min-width: 130px; font-family: var(--mono); font-size: 11px; }
+  .roadmap-list { margin: 2px 0 0 20px; padding: 0; }
+
+  .no-matches { padding: 16px 18px; color: var(--paper-faint); font-style: italic; }
+
+  .maturity-block { margin-top: 4px; }
+  .maturity-block summary {
+    cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px;
+  }
+  .maturity-block summary::-webkit-details-marker { display: none; }
+  .maturity-detail {
+    display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding-top: 8px;
+    border-top: 1px dotted var(--line-bright);
+  }
+
+  ::selection { background: var(--gold-wash); color: var(--paper); }
+
+  @media (max-width: 680px) {
+    header.masthead { padding: 28px 18px 22px; }
+    .masthead-stamp { text-align: left; }
+    main { padding: 24px 18px 60px; }
+    .control-bar { position: static; flex-direction: column; align-items: stretch; }
+    .filter-count { margin-left: 0; }
+    .cat-num { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div>
+    <p class="eyebrow">Security Certification Tracking</p>
+    <h1>Compliance Ledger</h1>
+  </div>
+  <div class="masthead-stamp mono">
+    <div class="stamp-org" id="orgNameMeta"></div>
+    <div id="generatedAtMeta"></div>
+  </div>
+</header>
+
+<main>
+  <section id="overview" class="overview-grid"></section>
+
+  <div id="filterBar" class="control-bar panel" style="display:none">
+    <label>Status
+      <select id="statusFilter">
+        <option value="">All statuses</option>
+      </select>
+    </label>
+    <label>Type
+      <select id="typeFilter">
+        <option value="">All types</option>
+      </select>
+    </label>
+    <label class="search-field">Search
+      <input id="searchInput" type="search" placeholder="id, control name, requirement text…" autocomplete="off">
+    </label>
+    <span id="filterCount" class="filter-count"></span>
+  </div>
+
+  <div id="drilldowns"></div>
+</main>
+
+<script>
+const CISO_DATA = /*__CISO_DATA__*/null;
+
+(function () {
+  'use strict';
+
+  // Escapes text for safe insertion into innerHTML-built markup. Every piece
+  // of data that ultimately came from state.json (org name, justifications,
+  // imported requirement text, control names, etc.) is untrusted free text
+  // and must go through this before being interpolated into a template
+  // string that gets assigned to innerHTML -- otherwise something like a
+  // justification containing `"><img src=x onerror=...>` would execute,
+  // since this page's CSP allows 'unsafe-inline' (needed for this script
+  // itself) and that also covers inline event-handler attributes.
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function humanize(token) {
+    if (token == null || token === '') return '';
+    return String(token)
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function labelizeKey(key) {
+    // camelCase -> "Camel Case"
+    const spaced = String(key).replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+    return humanize(spaced);
+  }
+
+  const STATUS_META = {
+    met:             { label: 'Met',            className: 'st-met' },
+    in_progress:     { label: 'In progress',     className: 'st-in_progress' },
+    gap:             { label: 'Gap',             className: 'st-gap' },
+    not_assessed:    { label: 'Not assessed',    className: 'st-not_assessed' },
+    not_applicable:  { label: 'Not applicable',  className: 'st-not_applicable' }
+  };
+  const STATUS_ORDER = ['met', 'in_progress', 'gap', 'not_assessed', 'not_applicable'];
+
+  function statusTag(status) {
+    const meta = STATUS_META[status] || { label: humanize(status) || 'Unknown', className: 'st-not_assessed' };
+    return '<span class="tag status-tag ' + meta.className + '">' + esc(meta.label) + '</span>';
+  }
+
+  function groupBy(items, keyFn) {
+    const groups = {};
+    for (const item of items) {
+      const key = keyFn(item);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(item);
+    }
+    return groups;
+  }
+
+  // Turns an arbitrary group key (a 2-digit e1 legacyCategoryPrefix, or an i1/r2 domain name full
+  // of spaces/commas) into a safe HTML id / URL fragment. Must be applied identically everywhere
+  // a group key is used in an id or href, or jump-links silently stop matching their target.
+  function slugify(value) {
+    return String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'group';
+  }
+
+  // The grouping key (`prefix`) is now almost always a 2-digit `domainKey` ("01".."19") for every
+  // tier, so a "does this look numeric" heuristic can no longer distinguish a modern domain group
+  // from an old-style e1 legacyCategoryPrefix-only group -- both look the same shape. Instead this
+  // reads the real display name computed once by render-dashboard.js's computeRollups
+  // (`domainRollup.domainName`, taken directly off an actual control in the group) rather than
+  // guessing from the key string. Only falls back to a bare "Legacy Category <prefix>" label when no
+  // control in the group carries a `domain` field at all (e.g. an org's real, legacy-shaped MyCSF
+  // import that predates domain names).
+  function groupDisplayMeta(prefix, domainRollup) {
+    const domainName = domainRollup && domainRollup.domainName;
+    if (domainName) {
+      return { number: prefix, name: domainName };
+    }
+    return { number: prefix, name: 'Legacy Category ' + prefix };
+  }
+
+  // Renders the generic "Roadmap" sub-panel for one control. Iterates
+  // whatever fields exist on control.roadmap rather than hardcoding
+  // budgetTier/vendorResearch/recommendation/status, so a future phase that
+  // adds fields here needs no template changes.
+  function renderRoadmap(roadmap) {
+    if (!roadmap || typeof roadmap !== 'object' || Object.keys(roadmap).length === 0) {
+      return '<div class="roadmap"><h4>Roadmap</h4><div class="placeholder">No roadmap data available yet.</div></div>';
+    }
+    const rows = Object.keys(roadmap).map(function (key) {
+      const value = roadmap[key];
+      const label = labelizeKey(key);
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          return '<div class="roadmap-row"><span class="roadmap-label">' + esc(label) + '</span>' +
+            '<span class="placeholder">No ' + esc(label.toLowerCase()) + ' yet.</span></div>';
+        }
+        const items = value.map(function (v) {
+          if (typeof v === 'string') return '<li>' + esc(v) + '</li>';
+          if (v && typeof v === 'object') {
+            // Common shape for vendorResearch entries: { name, fitNotes, estCost, sourceUrls }.
+            // Render known fields nicely; fall back to JSON only for a genuinely unrecognized shape.
+            if (v.name || v.fitNotes || v.sourceUrls) {
+              let line = '<strong>' + esc(v.name || 'Unnamed') + '</strong>';
+              if (v.estCost) line += ' &mdash; ' + esc(v.estCost);
+              if (v.fitNotes) line += '<br>' + esc(v.fitNotes);
+              if (Array.isArray(v.sourceUrls) && v.sourceUrls.length > 0) {
+                line += '<br>' + v.sourceUrls.map(function (u) {
+                  return '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(u) + '</a>';
+                }).join(' ');
+              }
+              return '<li>' + line + '</li>';
+            }
+            return '<li>' + esc(JSON.stringify(v)) + '</li>';
+          }
+          return '<li>' + esc(String(v)) + '</li>';
+        }).join('');
+        return '<div class="roadmap-row"><span class="roadmap-label">' + esc(label) + '</span>' +
+          '<ul class="roadmap-list">' + items + '</ul></div>';
+      }
+      const display = (value === null || value === undefined || value === '')
+        ? '<span class="placeholder">Not set</span>'
+        : esc(String(value));
+      return '<div class="roadmap-row"><span class="roadmap-label">' + esc(label) + '</span><span>' + display + '</span></div>';
+    }).join('');
+    return '<div class="roadmap"><h4>Roadmap</h4>' + rows + '</div>';
+  }
+
+  // r2's five PRISMA maturity dimensions. Duplicated locally, mirroring this project's
+  // established cross-file-independence convention (see reconcile-state-version.js).
+  const MATURITY_DIMENSIONS = ['policy', 'procedure', 'implemented', 'measured', 'managed'];
+  const MATURITY_LABELS = {
+    policy: 'Policy', procedure: 'Procedure', implemented: 'Implemented', measured: 'Measured', managed: 'Managed'
+  };
+
+  // r2 controls carry assessment.maturity (5 independently-assessed dimensions) instead of e1/i1's
+  // flat assessment.status/justification/inProgress/assessedAt. Every place this template shows
+  // "the" current assessment of a control (status tag, justification, in-progress detail,
+  // assessed-at stamp) uses r2's Implemented dimension -- the same one e1/i1 solely measure -- so
+  // the primary control-row view reads identically across all three tiers. The full 5-dimension
+  // breakdown is rendered separately, below, only for r2 controls.
+  function effectiveAssessment(control) {
+    const assessment = control.assessment || {};
+    if (assessment.maturity) {
+      const impl = assessment.maturity.implemented || {};
+      return {
+        status: impl.status || 'not_assessed',
+        justification: impl.justification || null,
+        inProgress: impl.inProgress || { currentState: null, estimatedCloseness: null },
+        assessedAt: impl.assessedAt || null,
+      };
+    }
+    return {
+      status: assessment.status || 'not_assessed',
+      justification: assessment.justification || null,
+      inProgress: assessment.inProgress || { currentState: null, estimatedCloseness: null },
+      assessedAt: assessment.assessedAt || null,
+    };
+  }
+
+  // Renders the "N / 5 maturity dims" badge + expandable full breakdown for an r2 control. Only
+  // called when control.assessment.maturity exists.
+  function renderMaturityBreakdown(maturity) {
+    const assessedCount = MATURITY_DIMENSIONS.filter(function (dim) {
+      return maturity[dim] && maturity[dim].status !== 'not_assessed';
+    }).length;
+
+    let html = '<div class="maturity-block"><details><summary>';
+    html += '<span class="maturity-disclosure">&#9656;</span>';
+    html += '<span class="tag gold mono">' + assessedCount + ' / ' + MATURITY_DIMENSIONS.length + ' maturity dims</span>';
+    html += '</summary><div class="maturity-detail">';
+    for (const dim of MATURITY_DIMENSIONS) {
+      const d = maturity[dim] || { status: 'not_assessed' };
+      html += '<div class="roadmap-row"><span class="roadmap-label">' + esc(MATURITY_LABELS[dim]) + '</span>' + statusTag(d.status) + '</div>';
+      if (d.justification) {
+        html += '<div class="roadmap-row"><span class="roadmap-label"></span><span>' + esc(d.justification) + '</span></div>';
+      }
+      if (d.status === 'in_progress' && d.inProgress) {
+        const ip = d.inProgress;
+        html += '<div class="roadmap-row"><span class="roadmap-label"></span><span>' +
+          (ip.currentState ? esc(ip.currentState) : '<span class="placeholder">Not recorded</span>') + ' &mdash; ' +
+          (ip.estimatedCloseness ? esc(ip.estimatedCloseness) : '<span class="placeholder">Not recorded</span>') + '</span></div>';
+      }
+    }
+    html += '</div></details></div>';
+    return html;
+  }
+
+  function renderControlRow(control) {
+    const assessment = effectiveAssessment(control);
+    const status = assessment.status;
+    const type = control.type || 'Unknown';
+    const level = control.level != null ? control.level : null;
+
+    const searchIndex = [control.id, control.relatedControlName, control.statementText, control.topicLabel, control.topicSummary]
+      .filter(function (v) { return v != null; })
+      .join(' ')
+      .toLowerCase();
+
+    // e1 controls have a short relatedControlCode/relatedControlName pair; i1/r2's topic-level
+    // controls have only a topicLabel (no separate short code) -- fall back accordingly rather
+    // than assuming e1's shape.
+    const shortCode = control.relatedControlCode || '';
+    const shortLabel = control.relatedControlName || control.topicLabel || 'Unnamed control';
+
+    let html = '<div class="control-row" data-status="' + esc(status) + '" data-type="' + esc(type) + '" data-search="' + esc(searchIndex) + '">';
+    html += '<div class="control-head">';
+    html += '<span class="control-id mono">' + esc(control.id || '') + '</span>';
+    if (type !== 'Unknown') html += '<span class="tag">' + esc(type) + '</span>';
+    if (level != null) html += '<span class="tag">L' + esc(level) + '</span>';
+    if (control.baselineOverlap) html += '<span class="tag">Baseline overlap: ' + esc(humanize(control.baselineOverlap)) + '</span>';
+    html += statusTag(status);
+    html += '</div>';
+
+    html += '<div class="control-name">' + (shortCode ? '<span class="control-code mono">' + esc(shortCode) + '</span> &nbsp;' : '') + esc(shortLabel) + '</div>';
+
+    html += '<div class="control-field"><span class="field-label">Requirement text</span>';
+    if (control.statementText) {
+      html += '<span class="requirement-text">' + esc(control.statementText) + '</span>';
+    } else if (control.topicSummary) {
+      html += '<span class="requirement-text">' + esc(control.topicSummary) + '</span>' +
+        '<div class="non-auth-note">Non-authoritative topic summary -- not exact MyCSF wording. See sources below.</div>';
+    } else {
+      html += '<span class="placeholder">Import your MyCSF export to see exact requirement wording.</span>';
+    }
+    html += '</div>';
+
+    if (Array.isArray(control.citations) && control.citations.length > 0) {
+      html += '<div class="control-field"><span class="field-label">Sources</span><ul class="citation-list">';
+      html += control.citations.map(function (url) {
+        return '<li><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(url) + '</a></li>';
+      }).join('');
+      html += '</ul></div>';
+    }
+
+    html += '<div class="control-field"><span class="field-label">Assessment</span>';
+    html += assessment.justification
+      ? esc(assessment.justification)
+      : '<span class="placeholder">Not yet assessed.</span>';
+    html += '</div>';
+
+    if (status === 'in_progress' && assessment.inProgress) {
+      const ip = assessment.inProgress;
+      html += '<div class="in-progress-block">';
+      html += '<div><strong>Current state:</strong> ' + (ip.currentState ? esc(ip.currentState) : '<span class="placeholder">Not recorded</span>') + '</div>';
+      html += '<div><strong>Estimated closeness:</strong> ' + (ip.estimatedCloseness ? esc(ip.estimatedCloseness) : '<span class="placeholder">Not recorded</span>') + '</div>';
+      html += '</div>';
+    }
+
+    if (assessment.assessedAt) {
+      html += '<div class="control-field mono"><span class="field-label" style="font-family:var(--mono)">Assessed at</span>' + esc(assessment.assessedAt) + '</div>';
+    }
+
+    if (control.assessment && control.assessment.maturity) {
+      html += renderMaturityBreakdown(control.assessment.maturity);
+    }
+
+    html += renderRoadmap(control.roadmap);
+    html += '</div>';
+    return html;
+  }
+
+  function renderDomainGroup(prefix, controls, domainRollup, certKey, tierKey) {
+    const anchorId = 'cat-' + certKey + '-' + tierKey + '-' + slugify(prefix);
+    const meta = groupDisplayMeta(prefix, domainRollup);
+    const compliancePct = domainRollup ? domainRollup.compliancePercent : 0;
+    const total = domainRollup ? domainRollup.total : controls.length;
+
+    let html = '<details class="category-group" id="' + esc(anchorId) + '">';
+    html += '<summary>';
+    html += '<span class="cat-title"><span class="disclosure">&#9656;</span><span class="cat-num">' + esc(meta.number) + '</span><span class="cat-name">' + esc(meta.name) + '</span></span>';
+    html += '<span class="cat-stats">' + total + ' control' + (total === 1 ? '' : 's') + ' &middot; ' + compliancePct + '% compliant</span>';
+    html += '</summary>';
+    html += '<div class="control-list">';
+    html += controls.map(renderControlRow).join('');
+    html += '<div class="no-matches" style="display:none">No controls match the current filters.</div>';
+    html += '</div></details>';
+    return html;
+  }
+
+  function findInterviewSession(state, certKey, tierKey) {
+    const sessions = (state.interviewSessions || []).filter(function (s) {
+      return s && s.certification === certKey && s.tier === tierKey;
+    });
+    if (sessions.length === 0) return null;
+    // If multiple sessions somehow exist for the same cert/tier, prefer the
+    // most recently updated one.
+    sessions.sort(function (a, b) {
+      return String(b.lastUpdatedAt || '').localeCompare(String(a.lastUpdatedAt || ''));
+    });
+    return sessions[0];
+  }
+
+  function renderOverviewCard(certKey, cert, tierKey, tier, rollup, state, cardIndex) {
+    const isActive = cert.activeTier === tierKey;
+    const rollupSafe = rollup || { compliancePercent: 0, assessedPercent: 0, maturityDepthPercent: null, byDomain: {} };
+
+    let html = '<div class="cert-card panel" style="animation-delay:' + (cardIndex * 70) + 'ms">';
+    html += '<div class="tag-row">';
+    html += '<h2>' + esc(cert.displayName || certKey) + '</h2>';
+    html += '<span class="tag gold">' + esc(tierKey) + '</span>';
+    if (isActive) html += '<span class="tag gold">active</span>';
+    html += '</div>';
+
+    html += '<div class="subline mono">Control set ' + esc(tier.controlSetVersion || 'unknown') + '</div>';
+
+    html += '<div class="tag-row">';
+    html += '<span class="tag">' + esc(humanize(tier.sourceAuthority) || 'Unknown source') + '</span>';
+    html += '</div>';
+
+    if (tier.importedFrom || tier.importedAt) {
+      html += '<div class="subline">Imported from ' + (tier.importedFrom ? esc(tier.importedFrom) : '<span class="placeholder">unknown source</span>');
+      html += tier.importedAt ? ' on ' + esc(tier.importedAt) : '';
+      html += '</div>';
+    }
+
+    if (tier.sourceAuthority === 'public-topic-level') {
+      html += '<div class="non-auth-banner">Non-authoritative: topic-level structure compiled from public sources, not a licensed MyCSF export. Consult MyCSF or an authorized HITRUST assessor for exact scope before relying on this for a real assessment.</div>';
+    }
+
+    html += '<div class="gauge"><div class="gauge-label"><span>Compliance</span><b>' + rollupSafe.compliancePercent + '%</b></div>';
+    html += '<div class="gauge-track"><div class="gauge-fill compliance" style="width:' + rollupSafe.compliancePercent + '%"></div></div></div>';
+
+    html += '<div class="gauge"><div class="gauge-label"><span>Assessed</span><b>' + rollupSafe.assessedPercent + '%</b></div>';
+    html += '<div class="gauge-track"><div class="gauge-fill assessed" style="width:' + rollupSafe.assessedPercent + '%"></div></div></div>';
+
+    if (rollupSafe.maturityDepthPercent != null) {
+      html += '<div class="gauge"><div class="gauge-label"><span>Maturity depth</span><b>' + rollupSafe.maturityDepthPercent + '%</b></div>';
+      html += '<div class="gauge-track"><div class="gauge-fill assessed" style="width:' + rollupSafe.maturityDepthPercent + '%"></div></div></div>';
+    }
+
+    const domainKeys = Object.keys(rollupSafe.byDomain || {}).sort();
+    if (domainKeys.length > 0) {
+      html += '<div class="domain-bars">';
+      for (const prefix of domainKeys) {
+        const d = rollupSafe.byDomain[prefix];
+        const label = d.domainName || ('Category ' + prefix);
+        html += '<a class="domain-bar-link" href="#cat-' + certKey + '-' + tierKey + '-' + slugify(prefix) + '">';
+        html += '<div class="gauge"><div class="gauge-label"><span>' + esc(label) + '</span><b>' + d.compliancePercent + '%</b></div>';
+        html += '<div class="gauge-track"><div class="gauge-fill compliance" style="width:' + d.compliancePercent + '%"></div></div></div>';
+        html += '</a>';
+      }
+      html += '</div>';
+    }
+
+    const session = findInterviewSession(state, certKey, tierKey);
+    if (session) {
+      const completed = (session.domainsCompleted || []).length;
+      const remaining = (session.domainsRemaining || []).length;
+      const isDone = session.status === 'completed';
+      html += '<div class="session-chip' + (isDone ? ' done' : '') + '">' + completed + '/' + (completed + remaining) + ' categories covered &middot; ' + esc(humanize(session.status) || 'Unknown') + '</div>';
+    } else {
+      html += '<div class="session-chip">Interview not started</div>';
+    }
+
+    html += '<a class="jump-link" href="#section-' + certKey + '-' + tierKey + '">Jump to details &rarr;</a>';
+    html += '</div>';
+    return html;
+  }
+
+  function collectTypes(state) {
+    const types = new Set();
+    const certifications = state.certifications || {};
+    for (const certKey of Object.keys(certifications)) {
+      const tiers = (certifications[certKey] && certifications[certKey].tiers) || {};
+      for (const tierKey of Object.keys(tiers)) {
+        const controls = Object.values((tiers[tierKey] && tiers[tierKey].controls) || {});
+        for (const control of controls) {
+          if (control && control.type) types.add(control.type);
+        }
+      }
+    }
+    return Array.from(types).sort();
+  }
+
+  function applyFilters() {
+    const statusVal = document.getElementById('statusFilter').value;
+    const typeVal = document.getElementById('typeFilter').value;
+    const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+
+    const rows = document.querySelectorAll('.control-row');
+    let visibleCount = 0;
+    rows.forEach(function (row) {
+      const matchesStatus = !statusVal || row.dataset.status === statusVal;
+      const matchesType = !typeVal || row.dataset.type === typeVal;
+      const matchesSearch = !searchVal || (row.dataset.search || '').indexOf(searchVal) !== -1;
+      const visible = matchesStatus && matchesType && matchesSearch;
+      row.classList.toggle('hidden-by-filter', !visible);
+      if (visible) visibleCount += 1;
+    });
+
+    document.querySelectorAll('.category-group').forEach(function (group) {
+      const anyVisible = group.querySelector('.control-row:not(.hidden-by-filter)') != null;
+      const noMatches = group.querySelector('.no-matches');
+      if (noMatches) noMatches.style.display = anyVisible ? 'none' : 'block';
+    });
+
+    const countEl = document.getElementById('filterCount');
+    if (countEl) countEl.textContent = visibleCount + ' of ' + rows.length + ' controls shown';
+  }
+
+  function render() {
+    const orgNameMeta = document.getElementById('orgNameMeta');
+    const generatedAtMeta = document.getElementById('generatedAtMeta');
+    const overview = document.getElementById('overview');
+    const drilldowns = document.getElementById('drilldowns');
+    const filterBar = document.getElementById('filterBar');
+
+    if (!CISO_DATA || !CISO_DATA.state) {
+      overview.innerHTML = '<div class="empty-state">No dashboard data found. This file must be generated by ' +
+        '<code>render-dashboard.js</code>, not opened directly from the template.</div>';
+      return;
+    }
+
+    const state = CISO_DATA.state;
+    const rollups = CISO_DATA.rollups || {};
+
+    orgNameMeta.textContent = (state.organization && state.organization.name) || 'Unnamed organization';
+    let generatedLabel = 'Not yet generated';
+    if (state.generatedAt) {
+      const d = new Date(state.generatedAt);
+      generatedLabel = 'Generated ' + (isNaN(d.getTime()) ? state.generatedAt : d.toLocaleString());
+    }
+    generatedAtMeta.textContent = generatedLabel;
+
+    const certifications = state.certifications || {};
+    const certKeys = Object.keys(certifications);
+
+    if (certKeys.length === 0) {
+      overview.innerHTML = '<div class="empty-state">' +
+        'No certifications tracked yet. Run <code>ciso:hitrust</code> to register HITRUST CSF e1.' +
+        '</div>';
+      return;
+    }
+
+    let overviewHtml = '';
+    let drilldownHtml = '';
+    let cardIndex = 0;
+
+    for (const certKey of certKeys) {
+      const cert = certifications[certKey] || {};
+      const tiers = cert.tiers || {};
+      for (const tierKey of Object.keys(tiers)) {
+        const tier = tiers[tierKey] || {};
+        const rollup = (rollups[certKey] && rollups[certKey][tierKey]) || null;
+
+        overviewHtml += renderOverviewCard(certKey, cert, tierKey, tier, rollup, state, cardIndex++);
+
+        const controls = Object.values(tier.controls || {});
+        // Same fallback key as computeRollups() in render-dashboard.js --
+        // keep these identical or a control with a missing prefix would be
+        // grouped under a different key than its rollup/anchor expects.
+        const byDomain = groupBy(controls, function (c) { return (c && (c.domainKey || c.legacyCategoryPrefix || c.domain)) || 'unknown'; });
+        const domainKeys = Object.keys(byDomain).sort();
+
+        drilldownHtml += '<section class="cert-section" id="section-' + certKey + '-' + tierKey + '">';
+        drilldownHtml += '<h2>' + esc(cert.displayName || certKey) + ' &mdash; ' + esc(tierKey) + ' details</h2>';
+        for (const prefix of domainKeys) {
+          const domainRollup = rollup && rollup.byDomain ? rollup.byDomain[prefix] : null;
+          drilldownHtml += renderDomainGroup(prefix, byDomain[prefix], domainRollup, certKey, tierKey);
+        }
+        drilldownHtml += '</section>';
+      }
+    }
+
+    overview.innerHTML = overviewHtml;
+    drilldowns.innerHTML = drilldownHtml;
+
+    // Populate filters now that control rows exist in the DOM.
+    const statusSelect = document.getElementById('statusFilter');
+    for (const status of STATUS_ORDER) {
+      const opt = document.createElement('option');
+      opt.value = status;
+      opt.textContent = (STATUS_META[status] && STATUS_META[status].label) || status;
+      statusSelect.appendChild(opt);
+    }
+    const typeSelect = document.getElementById('typeFilter');
+    for (const type of collectTypes(state)) {
+      const opt = document.createElement('option');
+      opt.value = type;
+      opt.textContent = type;
+      typeSelect.appendChild(opt);
+    }
+
+    filterBar.style.display = 'flex';
+    statusSelect.addEventListener('change', applyFilters);
+    typeSelect.addEventListener('change', applyFilters);
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    applyFilters();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,412 @@
+{
+  "tier": "e1",
+  "controlSetVersion": "v11.8",
+  "sourceAuthority": "public-topic-level",
+  "nonAuthoritative": true,
+  "compiledAt": "2026-07-18T00:00:00.000Z",
+  "coverageNote": "Topic-level, paraphrased, non-authoritative. Compiled via a research fan-out across all 19 HITRUST assessment domains, followed by a dedupe/reconcile pass and a dual-pass adversarial verification (checking citation resolution, domain attribution, and precision-overclaiming) before anything shipped -- see this plugin's hitrust-controls-compiler skill for the process. An org's own licensed MyCSF e1 export was NOT used as a source for this file -- it was used only as a private completeness cross-check by the maintainer, never shown to any research agent, never cited, never present in this output. Public sources commonly cite e1 as covering 43-44 total requirement statements; this compile's honest, cited count (32) is lower, because the public secondary sources available (mostly a handful of HITRUST-authorized-assessor blog posts and one HITRUST-published sample validated-assessment report) don't enumerate every requirement at the same granularity as a real MyCSF export -- that gap is disclosed here rather than padded with invented topics. Access Control (domain 11) is the most granular domain at 5 entries; most other domains have 1-3. 7 of 32 entries (~22%) carry a citation-verified relatedControlCode; the rest ship as domain/topic-only, per this compile's opportunistic-citation discipline (a code is only ever included when a fetched public source verifies it for that specific topic, never invented). Citation diversity caveat: roughly three-quarters of entries cite, among other sources, the same single secondary author's LinkedIn post ('HITRUST e1 Framework Breakdown, v11 Edition' by Richard Rieben) -- in most cases corroborated by at least one additional independent source, but that repeated source should be read as informative, not as broad independent literature. Two entries had an unsupported temporal-persistence claim ('reportedly held through CSF v11.8') trimmed from their topicSummary during maintainer review after the same overclaim pattern caused a third, otherwise well-supported candidate (an Incident Management entry) to be rejected in verification -- that third candidate was reinstated here with the same trim applied, since its core claim was independently confirmed as citation-supported. Treat this as a starting map for planning, not ground truth: consult MyCSF or an authorized HITRUST assessor for exact requirement statement text, control codes, and counts before relying on it for a real assessment.",
+  "controls": [
+    {
+      "id": "e1-01-01",
+      "domain": "Information Protection Program",
+      "domainKey": "01",
+      "topicLabel": "Information Security Policy",
+      "topicSummary": "e1 requires a leadership-endorsed information security policy that has actually been communicated to the workforce, not merely drafted. It must state its own scope and objectives, demonstrate visible management commitment to security, assign clear ownership of security responsibilities across management and staff, and describe the organization's overall approach to protecting information.",
+      "relatedControlCode": "04.a",
+      "legacyCategoryPrefix": "04",
+      "citations": [
+        "https://hitrustalliance.net/hubfs/help.mycsf.net/Example%20HITRUST%20Deliverables/(Sample)%20Chinstrap%20Penguin%202024%20-%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf",
+        "https://hitrustalliance.net/advisories/haa-2023-004-e1-assessment-introduction"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-02-01",
+      "domain": "Endpoint Protection",
+      "domainKey": "02",
+      "topicLabel": "Anti-Malware / Anti-Spyware Protection on Endpoints",
+      "topicSummary": "e1 requires current anti-malware/anti-spyware (or comparable malicious-code detection) software installed and kept up to date across all in-scope endpoints -- workstations, laptops, and servers -- as a baseline defense against common malicious code.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-02-02",
+      "domain": "Endpoint Protection",
+      "domainKey": "02",
+      "topicLabel": "Host-Based Endpoint Firewall (Default-Deny)",
+      "topicSummary": "Those same endpoints also need a host-based firewall or equivalent port-filtering control configured to deny all inbound/outbound traffic by default, permitting only specific ports or services that have been explicitly authorized as exceptions.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.barradvisory.com/resource/hitrust-domains-101/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-03-01",
+      "domain": "Portable Media Security",
+      "domainKey": "03",
+      "topicLabel": "Removable/Portable Media Control",
+      "topicSummary": "This domain governs how removable and portable storage media may be used with organizational systems -- restricting writable removable media and barring personally-owned removable devices -- and, per the v11.8 baseline refresh, requires digital portable media leaving controlled areas to be cryptographically protected in transit, while both digital and non-digital portable media must carry documented accountability and be handled only by authorized personnel.",
+      "relatedControlCode": "09.o",
+      "legacyCategoryPrefix": "09",
+      "citations": [
+        "https://hitrustalliance.net/advisories/haa-2026-002-csf-version-11.8.0-release",
+        "https://help.mycsf.net/docs/Example%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf",
+        "https://www.accorian.com/hitrust-csf-v11-8-0/",
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-04-01",
+      "domain": "Mobile Device Security",
+      "domainKey": "04",
+      "topicLabel": "Full-Disk Encryption of Mobile Endpoints Handling Sensitive Data",
+      "topicSummary": "The Mobile Device Security domain's e1 scope reduces to a single expectation: any mobile computing endpoint -- laptops included, not just phones and tablets -- that stores, processes, or transmits sensitive data must have full-disk encryption enabled, with avoiding sensitive data on such devices altogether framed as an even stronger posture. Broader MDM/BYOD practices (enrollment, remote wipe, app containerization) sit outside the e1 baseline and only appear at higher assurance tiers.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://hitrustalliance.net/hubfs/help.mycsf.net/Example%20HITRUST%20Deliverables/(Sample)%20Chinstrap%20Penguin%202024%20-%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-05-01",
+      "domain": "Wireless Security",
+      "domainKey": "05",
+      "topicLabel": "Wireless Network Authorization & Encryption",
+      "topicSummary": "e1's Wireless Security scope is narrow: wireless network access must be explicitly and formally approved before use, and any wireless access points or devices connecting to the network must use strong encryption (at minimum an AES-based WPA2 standard) to protect both authentication and data in transit. Avoiding wireless transmission of sensitive data altogether is noted as a preferable alternative where feasible.",
+      "relatedControlCode": "09.m",
+      "legacyCategoryPrefix": "09",
+      "citations": [
+        "https://help.mycsf.net/docs/Example%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf",
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-06-01",
+      "domain": "Configuration Management",
+      "domainKey": "06",
+      "topicLabel": "Formal Change Management",
+      "topicSummary": "Changes to infrastructure, applications, and user access should follow a formal request-assess-test-approve cycle rather than being made ad hoc, with approval coming from someone other than the requester. Lightweight tracking such as a spreadsheet is sufficient at this level -- a dedicated change-management platform is not required.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.accorian.com/hitrust-e1-checklist/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-06-02",
+      "domain": "Configuration Management",
+      "domainKey": "06",
+      "topicLabel": "Secure Configuration / Hardening Baselines",
+      "topicSummary": "Systems should be deployed against a documented hardening baseline or configuration checklist rather than left at vendor defaults, with resources such as the CIS Benchmarks cited as a practical way to define that baseline -- reducing attack surface through configuration standards independent of patch level.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.accorian.com/hitrust-e1-checklist/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-07-01",
+      "domain": "Vulnerability Management",
+      "domainKey": "07",
+      "topicLabel": "Patch & Software Update Management",
+      "topicSummary": "In-scope systems must be kept on supported, currently-patched software versions. Automated tooling is preferred for applying and enforcing these updates, with a documented, manually-tracked patching process expected as the fallback wherever automated patching isn't operationally feasible.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.ampcuscyber.com/knowledge-hub/hitrust-e1-assessment-44-controls-explained/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-07-02",
+      "domain": "Vulnerability Management",
+      "domainKey": "07",
+      "topicLabel": "Technology Asset & Data Repository Inventory",
+      "topicSummary": "Organizations are expected to maintain a current inventory of technology assets and data repositories (e.g., databases), including personally-owned/BYOD devices connecting to the network or cloud environment, reviewed on a recurring (at least annual) basis so vulnerability management has full visibility into what needs assessment.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-07-03",
+      "domain": "Vulnerability Management",
+      "domainKey": "07",
+      "topicLabel": "Vulnerability Scanning Coverage",
+      "topicSummary": "e1 expects recurring vulnerability scanning, at minimum yearly, across any asset that stores, processes, or transmits sensitive information -- extending beyond traditional network/host scanning to cover cloud configuration review, application-level testing, and monitoring of third-party software dependencies where applicable.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.ampcuscyber.com/knowledge-hub/hitrust-e1-assessment-44-controls-explained/",
+        "https://palindrometech.com/hubfs/HITRUST%20e1-%20A%20Detailed%20Readiness%20Assessment%20Guide-2025.pdf"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-08-01",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Network Segmentation and Perimeter Gateways",
+      "topicSummary": "Internal and external networks must be logically separated using an isolated buffer zone (DMZ-style screened subnet) rather than exposing internal systems directly to outside traffic, enforced through standard perimeter devices -- firewalls, ACL-enabled routers, cloud security groups, and web application firewalls. Wireless networks must sit behind their own firewall boundary, and sensitive data should live on segments purpose-built for it, apart from lower-trust traffic.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-08-02",
+      "domain": "Network Protection",
+      "domainKey": "08",
+      "topicLabel": "Reputation-Based DNS Filtering",
+      "topicSummary": "Outbound DNS lookups should be filtered against known-malicious domain reputation data (DNS sinkholing or an equivalent service) so devices attempting to reach malicious or command-and-control domains are redirected or blocked. Both free (e.g., a U.S. government-provided option) and commercial DNS filtering services are cited as acceptable ways to satisfy this.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://blog.rsisecurity.com/what-are-the-19-hitrust-domains/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-09-01",
+      "domain": "Transmission Protection",
+      "domainKey": "09",
+      "topicLabel": "Email Domain Authentication (SPF/DKIM/DMARC)",
+      "topicSummary": "Sender-authentication protocols (SPF, DKIM, DMARC) should be configured for the organization's email-sending domain(s) so messages spoofing or impersonating the domain can be detected and rejected, targeting phishing and business-email-compromise that relies on domain impersonation.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://blog.rsisecurity.com/what-are-the-19-hitrust-domains/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-09-02",
+      "domain": "Transmission Protection",
+      "domainKey": "09",
+      "topicLabel": "Server-Level Email Content/Attachment Filtering",
+      "topicSummary": "Basic email filtering should be implemented at the server level to block suspicious inbound messages and risky or unnecessary attachment file types -- typically satisfied out-of-the-box by standard hosted email platforms (e.g., Microsoft 365, Google Workspace) without extra tooling.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-10-01",
+      "domain": "Password Management",
+      "domainKey": "10",
+      "topicLabel": "Baseline User Password Management",
+      "topicSummary": "HITRUST's own published sample e1 validated assessment report shows this domain populated by the legacy control area \"User Password Management,\" listed as an in-scope, implementable control for e1. At the topic level this covers an organization's baseline practices for issuing, tracking, and managing user account credentials as foundational access-control hygiene, rather than a fully detailed technical password standard -- no verbatim requirement wording is publicly available for this domain.",
+      "relatedControlCode": "01.d",
+      "legacyCategoryPrefix": "01",
+      "citations": [
+        "https://help.mycsf.net/docs/Example%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf",
+        "https://blog.rsisecurity.com/a-guide-to-hitrust-password-requirements-and-best-practices/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-11-01",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Access Provisioning, Unique Accounts & De-provisioning",
+      "topicSummary": "Requests for system access should go through a formal request-and-approval step before being securely provisioned, and every account should map to a single identifiable person rather than being shared. When someone's role changes or employment ends, their access should be modified or removed promptly.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.ampcuscyber.com/blogs/hitrust-domains-key-controls/",
+        "https://www.accorian.com/hitrust-e1-checklist/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-11-02",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Account Lockout & Session Lock Controls",
+      "topicSummary": "Accounts should lock automatically after a set number of failed sign-in attempts to blunt password-guessing attacks, and end-user devices should be configured to lock the screen after a period of inactivity so an unattended, already-authenticated session can't be misused.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-11-03",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Least Privilege & Privileged Account Separation",
+      "topicSummary": "Access to systems and services should be limited to what a person's role actually requires, using role-based permissions rather than broad default access. Administrative or privileged tasks should be performed from an account distinct from an individual's everyday user account, a distinction emphasized especially in directory-services environments such as Active Directory.",
+      "relatedControlCode": "01.c",
+      "legacyCategoryPrefix": "01",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.ampcuscyber.com/blogs/hitrust-domains-key-controls/",
+        "https://hitrustalliance.net/hubfs/help.mycsf.net/Example%20HITRUST%20Deliverables/(Sample)%20Chinstrap%20Penguin%202024%20-%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-11-04",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "MFA for Remote & Administrative Access",
+      "topicSummary": "Anyone connecting to the network remotely, or using an administrative/privileged account even from a local device, is expected to authenticate with more than a single factor, directly addressing credential-theft and brute-force attack scenarios that e1 targets.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.accorian.com/hitrust-e1-checklist/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-11-05",
+      "domain": "Access Control",
+      "domainKey": "11",
+      "topicLabel": "Periodic Review of User Access Rights",
+      "topicSummary": "On at least a yearly cadence, the organization is expected to formally re-examine user accounts, their privileges, and group memberships to confirm continued business need, keeping a record of what was reviewed and any resulting corrective action.",
+      "relatedControlCode": "01.e",
+      "legacyCategoryPrefix": "01",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.ampcuscyber.com/blogs/hitrust-domains-key-controls/",
+        "https://hitrustalliance.net/hubfs/help.mycsf.net/Example%20HITRUST%20Deliverables/(Sample)%20Chinstrap%20Penguin%202024%20-%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-12-01",
+      "domain": "Audit Logging and Monitoring",
+      "domainKey": "12",
+      "topicLabel": "Complete, Tamper-Protected Audit Trail for Sensitive-Data Access",
+      "topicSummary": "This domain expects organizations to keep thorough records of who accessed or changed systems, applications, and assets holding sensitive information, and to ensure those records can't be quietly altered, deleted, or otherwise tampered with by unauthorized parties, giving the organization a reliable trail for detecting and investigating suspicious activity.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.barradvisory.com/resource/hitrust-domains-101/",
+        "https://help.mycsf.net/docs/Example%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-13-01",
+      "domain": "Education, Training, and Awareness",
+      "domainKey": "13",
+      "topicLabel": "Controlling Unauthorized Software Installation and Training Staff to Evaluate Software",
+      "topicSummary": "This pairs a technical safeguard with a people-side one: endpoints should be locked down so employees can't install applications outside what's sanctioned, while relevant staff are also given grounding in how to vet a piece of software before it's adopted for use -- a hard technical control alongside a lighter-touch training element.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-13-02",
+      "domain": "Education, Training, and Awareness",
+      "domainKey": "13",
+      "topicLabel": "Onboarding and Annual Security Awareness Training (Phishing Recognition & Reporting)",
+      "topicSummary": "Every workforce member is expected to complete a baseline security-awareness course upon joining, plus some form of refresher for all staff at least once a year. The skill being built is recognizing social-engineering attempts -- phishing as the headline example -- and knowing how to flag a suspicious message rather than act on it.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.accorian.com/hitrust-e1-checklist/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-14-01",
+      "domain": "Third-Party Assurance",
+      "domainKey": "14",
+      "topicLabel": "Restricting and Time-Limiting Third-Party Remote Access",
+      "topicSummary": "The Third-Party Assurance domain's e1 scope narrows to one focus area: any remote or external access granted to third parties/vendors must be limited strictly to what their role requires, bounded in duration (e.g., session or connection timeouts), and promptly revoked once no longer needed -- distinct from the broader vendor-management topics (contracting, due diligence, ongoing monitoring) found in fuller HITRUST assessments.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://help.mycsf.net/docs/Example%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-15-01",
+      "domain": "Incident Management",
+      "domainKey": "15",
+      "topicLabel": "Incident Response Plan",
+      "topicSummary": "HITRUST e1's Incident Management scope is narrow, centering on the organization having a documented process for handling security incidents, making sure staff are made aware of it, and periodically checking that the process still matches how incidents are actually handled in practice.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true,
+      "reviewNote": "Reinstated during maintainer review after verification rejected the original candidate over an unsupported 'held through CSF v11.8' persistence claim; that clause and its unsupporting second citation were removed, leaving only the core claim the verifier explicitly confirmed as citation-supported."
+    },
+    {
+      "id": "e1-16-01",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Backup Storage Location & Restoration Testing",
+      "topicSummary": "Backup copies of critical data are expected to be kept at a location geographically separate/remote from the source systems, and the backup process along with the actual ability to restore data is expected to be periodically verified through testing (secondary sources describe roughly a monthly cadence) rather than assumed to work.",
+      "citations": [
+        "https://hitrustalliance.net/blog/how-hitrust-e1-controls-overlap-with-soc-2",
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-16-02",
+      "domain": "Business Continuity and Disaster Recovery",
+      "domainKey": "16",
+      "topicLabel": "Offline / Immutable Data Backups",
+      "topicSummary": "Organizations are expected to maintain backups of data that are either kept offline (physically or logically disconnected from production networks) or made immutable (protected against modification or deletion, e.g., via retention-locked storage), so that a ransomware attack or a compromised administrator account cannot also destroy or alter the backup copies.",
+      "citations": [
+        "https://hitrustalliance.net/hubfs/CSF/CSF%20v11.7/HITRUST%20CSF%20v11.7%20Baseline%20Change%20FAQ.pdf",
+        "https://clearwatersecurity.com/blog/what-are-immutable-backups-and-why-does-hitrust-require-them/"
+      ],
+      "nonAuthoritative": true,
+      "reviewNote": "The 'this requirement has reportedly remained part of the e1 baseline through CSF v11.8' claim and its unverified controlReference were removed during maintainer review -- neither citation specifically confirms persistence through v11.8, the same unsupported-overclaim pattern that caused a similarly-worded Incident Management candidate to be rejected in verification."
+    },
+    {
+      "id": "e1-17-01",
+      "domain": "Risk Management",
+      "domainKey": "17",
+      "topicLabel": "Periodic Risk Assessment",
+      "topicSummary": "HITRUST's Risk Management domain at e1 is represented by a single, narrow topic: running a basic risk-assessment practice on a regular cadence -- at minimum annually, and again whenever the environment changes materially (new systems, new threats, major organizational change). Broader risk-treatment/mitigation-planning content (deciding how to respond to identified risks) sits outside the e1 baseline and appears only at higher assurance tiers.",
+      "relatedControlCode": "03.b",
+      "legacyCategoryPrefix": "03",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://help.mycsf.net/docs/Example%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf",
+        "https://hitrustalliance.net/hubfs/CSF%20Versions/CSF%20v11.5/Introduction%20to%20HITRUST%20CSF%20v11.5.0.pdf"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-18-01",
+      "domain": "Physical and Environmental Security",
+      "domainKey": "18",
+      "topicLabel": "Documented Destruction of Retired Media and Equipment",
+      "topicSummary": "When storage media, drives, or equipment that once held sensitive information reach end of life, the organization is expected to physically destroy them and keep records evidencing that the destruction actually took place.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://blog.rsisecurity.com/what-are-the-19-hitrust-domains/",
+        "https://www.strac.io/blog/hitrust-domains"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-18-02",
+      "domain": "Physical and Environmental Security",
+      "domainKey": "18",
+      "topicLabel": "Restricted Physical Access to Sensitive Data Areas",
+      "topicSummary": "Physical access to locations that store, process, or transmit sensitive information (such as data centers and server rooms) should be limited to individuals who have been specifically and formally authorized, rather than left generally accessible to staff.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://www.accorian.com/hitrust-e1-checklist/"
+      ],
+      "nonAuthoritative": true
+    },
+    {
+      "id": "e1-19-01",
+      "domain": "Data Protection and Privacy",
+      "domainKey": "19",
+      "topicLabel": "Public Posting / Social Media Information Controls",
+      "topicSummary": "This domain's e1 contribution is a single baseline item: restricting who may publish content to public-facing or publicly accessible systems (including social media), so only authorized personnel post material and only information cleared for public release goes out -- narrower than the broader data-classification/retention/disposal/privacy-incident-response scope this domain covers at higher assessment tiers.",
+      "citations": [
+        "https://www.linkedin.com/pulse/hitrust-e1-framework-breakdown-v11-edition-richard-rieben",
+        "https://help.mycsf.net/docs/Example%20HITRUST%20e1%20Validated%20Assessment%20Rpt.pdf"
+      ],
+      "nonAuthoritative": true
+    }
+  ]
+}
