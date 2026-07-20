@@ -7,7 +7,7 @@ description: Use when registering HITRUST CSF controls (e1, i1, or r2) into ciso
 
 ## Overview
 
-Single entry point for all HITRUST CSF work inside a project's `docs/ciso/` tracking data, across all three nested tiers (e1 ⊂ i1 ⊂ r2): register a tier's control set, optionally import an organization's own MyCSF requirements export, run the control-by-control assessment interview, research budget-appropriate vendor solutions for whatever's a gap, and reconcile a new HITRUST framework version when one ships.
+Single entry point for all HITRUST CSF work inside a project's `docs/ciso/` tracking data, across all three nested tiers (e1 ⊂ i1 ⊂ r2): register a tier's control set, optionally import an organization's own MyCSF requirements export, run the control-by-control assessment interview, research budget-appropriate vendor solutions for whatever's a gap (in the background, without blocking the interview), and reconcile a new HITRUST framework version when one ships.
 
 **Tier authority and this must always be communicated to the user:**
 - **e1 and i1** both ship `sourceAuthority: "public-topic-level"` content: topic-level structure compiled from public sources only (HITRUST advisories, public secondary write-ups, HITRUST-authorized-assessor write-ups) -- no licensed MyCSF export is used as an input to either shipped file. Explicitly non-authoritative; every entry citation-backed; a `relatedControlCode`/`legacyCategoryPrefix` is populated only on the minority of entries where a public citation actually verified that specific code, never invented for the rest. **Always tell the user this is non-authoritative and point them at MyCSF or an authorized assessor for exact scope, counts, and wording** before they rely on it for a real assessment. HITRUST's verbatim requirement-statement wording is licensed content and never lives in this plugin regardless.
@@ -26,7 +26,7 @@ Always start here, every invocation:
    - **Missing entirely** -> go to [Register](#a-register).
    - **Present, but `sourceAuthority` is `"structural-only"` or `"public-topic-level"`** -> offer [Import](#b-import) (recommended, not mandatory -- let the user decline and jump straight to [Interview](#c-interview) if they'd rather proceed on control names/topic labels alone).
    - **Present and the interview session isn't complete** -> offer [Interview](#c-interview), resuming the existing `interviewSessions` entry for `hitrust`/`<tier>`.
-   - **Any completed category/domain (in `domainsCompleted`) has a control that's `gap`/`in_progress` with `roadmap.status` still `not_started` or `researching`** -> offer [Roadmap](#d-roadmap) (budget-tiered vendor research). This is checked continuously as categories complete, not gated on the whole tier finishing -- see step 10 in [Interview](#c-interview).
+   - **Any completed category/domain (in `domainsCompleted`) has a control that's `gap`/`in_progress` with `roadmap.status` still `not_started` or `researching`** -> offer [Roadmap](#d-roadmap) (budget-tiered vendor research, which runs in the background so it never blocks the interview). This is checked continuously as categories complete, not gated on the whole tier finishing -- see step 10 in [Interview](#c-interview).
 
 ## (a) Register
 
@@ -74,6 +74,8 @@ Resumable, chunked by `domainKey` (the modern 19-domain numbering, `01`-`19`, ev
 
 ### Part 2 -- after approval, normal mode
 
+**First, drain any finished background roadmap.** If a background vendor-research task (see [Roadmap](#d-roadmap)) has completed since you were last in normal mode, merge its result **now** -- before the steps below, and never while plan mode was still active (it's read-only). To drain: capture the workflow's returned `{ budgetTier, results }`, write it to a scratchpad JSON file, run `merge-roadmap.js` (Part (d) step 3), regenerate the dashboard, and clear those control ids from your in-flight set. This is a checkpoint the interview loop passes through every 4-6 controls, so a completion that landed several sub-batches ago still gets merged deterministically rather than relying on remembered intent. Writes are serialized (one `node` call at a time), so there's no `state.json` race between this merge and the `apply-assessment.js` calls below -- no locking needed.
+
 6. For every control processed in this sub-batch, run:
    ```
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json hitrust <tier> <controlId> '<jsonPayload>'
@@ -90,7 +92,7 @@ Resumable, chunked by `domainKey` (the modern 19-domain numbering, `01`-`19`, ev
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json hitrust <tier> <domainKey>
    ```
    This throws if any control in that group still has `assessedAt: null` (something was missed, or an earlier sub-batch is still pending -- a hard stop, not a silent skip). On success it moves the group from `domainsRemaining` to `domainsCompleted`, updates `lastUpdatedAt`, and flips the session to `"completed"` once `domainsRemaining` is empty.
-10. **Check for un-researched gaps right now, not just at full-tier completion.** Look at every control in `domainsCompleted` so far (the category that just finished, plus any earlier ones from this or a prior session) for `assessment.status` in `gap`/`in_progress` with `roadmap.status` still `not_started` or `researching` (for r2, check `assessment.maturity.implemented.status` instead -- the top-level `assessment.status` is only ever `null` or `not_applicable` for r2). If any exist, tell the user how many and offer [Roadmap](#d-roadmap) right now -- they can accept immediately, or decline and keep interviewing (or stop for now); nothing forces them into Roadmap before the tier is fully interviewed.
+10. **Check for un-researched gaps right now, not just at full-tier completion.** Look at every control in `domainsCompleted` so far (the category that just finished, plus any earlier ones from this or a prior session) for `assessment.status` in `gap`/`in_progress` with `roadmap.status` still `not_started` or `researching` (for r2, check `assessment.maturity.implemented.status` instead -- the top-level `assessment.status` is only ever `null` or `not_applicable` for r2). If any exist, tell the user how many and offer [Roadmap](#d-roadmap) right now. If they accept, it launches in the **background** (see [Roadmap](#d-roadmap)) and you continue interviewing immediately -- researching and interviewing are no longer mutually exclusive. Exclude any controls already dispatched to a still-running background roadmap this session, so they aren't re-researched. They can also decline and keep interviewing, or stop for now; nothing forces them into Roadmap before the tier is fully interviewed.
 11. Regenerate the dashboard once more (step 7 already reflects this sub-batch; this pass also picks up the category moving to `domainsCompleted` from step 9), then report a full category-completion summary to the user: counts of met/gap/in-progress/deferred across the whole category, categories remaining, and the dashboard path.
 
 ### Discipline (why the mechanical gate exists)
@@ -115,18 +117,18 @@ r2 is the only tier that scores five PRISMA maturity dimensions per control (Pol
 
 ## (d) Roadmap
 
-Available as soon as ANY completed category/domain has un-researched gaps (see [Interview](#c-interview) step 10) -- not gated on the whole tier finishing. Also invocable any time standalone, e.g. to pick up gaps that were deferred earlier.
+Available as soon as ANY completed category/domain has un-researched gaps (see [Interview](#c-interview) step 10) -- not gated on the whole tier finishing. Also invocable any time standalone, e.g. to pick up gaps that were deferred earlier. **Runs in the background:** it's launched fire-and-forget so it never blocks the interview, and its findings are merged in whenever it finishes (steps 2-4).
 
 1. **Budget tier.** Check `state.organization.budgetTier`:
    - If already set, tell the user "using your saved default: `<tier>`" and offer (`AskUserQuestion`) to keep it or change it for this run.
    - If not set, ask (`AskUserQuestion`): open source/freeware, small business, enterprise, or startup-that-might-scale. It's saved as the new default automatically once the workflow runs (see step 3) -- no separate write needed here.
-2. Run the `Workflow` tool with the contents of `${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/roadmap/workflow.js` as `script`, passing `args: { controls: [...], budgetTier }` where `controls` is built from every `gap`/`in_progress` control with `roadmap.status` still `not_started` or `researching`, across whichever tier(s) the user wants covered: `{ id, relatedControlCode or topicLabel, relatedControlName or topicSummary, domainKey, justification: assessment.justification, inProgressNotes: assessment.inProgress }`. (Filtering out `roadmap.status: "complete"` controls is what makes this safe to re-run repeatedly as new gaps appear across sessions, instead of re-researching the same ones.)
-3. Write the workflow's result to a scratchpad JSON file, then run:
+2. **Launch, fire-and-forget.** Run the `Workflow` tool with the contents of `${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/roadmap/workflow.js` as `script`, passing `args: { controls: [...], budgetTier }` where `controls` is built from every `gap`/`in_progress` control with `roadmap.status` still `not_started` or `researching` -- **except** any control ids you've already dispatched to a still-running background roadmap this session (track those in conversation context so they aren't researched twice) -- across whichever tier(s) the user wants covered: `{ id, relatedControlCode or topicLabel, relatedControlName or topicSummary, domainKey, justification: assessment.justification, inProgressNotes: assessment.inProgress }`. (Filtering out `roadmap.status: "complete"` controls is what makes this safe to re-run repeatedly as new gaps appear across sessions, instead of re-researching the same ones.) The `Workflow` tool returns immediately with a task-id and delivers its result later via a `<task-notification>` -- **launch it and do not wait for it**: record the dispatched control ids as in-flight, tell the user vendor research for N controls is now running in the background, and return to the interview (or end the turn if this was a standalone Roadmap run).
+3. **When the background task completes** (its `<task-notification>` arrives), drain it -- but only in normal mode, never mid-plan-mode. For an in-interview run that's the drain checkpoint at the top of the next Part 2 (normal-mode) block; for a standalone run, do it as soon as the notification arrives. To drain: capture the workflow's returned `{ budgetTier, results }`, write it to a scratchpad JSON file, then run:
    ```
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/roadmap/merge-roadmap.js" <docs/ciso-dir>/state.json <result.json path>
    ```
-   to merge vendor findings into each control's `roadmap` field (works across any tier, keyed by control id).
-4. Call the dashboard regenerator, then present a summary -- call out any `confidence: "low"` or empty-vendor results as needing manual follow-up, not silently accepted.
+   to merge vendor findings into each control's `roadmap` field (works across any tier, keyed by control id). Then clear those control ids from your in-flight set.
+4. Call the dashboard regenerator, then present a **brief, non-blocking** summary -- call out any `confidence: "low"` or empty-vendor results as needing manual follow-up, not silently accepted. Until this merge lands, the dashboard still shows those gaps as un-researched (a deliberate consequence of not tracking an in-flight state on disk) -- the "research running in the background" message from step 2 is what tells the user findings are on the way.
 
 ## (e) Upgrade
 
