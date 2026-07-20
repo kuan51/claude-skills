@@ -266,3 +266,29 @@ test('registerTier throws if certKey or certDisplayName is missing', () => {
   assert.throws(() => registerTier(stateJsonPath, TINY_STRUCTURE), /certKey is required/);
   assert.throws(() => registerTier(stateJsonPath, TINY_STRUCTURE, 'hitrust'), /certDisplayName is required/);
 });
+
+test('the bundled r2.v11.8.structure.json entries are concrete, assessable controls with a valid applicabilityTier', () => {
+  const structure = loadStructure(resolveStructurePath('r2'));
+  assert.equal(structure.tier, 'r2');
+  assert.ok(structure.controls.length > 0, 'r2 structure file must not be empty');
+
+  for (const control of structure.controls) {
+    assert.ok(
+      ['universal', 'conditional'].includes(control.applicabilityTier),
+      `${control.id} must have applicabilityTier "universal" or "conditional"`
+    );
+    if (control.applicabilityTier === 'conditional') {
+      assert.ok(
+        control.conditionalOn && control.conditionalOn.trim().length > 0,
+        `${control.id} is conditional but has no conditionalOn note`
+      );
+    } else {
+      assert.equal(control.conditionalOn, undefined, `${control.id} is universal and must not carry a conditionalOn note`);
+    }
+    assert.equal(control.baselineOverlap, undefined, `${control.id} must not carry the removed baselineOverlap field`);
+    assert.equal(control.exampleOnly, undefined, `${control.id} must not carry the removed exampleOnly field`);
+    assert.equal(control.nonAuthoritative, true, `${control.id} must be marked nonAuthoritative`);
+    assert.ok(Array.isArray(control.citations) && control.citations.length > 0, `${control.id} must carry at least one citation`);
+    assert.match(control.id, /^r2-\d{2}-\d{2}$/, `${control.id} must use the r2-<domainKey>-<NN> id format`);
+  }
+});

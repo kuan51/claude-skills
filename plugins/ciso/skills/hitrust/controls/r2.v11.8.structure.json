@@ -3,179 +3,160 @@
   "controlSetVersion": "v11.8",
   "sourceAuthority": "public-topic-level",
   "nonAuthoritative": true,
-  "compiledAt": "2026-07-18T00:00:00.000Z",
+  "compiledAt": "2026-07-19T00:00:00.000Z",
   "baselineRef": "i1.v11.8.structure.json",
-  "maturityDimensions": [
-    "Policy",
-    "Procedure",
-    "Implemented",
-    "Measured",
-    "Managed"
-  ],
-  "coverageNote": "r2 uses i1's full baseline plus risk-tailored additions determined by an organization's own risk-scoping factors (records volume, internet accessibility, regulatory exposure, BYOD, wireless use, third-party access, and more) -- there is no fixed r2 control list. The entries below are ILLUSTRATIVE EXAMPLES of the kinds of risk-tailored additions r2 can pull in, drawn from HITRUST's own public risk-factor documentation and secondary sources, each carrying the domain it would layer onto -- never a complete or authoritative r2 scope for any real organization. r2 also scores multiple maturity dimensions (see maturityDimensions) per control, not just Implemented. Real r2 scope and maturity requirements are set by HITRUST's own risk-factor questionnaire (in MyCSF) or a licensed assessor.",
+  "maturityDimensions": ["Policy", "Procedure", "Implemented", "Measured", "Managed"],
+  "coverageNote": "r2 uses i1's full baseline plus risk-tailored additions determined by an organization's own risk-scoping factors (records volume, internet accessibility, regulatory exposure, BYOD, wireless use, third-party access, and more) -- there is no fixed r2 control list. The 12 entries below are a small, concrete, non-authoritative seed set proving the r2 maturity-dimension schema end-to-end (see docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md); a much larger generalizable-controls research pass is planned separately. Each entry carries applicabilityTier (\"universal\": applies to nearly any organization pursuing r2, vs. \"conditional\": depends on a specific risk factor, named in conditionalOn) so the dashboard/roadmap can surface near-universal topics first. r2 also scores multiple maturity dimensions per control (see maturityDimensions), not just Implemented -- see the design spec for how this plugin models that without overclaiming HITRUST's real weighted PRISMA scoring. Real r2 scope and maturity requirements are set by HITRUST's own risk-factor questionnaire (in MyCSF) or a licensed assessor.",
   "controls": [
     {
-      "id": "r2-illustrative-01-01",
+      "id": "r2-01-01",
       "domain": "Information Protection Program",
       "domainKey": "01",
-      "topicLabel": "Regulatory-driven program documentation add-ons (illustrative only)",
-      "topicSummary": "HITRUST's own r2 assessment page describes r2 as tailoring control selection to an organization's risk profile, including regulatory obligations (it names HIPAA, GDPR, PCI DSS, NIST and others among 60+ mapped authoritative sources) alongside factors like system complexity and data sensitivity. As one illustrative example (not a fixed or exhaustive rule), an organization whose risk profile pulls in a specific regulatory factor -- e.g., GDPR applicability -- could see its Information Protection Program-level policy/governance documentation extended with additional authoritative-source-mapped elements under r2, whereas i1's curated control set would not include that tailoring.",
-      "citations": [
-        "https://hitrustalliance.net/assessments-and-certifications/r2"
-      ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "topicLabel": "Regulatory/authoritative-source-mapped program documentation",
+      "topicSummary": "The organization's information security program documentation is extended to explicitly map applicable regulatory or authoritative-source requirements (e.g., GDPR, HIPAA, PCI DSS) identified by the organization's own risk profile, beyond i1's generic baseline program documentation.",
+      "citations": ["https://hitrustalliance.net/assessments-and-certifications/r2"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies when a specific regulatory obligation (e.g. GDPR, PCI DSS, HIPAA) applies to the organization",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-02-01",
+      "id": "r2-02-01",
       "domain": "Endpoint Protection",
       "domainKey": "02",
-      "topicLabel": "BYOD Risk Factor Expanding Endpoint-Related Requirements (r2 example)",
-      "topicSummary": "HITRUST's published r2 risk-factor list includes a factor asking whether the organization allows personally-owned devices (BYOD) to connect to in-scope assets; when this factor applies, it is used to pull additional endpoint-related control requirements into that organization's r2 scope beyond the fixed i1 baseline. This is illustrative only -- r2's actual added controls depend on the organization's full risk-factor profile, not a fixed list.",
-      "citations": [
-        "https://help.mycsf.net/factors/"
-      ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "topicLabel": "Documented BYOD security baseline",
+      "topicSummary": "A documented, enforced security baseline (minimum OS version, encryption, screen lock, remote wipe capability) applies to personally-owned devices permitted to access in-scope systems, beyond i1's organization-owned-endpoint baseline.",
+      "citations": ["https://help.mycsf.net/factors/"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies if personally-owned devices (BYOD) are permitted to access in-scope systems",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-04-01",
+      "id": "r2-04-01",
       "domain": "Mobile Device Security",
       "domainKey": "04",
-      "topicLabel": "Mobile-Device Usage as an r2 Risk-Scoping Factor (illustrative of the mechanism, not a fixed added control)",
-      "topicSummary": "HITRUST's own description of its risk-based tailoring approach lists whether mobile devices are used within a system as one of several system-level risk factors that can raise the applicable level of security requirements an organization must meet under a risk-tailored (r2) assessment, alongside factors like internet accessibility or third-party data exchange. This illustrates how mobile-device use feeds into r2's general risk-scoping mechanism -- it is not a specific fixed control added to the Mobile Device Security domain, and the actual resulting requirements vary by an organization's full risk profile.",
-      "citations": [
-        "https://hitrustalliance.net/hubfs/CSF%20Versions/CSF%20v11.5/Introduction%20to%20HITRUST%20CSF%20v11.5.0.pdf"
-      ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "topicLabel": "Mobile device management (MDM) enforcement",
+      "topicSummary": "Mobile devices accessing in-scope systems are enrolled in a mobile device management (MDM) solution enforcing a documented security configuration baseline, rather than relying on informal device-level controls alone.",
+      "citations": ["https://hitrustalliance.net/hubfs/CSF%20Versions/CSF%20v11.5/Introduction%20to%20HITRUST%20CSF%20v11.5.0.pdf"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies if mobile devices are used within the assessed environment",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-05-01",
+      "id": "r2-05-01",
       "domain": "Wireless Security",
       "domainKey": "05",
-      "topicLabel": "Wireless-in-scope as an r2 inherent risk factor",
-      "topicSummary": "For risk-based r2 assessments, whether wireless networks are actually used within the assessed environment is one of the inherent risk factors HITRUST uses to decide which additional control requirements apply -- so an organization with wireless in its assessment scope can be tailored a broader set of wireless-related requirements than one without. This is illustrative of how r2 scales this domain's depth to an organization's actual risk profile rather than applying one fixed list, and is not a definitive or exhaustive statement of r2's wireless-related additions.",
-      "citations": [
-        "https://socreports.com/hitrust/hitrust-risk-based-2-year-r2-validated-assessments"
-      ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "topicLabel": "Enterprise wireless authentication and guest segmentation",
+      "topicSummary": "In-scope wireless networks use enterprise-grade authentication (e.g., WPA2/WPA3-Enterprise with per-user credentials) and guest wireless traffic is segmented from in-scope systems, validated on-site rather than merely described in policy.",
+      "citations": ["https://socreports.com/hitrust/hitrust-risk-based-2-year-r2-validated-assessments"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies if wireless networks are used within the assessed environment",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-07-01",
+      "id": "r2-07-01",
       "domain": "Vulnerability Management",
       "domainKey": "07",
-      "topicLabel": "Example: Formal, Validated Penetration Testing Program (Risk-Tailored at r2)",
-      "topicSummary": "As an illustrative example only -- not a fixed or exhaustive rule -- secondary sources describe r2 assessments (unlike i1) as the tier where a documented penetration-testing program is explicitly validated on-site: pentest scope/methodology documentation, reports dated within the assessment evidence window, remediation tracking, and retest confirmation. i1, by contrast, is described as only expecting vulnerability scanning to be 'in place,' with pentest evidence treated as optional supporting material rather than a validated requirement. Whether pentesting actually applies at any tier depends on the organization's specific risk factors and assessed scope, not the assessment tier alone.",
+      "topicLabel": "Formal, validated penetration-testing program",
+      "topicSummary": "A documented penetration-testing program exists with defined scope and methodology, dated test reports within the assessment evidence window, tracked remediation of findings, and retest confirmation -- validated on-site as a distinct requirement from vulnerability scanning alone.",
       "citations": [
         "https://www.softwaresecured.com/guides-and-checklists/hitrust-csf-penetration-testing-requirements-guide",
         "https://deepstrike.io/blog/hitrust-certification-penetration-testing"
       ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "applicabilityTier": "universal",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-08-01",
+      "id": "r2-08-01",
       "domain": "Network Protection",
       "domainKey": "08",
-      "topicLabel": "Example: PCI DSS / Cloud-Specific Network Segmentation Add-Ons",
-      "topicSummary": "As an EXAMPLE only: secondary guidance suggests that when an r2 assessment optionally incorporates an authoritative source like PCI DSS, or scopes in cloud-hosted systems, additional segmentation-style validation (e.g., cardholder-data-environment isolation, or cloud VPC/security-group/subnet configuration review) can be layered onto the baseline Network Protection controls. This is offered as one possible illustration of risk/regulatory-driven tailoring, not a definitive or exhaustive set of r2 additions.",
+      "topicLabel": "Cardholder-data or cloud-boundary segmentation validation",
+      "topicSummary": "Network segmentation is validated for cardholder-data environments (if payment card data is handled) or cloud VPC/security-group/subnet boundaries (if cloud-hosted systems are in scope), beyond i1's general network-segmentation baseline.",
       "citations": [
         "https://www.softwaresecured.com/guides-and-checklists/hitrust-csf-penetration-testing-requirements-guide",
         "https://hitrustalliance.net/assessments-and-certifications/r2"
       ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies if handling payment card data or operating cloud-hosted systems requiring segmentation validation",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-08-02",
+      "id": "r2-08-02",
       "domain": "Network Protection",
       "domainKey": "08",
-      "topicLabel": "Example: Risk-Factor-Tailored Network Scope (Internet-Facing & Wireless Risk Factors)",
-      "topicSummary": "As an EXAMPLE only: official HITRUST advisory material indicates r2 assessments tailor which requirements apply based on inherent risk factors of the assessed environment, such as whether in-scope systems are Internet-accessible or whether wireless networks are used in scope, meaning organizations with those characteristics can face additional or adjusted network-protection requirements compared to organizations without them. This is illustrative of r2's risk-based tailoring mechanism, not a fixed or exhaustive list of added controls.",
+      "topicLabel": "Extended boundary defense for internet-accessible systems",
+      "topicSummary": "In-scope systems that are internet-accessible receive additional network-protection validation (e.g., stricter boundary defense, exposure review) beyond what a non-internet-facing system requires under i1's baseline.",
       "citations": [
         "https://hitrustalliance.net/advisories/haa-2021-012-i1-introduction-and-r2-enhancements",
         "https://hitrustalliance.net/assessments-and-certifications/r2"
       ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies if in-scope systems are internet-accessible",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-09-01",
+      "id": "r2-09-01",
       "domain": "Transmission Protection",
       "domainKey": "09",
-      "topicLabel": "Example: NIST-validated (FIPS 140-2/140-3) cryptographic modules",
-      "topicSummary": "Public vendor/advisory commentary discusses HITRUST's reliance on NIST SP 800-53-aligned guidance as effectively requiring FIPS-validated cryptographic modules rather than merely 'strong' algorithms in some assessment contexts. This is offered only as an illustrative example of how a risk-tailored (r2) assessment could layer a more rigorous, validated-module expectation onto the base transmission-protection/encryption topic for certain organizational risk profiles -- not as a fixed or universal r2 addition.",
-      "citations": [
-        "https://www.safelogic.com/blog/hitrust-90"
-      ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "topicLabel": "NIST-validated (FIPS 140-2/140-3) cryptographic modules",
+      "topicSummary": "Encryption of sensitive data in transit and at rest uses NIST-validated (FIPS 140-2/140-3) cryptographic modules, rather than merely algorithmically-strong but unvalidated implementations.",
+      "citations": ["https://www.safelogic.com/blog/hitrust-90"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies most directly to organizations with federal, healthcare, or other regulatory exposure requiring FIPS-validated cryptography",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-13-01",
+      "id": "r2-13-01",
       "domain": "Education, Training, and Awareness",
       "domainKey": "13",
-      "topicLabel": "Example: sector/compliance-specific awareness content layered in via r2 risk tailoring",
-      "topicSummary": "EXAMPLE ONLY, not exhaustive or definitive. HITRUST r2 tailors its control set to an organization's risk profile and can incorporate additional authoritative sources (e.g., PCI DSS for organizations handling payment card data) on top of baseline requirements. Since some of those sources carry their own formal security-awareness-program expectations, an r2 assessment for such an organization could layer sector-specific awareness content onto the training domain beyond what a generic i1 assessment requires. Real r2 additions depend entirely on the organization's own risk-scoping and are not fixed.",
+      "topicLabel": "Sector/compliance-specific awareness training content",
+      "topicSummary": "Security awareness training includes sector- or compliance-specific content (e.g., cardholder-data handling for PCI DSS scope) layered onto i1's baseline general security-awareness program.",
       "citations": [
         "https://hitrustalliance.net/assessments-and-certifications/r2",
         "https://www.bemopro.com/compliance-requirements/hitrust"
       ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies if handling payment card data or subject to another authoritative source with its own awareness-training requirements",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-14-01",
+      "id": "r2-14-01",
       "domain": "Third-Party Assurance",
       "domainKey": "14",
-      "topicLabel": "Example: Recursive Subprocessor Accountability for PHI-Handling Business Associates",
-      "topicSummary": "As one illustrative, organization-profile-dependent example (not a fixed or exhaustive r2 addition): a healthcare Business Associate pursuing an r2 assessment may be expected to extend the same third-party assurance discipline down to its own subcontractors or subprocessors that touch protected health information -- keeping an inventory of those parties and collecting their security questionnaires or independent assessment/certification reports -- mirroring what a covered entity expects of the Business Associate itself.",
+      "topicLabel": "Subcontractor/subprocessor accountability for PHI handling",
+      "topicSummary": "A maintained inventory of subcontractors/subprocessors that handle protected health information on the organization's behalf, with collected security questionnaires or independent assessment/certification reports for each -- mirroring what a covered entity expects of the organization itself.",
       "citations": [
         "https://screenata.com/resources/blog/business-associate-hitrust-requirements-complete-evidence-checklist",
         "https://www.ispartnersllc.com/blog/hitrust-csf-certification-bas/"
       ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to healthcare Business Associates whose subcontractors handle protected health information",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-17-01",
+      "id": "r2-17-01",
       "domain": "Risk Management",
       "domainKey": "17",
-      "topicLabel": "Risk-Profile-Driven Regulatory/Privacy Overlays (e.g., GDPR, CCPA, PCI DSS)",
-      "topicSummary": "HITRUST's own r2 materials describe control selection as tailored to an organization's risk profile, technology environment, and regulatory exposure, with the option to map in additional authoritative sources such as GDPR, CCPA, HIPAA, or PCI DSS. For an organization with material privacy or payment-card risk, this could plausibly layer extra data-handling or privacy-specific risk factors on top of this domain's baseline risk-assessment requirements. Presented purely as an illustrative example, not a fixed or exhaustive list of r2 additions. Note: a closely related illustration also appears under Data Protection and Privacy below, applying the same GDPR/CCPA/PCI DSS overlay mechanism to that domain's substantive controls rather than to the risk-assessment process itself.",
-      "citations": [
-        "https://hitrustalliance.net/assessments-and-certifications/r2"
-      ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "topicLabel": "Regulatory/privacy factors formally incorporated into risk assessment",
+      "topicSummary": "The organization's risk assessment process formally incorporates applicable regulatory or privacy factors (e.g., GDPR, CCPA, PCI DSS) as distinct, documented risk inputs, not folded generically into overall security risk.",
+      "citations": ["https://hitrustalliance.net/assessments-and-certifications/r2"],
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations with material privacy or payment-card regulatory exposure",
+      "nonAuthoritative": true
     },
     {
-      "id": "r2-illustrative-19-01",
+      "id": "r2-19-01",
       "domain": "Data Protection and Privacy",
       "domainKey": "19",
-      "topicLabel": "Example: Regulatory/Privacy Overlay via r2 Risk-Based Tailoring (e.g., GDPR, CCPA)",
-      "topicSummary": "As an illustrative example only: unlike i1's fixed, privacy-agnostic control set, an r2 assessment can be tailored based on an organization's inherent risk factors and regulatory scope to layer in privacy- or jurisdiction-specific requirements -- for instance provisions aligned to GDPR for international personal data or CCPA for California consumer data -- alongside the core security controls touching this domain. This is one possible tailoring outcome among many, not a fixed or exhaustive r2 addition.",
+      "topicLabel": "Documented handling of GDPR/CCPA-covered personal data",
+      "topicSummary": "Data handling practices for regulated personal data (e.g., GDPR-covered EU personal data, or CCPA-covered California consumer data) are documented and implemented alongside i1's baseline data-protection controls.",
       "citations": [
         "https://socreports.com/hitrust/hitrust-risk-based-2-year-r2-validated-assessments",
         "https://blog.rsisecurity.com/how-hitrust-is-growing-its-privacy-controls-for-greater-security/",
         "https://hitrustalliance.net/advisories/haa-2021-012-i1-introduction-and-r2-enhancements"
       ],
-      "baselineOverlap": "unsure",
-      "nonAuthoritative": true,
-      "exampleOnly": true
+      "applicabilityTier": "conditional",
+      "conditionalOn": "applies to organizations processing GDPR- or CCPA-covered personal data",
+      "nonAuthoritative": true
     }
   ]
 }
