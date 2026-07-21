@@ -28,4 +28,46 @@ function classifyFlatControl(controlId, control) {
   return null;
 }
 
-module.exports = { classifyFlatControl, OPEN_STATUSES, RESOLVED_STATUSES, isNewerThan };
+const R2_DIMENSIONS = ['policy', 'procedure', 'implemented', 'measured', 'managed'];
+
+function classifyR2Control(controlId, control) {
+  const tracker = control.tracker;
+  const maturity = control.assessment.maturity;
+  const dimensionActions = {};
+
+  for (const dimName of R2_DIMENSIONS) {
+    const dimState = maturity[dimName];
+    const subtask = tracker && tracker.subtasks && tracker.subtasks[dimName];
+
+    if (!subtask) {
+      if (OPEN_STATUSES.includes(dimState.status)) dimensionActions[dimName] = 'create';
+      continue;
+    }
+    if (subtask.status === 'closed') continue;
+    if (RESOLVED_STATUSES.includes(dimState.status)) {
+      dimensionActions[dimName] = 'close';
+    } else if (OPEN_STATUSES.includes(dimState.status) && isNewerThan(dimState.assessedAt, subtask.syncedAt)) {
+      dimensionActions[dimName] = 'update';
+    }
+  }
+
+  if (!tracker) {
+    return Object.keys(dimensionActions).length > 0
+      ? { controlId, action: 'create', dimensionActions }
+      : null;
+  }
+  if (tracker.status === 'closed') return null;
+
+  const allDimensionsResolved = R2_DIMENSIONS.every((d) => RESOLVED_STATUSES.includes(maturity[d].status));
+  const hasOpenSubtask = Object.values(tracker.subtasks || {}).some((s) => s.status !== 'closed');
+
+  if (allDimensionsResolved && !hasOpenSubtask) {
+    return { controlId, action: 'close', dimensionActions };
+  }
+  if (Object.keys(dimensionActions).length > 0) {
+    return { controlId, action: 'update', dimensionActions };
+  }
+  return null;
+}
+
+module.exports = { classifyFlatControl, classifyR2Control, OPEN_STATUSES, RESOLVED_STATUSES, isNewerThan, R2_DIMENSIONS };

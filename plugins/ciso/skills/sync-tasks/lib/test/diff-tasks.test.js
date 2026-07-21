@@ -52,3 +52,96 @@ test('classifyFlatControl: already closed tracker -> null even if status is gap 
   const c = control('gap', '2026-01-03T00:00:00.000Z', { status: 'closed', syncedAt: '2026-01-02T00:00:00.000Z' });
   assert.equal(classifyFlatControl('CTRL-A', c), null);
 });
+
+const { classifyR2Control, R2_DIMENSIONS } = require('../diff-tasks.js');
+
+function dim(status, assessedAt) {
+  return { status, justification: null, inProgress: { currentState: null, estimatedCloseness: null }, assessedAt: assessedAt || null };
+}
+
+function r2Control(maturityOverrides, tracker) {
+  const maturity = {};
+  for (const d of R2_DIMENSIONS) maturity[d] = dim('not_assessed');
+  Object.assign(maturity, maturityOverrides);
+  return { assessment: { status: null, maturity }, tracker };
+}
+
+test('classifyR2Control: no gaps anywhere, no tracker -> null', () => {
+  assert.equal(classifyR2Control('CTRL-R2', r2Control({})), null);
+});
+
+test('classifyR2Control: one gapped dimension, no tracker yet -> create with just that dimension', () => {
+  const c = r2Control({ policy: dim('gap', '2026-01-01T00:00:00.000Z') });
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'create',
+    dimensionActions: { policy: 'create' },
+  });
+});
+
+test('classifyR2Control: two gapped dimensions, no tracker yet -> create with both', () => {
+  const c = r2Control({
+    policy: dim('gap', '2026-01-01T00:00:00.000Z'),
+    implemented: dim('in_progress', '2026-01-01T00:00:00.000Z'),
+  });
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'create',
+    dimensionActions: { policy: 'create', implemented: 'create' },
+  });
+});
+
+test('classifyR2Control: existing open subtask for a still-gapped dimension, unchanged -> null', () => {
+  const c = r2Control(
+    { policy: dim('gap', '2026-01-01T00:00:00.000Z') },
+    { status: 'open', subtasks: { policy: { id: 'P-1', url: 'https://x/P-1', status: 'open', syncedAt: '2026-01-02T00:00:00.000Z' } } }
+  );
+  assert.equal(classifyR2Control('CTRL-R2', c), null);
+});
+
+test('classifyR2Control: existing subtask, dimension reassessed after last sync -> update for that dimension', () => {
+  const c = r2Control(
+    { policy: dim('gap', '2026-01-03T00:00:00.000Z') },
+    { status: 'open', subtasks: { policy: { id: 'P-1', url: 'https://x/P-1', status: 'open', syncedAt: '2026-01-02T00:00:00.000Z' } } }
+  );
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'update',
+    dimensionActions: { policy: 'update' },
+  });
+});
+
+test('classifyR2Control: one dimension now met, its subtask still open -> close that dimension only, parent stays open', () => {
+  const c = r2Control(
+    { policy: dim('met', '2026-01-03T00:00:00.000Z'), implemented: dim('gap', '2026-01-01T00:00:00.000Z') },
+    { status: 'open', subtasks: {
+      policy: { id: 'P-1', url: 'https://x/P-1', status: 'open', syncedAt: '2026-01-02T00:00:00.000Z' },
+      implemented: { id: 'P-2', url: 'https://x/P-2', status: 'open', syncedAt: '2026-01-02T00:00:00.000Z' },
+    } }
+  );
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'update',
+    dimensionActions: { policy: 'close' },
+  });
+});
+
+test('classifyR2Control: all dimensions resolved and all subtasks already closed -> close the parent', () => {
+  const maturity = {};
+  for (const d of R2_DIMENSIONS) maturity[d] = dim('met', '2026-01-03T00:00:00.000Z');
+  const subtasks = {};
+  for (const d of R2_DIMENSIONS) subtasks[d] = { id: `P-${d}`, url: `https://x/P-${d}`, status: 'closed', syncedAt: '2026-01-02T00:00:00.000Z' };
+  const c = { assessment: { status: null, maturity }, tracker: { status: 'open', subtasks } };
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'close',
+    dimensionActions: {},
+  });
+});
+
+test('classifyR2Control: parent already closed -> null', () => {
+  const maturity = {};
+  for (const d of R2_DIMENSIONS) maturity[d] = dim('met', '2026-01-03T00:00:00.000Z');
+  const c = { assessment: { status: null, maturity }, tracker: { status: 'closed', subtasks: {} } };
+  assert.equal(classifyR2Control('CTRL-R2', c), null);
+});
