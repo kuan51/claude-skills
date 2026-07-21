@@ -5,12 +5,14 @@ function renderFindings(eda) {
   return eda
     .map((role) => {
       const lines = (role.findings || [])
-        .map(
-          (f) =>
-            `- **[${f.severity}]** ${f.claim}\n  - Evidence: ${f.evidence}${
-              f.required_execution ? ' (recomputed)' : ' (static review)'
-            }`
-        )
+        .map((f) => {
+          const tag = f.verified
+            ? ' (verified — recomputed)'
+            : f.required_execution
+              ? ' ⚠ unverified — inferred, not executed'
+              : ' (static review)';
+          return `- **[${f.severity}]** ${f.claim}\n  - Evidence: ${f.evidence}${tag}`;
+        })
         .join('\n');
       return `### ${role.label || role.key}\n\n${lines || '_No findings._'}`;
     })

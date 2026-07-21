@@ -30,6 +30,7 @@ test('renders findings grouped by role with severity and evidence', () => {
             claim: 'Duplicate rows inflate the training set by 12%.',
             evidence: 'data/train.csv rows 100-350 are exact duplicates.',
             required_execution: true,
+            verified: true,
           },
         ],
       },
@@ -37,7 +38,29 @@ test('renders findings grouped by role with severity and evidence', () => {
   });
   assert.ok(out.includes('### data quality & integrity reviewer'));
   assert.ok(out.includes('**[high]** Duplicate rows inflate the training set by 12%.'));
-  assert.ok(out.includes('(recomputed)'));
+  assert.ok(out.includes('verified — recomputed'));
+});
+
+test('flags a required-but-unexecuted finding as unverified', () => {
+  const out = buildReport(TEMPLATE, {
+    eda: [
+      {
+        key: 'statistical',
+        label: 'statistical methodologist',
+        findings: [
+          {
+            severity: 'medium',
+            claim: 'Residuals look non-normal.',
+            evidence: 'Inferred from model choice; not run.',
+            required_execution: true,
+            verified: false,
+          },
+        ],
+      },
+    ],
+  });
+  assert.ok(out.includes('unverified — inferred, not executed'));
+  assert.ok(!out.includes('recomputed'));
 });
 
 test('falls back to placeholder text when a section has no data', () => {
