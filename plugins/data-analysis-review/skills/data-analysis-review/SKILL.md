@@ -16,11 +16,11 @@ Performs an empirical, objective review of a data science project in the current
 
 ## Process
 
-This is a two-part process: an interactive gating phase (this conversation, plan mode), then a `Workflow`-driven analysis engine.
+This is a two-part process: an interactive gating phase, then a `Workflow`-driven analysis engine. The gating phase runs the same way in every mode -- the only difference is how it ends: in plan mode it presents the gathered plan for approval via `ExitPlanMode`; in every other mode it proceeds straight into the engine.
 
-### Part 1: Gating flow (plan mode)
+### Part 1: Gating flow
 
-1. **Enter plan mode.** Call `EnterPlanMode` if not already active.
+1. **Detect the mode; don't force plan mode.** If the harness is already in plan mode, you'll present the gathered plan for approval at step 7. If it is not in plan mode, do NOT call `EnterPlanMode` -- run steps 2-6 exactly as written and start the engine directly at step 7. Steps 2-6 (build the file lists, confirm thesis, roster, and save preference via `AskUserQuestion`) run identically either way.
 
 2. **Review project hierarchy.** Explore the current working directory: docs, source, notebooks, data files. Build two lists:
    - **Raw inputs**: data files, source code, notebooks, business/requirements docs.
@@ -42,9 +42,9 @@ This is a two-part process: an interactive gating phase (this conversation, plan
 
 6. **Confirm save preference.** Ask yes/no whether to save the final report, default path `docs/data-analysis-review/<YYYY-MM-DD>-review.md`, overridable.
 
-7. **Exit plan mode.** Call `ExitPlanMode` with a plan restating the confirmed thesis/goals, hierarchy findings, skills to load, reviewer roster (with citations for any deep-research-sourced extras), and save preference. Approval confirms everything at once.
+7. **Start the analysis engine.** Restate the gathered plan: confirmed thesis/goals, hierarchy findings, skills to load, reviewer roster (with citations for any deep-research-sourced extras), the agent fan-out you'll run across the three engine phases (Independent EDA -> Reconcile -> Cross-Compare), and save preference. In plan mode, deliver that restatement via `ExitPlanMode` -- approval confirms everything at once, then proceed to Part 2. In every other mode, state that same summary in the conversation for the record and proceed directly to Part 2 -- there is no approval gate.
 
-### Part 2: Analysis engine (after `ExitPlanMode` approval)
+### Part 2: Analysis engine (after gating)
 
 8. **Sandbox the project before any analysis.** Copy the entire project directory to a fresh temporary directory outside the project (e.g. your scratchpad, or the system temp directory) -- every agent in the analysis engine, including any Bash execution the `reproducibility-auditor` performs, must only ever see paths inside this copy. Record the resulting sandbox directory path (you'll pass it as `sandboxRoot` in step 9). Then rewrite every path destined for `args` (below) from the original project root to the copy root:
    ```
