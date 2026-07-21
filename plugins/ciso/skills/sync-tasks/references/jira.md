@@ -1,0 +1,45 @@
+# JIRA field mapping and hierarchy
+
+Use `mcp__atlassian__*` tools (confirm exact tool names for this connector instance with `ToolSearch` — query `"select:mcp__atlassian__createJiraIssue,mcp__atlassian__editJiraIssue,mcp__atlassian__transitionJiraIssue,mcp__atlassian__getJiraProjectIssueTypesMetadata,mcp__atlassian__getVisibleJiraProjects"` — before the first call, since the tool schemas are deferred until loaded).
+
+## One-time setup (when `sync.destination` is unset)
+
+1. Call `getVisibleJiraProjects` and ask the user to pick the target project (store its key as `destination.projectKey`).
+2. Call `getJiraProjectIssueTypesMetadata` for that project; ask the user which issue type to use for control tasks (store as `destination.issueType`, typically `"Task"`).
+3. Ask the user whether their JIRA site has Advanced Roadmaps enabled (store as `destination.hasAdvancedRoadmaps`, boolean).
+4. Create the certification epic: `createJiraIssue` with `issueType: "Epic"`, `summary: "<certDisplayName> <year or cycle, if known>"`. Store the result's issue key/url as `destination.epicId`/`destination.epicUrl`.
+5. Leave `destination.tierGroupIds` empty (`{}`). Tier "Feature" issues are **not** created here — they're created per tier, on the sync that first needs each one (see "Ensuring this tier's group" below), so that a later `i1`/`r2` sync still creates its own tier group even though the destination already exists.
+
+## Ensuring this tier's group (every sync, before creating that tier's tasks)
+
+Only relevant when `hasAdvancedRoadmaps` is `true` — without it, tasks parent directly to the epic and group by label (see "Creating a control's task"), so there's nothing to create here.
+
+If `hasAdvancedRoadmaps` is true and `destination.tierGroupIds.<tier>` is unset for the tier being synced, create the tier's grouping issue: `createJiraIssue` with `issueType: "Feature"`, `summary: "<certDisplayName> — <tier> controls"`, parent = the epic (`destination.epicId`). Then persist it with `recordTierGroup(stateJsonPath, certKey, tier, <new issue key>)`. This is also how the *first* tier's group gets created — one-time setup no longer does it.
+
+## Creating a control's task (action `create`)
+
+- `summary`: `"[<control.id>] <control.topicLabel>"`
+- `description`: `<control.topicSummary>` (blank line) `Justification: <assessment.justification or inProgress.currentState>` (blank line, r2 only) `Outstanding dimensions: <comma-separated list from dimensionActions keys>`
+  - r2 controls have no whole-control `assessment.justification`/`assessment.inProgress`. For r2, build the `Justification:` line(s) per gapped dimension instead, from `assessment.maturity.<dimension>.justification` (or `assessment.maturity.<dimension>.inProgress.currentState` when still in progress).
+- `issueType`: `destination.issueType`
+- Parent: `destination.tierGroupIds.<tier>` if Advanced Roadmaps is available, else the epic (`destination.epicId`) directly.
+- Labels/components (when not using Advanced Roadmaps): add a label or component named `<tier>` (e.g. `"e1"`) so tickets are still filterable by tier on a plain JIRA board.
+- If `dimensionActions` is present (r2), after creating the parent task, create one subtask per `dimensionActions` entry whose value is `"create"`: `summary: "[<control.id>] <dimension>"`, parent = the just-created task's key.
+- After every create, call `recordTracker(stateJsonPath, certKey, tierKey, controlId, { system: "jira", id, url, status: "open", syncedAt: <now> })`, with `subtasks: { <dimension>: {id, url, status: "open", syncedAt} }` added for each subtask created.
+
+## Updating (action `update`)
+
+- Flat tier: append a comment to the existing ticket (`addCommentToJiraIssue`) with the new `justification`/`inProgress` text; do not change the ticket status. Then `recordTracker` with a refreshed `syncedAt`.
+- r2: for each `dimensionActions` entry: if `"update"`, comment on that dimension's subtask the same way; if `"close"`, follow the Closing section below for that subtask only; if `"create"` (the control was already synced — it has a `tracker` and an existing ticket — but this dimension newly became gapped and has no subtask yet), create the subtask exactly as described in "Creating a control's task" above (parent = this control's existing ticket, same `summary: "[<control.id>] <dimension>"` pattern), then call `recordTracker` to add `{ <dimension>: {id, url, status: "open", syncedAt} }` to the control's `tracker.subtasks`; if `"reopen"` (this dimension's subtask was closed after resolving and the dimension has since regressed, while the parent task is still open), `transitionJiraIssue` to move that subtask back to an open/"To Do" transition and `addCommentToJiraIssue` noting the regression, then `recordTracker` its **full** subtask object `{ <dimension>: {id, url, status: "open", syncedAt} }` (as in the Closing section, the per-dimension merge replaces the whole value, so carry `id`/`url`, not just `status`/`syncedAt`).
+
+## Closing (action `close`)
+
+- Call `transitionJiraIssue` to move the ticket (or, for r2, the specific dimension subtask) to a "Done"/resolved transition. Then `recordTracker` setting that ticket's (or subtask's) `status: "closed"` and a refreshed `syncedAt`. `recordTracker`'s subtask merge replaces each dimension's whole value rather than deep-merging inside it, so for r2 the `subtasks.<dimension>` patch must carry the full object — `{id, url, status: "closed", syncedAt}` — not just `{status, syncedAt}`, or the previously-stored `id`/`url` for that subtask will be lost.
+- r2 parent: only transition the parent task itself once every dimension subtask is closed (this is already what `action: "close"` at the control level means, per `classifyR2Control`).
+
+## Reopening (action `reopen`)
+
+A control (r2: its parent) was closed after resolving, then reassessed back to `gap`/`in_progress`. The ticket already exists — its `id`/`url` are in the tracker — so **transition the existing ticket back open; never create a duplicate**.
+
+- Flat tier: `transitionJiraIssue` to move the closed ticket back to an open/"To Do" transition, then `addCommentToJiraIssue` noting the control regressed, with the new `justification`/`inProgress` text. Then `recordTracker` with `status: "open"` and a refreshed `syncedAt`.
+- r2: `transitionJiraIssue` the parent task back to an open transition and `recordTracker` the parent with `status: "open"` + refreshed `syncedAt`, then handle each `dimensionActions` entry exactly as in the Updating section — `"reopen"` transitions that dimension's closed subtask back open + comment; `"create"` creates a new subtask (a dimension newly gapped since the parent closed) under this control's existing ticket — each `recordTracker` carrying the **full** subtask object `{id, url, status: "open", syncedAt}`.
