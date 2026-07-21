@@ -145,3 +145,83 @@ test('classifyR2Control: parent already closed -> null', () => {
   const c = { assessment: { status: null, maturity }, tracker: { status: 'closed', subtasks: {} } };
   assert.equal(classifyR2Control('CTRL-R2', c), null);
 });
+
+const { classifyState, recordTracker, saveDestination, getDestination } = require('../diff-tasks.js');
+
+function makeTempState(initial) {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-tasks-test-'));
+  const stateJsonPath = path.join(dir, 'state.json');
+  fs.writeFileSync(stateJsonPath, JSON.stringify(initial, null, 2));
+  return stateJsonPath;
+}
+
+function baseState() {
+  return {
+    certifications: {
+      hitrust: {
+        displayName: 'HITRUST CSF',
+        tiers: {
+          e1: {
+            controls: {
+              'e1-01-01': { id: 'e1-01-01', topicLabel: 'Policy', assessment: { status: 'gap', assessedAt: '2026-01-01T00:00:00.000Z' } },
+              'e1-01-02': { id: 'e1-01-02', topicLabel: 'Training', assessment: { status: 'met', assessedAt: '2026-01-01T00:00:00.000Z' } },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+test('classifyState: returns creates/updates/closes buckets for a flat tier', () => {
+  const stateJsonPath = makeTempState(baseState());
+  const result = classifyState(stateJsonPath, 'hitrust', 'e1');
+  assert.deepEqual(result.creates, [{ controlId: 'e1-01-01', action: 'create' }]);
+  assert.deepEqual(result.updates, []);
+  assert.deepEqual(result.closes, []);
+});
+
+test('classifyState: throws a clear error for an unregistered tier', () => {
+  const stateJsonPath = makeTempState(baseState());
+  assert.throws(() => classifyState(stateJsonPath, 'hitrust', 'r2'), /Tier "hitrust\/r2" not found/);
+});
+
+test('recordTracker: writes a tracker block onto the named control and persists it', () => {
+  const fs = require('fs');
+  const stateJsonPath = makeTempState(baseState());
+  const tracker = recordTracker(stateJsonPath, 'hitrust', 'e1', 'e1-01-01', {
+    system: 'jira', id: 'SEC-1', url: 'https://x/SEC-1', status: 'open', syncedAt: '2026-01-05T00:00:00.000Z',
+  });
+  assert.equal(tracker.id, 'SEC-1');
+  const reloaded = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  assert.equal(reloaded.certifications.hitrust.tiers.e1.controls['e1-01-01'].tracker.id, 'SEC-1');
+});
+
+test('recordTracker: merges subtasks key-by-key instead of replacing the whole object', () => {
+  const stateJsonPath = makeTempState(baseState());
+  recordTracker(stateJsonPath, 'hitrust', 'e1', 'e1-01-01', {
+    system: 'jira', id: 'SEC-1', url: 'https://x/SEC-1', status: 'open', syncedAt: '2026-01-05T00:00:00.000Z',
+    subtasks: { policy: { id: 'SEC-2', url: 'https://x/SEC-2', status: 'open', syncedAt: '2026-01-05T00:00:00.000Z' } },
+  });
+  const tracker = recordTracker(stateJsonPath, 'hitrust', 'e1', 'e1-01-01', {
+    subtasks: { procedure: { id: 'SEC-3', url: 'https://x/SEC-3', status: 'open', syncedAt: '2026-01-06T00:00:00.000Z' } },
+  });
+  assert.ok(tracker.subtasks.policy, 'earlier subtask entry must survive the second patch');
+  assert.ok(tracker.subtasks.procedure);
+});
+
+test('recordTracker: throws for an unknown control id', () => {
+  const stateJsonPath = makeTempState(baseState());
+  assert.throws(() => recordTracker(stateJsonPath, 'hitrust', 'e1', 'nope', { id: 'X' }), /Control "nope" not found/);
+});
+
+test('saveDestination + getDestination: round-trips destination config', () => {
+  const stateJsonPath = makeTempState(baseState());
+  assert.equal(getDestination(stateJsonPath, 'hitrust'), null);
+  const destination = { system: 'jira', projectKey: 'SEC', issueType: 'Task', hasAdvancedRoadmaps: false, epicId: 'SEC-100', epicUrl: 'https://x/SEC-100', tierGroupIds: {} };
+  saveDestination(stateJsonPath, 'hitrust', destination);
+  assert.deepEqual(getDestination(stateJsonPath, 'hitrust'), destination);
+});

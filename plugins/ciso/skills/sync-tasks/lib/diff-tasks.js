@@ -70,4 +70,83 @@ function classifyR2Control(controlId, control) {
   return null;
 }
 
-module.exports = { classifyFlatControl, classifyR2Control, OPEN_STATUSES, RESOLVED_STATUSES, isNewerThan, R2_DIMENSIONS };
+function classifyState(stateJsonPath, certKey, tierKey) {
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  const tier = state?.certifications?.[certKey]?.tiers?.[tierKey];
+  if (!tier || !tier.controls) {
+    throw new Error(`Tier "${certKey}/${tierKey}" not found in ${stateJsonPath}`);
+  }
+
+  const results = { creates: [], updates: [], closes: [] };
+  for (const [controlId, control] of Object.entries(tier.controls)) {
+    const classified = tierKey === 'r2'
+      ? classifyR2Control(controlId, control)
+      : classifyFlatControl(controlId, control);
+    if (!classified) continue;
+    results[`${classified.action}s`].push(classified);
+  }
+  return results;
+}
+
+function recordTracker(stateJsonPath, certKey, tierKey, controlId, trackerPatch) {
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  const control = state?.certifications?.[certKey]?.tiers?.[tierKey]?.controls?.[controlId];
+  if (!control) {
+    throw new Error(`Control "${controlId}" not found in ${certKey}/${tierKey}`);
+  }
+
+  const existingSubtasks = (control.tracker && control.tracker.subtasks) || {};
+  const patchSubtasks = trackerPatch.subtasks || {};
+  const mergedSubtasks = Object.assign({}, existingSubtasks, patchSubtasks);
+
+  control.tracker = Object.assign({}, control.tracker, trackerPatch);
+  if (Object.keys(mergedSubtasks).length > 0) {
+    control.tracker.subtasks = mergedSubtasks;
+  }
+
+  fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
+  return control.tracker;
+}
+
+function saveDestination(stateJsonPath, certKey, destination) {
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  if (!state.certifications || !state.certifications[certKey]) {
+    throw new Error(`Certification "${certKey}" not found in ${stateJsonPath}`);
+  }
+  state.certifications[certKey].sync = { destination };
+  fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
+  return { destination };
+}
+
+function getDestination(stateJsonPath, certKey) {
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  const destination = state?.certifications?.[certKey]?.sync?.destination;
+  return destination || null;
+}
+
+module.exports = {
+  classifyFlatControl,
+  classifyR2Control,
+  classifyState,
+  recordTracker,
+  saveDestination,
+  getDestination,
+  OPEN_STATUSES,
+  RESOLVED_STATUSES,
+  isNewerThan,
+  R2_DIMENSIONS,
+};
+
+if (require.main === module) {
+  const [stateJsonPath, certKey, tierKey] = process.argv.slice(2);
+  if (!stateJsonPath || !certKey || !tierKey) {
+    console.error('Usage: node diff-tasks.js <state.json> <certKey> <tierKey>');
+    process.exit(1);
+  }
+  try {
+    console.log(JSON.stringify(classifyState(stateJsonPath, certKey, tierKey), null, 2));
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+}
