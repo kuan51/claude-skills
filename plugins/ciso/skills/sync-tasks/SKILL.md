@@ -30,9 +30,10 @@ Tickets are created via the pre-installed `mcp__atlassian__*` (JIRA/Confluence) 
 3. Read `state.certifications.<certKey>.sync.destination` (see `lib/diff-tasks.js`'s `getDestination`). If it's not set:
    - Ask which tracker (JIRA or Linear), and the destination details for that tracker (JIRA: project key, issue type, whether Advanced Roadmaps is available; Linear: team/project).
    - Create the certification's epic issue in that tracker (see the matching reference doc), then call `saveDestination` to persist `{system, projectKey|teamId, issueType, hasAdvancedRoadmaps, epicId, epicUrl, tierGroupIds: {}}`.
-4. Run `node "${CLAUDE_PLUGIN_ROOT}/skills/sync-tasks/lib/diff-tasks.js" <state.json> <certKey> <tier>` to get `{creates, updates, closes}` (each entry shaped `{controlId, action, dimensionActions?}` — see `lib/diff-tasks.js`'s `classifyState`).
-5. Load `references/jira.md` or `references/linear.md` (matching `destination.system`) and follow it exactly for how to create/update/close tickets for each entry, calling `recordTracker(stateJsonPath, certKey, tierKey, controlId, trackerPatch)` after every MCP call that creates, comments on, or transitions a ticket.
-6. Report a summary to the user: N created, N updated, N closed, with ticket links.
+4. **Ensure the tier group for the tier being synced exists.** This runs on *every* sync, independently of step 3 — tier groups are created per tier, not once, so a later `i1`/`r2` sync must still create its own group even though the destination already exists. If the tracker uses tier parents (Linear always; JIRA only when `destination.hasAdvancedRoadmaps` is true) and `destination.tierGroupIds.<tier>` is unset, create the tier's parent issue (see the matching reference doc's "Ensuring this tier's group" section) and persist it with `recordTierGroup(stateJsonPath, certKey, tier, groupId)`. Plain JIRA without Advanced Roadmaps groups by label instead — skip this step.
+5. Run `node "${CLAUDE_PLUGIN_ROOT}/skills/sync-tasks/lib/diff-tasks.js" <state.json> <certKey> <tier>` to get `{creates, updates, closes, reopens}` (each entry shaped `{controlId, action, dimensionActions?}` — see `lib/diff-tasks.js`'s `classifyState`). A `reopen` entry is a control that was closed and has since regressed to `gap`/`in_progress`.
+6. Load `references/jira.md` or `references/linear.md` (matching `destination.system`) and follow it exactly for how to create/update/close/reopen tickets for each entry, calling `recordTracker(stateJsonPath, certKey, tierKey, controlId, trackerPatch)` after every MCP call that creates, comments on, transitions, or reopens a ticket.
+7. Report a summary to the user: N created, N updated, N closed, N reopened, with ticket links.
 
 ## Core discipline
 

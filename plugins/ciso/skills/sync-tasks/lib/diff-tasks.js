@@ -18,7 +18,15 @@ function classifyFlatControl(controlId, control) {
   if (!tracker) {
     return OPEN_STATUSES.includes(status) ? { controlId, action: 'create' } : null;
   }
-  if (tracker.status === 'closed') return null;
+  if (tracker.status === 'closed') {
+    // Regressed after its ticket was closed: the control resolved, we closed the
+    // ticket, and it's now gapped/in_progress again. Reopen the existing ticket
+    // rather than silently dropping a live compliance gap.
+    if (OPEN_STATUSES.includes(status) && isNewerThan(control.assessment.assessedAt, tracker.syncedAt)) {
+      return { controlId, action: 'reopen' };
+    }
+    return null;
+  }
   if (RESOLVED_STATUSES.includes(status)) {
     return { controlId, action: 'close' };
   }
@@ -43,7 +51,13 @@ function classifyR2Control(controlId, control) {
       if (OPEN_STATUSES.includes(dimState.status)) dimensionActions[dimName] = 'create';
       continue;
     }
-    if (subtask.status === 'closed') continue;
+    if (subtask.status === 'closed') {
+      // Dimension regressed after its subtask was closed -> reopen that subtask.
+      if (OPEN_STATUSES.includes(dimState.status) && isNewerThan(dimState.assessedAt, subtask.syncedAt)) {
+        dimensionActions[dimName] = 'reopen';
+      }
+      continue;
+    }
     if (RESOLVED_STATUSES.includes(dimState.status)) {
       dimensionActions[dimName] = 'close';
     } else if (OPEN_STATUSES.includes(dimState.status) && isNewerThan(dimState.assessedAt, subtask.syncedAt)) {
@@ -56,12 +70,22 @@ function classifyR2Control(controlId, control) {
       ? { controlId, action: 'create', dimensionActions }
       : null;
   }
-  if (tracker.status === 'closed') return null;
+  if (tracker.status === 'closed') {
+    // Parent ticket was closed; reopen it only if a dimension regressed
+    // (reopen) or a previously-untouched dimension newly gapped (create).
+    return Object.keys(dimensionActions).length > 0
+      ? { controlId, action: 'reopen', dimensionActions }
+      : null;
+  }
 
-  const allDimensionsResolved = R2_DIMENSIONS.every((d) => RESOLVED_STATUSES.includes(maturity[d].status));
+  // Close the parent once nothing is outstanding. Untouched dimensions stay
+  // `not_assessed` (never tracked), so gate on "no dimension is currently open"
+  // rather than "every dimension resolved" — the latter never became true for
+  // the common single-dimension-gapped shape and left parents open forever.
+  const noOpenDimensions = R2_DIMENSIONS.every((d) => !OPEN_STATUSES.includes(maturity[d].status));
   const hasOpenSubtask = Object.values(tracker.subtasks || {}).some((s) => s.status !== 'closed');
 
-  if (allDimensionsResolved && !hasOpenSubtask) {
+  if (noOpenDimensions && !hasOpenSubtask) {
     return { controlId, action: 'close', dimensionActions };
   }
   if (Object.keys(dimensionActions).length > 0) {
@@ -77,7 +101,7 @@ function classifyState(stateJsonPath, certKey, tierKey) {
     throw new Error(`Tier "${certKey}/${tierKey}" not found in ${stateJsonPath}`);
   }
 
-  const results = { creates: [], updates: [], closes: [] };
+  const results = { creates: [], updates: [], closes: [], reopens: [] };
   for (const [controlId, control] of Object.entries(tier.controls)) {
     const classified = tierKey === 'r2'
       ? classifyR2Control(controlId, control)
@@ -118,6 +142,18 @@ function saveDestination(stateJsonPath, certKey, destination) {
   return { destination };
 }
 
+function recordTierGroup(stateJsonPath, certKey, tier, groupId) {
+  const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+  const destination = state?.certifications?.[certKey]?.sync?.destination;
+  if (!destination) {
+    throw new Error(`No sync destination for "${certKey}" in ${stateJsonPath} — run setup first`);
+  }
+  destination.tierGroupIds = destination.tierGroupIds || {};
+  destination.tierGroupIds[tier] = groupId;
+  fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
+  return destination.tierGroupIds;
+}
+
 function getDestination(stateJsonPath, certKey) {
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const destination = state?.certifications?.[certKey]?.sync?.destination;
@@ -130,6 +166,7 @@ module.exports = {
   classifyState,
   recordTracker,
   saveDestination,
+  recordTierGroup,
   getDestination,
   OPEN_STATUSES,
   RESOLVED_STATUSES,

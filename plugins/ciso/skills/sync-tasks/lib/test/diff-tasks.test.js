@@ -48,8 +48,13 @@ test('classifyFlatControl: now not_applicable with an open tracker -> close', ()
   assert.deepEqual(classifyFlatControl('CTRL-A', c), { controlId: 'CTRL-A', action: 'close' });
 });
 
-test('classifyFlatControl: already closed tracker -> null even if status is gap again', () => {
+test('classifyFlatControl: closed tracker, regressed to gap after close -> reopen', () => {
   const c = control('gap', '2026-01-03T00:00:00.000Z', { status: 'closed', syncedAt: '2026-01-02T00:00:00.000Z' });
+  assert.deepEqual(classifyFlatControl('CTRL-A', c), { controlId: 'CTRL-A', action: 'reopen' });
+});
+
+test('classifyFlatControl: closed tracker, not reassessed since close -> null', () => {
+  const c = control('gap', '2026-01-01T00:00:00.000Z', { status: 'closed', syncedAt: '2026-01-02T00:00:00.000Z' });
   assert.equal(classifyFlatControl('CTRL-A', c), null);
 });
 
@@ -153,14 +158,57 @@ test('classifyR2Control: all dimensions resolved and all subtasks already closed
   });
 });
 
-test('classifyR2Control: parent already closed -> null', () => {
+test('classifyR2Control: parent already closed, all still resolved -> null', () => {
   const maturity = {};
   for (const d of R2_DIMENSIONS) maturity[d] = dim('met', '2026-01-03T00:00:00.000Z');
   const c = { assessment: { status: null, maturity }, tracker: { status: 'closed', subtasks: {} } };
   assert.equal(classifyR2Control('CTRL-R2', c), null);
 });
 
-const { classifyState, recordTracker, saveDestination, getDestination } = require('../diff-tasks.js');
+test('classifyR2Control: parent closed, a dimension regressed to gap after close -> reopen', () => {
+  const maturity = {};
+  for (const d of R2_DIMENSIONS) maturity[d] = dim('met', '2026-01-02T00:00:00.000Z');
+  maturity.policy = dim('gap', '2026-01-05T00:00:00.000Z');
+  const subtasks = {};
+  for (const d of R2_DIMENSIONS) subtasks[d] = { id: `P-${d}`, url: `https://x/P-${d}`, status: 'closed', syncedAt: '2026-01-03T00:00:00.000Z' };
+  const c = { assessment: { status: null, maturity }, tracker: { status: 'closed', subtasks } };
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'reopen',
+    dimensionActions: { policy: 'reopen' },
+  });
+});
+
+test('classifyR2Control: open parent, a closed subtask regressed to gap -> update with reopen for that dimension', () => {
+  const c = r2Control(
+    { policy: dim('gap', '2026-01-05T00:00:00.000Z'), implemented: dim('gap', '2026-01-01T00:00:00.000Z') },
+    { status: 'open', subtasks: {
+      policy: { id: 'P-1', url: 'https://x/P-1', status: 'closed', syncedAt: '2026-01-03T00:00:00.000Z' },
+      implemented: { id: 'P-2', url: 'https://x/P-2', status: 'open', syncedAt: '2026-01-02T00:00:00.000Z' },
+    } }
+  );
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'update',
+    dimensionActions: { policy: 'reopen' },
+  });
+});
+
+test('classifyR2Control: only one dimension ever gapped, now met with its subtask closed, others not_assessed -> close the parent', () => {
+  const c = r2Control(
+    { implemented: dim('met', '2026-01-05T00:00:00.000Z') },
+    { status: 'open', subtasks: {
+      implemented: { id: 'P-1', url: 'https://x/P-1', status: 'closed', syncedAt: '2026-01-04T00:00:00.000Z' },
+    } }
+  );
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'close',
+    dimensionActions: {},
+  });
+});
+
+const { classifyState, recordTracker, saveDestination, recordTierGroup, getDestination } = require('../diff-tasks.js');
 
 function makeTempState(initial) {
   const fs = require('fs');
@@ -238,4 +286,34 @@ test('saveDestination + getDestination: round-trips destination config', () => {
   const destination = { system: 'jira', projectKey: 'SEC', issueType: 'Task', hasAdvancedRoadmaps: false, epicId: 'SEC-100', epicUrl: 'https://x/SEC-100', tierGroupIds: {} };
   saveDestination(stateJsonPath, 'hitrust', destination);
   assert.deepEqual(getDestination(stateJsonPath, 'hitrust'), destination);
+});
+
+test('recordTierGroup: sets one tier group id without clobbering the rest of destination', () => {
+  const stateJsonPath = makeTempState(baseState());
+  saveDestination(stateJsonPath, 'hitrust', {
+    system: 'linear', teamId: 'TEAM-1', epicId: 'CERT-1', epicUrl: 'https://x/CERT-1', tierGroupIds: { e1: 'E1-PARENT' },
+  });
+  recordTierGroup(stateJsonPath, 'hitrust', 'i1', 'I1-PARENT');
+  const dest = getDestination(stateJsonPath, 'hitrust');
+  assert.equal(dest.tierGroupIds.e1, 'E1-PARENT', 'existing tier group must survive');
+  assert.equal(dest.tierGroupIds.i1, 'I1-PARENT');
+  assert.equal(dest.epicId, 'CERT-1', 'rest of destination must be intact');
+});
+
+test('recordTierGroup: throws when no destination has been saved yet', () => {
+  const stateJsonPath = makeTempState(baseState());
+  assert.throws(() => recordTierGroup(stateJsonPath, 'hitrust', 'e1', 'X'), /No sync destination/);
+});
+
+test('classifyState: a control closed then regressed lands in the reopens bucket', () => {
+  const state = baseState();
+  state.certifications.hitrust.tiers.e1.controls['e1-01-01'] = {
+    id: 'e1-01-01', topicLabel: 'Policy',
+    assessment: { status: 'gap', assessedAt: '2026-01-05T00:00:00.000Z' },
+    tracker: { system: 'jira', id: 'SEC-1', url: 'https://x/SEC-1', status: 'closed', syncedAt: '2026-01-03T00:00:00.000Z' },
+  };
+  const stateJsonPath = makeTempState(state);
+  const result = classifyState(stateJsonPath, 'hitrust', 'e1');
+  assert.deepEqual(result.reopens, [{ controlId: 'e1-01-01', action: 'reopen' }]);
+  assert.deepEqual(result.creates, []);
 });
