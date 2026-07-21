@@ -151,6 +151,7 @@ const edaResults = await parallel(
       label: `eda:${role.key}`,
       phase: 'Independent EDA',
       agentType: role.agentType,
+      model: 'opus',
       schema: FINDINGS_SCHEMA,
     }).then((result) => ({ key: role.key, label: role.label, findings: result.findings }))
   )
@@ -168,6 +169,7 @@ const reconciled = await agent(reconcilePrompt, {
   label: 'reconcile',
   phase: 'Reconcile',
   agentType: 'data-analysis-review:findings-reconciler',
+  model: 'opus',
   schema: RECONCILE_SCHEMA,
 })
 
@@ -190,6 +192,7 @@ const crossCompareResults = await parallel(
       label: `cross-compare:${topic.topic}`,
       phase: 'Cross-Compare',
       agentType: 'data-analysis-review:thesis-auditor',
+      model: 'opus',
       schema: CROSS_COMPARE_SCHEMA,
     })
   })
