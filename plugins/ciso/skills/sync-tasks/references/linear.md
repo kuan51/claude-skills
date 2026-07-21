@@ -12,6 +12,7 @@ Linear's MCP tool names aren't yet known in this environment (the `productivity:
 
 - `title`: `"[<control.id>] <control.topicLabel>"`
 - `description`: `<control.topicSummary>` (blank line) `Justification: <assessment.justification or inProgress.currentState>` (blank line, r2 only) `Outstanding dimensions: <comma-separated list from dimensionActions keys>`
+  - r2 controls have no whole-control `assessment.justification`/`assessment.inProgress`. For r2, build the `Justification:` line(s) per gapped dimension instead, from `assessment.maturity.<dimension>.justification` (or `assessment.maturity.<dimension>.inProgress.currentState` when still in progress).
 - `parentId`: `destination.tierGroupIds.<tier>`
 - If `dimensionActions` is present (r2), after creating the parent task, create one sub-issue per `dimensionActions` entry whose value is `"create"`: `title: "[<control.id>] <dimension>"`, `parentId` = the just-created task's id.
 - After every create, call `recordTracker(stateJsonPath, certKey, tierKey, controlId, { system: "linear", id, url, status: "open", syncedAt: <now> })`, with `subtasks: { <dimension>: {id, url, status: "open", syncedAt} }` added for each sub-issue created.
@@ -19,9 +20,9 @@ Linear's MCP tool names aren't yet known in this environment (the `productivity:
 ## Updating (action `update`)
 
 - Flat tier: add a comment to the existing issue with the new `justification`/`inProgress` text; do not change its state. Then `recordTracker` with a refreshed `syncedAt`.
-- r2: for each `dimensionActions` entry, if `"update"`, comment on that dimension's sub-issue the same way; if `"close"`, follow the Closing section below for that sub-issue only.
+- r2: for each `dimensionActions` entry: if `"update"`, comment on that dimension's sub-issue the same way; if `"close"`, follow the Closing section below for that sub-issue only; if `"create"` (the control was already synced — it has a `tracker` and an existing issue — but this dimension newly became gapped and has no sub-issue yet), create the sub-issue exactly as described in "Creating a control's task" above (`parentId` = this control's existing issue id, same `title: "[<control.id>] <dimension>"` pattern), then call `recordTracker` to add `{ <dimension>: {id, url, status: "open", syncedAt} }` to the control's `tracker.subtasks`.
 
 ## Closing (action `close`)
 
-- Update the issue's (or, for r2, the specific dimension sub-issue's) state to Linear's "Completed" (or workspace-equivalent done) state. Then `recordTracker` setting that ticket's (or subtask's) `status: "closed"` and a refreshed `syncedAt`.
+- Update the issue's (or, for r2, the specific dimension sub-issue's) state to Linear's "Completed" (or workspace-equivalent done) state. Then `recordTracker` setting that ticket's (or subtask's) `status: "closed"` and a refreshed `syncedAt`. `recordTracker`'s subtask merge replaces each dimension's whole value rather than deep-merging inside it, so for r2 the `subtasks.<dimension>` patch must carry the full object — `{id, url, status: "closed", syncedAt}` — not just `{status, syncedAt}`, or the previously-stored `id`/`url` for that sub-issue will be lost.
 - r2 parent: only close the parent task itself once every dimension sub-issue is closed (this is already what `action: "close"` at the control level means, per `classifyR2Control`).

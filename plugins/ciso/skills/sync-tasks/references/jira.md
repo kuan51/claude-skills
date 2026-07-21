@@ -14,6 +14,7 @@ Use `mcp__atlassian__*` tools (confirm exact tool names for this connector insta
 
 - `summary`: `"[<control.id>] <control.topicLabel>"`
 - `description`: `<control.topicSummary>` (blank line) `Justification: <assessment.justification or inProgress.currentState>` (blank line, r2 only) `Outstanding dimensions: <comma-separated list from dimensionActions keys>`
+  - r2 controls have no whole-control `assessment.justification`/`assessment.inProgress`. For r2, build the `Justification:` line(s) per gapped dimension instead, from `assessment.maturity.<dimension>.justification` (or `assessment.maturity.<dimension>.inProgress.currentState` when still in progress).
 - `issueType`: `destination.issueType`
 - Parent: `destination.tierGroupIds.<tier>` if Advanced Roadmaps is available, else the epic (`destination.epicId`) directly.
 - Labels/components (when not using Advanced Roadmaps): add a label or component named `<tier>` (e.g. `"e1"`) so tickets are still filterable by tier on a plain JIRA board.
@@ -23,9 +24,9 @@ Use `mcp__atlassian__*` tools (confirm exact tool names for this connector insta
 ## Updating (action `update`)
 
 - Flat tier: append a comment to the existing ticket (`addCommentToJiraIssue`) with the new `justification`/`inProgress` text; do not change the ticket status. Then `recordTracker` with a refreshed `syncedAt`.
-- r2: for each `dimensionActions` entry, if `"update"`, comment on that dimension's subtask the same way; if `"close"`, follow the Closing section below for that subtask only.
+- r2: for each `dimensionActions` entry: if `"update"`, comment on that dimension's subtask the same way; if `"close"`, follow the Closing section below for that subtask only; if `"create"` (the control was already synced — it has a `tracker` and an existing ticket — but this dimension newly became gapped and has no subtask yet), create the subtask exactly as described in "Creating a control's task" above (parent = this control's existing ticket, same `summary: "[<control.id>] <dimension>"` pattern), then call `recordTracker` to add `{ <dimension>: {id, url, status: "open", syncedAt} }` to the control's `tracker.subtasks`.
 
 ## Closing (action `close`)
 
-- Call `transitionJiraIssue` to move the ticket (or, for r2, the specific dimension subtask) to a "Done"/resolved transition. Then `recordTracker` setting that ticket's (or subtask's) `status: "closed"` and a refreshed `syncedAt`.
+- Call `transitionJiraIssue` to move the ticket (or, for r2, the specific dimension subtask) to a "Done"/resolved transition. Then `recordTracker` setting that ticket's (or subtask's) `status: "closed"` and a refreshed `syncedAt`. `recordTracker`'s subtask merge replaces each dimension's whole value rather than deep-merging inside it, so for r2 the `subtasks.<dimension>` patch must carry the full object — `{id, url, status: "closed", syncedAt}` — not just `{status, syncedAt}`, or the previously-stored `id`/`url` for that subtask will be lost.
 - r2 parent: only transition the parent task itself once every dimension subtask is closed (this is already what `action: "close"` at the control level means, per `classifyR2Control`).

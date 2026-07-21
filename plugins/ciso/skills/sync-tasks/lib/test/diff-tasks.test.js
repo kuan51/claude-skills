@@ -111,6 +111,20 @@ test('classifyR2Control: existing subtask, dimension reassessed after last sync 
   });
 });
 
+test('classifyR2Control: already-synced control gains a newly-gapped dimension with no subtask yet -> update with create for that dimension only', () => {
+  const c = r2Control(
+    { policy: dim('gap', '2026-01-01T00:00:00.000Z'), implemented: dim('gap', '2026-01-03T00:00:00.000Z') },
+    { status: 'open', subtasks: {
+      policy: { id: 'P-1', url: 'https://x/P-1', status: 'open', syncedAt: '2026-01-02T00:00:00.000Z' },
+    } }
+  );
+  assert.deepEqual(classifyR2Control('CTRL-R2', c), {
+    controlId: 'CTRL-R2',
+    action: 'update',
+    dimensionActions: { implemented: 'create' },
+  });
+});
+
 test('classifyR2Control: one dimension now met, its subtask still open -> close that dimension only, parent stays open', () => {
   const c = r2Control(
     { policy: dim('met', '2026-01-03T00:00:00.000Z'), implemented: dim('gap', '2026-01-01T00:00:00.000Z') },
