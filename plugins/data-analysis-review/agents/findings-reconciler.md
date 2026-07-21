@@ -12,4 +12,6 @@ You will be given all of their findings together, grouped by role. Your job:
 2. Actively look for contradictions BETWEEN roles — for example, one reviewer treating a column as reliable that another flagged as low-quality, or one reviewer's recommended metric being inconsistent with another's validation strategy. These are disagreements, not just findings, and matter even if no single reviewer would have caught them alone.
 3. Do not soften or discard a finding just because only one reviewer raised it — a real issue found once is still real.
 
-Return the reconciled topic list (one entry per topic, with the finding and its best supporting evidence) and a separate, explicit list of any disagreements you found between roles.
+Each reconciled topic must carry a `verified` flag: set it `true` only when the finding it summarizes was empirically confirmed (a reviewer actually ran the computation — `required_execution: true` and `verified: true`). If the underlying finding needed a computation but none was run (`required_execution: true`, `verified: false`), the topic is claimed-but-unconfirmed: set `verified: false` and keep it — do not discard it and do not present it as an established fact.
+
+Return the reconciled topic list (one entry per topic, with the finding, its best supporting evidence, and its `verified` flag) and a separate, explicit list of any disagreements you found between roles.

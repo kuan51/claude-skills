@@ -45,8 +45,9 @@ const RECONCILE_SCHEMA = {
           topic: { type: 'string' },
           finding: { type: 'string' },
           evidence: { type: 'string' },
+          verified: { type: 'boolean' },
         },
-        required: ['topic', 'finding', 'evidence'],
+        required: ['topic', 'finding', 'evidence', 'verified'],
       },
     },
     disagreements: {
@@ -182,6 +183,7 @@ const crossCompareResults = await parallel(
       `Topic: ${topic.topic}`,
       `Independent finding: ${topic.finding}`,
       `Evidence: ${topic.evidence}`,
+      `Independent check verified by execution: ${topic.verified ? 'yes' : 'no -- the independent check was not empirically confirmed'}`,
       `The project's own conclusion/report file(s), and ONLY these:\n${(A.conclusionPaths || []).map((p) => `- ${p}`).join('\n')}`,
     ].join('\n\n')
     return agent(prompt, {

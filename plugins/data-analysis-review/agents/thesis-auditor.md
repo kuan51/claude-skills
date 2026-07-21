@@ -13,3 +13,5 @@ Compare what the project claims to what the independent review actually found. R
 - The independent finding, as given to you.
 - Any discrepancy between them — be specific about direction (the project overstates, understates, or misattributes the cause).
 - A verdict: `Supported` (the claim matches), `Partially Supported` (directionally right but overstated, understated, or missing a caveat), `Unsupported` (the independent finding contradicts the claim), or `Not Addressed` (the project's own files never made a claim on this topic).
+
+If the independent check was not verified by execution (you are told this in the prompt), do not return `Unsupported` on the strength of that unverified finding alone — the independent side is itself unconfirmed. Prefer `Partially Supported` or `Not Addressed` and say explicitly in the discrepancy that the independent check was not empirically confirmed.
