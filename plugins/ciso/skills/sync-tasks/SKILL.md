@@ -30,8 +30,8 @@ Tickets are created via the pre-installed `mcp__atlassian__*` (JIRA/Confluence) 
 3. Read `state.certifications.<certKey>.sync.destination` (see `lib/diff-tasks.js`'s `getDestination`). If it's not set:
    - Ask which tracker (JIRA or Linear), and the destination details for that tracker (JIRA: project key, issue type, whether Advanced Roadmaps is available; Linear: team/project).
    - Create the certification's epic issue in that tracker (see the matching reference doc), then call `saveDestination` to persist `{system, projectKey|teamId, issueType, hasAdvancedRoadmaps, epicId, epicUrl, tierGroupIds: {}}`.
-4. Run `node "${CLAUDE_PLUGIN_ROOT}/skills/sync-tasks/lib/diff-tasks.js" <state.json> <certKey> <tier>` to get `{creates, updates, closes}`.
-5. Load `references/jira.md` or `references/linear.md` (matching the saved destination's `system`) and follow it exactly for how to create/update/close tickets for each entry in that classification result, then call `recordTracker` for every control you touched to persist the resulting `tracker` block back into `state.json`.
+4. Run `node "${CLAUDE_PLUGIN_ROOT}/skills/sync-tasks/lib/diff-tasks.js" <state.json> <certKey> <tier>` to get `{creates, updates, closes}` (each entry shaped `{controlId, action, dimensionActions?}` — see `lib/diff-tasks.js`'s `classifyState`).
+5. Load `references/jira.md` or `references/linear.md` (matching `destination.system`) and follow it exactly for how to create/update/close tickets for each entry, calling `recordTracker(stateJsonPath, certKey, tierKey, controlId, trackerPatch)` after every MCP call that creates, comments on, or transitions a ticket.
 6. Report a summary to the user: N created, N updated, N closed, with ticket links.
 
 ## Core discipline
