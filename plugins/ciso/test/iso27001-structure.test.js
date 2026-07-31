@@ -149,6 +149,31 @@ test('no per-control field is derivable from domain or domainKey', () => {
   }
 });
 
+// The middle column of ADDING-A-CERTIFICATION.md's reachability table requires TWO things, and this
+// is the second: a named, reachable publisher artifact the closure can be checked against. Closure
+// alone only proves the published counts agree with each other -- sources sharing one wrong upstream
+// number close just as neatly. Without this field the module is claiming the column on half its
+// admission test.
+test('a publisher artifact is named, so the closure is checkable against something ISO controls', () => {
+  assert.ok(structure.publisherArtifact, 'structure must name the publisher artifact');
+  assert.match(structure.publisherArtifact, /^https:\/\//);
+  assert.ok(
+    structure.citations.includes(structure.publisherArtifact),
+    'the publisher artifact must also appear in citations, where a reader will look for it'
+  );
+});
+
+// Naming an artifact makes it tempting to imply more was done with it than was. This module confirmed
+// the file is reachable and is the document claimed; it did not read the contents (the PDF is
+// encrypted). The distinction is the whole reason `codeVerifiedBy` is banned here, so it has to
+// survive in the prose too.
+test('coverageNote does not overstate what was done with the publisher artifact', () => {
+  assert.match(
+    structure.coverageNote, /did NOT read its contents firsthand/,
+    'coverageNote must state plainly that the artifact\'s contents were not read'
+  );
+});
+
 test('coverageNote states the weaker provenance rather than implying the standard was read', () => {
   const note = structure.coverageNote;
   assert.match(note, /RECONSTRUCTED FROM CONVERGENT PUBLIC SOURCES/,

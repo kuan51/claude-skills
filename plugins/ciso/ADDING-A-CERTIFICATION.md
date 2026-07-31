@@ -77,14 +77,31 @@ publisher's own catalog reachable?"** That answer decides everything downstream.
 ### The middle column is narrow, and has an admission test
 
 Do not read "gated but reconstructable" as a general licence to research identifiers — that is the
-thing the rest of this section forbids. A certification earns the middle column only if its
-enumeration is **arithmetically closed**: each block publishes a count that equals its own terminal
-integer, and the blocks sum to a stated total. That property is what makes a wrong source *detectable*
-rather than merely outvoted, and it is the entire difference between this column and the right one.
+thing the rest of this section forbids. A certification earns the middle column only by meeting
+**both** of these, not either one:
 
-ISO 27001's Annex A qualifies: four themes of 37/8/14/34 terminating at A.5.37, A.6.8, A.7.14 and
-A.8.34, summing to 93. HITRUST cannot qualify — there is no published count to check a reconstruction
-against, so a fan-out there produces consensus with nothing to falsify it.
+1. **The enumeration is arithmetically closed.** Each block publishes a count that equals its own
+   terminal integer, and the blocks sum to a stated total. That is what makes a wrong source
+   *detectable* rather than merely outvoted.
+2. **The closure is checkable against a publisher artifact**, named and reachable in the structure
+   file — the publisher's own document or an authorized reproduction of it, not secondary commentary.
+
+Condition 1 alone is not enough, and the gap is the reason condition 2 exists: arithmetic closure
+proves the published counts are *mutually consistent*, not that they are *right*. If every secondary
+source inherited the same number from one upstream copy, the arithmetic still closes on wrong data.
+Closure detects disagreement; it cannot detect shared error. Only an artifact the publisher controls
+breaks that loop, because it cannot inherit a consultancy's mistake.
+
+ISO 27001's Annex A qualifies on both: four themes of 37/8/14/34 terminating at A.5.37, A.6.8,
+A.7.14 and A.8.34, summing to 93, and an official ISO/IEC 27002:2022 preview whose numbered contents
+correspond one-to-one with Annex A. HITRUST cannot qualify on either — no published count to check a
+reconstruction against, and no reachable artifact, so a fan-out there produces consensus with nothing
+to falsify it.
+
+**Say what you actually did with the artifact.** Naming it obliges you to be exact about your own
+verification: whether you read its contents, or only confirmed it is the document you claim and that
+a reader can reach it. Both are worth more than secondary agreement alone; they are not the same
+claim, and `coverageNote` must not blur them. ISO's is recorded as the latter — see that file.
 
 The lock is not theoretical. Compiling ISO 27001 turned up two live vendor pages carrying wrong
 Annex A data, and the arithmetic caught both: one printed a physical-controls range ending at 7.13
