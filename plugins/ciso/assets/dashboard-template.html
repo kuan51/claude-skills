@@ -671,10 +671,13 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     if (control.statementText) {
       html += '<span class="requirement-text">' + esc(control.statementText) + '</span>';
     } else if (control.topicSummary) {
+      // Certification-agnostic on purpose: runs for every module shipping topic summaries.
       html += '<span class="requirement-text">' + esc(control.topicSummary) + '</span>' +
-        '<div class="non-auth-note">Non-authoritative topic summary -- not exact MyCSF wording. See sources below.</div>';
+        '<div class="non-auth-note">Non-authoritative topic summary -- a paraphrase, not the publisher\'s requirement wording. See sources below.</div>';
     } else {
-      html += '<span class="placeholder">Import your MyCSF export to see exact requirement wording.</span>';
+      // Likewise: only one certification has an export to import, so the instruction to do so
+      // belongs in that skill, not on every certification's page.
+      html += '<span class="placeholder">No exact requirement wording stored locally -- see the publisher\'s own control set.</span>';
     }
     html += '</div>';
 
@@ -769,7 +772,9 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     }
 
     if (tier.sourceAuthority === 'public-topic-level') {
-      html += '<div class="non-auth-banner">Non-authoritative: topic-level structure compiled from public sources, not a licensed MyCSF export. Consult MyCSF or an authorized HITRUST assessor for exact scope before relying on this for a real assessment.</div>';
+      // Certification-agnostic on purpose: this banner keys off sourceAuthority, which every
+      // topic-level module sets, so naming one publisher's catalog mis-advises the others.
+      html += '<div class="non-auth-banner">Non-authoritative: topic-level structure compiled from public sources, not the publisher\'s own catalog. Consult the authoritative control set and your assessor or auditor for exact scope and wording before relying on this for a real assessment.</div>';
     }
 
     html += '<div class="gauge"><div class="gauge-label"><span>Compliance</span><b>' + rollupSafe.compliancePercent + '%</b></div>';
