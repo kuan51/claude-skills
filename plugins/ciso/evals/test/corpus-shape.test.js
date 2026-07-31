@@ -45,8 +45,8 @@ test('every entry is well-formed and uses declared values/categories', () => {
   }
 });
 
-test('both model-invocable skills and the null case are covered, across categories', () => {
-  const byExpected = { init: 0, hitrust: 0, null: 0 };
+test('every model-invocable skill and the null case are covered, across categories', () => {
+  const byExpected = { init: 0, hitrust: 0, soc2: 0, null: 0 };
   const categories = new Set();
   for (const entry of corpus.queries) {
     byExpected[entry.expected === null ? 'null' : entry.expected] += 1;
@@ -54,10 +54,24 @@ test('both model-invocable skills and the null case are covered, across categori
   }
   assert.ok(byExpected.init >= 5, 'need a meaningful number of init queries');
   assert.ok(byExpected.hitrust >= 5, 'need a meaningful number of hitrust queries');
+  assert.ok(byExpected.soc2 >= 5, 'need a meaningful number of soc2 queries');
   assert.ok(byExpected.null >= 5, 'need negative-control queries');
   for (const cat of corpus.categories) {
     assert.ok(categories.has(cat), `no query exercises category "${cat}"`);
   }
+});
+
+// With two certification skills shipping, the failure mode that actually costs a user something
+// is cross-selection: a query that names one framework selecting the other. Guard that the corpus
+// keeps testing it rather than only testing each skill in isolation.
+test('the corpus tests hitrust/soc2 cross-selection in both directions', () => {
+  const mentionsBoth = corpus.queries.filter((e) => {
+    const q = e.query.toLowerCase();
+    return q.includes('hitrust') && q.includes('soc 2');
+  });
+  assert.ok(mentionsBoth.length >= 2, 'need queries naming both frameworks, to test that the right one wins');
+  assert.ok(mentionsBoth.some((e) => e.expected === 'hitrust'), 'need a both-frameworks query expecting hitrust');
+  assert.ok(mentionsBoth.some((e) => e.expected === 'soc2'), 'need a both-frameworks query expecting soc2');
 });
 
 test('negatives are adjacent (share a skill keyword), not random noise', () => {
