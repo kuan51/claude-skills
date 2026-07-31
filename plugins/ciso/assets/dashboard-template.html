@@ -153,6 +153,28 @@
   .cert-card h2 { margin: 0; font-size: 19px; font-weight: 400; }
   .cert-card .subline { color: var(--paper-dim); font-size: 13px; }
 
+  /* ---------- Meta index ---------- */
+
+  /* The whole index card is one link target; the inner markup is identical to a
+     non-linked card, so nothing inside needs link styling. */
+  a.cert-card-link { text-decoration: none; color: inherit; display: block; }
+  a.cert-card-link .cert-card { height: 100%; transition: border-color 0.15s ease; }
+  a.cert-card-link:hover .cert-card { border-color: var(--gold); }
+  a.cert-card-link:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* A certification this plugin supports but this project isn't tracking yet. Deliberately
+     recessive -- it's an invitation, and must never read as "tracked but at 0%". */
+  .cert-card.untracked { opacity: 0.62; border-style: dashed; }
+  .cert-card .cert-summary { color: var(--paper-dim); font-size: 13px; }
+  .cert-card .start-hint { font-size: 13px; color: var(--paper-dim); }
+  .cert-card .start-hint code {
+    font-family: var(--mono); background: var(--gold-wash); color: var(--gold-bright);
+    padding: 2px 7px; border: 1px solid rgba(215, 164, 75, 0.35);
+  }
+  .open-cue { font-size: 13px; color: var(--gold-bright); margin-top: auto; }
+
+  .crumb { margin-bottom: 20px; font-size: 13.5px; }
+
   .tag-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .tag {
     display: inline-block;
@@ -350,8 +372,8 @@
 
 <header class="masthead">
   <div>
-    <p class="eyebrow">Security Certification Tracking</p>
-    <h1>Compliance Ledger</h1>
+    <p class="eyebrow" id="eyebrow">Security Certification Tracking</p>
+    <h1 id="pageTitle">Compliance Ledger</h1>
   </div>
   <div class="masthead-stamp mono">
     <div class="stamp-org" id="orgNameMeta"></div>
@@ -360,6 +382,8 @@
 </header>
 
 <main>
+  <div id="crumb" class="crumb"></div>
+
   <section id="overview" class="overview-grid"></section>
 
   <div id="filterBar" class="control-bar panel" style="display:none">
@@ -475,16 +499,12 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     return { number: prefix, name: 'Legacy Category ' + prefix };
   }
 
-  // Renders the generic "Roadmap" sub-panel for one control. Iterates
-  // whatever fields exist on control.roadmap rather than hardcoding
-  // budgetTier/vendorResearch/recommendation/status, so a future phase that
-  // adds fields here needs no template changes.
-  function renderRoadmap(roadmap) {
-    if (!roadmap || typeof roadmap !== 'object' || Object.keys(roadmap).length === 0) {
-      return '<div class="roadmap"><h4>Roadmap</h4><div class="placeholder">No roadmap data available yet.</div></div>';
-    }
-    const rows = Object.keys(roadmap).map(function (key) {
-      const value = roadmap[key];
+  // Renders an arbitrary flat object as labelled rows, handling strings, arrays of
+  // strings, and arrays of vendor-shaped objects. Shared by the Roadmap sub-panel and
+  // the extra-fields block so both treat unknown data identically.
+  function renderKeyValueRows(obj) {
+    return Object.keys(obj).map(function (key) {
+      const value = obj[key];
       const label = labelizeKey(key);
       if (Array.isArray(value)) {
         if (value.length === 0) {
@@ -492,7 +512,11 @@ const CISO_DATA = /*__CISO_DATA__*/null;
             '<span class="placeholder">No ' + esc(label.toLowerCase()) + ' yet.</span></div>';
         }
         const items = value.map(function (v) {
-          if (typeof v === 'string') return '<li>' + esc(v) + '</li>';
+          // linkify() rather than esc(): it renders http(s) URLs as links and falls back to
+          // esc() for everything else, so this is a strict superset that keeps the
+          // javascript:-URL protection. Lets any array-of-URLs field a certification module
+          // ships -- codeVerifiedBy, say -- render as clickable provenance for free.
+          if (typeof v === 'string') return '<li>' + linkify(v) + '</li>';
           if (v && typeof v === 'object') {
             // Common shape for vendorResearch entries: { name, fitNotes, estCost, sourceUrls }.
             // Render known fields nicely; fall back to JSON only for a genuinely unrecognized shape.
@@ -517,7 +541,42 @@ const CISO_DATA = /*__CISO_DATA__*/null;
         : esc(String(value));
       return '<div class="roadmap-row"><span class="roadmap-label">' + esc(label) + '</span><span>' + display + '</span></div>';
     }).join('');
-    return '<div class="roadmap"><h4>Roadmap</h4>' + rows + '</div>';
+  }
+
+  // Renders the generic "Roadmap" sub-panel for one control. Iterates
+  // whatever fields exist on control.roadmap rather than hardcoding
+  // budgetTier/vendorResearch/recommendation/status, so a future phase that
+  // adds fields here needs no template changes.
+  function renderRoadmap(roadmap) {
+    if (!roadmap || typeof roadmap !== 'object' || Object.keys(roadmap).length === 0) {
+      return '<div class="roadmap"><h4>Roadmap</h4><div class="placeholder">No roadmap data available yet.</div></div>';
+    }
+    return '<div class="roadmap"><h4>Roadmap</h4>' + renderKeyValueRows(roadmap) + '</div>';
+  }
+
+  // Control fields this template renders explicitly somewhere above, plus the internal
+  // bookkeeping ones that would be noise. Everything else on a control falls through to
+  // renderExtraFields below.
+  const RENDERED_CONTROL_FIELDS = new Set([
+    'id', 'domain', 'domainKey', 'topicLabel', 'topicSummary', 'citations',
+    'assessment', 'roadmap', 'statementText', 'statementSource', 'type', 'level',
+    'relatedControlCode', 'relatedControlName', 'legacyCategoryPrefix', 'baselineOverlap',
+    'nonAuthoritative', 'applicabilityTier', 'reviewNote',
+  ]);
+
+  // register-tier.js preserves every field a structure file puts on a control (by spread),
+  // so a certification module can ship extra per-control data -- SOC 2's requiredPolicies
+  // and evidenceExamples, for instance -- without touching any core script. Without this
+  // block that data would sit in state.json and render nowhere. Deliberately generic: a
+  // new field appears on the dashboard the moment a structure file ships it, no template
+  // change required.
+  function renderExtraFields(control) {
+    const extra = {};
+    for (const key of Object.keys(control)) {
+      if (!RENDERED_CONTROL_FIELDS.has(key) && control[key] != null) extra[key] = control[key];
+    }
+    if (Object.keys(extra).length === 0) return '';
+    return '<div class="roadmap"><h4>Additional detail</h4>' + renderKeyValueRows(extra) + '</div>';
   }
 
   // r2's five PRISMA maturity dimensions. Duplicated locally, mirroring this project's
@@ -649,6 +708,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       html += renderMaturityBreakdown(control.assessment.maturity);
     }
 
+    html += renderExtraFields(control);
     html += renderRoadmap(control.roadmap);
     html += '</div>';
     return html;
@@ -793,74 +853,151 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     if (countEl) countEl.textContent = visibleCount + ' of ' + rows.length + ' controls shown';
   }
 
-  function render() {
-    const orgNameMeta = document.getElementById('orgNameMeta');
-    const generatedAtMeta = document.getElementById('generatedAtMeta');
-    const overview = document.getElementById('overview');
-    const drilldowns = document.getElementById('drilldowns');
-    const filterBar = document.getElementById('filterBar');
+  // Must stay byte-for-byte equivalent to certPageSlug() in render-dashboard.js -- that
+  // function decides the filename each certification page is written to, this one decides
+  // the href the index points at. Diverge and every index link 404s.
+  function certPageSlug(certKey) {
+    return String(certKey).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'cert';
+  }
 
-    if (!CISO_DATA || !CISO_DATA.state) {
-      overview.innerHTML = '<div class="empty-state">No dashboard data found. This file must be generated by ' +
-        '<code>render-dashboard.js</code>, not opened directly from the template.</div>';
-      return;
+  function certPageHref(certKey) {
+    return 'cert-' + certPageSlug(certKey) + '.html';
+  }
+
+  // One meta-index card per certification in the plugin's catalog. A certification this
+  // project already tracks gets real gauges and a link to its own page; one it doesn't
+  // gets a recessive "not tracked yet" card naming the skill that would start it. The
+  // catalog -- not state.json -- drives the list, so the index answers "what can this
+  // plugin do" and not merely "what have I already started".
+  function renderIndexCard(entry, cert, summary, state, cardIndex) {
+    const certKey = entry.certKey;
+    const tracked = Boolean(cert);
+
+    let inner = '<div class="cert-card panel' + (tracked ? '' : ' untracked') + '" style="animation-delay:' + (cardIndex * 70) + 'ms">';
+    inner += '<div class="tag-row"><h2>' + esc((cert && cert.displayName) || entry.displayName || certKey) + '</h2>';
+    if (!tracked) inner += '<span class="tag">not tracked yet</span>';
+    inner += '</div>';
+
+    if (entry.summary) inner += '<div class="cert-summary">' + esc(entry.summary) + '</div>';
+
+    if (!tracked) {
+      inner += '<div class="start-hint">Run <code>' + esc(entry.skill || ('ciso:' + certKey)) + '</code> to start tracking this certification.</div>';
+      inner += '</div>';
+      return inner;
     }
 
-    const state = CISO_DATA.state;
-    const rollups = CISO_DATA.rollups || {};
-
-    orgNameMeta.textContent = (state.organization && state.organization.name) || 'Unnamed organization';
-    let generatedLabel = 'Not yet generated';
-    if (state.generatedAt) {
-      const d = new Date(state.generatedAt);
-      generatedLabel = 'Generated ' + (isNaN(d.getTime()) ? state.generatedAt : d.toLocaleString());
+    const tiers = cert.tiers || {};
+    const tierKeys = Object.keys(tiers).sort();
+    if (tierKeys.length > 0) {
+      inner += '<div class="tag-row">';
+      for (const tierKey of tierKeys) {
+        const isActive = cert.activeTier === tierKey;
+        inner += '<span class="tag' + (isActive ? ' gold' : '') + '">' + esc(tierKey) + (isActive ? ' &middot; active' : '') + '</span>';
+      }
+      inner += '</div>';
     }
-    generatedAtMeta.textContent = generatedLabel;
+
+    const s = summary || { total: 0, compliancePercent: 0, assessedPercent: 0 };
+    inner += '<div class="subline mono">' + s.total + ' control' + (s.total === 1 ? '' : 's') +
+      ' across ' + tierKeys.length + ' tier' + (tierKeys.length === 1 ? '' : 's') + '</div>';
+
+    inner += '<div class="gauge"><div class="gauge-label"><span>Compliance</span><b>' + s.compliancePercent + '%</b></div>';
+    inner += '<div class="gauge-track"><div class="gauge-fill compliance" style="width:' + s.compliancePercent + '%"></div></div></div>';
+
+    inner += '<div class="gauge"><div class="gauge-label"><span>Assessed</span><b>' + s.assessedPercent + '%</b></div>';
+    inner += '<div class="gauge-track"><div class="gauge-fill assessed" style="width:' + s.assessedPercent + '%"></div></div></div>';
+
+    for (const tierKey of tierKeys) {
+      const session = findInterviewSession(state, certKey, tierKey);
+      if (!session) continue;
+      const completed = (session.domainsCompleted || []).length;
+      const remaining = (session.domainsRemaining || []).length;
+      const isDone = session.status === 'completed';
+      inner += '<div class="session-chip' + (isDone ? ' done' : '') + '">' + esc(tierKey) + ': ' +
+        completed + '/' + (completed + remaining) + ' categories &middot; ' + esc(humanize(session.status) || 'Unknown') + '</div>';
+    }
+
+    inner += '<div class="open-cue">Open ' + esc((cert && cert.displayName) || certKey) + ' &rarr;</div>';
+    inner += '</div>';
+
+    return '<a class="cert-card-link" href="' + esc(certPageHref(certKey)) + '">' + inner + '</a>';
+  }
+
+  function renderIndexView(state, certSummaries, catalog, overview) {
+    document.title = 'Security Certifications';
+    document.getElementById('eyebrow').textContent = 'Security Certification Tracking';
+    document.getElementById('pageTitle').textContent = 'Compliance Ledger';
 
     const certifications = state.certifications || {};
-    const certKeys = Object.keys(certifications);
 
-    if (certKeys.length === 0) {
-      overview.innerHTML = '<div class="empty-state">' +
-        'No certifications tracked yet. Run <code>ciso:hitrust</code> to register HITRUST CSF e1.' +
-        '</div>';
+    // Certifications tracked in this project but absent from the plugin catalog (an org's
+    // own structure file, or a catalog entry removed in a later plugin version) still get
+    // a card -- the index must never hide data the project actually holds.
+    const entries = catalog.slice();
+    const known = new Set(entries.map(function (e) { return e.certKey; }));
+    for (const certKey of Object.keys(certifications)) {
+      if (!known.has(certKey)) {
+        entries.push({ certKey: certKey, displayName: (certifications[certKey] || {}).displayName || certKey });
+      }
+    }
+
+    if (entries.length === 0) {
+      overview.innerHTML = '<div class="empty-state">No certifications tracked yet, and this plugin\'s ' +
+        'certification catalog is empty. Run <code>ciso:hitrust</code> to register HITRUST CSF.</div>';
       return;
     }
 
+    overview.innerHTML = entries.map(function (entry, i) {
+      return renderIndexCard(entry, certifications[entry.certKey], certSummaries[entry.certKey], state, i);
+    }).join('');
+  }
+
+  function renderCertView(state, rollups, certKey, overview, drilldowns) {
+    const cert = (state.certifications || {})[certKey] || {};
+    const displayName = cert.displayName || certKey;
+
+    document.title = displayName + ' -- Compliance Ledger';
+    document.getElementById('eyebrow').textContent = 'Security Certification Tracking';
+    document.getElementById('pageTitle').textContent = displayName;
+    document.getElementById('crumb').innerHTML = '<a href="dashboard.html">&larr; All certifications</a>';
+
+    const tiers = cert.tiers || {};
     let overviewHtml = '';
     let drilldownHtml = '';
     let cardIndex = 0;
 
-    for (const certKey of certKeys) {
-      const cert = certifications[certKey] || {};
-      const tiers = cert.tiers || {};
-      for (const tierKey of Object.keys(tiers)) {
-        const tier = tiers[tierKey] || {};
-        const rollup = (rollups[certKey] && rollups[certKey][tierKey]) || null;
+    for (const tierKey of Object.keys(tiers)) {
+      const tier = tiers[tierKey] || {};
+      const rollup = (rollups[certKey] && rollups[certKey][tierKey]) || null;
 
-        overviewHtml += renderOverviewCard(certKey, cert, tierKey, tier, rollup, state, cardIndex++);
+      overviewHtml += renderOverviewCard(certKey, cert, tierKey, tier, rollup, state, cardIndex++);
 
-        const controls = Object.values(tier.controls || {});
-        // Same fallback key as computeRollups() in render-dashboard.js --
-        // keep these identical or a control with a missing prefix would be
-        // grouped under a different key than its rollup/anchor expects.
-        const byDomain = groupBy(controls, function (c) { return (c && (c.domainKey || c.legacyCategoryPrefix || c.domain)) || 'unknown'; });
-        const domainKeys = Object.keys(byDomain).sort();
+      const controls = Object.values(tier.controls || {});
+      // Same fallback key as computeRollups() in render-dashboard.js --
+      // keep these identical or a control with a missing prefix would be
+      // grouped under a different key than its rollup/anchor expects.
+      const byDomain = groupBy(controls, function (c) { return (c && (c.domainKey || c.legacyCategoryPrefix || c.domain)) || 'unknown'; });
+      const domainKeys = Object.keys(byDomain).sort();
 
-        drilldownHtml += '<section class="cert-section" id="section-' + certKey + '-' + tierKey + '">';
-        drilldownHtml += '<h2>' + esc(cert.displayName || certKey) + ' &mdash; ' + esc(tierKey) + ' details</h2>';
-        for (const prefix of domainKeys) {
-          const domainRollup = rollup && rollup.byDomain ? rollup.byDomain[prefix] : null;
-          drilldownHtml += renderDomainGroup(prefix, byDomain[prefix], domainRollup, certKey, tierKey);
-        }
-        drilldownHtml += '</section>';
+      drilldownHtml += '<section class="cert-section" id="section-' + certKey + '-' + tierKey + '">';
+      drilldownHtml += '<h2>' + esc(displayName) + ' &mdash; ' + esc(tierKey) + ' details</h2>';
+      for (const prefix of domainKeys) {
+        const domainRollup = rollup && rollup.byDomain ? rollup.byDomain[prefix] : null;
+        drilldownHtml += renderDomainGroup(prefix, byDomain[prefix], domainRollup, certKey, tierKey);
       }
+      drilldownHtml += '</section>';
+    }
+
+    if (overviewHtml === '') {
+      overview.innerHTML = '<div class="empty-state">No tiers registered for ' + esc(displayName) + ' yet.</div>';
+      return;
     }
 
     overview.innerHTML = overviewHtml;
     drilldowns.innerHTML = drilldownHtml;
 
-    // Populate filters now that control rows exist in the DOM.
+    // Populate filters now that control rows exist in the DOM. Only ever reached in cert
+    // mode -- the index has no control rows, so its filter toolbar stays hidden.
     const statusSelect = document.getElementById('statusFilter');
     for (const status of STATUS_ORDER) {
       const opt = document.createElement('option');
@@ -876,11 +1013,43 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       typeSelect.appendChild(opt);
     }
 
-    filterBar.style.display = 'flex';
+    document.getElementById('filterBar').style.display = 'flex';
     statusSelect.addEventListener('change', applyFilters);
     typeSelect.addEventListener('change', applyFilters);
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     applyFilters();
+  }
+
+  function render() {
+    const overview = document.getElementById('overview');
+    const drilldowns = document.getElementById('drilldowns');
+
+    if (!CISO_DATA || !CISO_DATA.state) {
+      overview.innerHTML = '<div class="empty-state">No dashboard data found. This file must be generated by ' +
+        '<code>render-dashboard.js</code>, not opened directly from the template.</div>';
+      return;
+    }
+
+    const state = CISO_DATA.state;
+    const rollups = CISO_DATA.rollups || {};
+    // Absent `view` means the index -- the safe default, since the index is the entry
+    // point and degrades to a catalog listing rather than to a wrong certification.
+    const view = CISO_DATA.view || { mode: 'index' };
+
+    document.getElementById('orgNameMeta').textContent =
+      (state.organization && state.organization.name) || 'Unnamed organization';
+    let generatedLabel = 'Not yet generated';
+    if (state.generatedAt) {
+      const d = new Date(state.generatedAt);
+      generatedLabel = 'Generated ' + (isNaN(d.getTime()) ? state.generatedAt : d.toLocaleString());
+    }
+    document.getElementById('generatedAtMeta').textContent = generatedLabel;
+
+    if (view.mode === 'cert') {
+      renderCertView(state, rollups, view.certKey, overview, drilldowns);
+    } else {
+      renderIndexView(state, CISO_DATA.certSummaries || {}, CISO_DATA.catalog || [], overview);
+    }
   }
 
   render();

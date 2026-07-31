@@ -6,7 +6,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const { computeRollups, injectData } = require('../render-dashboard.js');
+const {
+  computeRollups,
+  computeCertSummaries,
+  injectData,
+  stateForIndex,
+  readCatalog,
+} = require('../render-dashboard.js');
 
 const TEMPLATE_PATH = path.join(__dirname, '..', '..', '..', 'assets', 'dashboard-template.html');
 
@@ -31,6 +37,7 @@ function makeElement() {
 function makeStubDocument() {
   const byId = {};
   return {
+    title: '',
     getElementById(id) {
       if (!byId[id]) byId[id] = makeElement();
       return byId[id];
@@ -44,13 +51,9 @@ function makeStubDocument() {
   };
 }
 
-// Runs the REAL, unmodified dashboard-template.html client script against `state`, via the same
-// injectData()/computeRollups() production code path render-dashboard.js uses, and returns the
-// rendered #overview/#drilldowns innerHTML strings.
-function renderClientSide(state) {
+function runTemplate(payload) {
   const template = fs.readFileSync(TEMPLATE_PATH, 'utf8');
-  const rollups = computeRollups(state);
-  const html = injectData(template, { state, rollups });
+  const html = injectData(template, payload);
 
   const scriptStart = html.indexOf('<script>') + '<script>'.length;
   const scriptEnd = html.indexOf('</script>', scriptStart);
@@ -64,7 +67,36 @@ function renderClientSide(state) {
   return {
     overviewHtml: document.getElementById('overview').innerHTML,
     drilldownsHtml: document.getElementById('drilldowns').innerHTML,
+    crumbHtml: document.getElementById('crumb').innerHTML,
+    filterBarDisplay: document.getElementById('filterBar').style.display,
+    title: document.title,
   };
+}
+
+// Runs the REAL, unmodified dashboard-template.html client script against `state` in CERT
+// view, via the same injectData()/computeRollups() production code path render-dashboard.js
+// uses. Defaults to the first certification in state so every pre-existing single-cert test
+// keeps exercising the same view it always did.
+function renderClientSide(state, certKey) {
+  const key = certKey || Object.keys(state.certifications || {})[0];
+  return runTemplate({
+    state,
+    rollups: computeRollups(state),
+    view: { mode: 'cert', certKey: key },
+  });
+}
+
+// Runs the same real template in INDEX view, mirroring the payload render-dashboard.js
+// builds for dashboard.html (controls stripped, catalog + per-cert summaries attached).
+function renderIndexClientSide(state, catalog) {
+  const rollups = computeRollups(state);
+  return runTemplate({
+    state: stateForIndex(state),
+    rollups,
+    certSummaries: computeCertSummaries(rollups),
+    catalog: catalog || readCatalog(),
+    view: { mode: 'index' },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -321,4 +353,99 @@ test('the overview card shows a Maturity depth gauge for r2 but not for e1', () 
   const e1State = baseState({ c1: makeControl({ id: 'c1' }) });
   const { overviewHtml: e1Overview } = renderClientSide(e1State);
   assert.ok(!e1Overview.includes('Maturity depth'), 'e1 overview card must not show the maturity depth gauge');
+});
+
+// ---------------------------------------------------------------------------
+// Extra fields -- per-control data a certification module ships that no core script knows about
+// ---------------------------------------------------------------------------
+
+test('unknown per-control fields render instead of silently vanishing, and known ones are not duplicated', () => {
+  const state = baseState({
+    c1: makeControl({
+      id: 'e1-11-01',
+      requiredPolicies: ['Access Control Policy', 'Password Policy'],
+      evidenceExamples: ['MFA enforcement screenshot'],
+      tscCategory: 'security',
+    }),
+  });
+
+  const { drilldownsHtml } = renderClientSide(state);
+
+  assert.ok(drilldownsHtml.includes('Additional detail'), 'an extra-fields block must appear');
+  assert.ok(drilldownsHtml.includes('Required Policies'), 'the field key must render as a readable label');
+  assert.ok(drilldownsHtml.includes('Access Control Policy'));
+  assert.ok(drilldownsHtml.includes('MFA enforcement screenshot'));
+  assert.ok(drilldownsHtml.includes('Tsc Category'));
+
+  // Fields the template already renders explicitly must not be repeated in the block --
+  // otherwise every control would show its id, status and citations twice.
+  const additional = drilldownsHtml.slice(drilldownsHtml.indexOf('Additional detail'));
+  assert.ok(!additional.includes('Statement Source'), 'explicitly-rendered fields must be excluded');
+  assert.ok(!additional.includes('Related Control Name'), 'explicitly-rendered fields must be excluded');
+});
+
+test('a control with no extra fields renders no extra-fields block at all', () => {
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
+  const { drilldownsHtml } = renderClientSide(state);
+  assert.ok(!drilldownsHtml.includes('Additional detail'), 'no empty block for a plain control');
+});
+
+// ---------------------------------------------------------------------------
+// Meta index view
+// ---------------------------------------------------------------------------
+
+const TEST_CATALOG = [
+  { certKey: 'hitrust', displayName: 'HITRUST CSF', skill: 'ciso:hitrust', tiers: ['e1'], summary: 'Healthcare harmonizing framework.' },
+  { certKey: 'soc2', displayName: 'SOC 2 Type II', skill: 'ciso:soc2', tiers: ['type2'], summary: 'AICPA Trust Services Criteria.' },
+];
+
+test('index view: a tracked certification links to its own page; an untracked one names the skill that starts it', () => {
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
+  const { overviewHtml, drilldownsHtml } = renderIndexClientSide(state, TEST_CATALOG);
+
+  assert.ok(overviewHtml.includes('href="cert-hitrust.html"'), 'the tracked certification must link to its page');
+  assert.ok(overviewHtml.includes('HITRUST CSF'));
+
+  assert.ok(overviewHtml.includes('SOC 2 Type II'), 'a catalog certification this project does not track must still appear');
+  assert.ok(overviewHtml.includes('not tracked yet'));
+  assert.ok(overviewHtml.includes('ciso:soc2'), 'an untracked card must name the skill that would start it');
+  assert.ok(!overviewHtml.includes('href="cert-soc2.html"'), 'an untracked certification has no page to link to');
+
+  assert.equal(drilldownsHtml, '', 'the index renders no control drilldowns');
+});
+
+test('index view: emits no same-page fragment links, whose anchors only exist on the certification pages', () => {
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
+  const { overviewHtml } = renderIndexClientSide(state, TEST_CATALOG);
+
+  const fragmentOnly = [...overviewHtml.matchAll(/href="(#[^"]*)"/g)].map((m) => m[1]);
+  assert.deepEqual(fragmentOnly, [], `index must have no same-page fragment links (found ${fragmentOnly.join(', ')})`);
+});
+
+test('index view: the filter toolbar stays hidden and no back-link is shown; a certification page shows both', () => {
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
+
+  const index = renderIndexClientSide(state, TEST_CATALOG);
+  assert.notEqual(index.filterBarDisplay, 'flex', 'the index has no control rows, so it must not show a filter toolbar');
+  assert.equal(index.crumbHtml, '', 'the index is the top level -- nothing to go back to');
+
+  const cert = renderClientSide(state);
+  assert.equal(cert.filterBarDisplay, 'flex', 'a certification page filters its own controls');
+  assert.ok(cert.crumbHtml.includes('dashboard.html'), 'a certification page must link back to the index');
+});
+
+test('index view: a certification tracked in state but absent from the catalog still gets a card', () => {
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
+  // Catalog knows only SOC 2; the project actually tracks HITRUST. The index must never
+  // hide data the project holds just because the shipped catalog has moved on.
+  const { overviewHtml } = renderIndexClientSide(state, [TEST_CATALOG[1]]);
+
+  assert.ok(overviewHtml.includes('HITRUST CSF'), 'an off-catalog tracked certification must still render');
+  assert.ok(overviewHtml.includes('href="cert-hitrust.html"'), 'and must still link to its page');
+});
+
+test('index view: the certification page title and the index title differ, so browser tabs are distinguishable', () => {
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
+  assert.notEqual(renderIndexClientSide(state, TEST_CATALOG).title, renderClientSide(state).title);
+  assert.ok(renderClientSide(state).title.includes('HITRUST CSF'));
 });

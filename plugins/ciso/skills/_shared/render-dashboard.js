@@ -2,11 +2,23 @@
 'use strict';
 
 /**
- * Regenerates <target-dir>/dashboard.html from <target-dir>/state.json.
+ * Regenerates <target-dir>'s dashboard pages from <target-dir>/state.json.
  *
  * Usage: node render-dashboard.js <target-dir>
  *
- * This is the single canonical renderer for the ciso plugin's dashboard. Both
+ * Writes one page per view, all from the same template:
+ *   dashboard.html        -- the meta index: one card per certification this plugin
+ *                            supports (from assets/certifications.json), whether or not
+ *                            this project tracks it yet.
+ *   cert-<certKey>.html   -- one page per certification actually registered in state,
+ *                            carrying that certification's overview cards, filter bar
+ *                            and control drilldowns.
+ *
+ * `dashboard.html` deliberately keeps its name as the index rather than gaining a new
+ * one: it is what every existing bookmark, .gitignore entry and skill doc already points
+ * at, so the entry point never moves.
+ *
+ * This is the single canonical renderer for the ciso plugin's dashboards. Both
  * the `init` and `hitrust` skills call it as their last step:
  *
  *   node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <target-dir>
@@ -31,6 +43,11 @@ const MATURITY_DIMENSIONS = ['policy', 'procedure', 'implemented', 'measured', '
 // space-free match is intentional -- if this ever fails to find the marker,
 // that's a real bug to fix, not a case to work around.
 const DATA_MARKER = '/*__CISO_DATA__*/null';
+
+// The part of DATA_MARKER that survives into a rendered page (where `null` has been replaced
+// by the real payload). Used to tell a page this renderer wrote apart from any other file the
+// user happens to keep in the same directory -- see pruneStaleCertPages.
+const DATA_MARKER_PREFIX = '/*__CISO_DATA__*/';
 
 function emptyStatusCounts() {
   const counts = {};
@@ -222,6 +239,95 @@ function injectData(template, payload) {
   return template.split(DATA_MARKER).join(replacement);
 }
 
+/**
+ * Rolls a certification's per-tier rollups up into one certification-level summary for
+ * the meta index card. Percentages are recomputed from the summed raw counts rather than
+ * averaged across tiers -- averaging two percentages would weight a 5-control tier the
+ * same as a 300-control one.
+ */
+function summarizeCert(certRollups) {
+  const byStatus = emptyStatusCounts();
+  let total = 0;
+  let assessedTotal = 0;
+  const tierKeys = Object.keys(certRollups || {});
+
+  for (const tierKey of tierKeys) {
+    const tier = certRollups[tierKey] || {};
+    total += tier.total || 0;
+    for (const status of STATUSES) {
+      byStatus[status] += (tier.byStatus && tier.byStatus[status]) || 0;
+    }
+    // assessedPercent is a rounded percentage, so recover the raw assessed count from
+    // the tier's own total rather than trying to un-round it.
+    assessedTotal += Math.round(((tier.assessedPercent || 0) / 100) * (tier.total || 0));
+  }
+
+  const applicableTotal = total - byStatus.not_applicable;
+  return {
+    tierKeys: tierKeys.sort(),
+    total,
+    byStatus,
+    applicableTotal,
+    compliancePercent: applicableTotal === 0 ? 0 : Math.round((100 * byStatus.met) / applicableTotal),
+    assessedPercent: total === 0 ? 0 : Math.round((100 * assessedTotal) / total),
+  };
+}
+
+function computeCertSummaries(rollups) {
+  const summaries = {};
+  for (const certKey of Object.keys(rollups || {})) {
+    summaries[certKey] = summarizeCert(rollups[certKey]);
+  }
+  return summaries;
+}
+
+// Maps a certKey to its page filename. A certKey reaches this function from state.json,
+// which is local and org-controlled but still data rather than code -- so it is reduced to
+// [a-z0-9-] before ever becoming a path, and a `..` or an absolute path can never escape
+// targetDir. The template MUST slugify hrefs with an identical rule, or index links stop
+// matching the files written here.
+function certPageSlug(certKey) {
+  return String(certKey).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'cert';
+}
+
+function certPageName(certKey) {
+  return `cert-${certPageSlug(certKey)}.html`;
+}
+
+/**
+ * The slice of state a single certification's page needs: just that certification and
+ * just its interview sessions. Keeps each page's embedded data island proportional to
+ * the certification it shows instead of growing with every other certification tracked.
+ */
+function stateForCert(state, certKey) {
+  return Object.assign({}, state, {
+    certifications: { [certKey]: state.certifications[certKey] },
+    interviewSessions: (state.interviewSessions || []).filter((s) => s && s.certification === certKey),
+  });
+}
+
+/**
+ * The slice of state the meta index needs: every certification, but with the `controls`
+ * and `archivedControls` maps dropped. The index shows rollups and session progress, never
+ * an individual control, so shipping the full control set would bloat the entry page with
+ * data nothing on it reads.
+ */
+function stateForIndex(state) {
+  const certifications = {};
+  for (const certKey of Object.keys(state.certifications || {})) {
+    const cert = state.certifications[certKey] || {};
+    const tiers = {};
+    for (const tierKey of Object.keys(cert.tiers || {})) {
+      const tier = Object.assign({}, cert.tiers[tierKey]);
+      delete tier.controls;
+      delete tier.archivedControls;
+      tiers[tierKey] = tier;
+    }
+    certifications[certKey] = Object.assign({}, cert, { tiers });
+  }
+  return Object.assign({}, state, { certifications });
+}
+
 function readState(targetDir) {
   const statePath = path.join(targetDir, 'state.json');
   if (!fs.existsSync(statePath)) {
@@ -243,25 +349,101 @@ function readTemplate() {
   return { templatePath, template: fs.readFileSync(templatePath, 'utf8') };
 }
 
+// The catalog of certifications this plugin supports, whether or not a given project
+// tracks them yet -- the meta index renders a card for each. Resolved relative to this
+// file, exactly like readTemplate(). It ships with the plugin, so a missing or malformed
+// catalog is a packaging bug to fix, not a condition to render around.
+function readCatalog() {
+  const catalogPath = path.join(__dirname, '..', '..', 'assets', 'certifications.json');
+  if (!fs.existsSync(catalogPath)) {
+    throw new Error(`render-dashboard: certification catalog not found at ${catalogPath}`);
+  }
+  const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+  if (!Array.isArray(catalog)) {
+    throw new Error(`render-dashboard: certification catalog at ${catalogPath} must be a JSON array`);
+  }
+  return catalog;
+}
+
+// Removes cert-*.html pages left behind by a previous render whose certification is no
+// longer in state.json. Without this, deregistering a certification leaves a stale page
+// that the index no longer links to but a stale bookmark still opens -- showing numbers
+// that will never update again.
+//
+// Deletion is fail-closed on TWO conditions, not one: the filename must match, AND the file
+// must actually contain this renderer's data-island marker. The target directory belongs to
+// the user -- it is their gitignored project data, where they may well have saved a
+// `cert-soc2-draft.html` or an exported artifact. Matching the name alone would silently
+// destroy such a file on a routine dashboard regen, unrecoverably, since the directory is
+// gitignored and has no history to restore from. Only delete files this renderer wrote.
+function pruneStaleCertPages(targetDir, writtenNames) {
+  const kept = new Set(writtenNames);
+  const removed = [];
+  for (const name of fs.readdirSync(targetDir)) {
+    if (!/^cert-.*\.html$/.test(name) || kept.has(name)) continue;
+    // The marker in a RENDERED page has the JSON payload spliced in after it, so match the
+    // marker's stable prefix rather than DATA_MARKER itself (which still carries the
+    // template's placeholder `null`).
+    const filePath = path.join(targetDir, name);
+    if (!fs.readFileSync(filePath, 'utf8').includes(DATA_MARKER_PREFIX)) continue;
+    fs.unlinkSync(filePath);
+    removed.push(name);
+  }
+  return removed;
+}
+
 /**
- * Renders <target-dir>/dashboard.html from <target-dir>/state.json.
+ * Renders <target-dir>/dashboard.html (the meta index) plus one
+ * <target-dir>/cert-<certKey>.html per registered certification, from <target-dir>/state.json.
  *
  * The only mutation ever made to state.json is stamping `generatedAt` --
- * every other field is written back byte-for-byte (value-wise) unchanged.
+ * every other field is written back byte-for-byte (value-wise) unchanged. It is stamped
+ * once, before any page is written, so every page agrees on when it was generated.
  */
 function renderDashboard(targetDir) {
   const { statePath, state } = readState(targetDir);
   const { template } = readTemplate();
+  const catalog = readCatalog();
 
   state.generatedAt = new Date().toISOString();
 
   const rollups = computeRollups(state);
-  const html = injectData(template, { state, rollups });
+  const certSummaries = computeCertSummaries(rollups);
 
-  fs.writeFileSync(path.join(targetDir, 'dashboard.html'), html, 'utf8');
+  const indexHtml = injectData(template, {
+    state: stateForIndex(state),
+    rollups,
+    certSummaries,
+    catalog,
+    view: { mode: 'index' },
+  });
+  fs.writeFileSync(path.join(targetDir, 'dashboard.html'), indexHtml, 'utf8');
+
+  const certPages = {};
+  const writtenNames = [];
+  for (const certKey of Object.keys(state.certifications || {})) {
+    const pageName = certPageName(certKey);
+    if (writtenNames.includes(pageName)) {
+      throw new Error(
+        `render-dashboard: certification keys "${certKey}" and another key both resolve to page "${pageName}" -- rename one so each certification gets its own page`
+      );
+    }
+    const html = injectData(template, {
+      state: stateForCert(state, certKey),
+      rollups: { [certKey]: rollups[certKey] },
+      certSummaries,
+      catalog,
+      view: { mode: 'cert', certKey },
+    });
+    fs.writeFileSync(path.join(targetDir, pageName), html, 'utf8');
+    certPages[certKey] = pageName;
+    writtenNames.push(pageName);
+  }
+
+  const removed = pruneStaleCertPages(targetDir, writtenNames);
   fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 
-  return { state, rollups, html };
+  return { state, rollups, certSummaries, catalog, html: indexHtml, certPages, removed };
 }
 
 function main() {
@@ -277,8 +459,14 @@ function main() {
     return;
   }
   try {
-    const { html } = renderDashboard(targetDir);
+    const { html, certPages, removed } = renderDashboard(targetDir);
     console.log(`Wrote ${path.join(targetDir, 'dashboard.html')} (${html.length} bytes)`);
+    for (const certKey of Object.keys(certPages)) {
+      console.log(`Wrote ${path.join(targetDir, certPages[certKey])}`);
+    }
+    for (const name of removed) {
+      console.log(`Removed stale ${path.join(targetDir, name)}`);
+    }
   } catch (err) {
     console.error(`render-dashboard: ${err.message}`);
     process.exitCode = 1;
@@ -293,6 +481,11 @@ module.exports = {
   STATUSES,
   DATA_MARKER,
   computeRollups,
+  computeCertSummaries,
+  certPageName,
+  stateForCert,
+  stateForIndex,
+  readCatalog,
   escapeForInlineScript,
   injectData,
   renderDashboard,

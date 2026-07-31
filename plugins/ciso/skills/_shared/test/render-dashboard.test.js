@@ -9,6 +9,10 @@ const { execFileSync } = require('node:child_process');
 
 const {
   computeRollups,
+  computeCertSummaries,
+  certPageName,
+  stateForCert,
+  stateForIndex,
   escapeForInlineScript,
   injectData,
   renderDashboard,
@@ -302,10 +306,14 @@ test('injectData: full render neutralizes a </script><script> breakout payload',
   writeState(dir, baseState(controls));
 
   renderDashboard(dir);
-  const html = fs.readFileSync(path.join(dir, 'dashboard.html'), 'utf8');
+  // The justification travels to the certification's own page -- the index deliberately
+  // ships no control data at all, so check both: escaped where it lands, absent elsewhere.
+  const certHtml = fs.readFileSync(path.join(dir, 'cert-hitrust.html'), 'utf8');
+  const indexHtml = fs.readFileSync(path.join(dir, 'dashboard.html'), 'utf8');
 
-  assert.ok(!html.includes('</script><script>alert(1)</script>'), 'the raw unescaped attack payload must never appear');
-  assert.ok(html.includes('\\u003c/script\\u003e\\u003cscript\\u003ealert(1)\\u003c/script\\u003e'), 'the escaped form must be present');
+  assert.ok(!certHtml.includes('</script><script>alert(1)</script>'), 'the raw unescaped attack payload must never appear');
+  assert.ok(certHtml.includes('\\u003c/script\\u003e\\u003cscript\\u003ealert(1)\\u003c/script\\u003e'), 'the escaped form must be present');
+  assert.ok(!indexHtml.includes('alert(1)'), 'the index carries no control data, so the payload must not reach it at all');
 });
 
 test('injectData: does not corrupt output when injected data contains $-replacement-pattern characters', () => {
@@ -360,7 +368,7 @@ test('renderDashboard: only mutates generatedAt in state.json, all other fields 
   assert.deepEqual(afterRest, beforeRest);
 });
 
-test('renderDashboard: renders successfully against certifications: {} without throwing, and shows the friendly empty state', () => {
+test('renderDashboard: an untracked project still renders the catalog, pointing at the skill that starts each certification', () => {
   const dir = mkTempDir();
   const state = {
     schemaVersion: '1.0.0',
@@ -373,10 +381,13 @@ test('renderDashboard: renders successfully against certifications: {} without t
 
   const result = renderDashboard(dir);
   assert.ok(result.html.length > 0);
+  assert.deepEqual(result.certPages, {}, 'nothing registered means no per-certification pages');
 
   const html = fs.readFileSync(path.join(dir, 'dashboard.html'), 'utf8');
+  // Not a blank page and not a dead end: the index is a catalog, so a project that has
+  // registered nothing still learns what this plugin supports and how to start.
   assert.ok(html.toLowerCase().includes('ciso:hitrust'), 'should point the user at the hitrust skill');
-  assert.ok(html.toLowerCase().includes('no certifications tracked yet'), 'should show a friendly empty state, not a blank page');
+  assert.ok(html.toLowerCase().includes('not tracked yet'), 'catalog entries with no state must render as untracked');
 });
 
 test('renderDashboard: throws a clear error when target-dir/state.json is missing', () => {
@@ -402,4 +413,187 @@ test('CLI: succeeds and writes dashboard.html for a valid target-dir', () => {
   writeState(dir, baseState({ c0: makeControl({ id: 'c0' }) }));
   execFileSync('node', [SCRIPT_PATH, dir], { stdio: 'pipe' });
   assert.ok(fs.existsSync(path.join(dir, 'dashboard.html')));
+});
+
+// ---------------------------------------------------------------------------
+// Multi-page output: dashboard.html (meta index) + cert-<certKey>.html per certification
+// ---------------------------------------------------------------------------
+
+// A second certification alongside HITRUST, so the per-page slicing is exercised against
+// real cross-certification separation rather than a single-cert degenerate case.
+function twoCertState() {
+  const state = baseState({ h0: makeControl({ id: 'hitrust-only-control', legacyCategoryPrefix: '04' }) });
+  state.certifications.soc2 = {
+    displayName: 'SOC 2 Type II',
+    activeTier: 'type2',
+    tiers: {
+      type2: {
+        controlSetVersion: 'v2017tsc',
+        sourceAuthority: 'public-topic-level',
+        importedFrom: null,
+        importedAt: null,
+        controls: {
+          s0: makeControl({ id: 'soc2-only-control', domainKey: 'CC6', domain: 'Logical and Physical Access Controls', legacyCategoryPrefix: undefined }),
+        },
+        archivedControls: {},
+      },
+    },
+  };
+  state.interviewSessions.push({
+    certification: 'soc2', tier: 'type2',
+    startedAt: '2020-01-01T00:00:00.000Z', lastUpdatedAt: '2020-01-02T00:00:00.000Z',
+    domainsCompleted: [], domainsRemaining: ['CC6'], status: 'in_progress',
+  });
+  return state;
+}
+
+test('renderDashboard: writes the meta index plus exactly one page per registered certification', () => {
+  const dir = mkTempDir();
+  writeState(dir, twoCertState());
+
+  const result = renderDashboard(dir);
+
+  assert.deepEqual(result.certPages, { hitrust: 'cert-hitrust.html', soc2: 'cert-soc2.html' });
+  assert.ok(fs.existsSync(path.join(dir, 'dashboard.html')));
+  assert.ok(fs.existsSync(path.join(dir, 'cert-hitrust.html')));
+  assert.ok(fs.existsSync(path.join(dir, 'cert-soc2.html')));
+});
+
+test('renderDashboard: each certification page carries only its own controls, never another certification\'s', () => {
+  const dir = mkTempDir();
+  writeState(dir, twoCertState());
+  renderDashboard(dir);
+
+  const hitrust = fs.readFileSync(path.join(dir, 'cert-hitrust.html'), 'utf8');
+  const soc2 = fs.readFileSync(path.join(dir, 'cert-soc2.html'), 'utf8');
+
+  assert.ok(hitrust.includes('hitrust-only-control'));
+  assert.ok(!hitrust.includes('soc2-only-control'), 'the HITRUST page must not embed SOC 2 control data');
+  assert.ok(soc2.includes('soc2-only-control'));
+  assert.ok(!soc2.includes('hitrust-only-control'), 'the SOC 2 page must not embed HITRUST control data');
+});
+
+test('renderDashboard: the meta index embeds no control data', () => {
+  const dir = mkTempDir();
+  writeState(dir, twoCertState());
+  renderDashboard(dir);
+
+  const html = fs.readFileSync(path.join(dir, 'dashboard.html'), 'utf8');
+
+  assert.ok(!html.includes('hitrust-only-control'), 'the index must not embed control data');
+  assert.ok(!html.includes('soc2-only-control'), 'the index must not embed control data');
+});
+
+// The index's links are built client-side, so which hrefs it emits is asserted in
+// dashboard-template.test.js (which actually runs the script). What this file owns is the
+// other half of the same guarantee: every page the renderer claims to have written exists
+// on disk under exactly the name the template will slugify to.
+test('renderDashboard: every page named in certPages exists on disk', () => {
+  const dir = mkTempDir();
+  writeState(dir, twoCertState());
+  const result = renderDashboard(dir);
+
+  const names = Object.values(result.certPages);
+  assert.ok(names.length >= 2, 'expected a page per tracked certification');
+  for (const certKey of Object.keys(result.certPages)) {
+    const name = result.certPages[certKey];
+    assert.equal(name, certPageName(certKey), 'page name must be exactly what certPageName() produces');
+    assert.ok(fs.existsSync(path.join(dir, name)), `certPages claims "${name}" but no such file was written`);
+  }
+});
+
+test('renderDashboard: a certification removed from state has its stale page deleted on the next render', () => {
+  const dir = mkTempDir();
+  const state = twoCertState();
+  writeState(dir, state);
+  renderDashboard(dir);
+  assert.ok(fs.existsSync(path.join(dir, 'cert-soc2.html')));
+
+  const trimmed = JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'));
+  delete trimmed.certifications.soc2;
+  writeState(dir, trimmed);
+
+  const result = renderDashboard(dir);
+
+  assert.deepEqual(result.removed, ['cert-soc2.html']);
+  assert.ok(!fs.existsSync(path.join(dir, 'cert-soc2.html')), 'a deregistered certification must not leave a zombie page behind');
+  assert.ok(fs.existsSync(path.join(dir, 'cert-hitrust.html')), 'the surviving certification keeps its page');
+});
+
+test("pruning never deletes a cert-*.html this renderer did not write -- the target dir is the user's own", () => {
+  const dir = mkTempDir();
+  writeState(dir, baseState({ c0: makeControl({ id: 'c0' }) }));
+
+  // The kind of file a user really does leave in docs/ciso/: a saved draft or an export whose
+  // name happens to match the pattern. The directory is gitignored, so deleting it would be
+  // unrecoverable.
+  const userFile = path.join(dir, 'cert-soc2-draft.html');
+  fs.writeFileSync(userFile, '<html><body>my hand-written notes</body></html>', 'utf8');
+
+  const result = renderDashboard(dir);
+
+  assert.ok(fs.existsSync(userFile), 'a file without this renderer\'s data marker must never be deleted');
+  assert.equal(fs.readFileSync(userFile, 'utf8'), '<html><body>my hand-written notes</body></html>');
+  assert.deepEqual(result.removed, [], 'nothing was stale, so nothing should have been removed');
+});
+
+test('certPageName: reduces a certKey to a safe filename, so a traversal-shaped key cannot escape the target dir', () => {
+  assert.equal(certPageName('hitrust'), 'cert-hitrust.html');
+  assert.equal(certPageName('SOC2'), 'cert-soc2.html');
+  assert.equal(certPageName('iso/27001'), 'cert-iso-27001.html');
+  // The dangerous case: a key that would otherwise walk out of the target directory.
+  const traversal = certPageName('../../etc/passwd');
+  assert.ok(!traversal.includes('..') && !traversal.includes('/') && !traversal.includes('\\'), `certPageName must never emit a path (got "${traversal}")`);
+});
+
+test('stateForCert / stateForIndex: each page gets only the slice it renders', () => {
+  const state = twoCertState();
+
+  const certSlice = stateForCert(state, 'soc2');
+  assert.deepEqual(Object.keys(certSlice.certifications), ['soc2']);
+  assert.deepEqual(certSlice.interviewSessions.map((s) => s.certification), ['soc2']);
+  assert.ok(certSlice.certifications.soc2.tiers.type2.controls, 'a certification page keeps its own controls');
+
+  const indexSlice = stateForIndex(state);
+  assert.deepEqual(Object.keys(indexSlice.certifications).sort(), ['hitrust', 'soc2']);
+  for (const certKey of Object.keys(indexSlice.certifications)) {
+    for (const tier of Object.values(indexSlice.certifications[certKey].tiers)) {
+      assert.equal(tier.controls, undefined, 'the index drops control maps');
+      assert.equal(tier.archivedControls, undefined, 'the index drops archived control maps');
+      assert.ok(tier.controlSetVersion, 'but keeps the tier metadata its cards display');
+    }
+  }
+
+  // Slicing must not mutate the source state -- the same object is sliced once per page.
+  assert.ok(state.certifications.hitrust.tiers.e1.controls, 'stateForIndex must not strip controls from the original state');
+});
+
+test('computeCertSummaries: rolls tiers up by summed counts, not by averaging their percentages', () => {
+  // Tier A: 1 of 1 met (100%). Tier B: 0 of 9 met (0%). Averaging percentages gives 50%;
+  // the honest answer weighted by control count is 1/10 = 10%.
+  const state = {
+    certifications: {
+      hitrust: {
+        displayName: 'HITRUST CSF',
+        tiers: {
+          e1: { controls: { a: makeControl({ id: 'a', assessment: { status: 'met', assessedAt: '2020-01-01T00:00:00.000Z' } }) } },
+          i1: { controls: {} },
+        },
+      },
+    },
+  };
+  for (let i = 0; i < 9; i += 1) {
+    state.certifications.hitrust.tiers.i1.controls['b' + i] = makeControl({
+      id: 'b' + i,
+      assessment: { status: 'gap', assessedAt: '2020-01-01T00:00:00.000Z' },
+    });
+  }
+
+  const summaries = computeCertSummaries(computeRollups(state));
+
+  assert.deepEqual(summaries.hitrust.tierKeys, ['e1', 'i1']);
+  assert.equal(summaries.hitrust.total, 10);
+  assert.equal(summaries.hitrust.byStatus.met, 1);
+  assert.equal(summaries.hitrust.compliancePercent, 10, 'must be 1/10, not the 50% an average of 100% and 0% would give');
+  assert.equal(summaries.hitrust.assessedPercent, 100);
 });

@@ -1,0 +1,9 @@
+[
+  {
+    "certKey": "hitrust",
+    "displayName": "HITRUST CSF",
+    "skill": "ciso:hitrust",
+    "tiers": ["e1", "i1", "r2"],
+    "summary": "Certifiable framework that harmonizes HIPAA, NIST, ISO and PCI into one assessment. Three nested tiers (e1 ⊂ i1 ⊂ r2); r2 additionally scores five PRISMA maturity dimensions per control."
+  }
+]

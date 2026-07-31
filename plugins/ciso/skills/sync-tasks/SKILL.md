@@ -8,7 +8,7 @@ allowed-tools: Read, Bash, AskUserQuestion
 
 ## Overview
 
-Turns HITRUST controls with an unresolved `assessment.status` (`gap` or `in_progress`) into real tickets in JIRA or Linear, so compliance findings become actionable engineering work instead of living only in the static `dashboard.html`. Invoked explicitly by the user (e.g. "sync my HITRUST gaps to JIRA") — a separate concern from the `ciso:hitrust` assessment flow, never run automatically as part of it.
+Turns HITRUST controls with an unresolved `assessment.status` (`gap` or `in_progress`) into real tickets in JIRA or Linear, so compliance findings become actionable engineering work instead of living only in the static dashboard pages. Invoked explicitly by the user (e.g. "sync my HITRUST gaps to JIRA") — a separate concern from the `ciso:hitrust` assessment flow, never run automatically as part of it.
 
 Tickets are created via the pre-installed `mcp__atlassian__*` (JIRA/Confluence) or Linear MCP connector tools — never via a custom HTTP client, and never with an API token handled by this skill's own code. If the relevant connector isn't authorized yet, tell the user to authorize it via their claude.ai connector settings (or `/mcp` in an interactive session) and stop.
 
