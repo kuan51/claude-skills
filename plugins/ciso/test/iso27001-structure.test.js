@@ -38,9 +38,13 @@ const CLAUSES = [
   '10.1', '10.2',
 ];
 
+// Partitioned on the domainKey prefix rather than a per-control discriminator field. An explicit
+// `requirementType` would have been derivable from exactly this, and every derivable field a
+// structure file ships also renders as a row on the dashboard -- so it was duplicated data the
+// reader had to see 123 times.
 const byCode = new Map(structure.controls.map((c) => [c.relatedControlCode, c]));
-const annex = structure.controls.filter((c) => c.requirementType === 'annex-a-control');
-const clauses = structure.controls.filter((c) => c.requirementType === 'management-system-clause');
+const annex = structure.controls.filter((c) => c.domainKey.startsWith('A'));
+const clauses = structure.controls.filter((c) => c.domainKey.startsWith('CL'));
 
 test('the structure file declares the tier, version and authority the module registers under', () => {
   assert.equal(structure.tier, 'isms');
@@ -108,6 +112,39 @@ test('identifiers claim corroboration, not verification, and name at least two s
     );
     for (const url of control.codeCorroboratedBy) {
       assert.match(url, /^https:\/\//, `${control.id}: codeCorroboratedBy entries must be https URLs`);
+    }
+  }
+});
+
+// SOC 2 ships both `citations` and `codeVerifiedBy` because for it they are genuinely different --
+// topic sources vs the document the identifier was read from. ISO's sources corroborate both, so
+// this module ships one field. Copying it into `citations` to match SOC 2's shape would render the
+// same URLs twice on every control: once under "Sources", once via the dashboard's extra-fields
+// block. That is what this guards, and it is how the duplication got shipped the first time.
+test('no field duplicates codeCorroboratedBy -- one provenance list, rendered once', () => {
+  for (const control of structure.controls) {
+    for (const [field, value] of Object.entries(control)) {
+      if (field === 'codeCorroboratedBy') continue;
+      assert.notDeepEqual(
+        value, control.codeCorroboratedBy,
+        `${control.id}: "${field}" is a copy of codeCorroboratedBy -- ship one list, not two`
+      );
+    }
+  }
+});
+
+// Same rule, one level up: a field whose value is always recoverable from another field is data the
+// reader has to skim past on all 123 control cards.
+test('no per-control field is derivable from domain or domainKey', () => {
+  for (const control of structure.controls) {
+    for (const [field, value] of Object.entries(control)) {
+      if (field === 'domain' || field === 'domainKey') continue;
+      if (typeof value !== 'string') continue;
+      assert.notEqual(value, control.domainKey, `${control.id}: "${field}" just restates domainKey`);
+      assert.notEqual(
+        value.toLowerCase(), control.domain.toLowerCase(),
+        `${control.id}: "${field}" just restates domain`
+      );
     }
   }
 });

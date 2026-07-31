@@ -96,6 +96,7 @@ ISO 27001). The core — scaffolding, registration, the assessment gate, version
 vendor research, and the dashboards — is certification-agnostic and keyed by `certKey`; each module
 supplies only its control data, its org-facing flow, and whatever import or scope handling it needs.
 SOC 2 was built against that contract without changing a single core script, and ISO 27001 without
-adding a single line of JavaScript. To see the exact core/module boundary, how a certification's
+adding any runtime code at all — it ships control data, docs and a test, and reuses the core as-is.
+To see the exact core/module boundary, how a certification's
 identifiers may and may not be sourced, and the contract for adding a fourth (PCI DSS is the
 strongest candidate), read [ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
