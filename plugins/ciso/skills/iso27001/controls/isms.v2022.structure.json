@@ -1,0 +1,1648 @@
+{
+  "tier": "isms",
+  "controlSetVersion": "v2022",
+  "sourceAuthority": "public-topic-level",
+  "nonAuthoritative": true,
+  "compiledAt": "2026-07-31",
+  "coverageNote": "Identifiers were RECONSTRUCTED FROM CONVERGENT PUBLIC SOURCES, not read from ISO/IEC 27001:2022 -- the standard is sold, not published. This is the weaker of the two provenance claims this plugin makes; contrast SOC 2, whose identifiers were read directly out of the AICPA document and carry codeVerifiedBy. Here the field is codeCorroboratedBy and it means exactly what it says. Annex A (93 entries) is arithmetically closed, which is the first of the two things that make reconstruction defensible: four themes of 37/8/14/34 terminating at A.5.37, A.6.8, A.7.14 and A.8.34, summing to 93. Each theme’s published count equals its terminal integer, so a source that disagrees is detectable rather than merely outvoted. Two independent full lists agree on all 93 number-to-subject assignments, and a separate pass corroborated 19 sampled controls against 4-7 sources each. The second is a publisher artifact, because closure alone proves only that the published counts agree with each other, not that they are right — sources sharing one wrong upstream number would still close. The artifact is the official ISO/IEC 27002:2022 preview at https://cdn.standards.iteh.ai/samples/75652/f9b90f856c0d4c3dbef74cf67374d1c5/ISO-IEC-27002-2022.pdf , whose numbered contents correspond one-to-one with Annex A. Its four terminal numbers — 5.37, 6.8, 7.14 and 8.34 — were CONFIRMED BY A MAINTAINER READING THAT DOCUMENT DIRECTLY. That is what closes the loop a secondary source cannot. BE PRECISE ABOUT WHAT THAT COVERS AND WHAT IT DOES NOT. It covers the enumeration: each theme terminates where the counts say, so the 37/8/14/34 = 93 closure rests on the publisher, not on consultancies. It does NOT cover the per-control subject assignments, which come from the two independent full lists cited on every entry. It does NOT cover the \"A.\" prefix: ISO/IEC 27002 numbers its clauses 5.1-8.34 without one, and the correspondence to 27001’s Annex A labelling rests on secondary sources. ISO/IEC 27001:2022 itself was never obtained — iso.org refused every request — which is why these entries carry codeCorroboratedBy and not codeVerifiedBy. Clauses 4-10 (30 entries) are WEAKER STILL. No primary source was reachable for them and there is no count to check a reconstruction against, so no closure argument applies. Their identifiers claim only the clause/subclause number. Granularity is a judgment call: this file counts LEAF headings, omitting 6.1, 7.5, 9.2 and 9.3 as parents whose children are what actually gets assessed. Counting every numbered heading gives 34; counting second level only gives 23. Neither is wrong -- this file is 30. Every topicLabel and topicSummary is OUR OWN PARAPHRASE. ISO’s Annex A control titles and clause headings are ISO’s copyrighted expression and appear nowhere in this file. Treat a summary as a prompt for the right conversation, never as the requirement. Buy the standard, and talk to your certification body, before relying on any of this for a real audit.",
+  "publisherArtifact": "https://cdn.standards.iteh.ai/samples/75652/f9b90f856c0d4c3dbef74cf67374d1c5/ISO-IEC-27002-2022.pdf",
+  "citations": [
+    "https://cdn.standards.iteh.ai/samples/75652/f9b90f856c0d4c3dbef74cf67374d1c5/ISO-IEC-27002-2022.pdf",
+    "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+    "https://gaicc.org/blog/iso-27001-annex-a-controls-list/",
+    "https://cyberzoni.com/standards/iso-27001/",
+    "https://27001store.com/iso-iec-27001-2022-requirements/",
+    "https://hightable.io/iso-27001-clauses/"
+  ],
+  "controls": [
+    {
+      "id": "iso27001-4.1",
+      "domain": "Context of the organization",
+      "domainKey": "CL4",
+      "relatedControlCode": "4.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Internal and external issues",
+      "topicSummary": "The internal and external issues that bear on the ISMS and what it is meant to achieve, identified and kept current.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-4.2",
+      "domain": "Context of the organization",
+      "domainKey": "CL4",
+      "relatedControlCode": "4.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Interested parties and their requirements",
+      "topicSummary": "Who has a stake -- customers, regulators, staff, suppliers -- and which of their requirements are relevant to information security.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-4.3",
+      "domain": "Context of the organization",
+      "domainKey": "CL4",
+      "relatedControlCode": "4.3",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "The ISMS scope statement",
+      "topicSummary": "The documented boundaries and applicability of the ISMS, accounting for those issues, those requirements, and interfaces with third parties. This is the scope statement the certificate is issued against, so getting it wrong is expensive.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-4.4",
+      "domain": "Context of the organization",
+      "domainKey": "CL4",
+      "relatedControlCode": "4.4",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "The ISMS itself",
+      "topicSummary": "Establishing, implementing, maintaining and continually improving the management system, including its processes and how they interact.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-5.1",
+      "domain": "Leadership",
+      "domainKey": "CL5",
+      "relatedControlCode": "5.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Top management commitment",
+      "topicSummary": "Leadership demonstrated in practice: the ISMS integrated into business processes, resources provided, people directed, other managers supported. Auditors test this through interviews, not documents.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-5.2",
+      "domain": "Leadership",
+      "domainKey": "CL5",
+      "relatedControlCode": "5.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "The policy",
+      "topicSummary": "An information security policy appropriate to the organisation that sets an objectives framework, commits to requirements and continual improvement, is documented, and is communicated internally and to interested parties as appropriate.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-5.3",
+      "domain": "Leadership",
+      "domainKey": "CL5",
+      "relatedControlCode": "5.3",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Roles and authorities",
+      "topicSummary": "Security roles, responsibilities and authorities assigned and communicated -- notably who is responsible for ISMS conformity and who reports ISMS performance to top management.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-6.1.1",
+      "domain": "Planning",
+      "domainKey": "CL6",
+      "relatedControlCode": "6.1.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Risks and opportunities, generally",
+      "topicSummary": "Determining the risks and opportunities that need addressing so the ISMS achieves its outcomes, prevents undesired effects and improves; planning the actions and how their effectiveness is evaluated.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-6.1.2",
+      "domain": "Planning",
+      "domainKey": "CL6",
+      "relatedControlCode": "6.1.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "The risk assessment process",
+      "topicSummary": "A defined, repeatable risk assessment process: risk and acceptance criteria, identification, analysis and evaluation, producing consistent and comparable results. Documented information about the process must be retained.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-6.1.3",
+      "domain": "Planning",
+      "domainKey": "CL6",
+      "relatedControlCode": "6.1.3",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Risk treatment and the SoA",
+      "topicSummary": "Selecting treatment options and the controls needed, comparing against Annex A to confirm nothing necessary was missed, producing the Statement of Applicability, formulating the treatment plan, and obtaining risk owners’ approval and residual-risk acceptance.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-6.2",
+      "domain": "Planning",
+      "domainKey": "CL6",
+      "relatedControlCode": "6.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Security objectives",
+      "topicSummary": "Measurable objectives at relevant functions and levels, consistent with the policy, monitored, communicated and updated -- with a plan saying what, who, when, and how results get evaluated.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-6.3",
+      "domain": "Planning",
+      "domainKey": "CL6",
+      "relatedControlCode": "6.3",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Planning changes to the ISMS",
+      "topicSummary": "When the ISMS needs to change, the change is carried out deliberately rather than ad hoc. New in 2022.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-7.1",
+      "domain": "Support",
+      "domainKey": "CL7",
+      "relatedControlCode": "7.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Resourcing the ISMS",
+      "topicSummary": "Determining and providing the resources the ISMS needs.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-7.2",
+      "domain": "Support",
+      "domainKey": "CL7",
+      "relatedControlCode": "7.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Making sure people can do the job",
+      "topicSummary": "Determining necessary competence, ensuring people have it, acting where they do not, and retaining evidence.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-7.3",
+      "domain": "Support",
+      "domainKey": "CL7",
+      "relatedControlCode": "7.3",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "People knowing why it matters",
+      "topicSummary": "People doing work under your control know the policy, how they contribute to ISMS effectiveness, and what non-conformity means.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-7.4",
+      "domain": "Support",
+      "domainKey": "CL7",
+      "relatedControlCode": "7.4",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Who gets told what",
+      "topicSummary": "The internal and external communications relevant to the ISMS: what, when, with whom, and how.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-7.5.1",
+      "domain": "Support",
+      "domainKey": "CL7",
+      "relatedControlCode": "7.5.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "What must be documented",
+      "topicSummary": "The ISMS includes the documentation the standard requires plus whatever the organisation determines it needs for effectiveness.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-7.5.2",
+      "domain": "Support",
+      "domainKey": "CL7",
+      "relatedControlCode": "7.5.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Creating and updating documents",
+      "topicSummary": "Documents get appropriate identification, format and media, and are reviewed and approved for suitability and adequacy.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-7.5.3",
+      "domain": "Support",
+      "domainKey": "CL7",
+      "relatedControlCode": "7.5.3",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Controlling documents",
+      "topicSummary": "Documented information is available where needed and adequately protected, with distribution, access, retrieval, storage, version control, retention and disposition handled -- including externally-originated documents.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-8.1",
+      "domain": "Operation",
+      "domainKey": "CL8",
+      "relatedControlCode": "8.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Operational planning and control",
+      "topicSummary": "Planning, implementing and controlling the processes that meet requirements and implement the clause 6.1 actions; keeping enough documented information to show they ran as planned; controlling planned changes, reviewing unintended ones, and controlling outsourced processes.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-8.2",
+      "domain": "Operation",
+      "domainKey": "CL8",
+      "relatedControlCode": "8.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Performing risk assessments",
+      "topicSummary": "Risk assessments performed at planned intervals and when significant change occurs, against the criteria set in 6.1.2, with results retained.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-8.3",
+      "domain": "Operation",
+      "domainKey": "CL8",
+      "relatedControlCode": "8.3",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Performing risk treatment",
+      "topicSummary": "Implementing the risk treatment plan and retaining documented information of the results.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-9.1",
+      "domain": "Performance evaluation",
+      "domainKey": "CL9",
+      "relatedControlCode": "9.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Measuring whether it works",
+      "topicSummary": "What gets monitored and measured, by what methods, when, and by whom; evaluating security performance and ISMS effectiveness, with evidence retained.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-9.2.1",
+      "domain": "Performance evaluation",
+      "domainKey": "CL9",
+      "relatedControlCode": "9.2.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Internal audit, generally",
+      "topicSummary": "Internal audits at planned intervals confirming the ISMS conforms to your own requirements and to the standard, and is effectively implemented and maintained.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-9.2.2",
+      "domain": "Performance evaluation",
+      "domainKey": "CL9",
+      "relatedControlCode": "9.2.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Running the audit programme",
+      "topicSummary": "Planning, establishing and maintaining the programme -- frequency, methods, responsibilities, reporting -- defining criteria and scope per audit, selecting objective and impartial auditors, reporting to relevant management, and retaining evidence. Skipping internal audit is one of the most common reasons certification stalls.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-9.3.1",
+      "domain": "Performance evaluation",
+      "domainKey": "CL9",
+      "relatedControlCode": "9.3.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Management review, generally",
+      "topicSummary": "Top management reviews the ISMS at planned intervals for continuing suitability, adequacy and effectiveness.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-9.3.2",
+      "domain": "Performance evaluation",
+      "domainKey": "CL9",
+      "relatedControlCode": "9.3.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "What goes into the review",
+      "topicSummary": "Status of prior actions, changes in issues and interested-party needs, performance feedback (nonconformities, monitoring results, audit results, objective fulfilment), interested-party feedback, risk assessment and treatment status, and improvement opportunities.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-9.3.3",
+      "domain": "Performance evaluation",
+      "domainKey": "CL9",
+      "relatedControlCode": "9.3.3",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "What comes out of the review",
+      "topicSummary": "Decisions on continual improvement and on any ISMS changes needed, retained as documented information.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-10.1",
+      "domain": "Improvement",
+      "domainKey": "CL10",
+      "relatedControlCode": "10.1",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Improving the ISMS on purpose",
+      "topicSummary": "Continually improving the suitability, adequacy and effectiveness of the ISMS. Note the 2022 renumbering: this was 10.2 in the 2013 edition.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-10.2",
+      "domain": "Improvement",
+      "domainKey": "CL10",
+      "relatedControlCode": "10.2",
+      "codeCorroboratedBy": [
+        "https://cyberzoni.com/standards/iso-27001/",
+        "https://27001store.com/iso-iec-27001-2022-requirements/",
+        "https://hightable.io/iso-27001-clauses/"
+      ],
+      "topicLabel": "Fixing what went wrong, and its cause",
+      "topicSummary": "Reacting to nonconformities, correcting them and dealing with consequences, evaluating whether the cause must be eliminated so they do not recur, implementing and reviewing corrective action, and retaining records of all of it. Was 10.1 in the 2013 edition.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.1",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.1",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "The written security policy set",
+      "topicSummary": "The top-level policies themselves: approved by management, published where staff can find them, and reviewed on a schedule and after anything significant changes. Auditors look for approval evidence and a review date that is not years stale.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.2",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.2",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Who owns security, named",
+      "topicSummary": "Security duties are allocated to specific people rather than left implicit. Expect to show an org chart or RACI naming who owns what.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.3",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.3",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Splitting conflicting duties",
+      "topicSummary": "No single person can both perform and approve a sensitive action. Common gaps: one admin who can deploy and approve their own change, or request and grant their own access.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.4",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.4",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Management actually enforcing policy",
+      "topicSummary": "Managers require their people to follow the policies rather than treating them as shelfware. Evidenced by onboarding acknowledgement and by managers acting on breaches.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.5",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.5",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "A line to the authorities",
+      "topicSummary": "Knowing who to contact -- regulators, law enforcement, the data protection authority -- before an incident, not during one. A named contact list is usually enough.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.6",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.6",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "A line to the wider security community",
+      "topicSummary": "Membership of forums, vendor advisory lists, ISACs or similar, so you hear about threats from outside your own telemetry.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.7",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.7",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Knowing what attackers are doing",
+      "topicSummary": "Collecting information about live threats and attacker behaviour and actually feeding it into defensive decisions. New in 2022. The weak version is a subscribed feed nobody reads; the real one changes a control.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.8",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.8",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Security inside project work",
+      "topicSummary": "Security requirements are raised during projects rather than bolted on afterwards, whatever the project methodology.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.9",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.9",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Knowing what you have",
+      "topicSummary": "An inventory of information and the assets holding it, with an owner for each. Almost every later control depends on this one being real.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.10",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.10",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Rules for using assets",
+      "topicSummary": "Documented, communicated rules for how people may use information and the equipment holding it -- the acceptable use policy plus evidence staff have seen it.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.11",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.11",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Getting assets back",
+      "topicSummary": "Leavers and role-changers return laptops, tokens, badges and documents. Evidenced through the offboarding checklist.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.12",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.12",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Classifying information",
+      "topicSummary": "A classification scheme reflecting how sensitive information actually is, applied consistently rather than existing only on paper.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.13",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.13",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Labelling what you classified",
+      "topicSummary": "Classified information carries a marking, so handling rules can follow it. The usual gap is a scheme defined but never applied to real documents.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.14",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.14",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Moving information safely",
+      "topicSummary": "Rules covering transfer of information inside and outside the organisation, by every channel used -- email, file transfer, physical media, voice.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.15",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.15",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "The access control rules",
+      "topicSummary": "Rules for granting physical and logical access, driven by business need and classification. The parent control the more specific access ones sit under.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.16",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.16",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Identity lifecycle",
+      "topicSummary": "Identities are created, changed and removed through a defined process, with unique identification per person. Shared logins are the classic finding here.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.17",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.17",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Handling secrets",
+      "topicSummary": "Allocation and management of passwords, keys and other authentication secrets -- how they are issued, stored, rotated and revoked.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.18",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.18",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Provisioning and review of access",
+      "topicSummary": "Access rights are granted, reviewed and revoked per the access control policy. Expect to show periodic access reviews and prompt removal for leavers.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.19",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.19",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Security in supplier relationships",
+      "topicSummary": "Managing the risk suppliers introduce by having access to your information or systems, starting with knowing which suppliers those are.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.20",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.20",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Security terms in supplier contracts",
+      "topicSummary": "The relevant security requirements are written into supplier agreements, not merely discussed.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.21",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.21",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Security down the ICT supply chain",
+      "topicSummary": "Extending supplier requirements to the products and services your suppliers themselves depend on -- the sub-processor problem.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.22",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.22",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Watching suppliers over time",
+      "topicSummary": "Supplier security is monitored, reviewed and re-checked when their service changes, rather than assessed once at onboarding.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.23",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.23",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Cloud services",
+      "topicSummary": "Rules for choosing, using and exiting cloud services, including who is responsible for what between you and the provider. New in 2022. Exit is the part most often missing.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.24",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.24",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Being ready for incidents",
+      "topicSummary": "Incident management is planned in advance: roles, process and reporting defined before anything happens.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.25",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.25",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Deciding what counts as an incident",
+      "topicSummary": "A defined way to assess security events and decide which are incidents, so triage is consistent rather than dependent on who is on call.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.26",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.26",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Responding to incidents",
+      "topicSummary": "Incidents are responded to per documented procedures. Evidence is real incident records showing the procedure was followed.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.27",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.27",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Learning from incidents",
+      "topicSummary": "Knowledge from incidents feeds back into controls. A post-incident review that changed nothing does not satisfy this.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.28",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.28",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Preserving evidence",
+      "topicSummary": "Procedures for identifying, collecting and preserving evidence so it survives legal or disciplinary scrutiny.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.29",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.29",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Security while disrupted",
+      "topicSummary": "Security is maintained during disruption, not suspended to restore service faster. Plans should say how protection holds up in degraded mode.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.30",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.30",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "IT readiness for continuity",
+      "topicSummary": "ICT capability is planned, implemented and tested against the continuity objectives the business actually stated. New in 2022. Requires RTO/RPO targets to exist first.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.31",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.31",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Knowing your legal obligations",
+      "topicSummary": "Identifying and documenting the legal, statutory, regulatory and contractual requirements that bear on information security, and how you meet each.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.32",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.32",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Intellectual property",
+      "topicSummary": "Procedures protecting IP rights, including software licensing compliance.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.33",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.33",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Protecting records",
+      "topicSummary": "Records are protected from loss, destruction, falsification and unauthorised access or release, consistent with retention obligations.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.34",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.34",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Personal data",
+      "topicSummary": "Identifying and meeting the privacy and PII protection requirements that apply to you -- the hook where GDPR and similar regimes attach.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.35",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.35",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Independent review",
+      "topicSummary": "The security approach is reviewed independently at planned intervals and after significant change. Internal audit can serve this if genuinely independent.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.36",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.36",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Checking compliance with your own rules",
+      "topicSummary": "Regularly verifying that policies and standards are actually being followed, rather than assuming.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.5.37",
+      "domain": "Organizational",
+      "domainKey": "A5",
+      "relatedControlCode": "A.5.37",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Written run-books for operations",
+      "topicSummary": "Operating procedures for information processing facilities are written down and available to the people who need them.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.6.1",
+      "domain": "People",
+      "domainKey": "A6",
+      "relatedControlCode": "A.6.1",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Screening candidates",
+      "topicSummary": "Background verification before employment, proportionate to the role and lawful in the jurisdiction. Applies to contractors too, which is the usual gap.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.6.2",
+      "domain": "People",
+      "domainKey": "A6",
+      "relatedControlCode": "A.6.2",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Security in the employment contract",
+      "topicSummary": "Employment agreements state the security responsibilities of both sides.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.6.3",
+      "domain": "People",
+      "domainKey": "A6",
+      "relatedControlCode": "A.6.3",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Awareness and training",
+      "topicSummary": "Staff get security awareness, education and training relevant to their role, updated over time. Completion tracking is the evidence.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.6.4",
+      "domain": "People",
+      "domainKey": "A6",
+      "relatedControlCode": "A.6.4",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Consequences for breaking the rules",
+      "topicSummary": "A formal, communicated process for acting on policy violations. It has to be communicated in advance to be usable.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.6.5",
+      "domain": "People",
+      "domainKey": "A6",
+      "relatedControlCode": "A.6.5",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Duties that outlive employment",
+      "topicSummary": "Responsibilities that remain in force after someone leaves or changes role are defined and enforced.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.6.6",
+      "domain": "People",
+      "domainKey": "A6",
+      "relatedControlCode": "A.6.6",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Confidentiality agreements",
+      "topicSummary": "NDAs or confidentiality terms reflecting the organisation’s actual needs, identified, documented and reviewed.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.6.7",
+      "domain": "People",
+      "domainKey": "A6",
+      "relatedControlCode": "A.6.7",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Working away from the office",
+      "topicSummary": "Security measures for people working outside organisational premises -- home, travel, anywhere off-site.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.6.8",
+      "domain": "People",
+      "domainKey": "A6",
+      "relatedControlCode": "A.6.8",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "A channel to report events",
+      "topicSummary": "A defined way and timeframe for staff to report observed or suspected security events. If people do not know where to report, this fails regardless of documentation.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.1",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.1",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Physical perimeters",
+      "topicSummary": "Defined security perimeters protecting areas that hold information or processing facilities.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.2",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.2",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Controlling entry",
+      "topicSummary": "Secure areas are protected by entry controls, so only authorised people get in.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.3",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.3",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Securing rooms and facilities",
+      "topicSummary": "Physical security is designed and applied to offices, rooms and facilities.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.4",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.4",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Monitoring the premises",
+      "topicSummary": "Premises are continuously monitored for unauthorised physical access -- guards, alarms, CCTV, intruder detection. New in 2022.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.5",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.5",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Environmental threats",
+      "topicSummary": "Protection against physical and environmental threats: fire, flood, power, natural hazards.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.6",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.6",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Working inside secure areas",
+      "topicSummary": "Rules for how people behave and work while inside secure areas.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.7",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.7",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Clear desk and screen",
+      "topicSummary": "Rules for papers, removable media and unattended screens.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.8",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.8",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Where equipment sits",
+      "topicSummary": "Equipment is sited and protected to reduce environmental risk and opportunistic access.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.9",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.9",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Assets off site",
+      "topicSummary": "Protection for equipment and assets taken outside organisational premises -- remote work, travel, off-site storage.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.10",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.10",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Storage media",
+      "topicSummary": "Media are managed across their life: acquisition, use, transport and disposal, per the classification scheme.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.11",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.11",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Supporting utilities",
+      "topicSummary": "Protection from failures of power, telecoms, water, HVAC and other utilities the facilities depend on.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.12",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.12",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Cabling",
+      "topicSummary": "Power and telecoms cabling carrying data or supporting services is protected from interception, interference and damage.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.13",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.13",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Maintaining equipment",
+      "topicSummary": "Equipment is maintained correctly so information stays available and intact.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.7.14",
+      "domain": "Physical",
+      "domainKey": "A7",
+      "relatedControlCode": "A.7.14",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Disposal and re-use",
+      "topicSummary": "Before equipment is disposed of or reissued, storage is verified wiped or destroyed and licensed software removed. Verification, not just intent, is what is tested.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.1",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.1",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Endpoints",
+      "topicSummary": "Protecting information on, processed by, or reachable from laptops, desktops, phones and tablets -- usage rules, encryption, lock screens, device management.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.2",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.2",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Privileged access",
+      "topicSummary": "Allocation and use of privileged access rights is restricted and managed. Standing admin rights held \"just in case\" are the common finding.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.3",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.3",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Restricting access to information",
+      "topicSummary": "Access to information and application functions is restricted per the access control policy.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.4",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.4",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Source code access",
+      "topicSummary": "Read and write access to source code, development tools and libraries is managed appropriately.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.5",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.5",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "How users prove who they are",
+      "topicSummary": "Authentication technology and procedures matched to what is being protected -- secure log-on, and MFA where the risk warrants it.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.6",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.6",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Capacity",
+      "topicSummary": "Resource use is monitored and adjusted against expected capacity needs, so availability commitments hold.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.7",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.7",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Malware protection",
+      "topicSummary": "Protection against malware, supported by user awareness so the technical control is not the only layer.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.8",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.8",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Technical vulnerabilities",
+      "topicSummary": "Vulnerabilities in systems in use are identified, evaluated and acted on. Expect a scan cadence and remediation timeframes you actually meet.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.9",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.9",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Keeping configuration from drifting",
+      "topicSummary": "Configurations -- including security configurations -- are established, documented, applied, monitored and reviewed rather than drifting.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.10",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.10",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Deleting information",
+      "topicSummary": "Information is deleted when no longer required, in systems, devices and storage. Directly tied to retention obligations.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.11",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.11",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Showing only part of the data",
+      "topicSummary": "Masking is used where the access control policy and business requirements call for it, to limit exposure of sensitive data. New in 2022.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.12",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.12",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Stopping data walking out",
+      "topicSummary": "Measures across systems, networks and devices that detect and prevent unauthorised disclosure or extraction of sensitive information. New in 2022.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.13",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.13",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Backups",
+      "topicSummary": "Backups of information, software and systems are maintained and tested against an agreed policy. A backup never restored does not satisfy this.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.14",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.14",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Redundancy",
+      "topicSummary": "Processing facilities carry enough redundancy to meet availability requirements.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.15",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.15",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Recording what happened",
+      "topicSummary": "Logs recording activities, exceptions, faults and other relevant events are produced, stored, protected and analysed.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.16",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.16",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Monitoring for anomalies",
+      "topicSummary": "Networks, systems and applications are monitored for anomalous behaviour and the results evaluated for possible incidents. New in 2022.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.17",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.17",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Clocks agreeing across systems",
+      "topicSummary": "System clocks are synchronised to approved time sources, so logs can be correlated across systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.18",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.18",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Privileged utility programs",
+      "topicSummary": "Use of utility programs capable of overriding system and application controls is restricted and tightly controlled.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.19",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.19",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Installing software in production",
+      "topicSummary": "Procedures governing installation of software on operational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.20",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.20",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Network security",
+      "topicSummary": "Networks and network devices are secured, managed and controlled to protect what travels across them.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.21",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.21",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Network services",
+      "topicSummary": "Security mechanisms, service levels and requirements for network services are identified, implemented and monitored.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.22",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.22",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Network segregation",
+      "topicSummary": "Groups of services, users and systems are segregated on the network, so one compromise does not reach everything.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.23",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.23",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Limiting what the browser can reach",
+      "topicSummary": "Access to external websites is managed to reduce exposure to malicious content. New in 2022.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.24",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.24",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Cryptography",
+      "topicSummary": "Rules for effective use of cryptography, including key management across the whole key life cycle.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.25",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.25",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Secure development lifecycle",
+      "topicSummary": "Rules for securely developing software and systems, established and applied.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.26",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.26",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Application security requirements",
+      "topicSummary": "Security requirements are identified, specified and approved when developing or acquiring applications.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.27",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.27",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Secure architecture principles",
+      "topicSummary": "Principles for engineering secure systems are established, documented and applied to development work.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.28",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.28",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Writing code securely",
+      "topicSummary": "Secure coding principles are applied throughout development. New in 2022.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.29",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.29",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Security testing",
+      "topicSummary": "Security testing is defined and performed across the development lifecycle, not only before release.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.30",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.30",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Outsourced development",
+      "topicSummary": "Outsourced system development is directed, monitored and reviewed.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.31",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.31",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Separating environments",
+      "topicSummary": "Development, test and production environments are separated and secured from one another.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.32",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.32",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Controlling changes to systems",
+      "topicSummary": "Changes to processing facilities and systems go through change management procedures.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.33",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.33",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Test data",
+      "topicSummary": "Test information is selected, protected and managed -- production data copied into test is the usual finding.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "iso27001-a.8.34",
+      "domain": "Technological",
+      "domainKey": "A8",
+      "relatedControlCode": "A.8.34",
+      "codeCorroboratedBy": [
+        "https://iseoblue.com/iso-27001/annex-a/iso-27001-controls-list/",
+        "https://gaicc.org/blog/iso-27001-annex-a-controls-list/"
+      ],
+      "topicLabel": "Protecting systems during audit",
+      "topicSummary": "Audit tests and assessments involving operational systems are planned and agreed, so testing does not disrupt operations or expose data.",
+      "nonAuthoritative": true
+    }
+  ]
+}

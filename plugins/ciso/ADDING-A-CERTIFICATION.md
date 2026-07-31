@@ -46,16 +46,88 @@ with `Object.keys`, and needs no code change to serve another certification:
 | Maintainer compile of the shipped structure | `skills/hitrust-controls-compiler/` | *(none — hand-compiled; see above)* |
 | Research/verification agent personas | `agents/` (fixed roster -- see note) | *(none — reuses `vendor-researcher`)* |
 
+## Which certification next, and why not the other two
+
+Recorded so the decision isn't re-litigated from scratch. ISO 27001 was chosen as #3 on audience:
+SOC 2 + ISO 27001 is the most common dual pursuit, and the two share roughly 80% of their controls,
+which is what finally exercises the "one shared state.json makes overlap visible" claim beyond the
+healthcare-only HITRUST + SOC 2 pairing.
+
+- **PCI DSS v4.0.1 — the strongest candidate for #4.** Doctrinally cleaner than ISO: the catalog is a
+  free download, so it belongs in the left column and 100% canonical mapping is achievable exactly as
+  SOC 2 achieved 61/61. Its SAQ-type selection is a better fit for the `record-scope.js` precedent
+  than ISO's scoping was. Passed over only on audience breadth — it applies solely to organizations
+  handling card payments.
+- **NIST CSF 2.0 — deliberately not a module.** Public domain, no login, machine-readable from NIST:
+  by far the cheapest compile, and the only candidate whose actual subcategory text could ship. It is
+  not certifiable — no assessor, no report, no pass/fail — so it dilutes the plugin's thesis as a
+  certification module. Its value is as a future cross-framework spine, which is a different feature.
+
 ## A canonical identifier is read, never researched
 
 The first question for a new certification is not "how do we research this" but **"is the
 publisher's own catalog reachable?"** That answer decides everything downstream.
 
-| | Catalog freely published | Catalog license-gated |
-|---|---|---|
-| Examples | AICPA Trust Services Criteria (free account); PCI DSS v4.0.1 (free download) | HITRUST MyCSF (licensing agreement); ISO 27001 (paid per standard) |
-| Approach | **Extract identifiers directly from the document.** Require every control to carry its canonical id plus a `codeVerifiedBy` citation. | Canonical ids are **not publicly obtainable.** Ship honestly-scoped topics and route the org to its own licensed export. |
-| What ships | 100% canonically mapped (SOC 2: 61/61) | Topic-level entries, most without a canonical id |
+| | Catalog freely published | Catalog gated, enumeration closed | Catalog gated, enumeration unknowable |
+|---|---|---|---|
+| Examples | AICPA Trust Services Criteria (free account); PCI DSS v4.0.1 (free download) | ISO/IEC 27001:2022 Annex A (paid per standard) | HITRUST MyCSF (licensing agreement) |
+| Approach | **Extract identifiers directly from the document.** Require every control to carry its canonical id plus a `codeVerifiedBy` citation. | **Reconstruct the identifier set, then prove it closes.** Canonical id plus a `codeCorroboratedBy` citation naming ≥2 independent sources. | Canonical ids are **not publicly obtainable.** Ship honestly-scoped topics and route the org to its own licensed export. |
+| What ships | 100% canonically mapped (SOC 2: 61/61) | Canonically mapped, provenance marked weaker (ISO 27001: 93/93 Annex A) | Topic-level entries, most without a canonical id |
+
+### The middle column is narrow, and has an admission test
+
+Do not read "gated but reconstructable" as a general licence to research identifiers — that is the
+thing the rest of this section forbids. A certification earns the middle column only by meeting
+**both** of these, not either one:
+
+1. **The enumeration is arithmetically closed.** Each block publishes a count that equals its own
+   terminal integer, and the blocks sum to a stated total. That is what makes a wrong source
+   *detectable* rather than merely outvoted.
+2. **The closure is checkable against a publisher artifact**, named and reachable in the structure
+   file — the publisher's own document or an authorized reproduction of it, not secondary commentary.
+
+Condition 1 alone is not enough, and the gap is the reason condition 2 exists: arithmetic closure
+proves the published counts are *mutually consistent*, not that they are *right*. If every secondary
+source inherited the same number from one upstream copy, the arithmetic still closes on wrong data.
+Closure detects disagreement; it cannot detect shared error. Only an artifact the publisher controls
+breaks that loop, because it cannot inherit a consultancy's mistake.
+
+ISO 27001's Annex A qualifies on both: four themes of 37/8/14/34 terminating at A.5.37, A.6.8,
+A.7.14 and A.8.34, summing to 93, and an official ISO/IEC 27002:2022 preview whose numbered contents
+correspond one-to-one with Annex A. HITRUST cannot qualify on either — no published count to check a
+reconstruction against, and no reachable artifact, so a fan-out there produces consensus with nothing
+to falsify it.
+
+**Say what you actually did with the artifact, and what it covers.** Naming it obliges you to be
+exact twice over. First, on your own verification: whether you read its contents, or only confirmed
+it is the document you claim and that a reader can reach it. Both beat secondary agreement alone;
+they are not the same claim, and `coverageNote` must not blur them. Second, on scope: an artifact
+that settles the *enumeration* usually does not settle the *subjects*, and saying "checked against
+the publisher" without that split silently upgrades everything downstream of it.
+
+ISO's records both. A maintainer read the ISO/IEC 27002:2022 preview and confirmed the four terminal
+numbers, so the closure rests on the publisher — but the per-control subjects still come from two
+secondary lists, the `A.` prefix is 27001's labelling of 27002's numbering, and ISO 27001 itself was
+never obtained. That is why the entries stay on `codeCorroboratedBy`: a verified enumeration does not
+promote a reconstructed identifier set to a read one.
+
+The lock is not theoretical. Compiling ISO 27001 turned up two live vendor pages carrying wrong
+Annex A data, and the arithmetic caught both: one printed a physical-controls range ending at 7.13
+while stating "14 controls" three lines away, and another listed A.8.1 as data masking while its own
+body text put data masking at A.8.11. Six or more independent sources agreed against each. A
+count-only or list-only check would have caught neither.
+
+Two obligations that come with the column:
+
+- **`codeCorroboratedBy`, never `codeVerifiedBy`.** The latter means specifically "read out of the
+  publisher's own document." Filling it with secondary URLs silently downgrades the stronger claim
+  into the weaker one while keeping the stronger name. Keep the fields distinct, and say which one
+  a module uses in its `coverageNote` and its `SKILL.md`.
+- **Scope the claim to the part that actually closes.** ISO's Annex A closes; ISO's clauses 4-10 do
+  not — no primary source was reachable for them and there is no count to check, so the ISO module
+  claims only the subclause number for clause entries and makes no canonical-id claim beyond it.
+  A certification can sit in the middle column for one half of its control set and the right column
+  for the other.
 
 **A research fan-out cannot produce a canonical identifier.** It aggregates secondary sources into a
 confident consensus, and on precisely this kind of exact-enumeration question those sources are

@@ -1,7 +1,7 @@
 # ciso
 
-Organizes work toward security certifications — today **HITRUST CSF** (e1/i1/r2) and
-**SOC 2 Type II** — tracked in persistent, local HTML dashboards you open directly in a browser
+Organizes work toward security certifications — today **HITRUST CSF** (e1/i1/r2),
+**SOC 2 Type II** and **ISO/IEC 27001:2022** — tracked in persistent, local HTML dashboards you open directly in a browser
 (no server required). Ships only structural control metadata; actual requirement wording and your
 organization's real assessment data are imported/generated per-project and stored only locally,
 gitignored by default — never in this repo.
@@ -11,10 +11,11 @@ and install the plugin.
 
 ## When to use it
 
-- You're starting or maintaining a HITRUST CSF or SOC 2 Type II effort and want a durable, visual
-  record of where every control stands — not just a chat transcript.
-- You're pursuing both. They overlap heavily, and one dashboard per certification over one shared
-  state file is what makes that overlap visible instead of duplicated.
+- You're starting or maintaining a HITRUST CSF, SOC 2 Type II or ISO 27001 effort and want a
+  durable, visual record of where every control stands — not just a chat transcript.
+- You're pursuing more than one. They overlap heavily — SOC 2 and ISO 27001 especially — and one
+  dashboard per certification over one shared state file is what makes that overlap visible
+  instead of duplicated.
 - You need to interrogate your own security posture control-by-control, with every "met" backed
   by a real justification, before an independent assessor ever sees it.
 - You want budget-appropriate vendor/tooling suggestions for whatever controls are still gaps.
@@ -25,8 +26,9 @@ and install the plugin.
   help — this plugin manages the *tracking project*, it isn't a MyCSF replacement.
 - You want a one-off answer about a single control — just ask directly; the full interview flow
   is for building out a complete assessment.
-- You want the actual audit. This plugin never produces a HITRUST certification or a SOC 2 report —
-  only an authorized HITRUST assessor and a licensed CPA firm do that. It gets you ready for them.
+- You want the actual audit. This plugin never produces a HITRUST certification, a SOC 2 report or
+  an ISO 27001 certificate — only an authorized HITRUST assessor, a licensed CPA firm and an
+  accredited certification body do that. It gets you ready for them.
 
 ## Quickstart
 
@@ -53,7 +55,14 @@ and install the plugin.
    configured today" but "did it operate across the whole observation period, and can you evidence
    every month of it."
 
-   Both certifications share one `state.json` and one set of skills; each gets its own page.
+   Or run `ciso:iso27001` — registers all 123 requirements and runs the same interview over them.
+   **Under the hood:** ISO is two halves and neither is optional, so it tracks both — the 30
+   management-system requirements from clauses 4–10 *and* all 93 Annex A controls — and steers you
+   through the clauses first, because clause 6.1.3 is what selects your Annex A controls in the
+   first place. Their include/exclude decisions and justifications are your draft Statement of
+   Applicability; the dashboard drill-down is the working copy.
+
+   All three certifications share one `state.json` and one set of skills; each gets its own page.
 4. Open `docs/ciso/dashboard.html` in any browser. That page is the **index**: one card per
    certification this plugin supports, showing birds-eye progress for the ones you track and how
    to start the ones you don't. Click a certification to open its own page
@@ -68,7 +77,10 @@ and install the plugin.
   wording lives only in your own local, gitignored project data, imported from your own MyCSF
   export — never hardcoded here. The same rule applies to AICPA's Trust Services Criteria text and
   points of focus: the SOC 2 module ships criterion *identifiers* and paraphrased topic summaries,
-  never the copyrighted criterion wording.
+  never the copyrighted criterion wording. ISO 27001 is stricter still, because the standard is
+  sold rather than published: its identifiers were *corroborated* from convergent public sources
+  rather than read from ISO's own document (the field is `codeCorroboratedBy`, deliberately not
+  SOC 2's `codeVerifiedBy`), and ISO's control titles and clause headings appear nowhere here.
 - **Your organization's posture never leaves your project.** Assessment status, your written
   justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
   project data. The one flow that reaches the internet — background vendor research for gaps — is
@@ -79,10 +91,12 @@ and install the plugin.
 
 ## Architecture
 
-ciso is a **generic tracking core + one module per certification** (today, HITRUST and SOC 2). The
-core — scaffolding, registration, the assessment gate, versioning, background vendor research, and
-the dashboards — is certification-agnostic and keyed by `certKey`; each module supplies only its
-control data, its org-facing flow, and whatever import or scope handling it needs. SOC 2 was built
-against that contract without changing a single core script. To see the exact core/module boundary
-and the contract for adding a third certification (ISO 27001, PCI DSS, …), read
-[ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
+ciso is a **generic tracking core + one module per certification** (today, HITRUST, SOC 2 and
+ISO 27001). The core — scaffolding, registration, the assessment gate, versioning, background
+vendor research, and the dashboards — is certification-agnostic and keyed by `certKey`; each module
+supplies only its control data, its org-facing flow, and whatever import or scope handling it needs.
+SOC 2 was built against that contract without changing a single core script, and ISO 27001 without
+adding any runtime code at all — it ships control data, docs and a test, and reuses the core as-is.
+To see the exact core/module boundary, how a certification's
+identifiers may and may not be sourced, and the contract for adding a fourth (PCI DSS is the
+strongest candidate), read [ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
