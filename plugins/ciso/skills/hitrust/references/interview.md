@@ -33,7 +33,7 @@ Resumable, chunked by `domainKey` (the modern 19-domain numbering, `01`-`19`, ev
    ```
    node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso-dir>
    ```
-   This is what actually bounds the value an interruption can cost: after every sub-batch commit, `dashboard.html` on disk reflects real assessed progress, not just `state.json`.
+   This is what actually bounds the value an interruption can cost: after every sub-batch commit, the dashboard pages on disk reflect real assessed progress, not just `state.json`. One run regenerates both `dashboard.html` (the cross-certification index) and `cert-hitrust.html` (where these controls actually appear) -- there's no separate command for the per-certification page.
 8. If controls remain unprocessed in the chosen category, report a brief sub-batch summary (controls processed this sub-batch, statuses captured, sub-batches remaining), call `EnterPlanMode` again, and repeat step 4's sub-batch loop for the next 4-6 controls in the same category -- there's no need to re-run Part 1 steps 2-3 unless the user wants to switch to a different category before this one is finished.
 9. Once every control in the category has been applied across however many sub-batches it took, run:
    ```

@@ -111,13 +111,14 @@ function buildPrompt(control) {
 phase('Research')
 
 // One research subagent per control, dispatched in parallel. `agentType: 'ciso:vendor-researcher'`
-// assumes this plugin's own agents resolve as '<plugin name>:<agent name>' once installed (this
-// plugin's own name is "ciso", per plugins/ciso/.claude-plugin/plugin.json) -- the convention
-// observed elsewhere in this environment for other installed plugins. This has NOT been verified
-// against a real install of THIS plugin from inside this sandboxed build. If that resolution turns
-// out to be wrong at actual runtime, agent() throws loudly -- every call fails with something like
-// "agent type not found", zero agents get dispatched -- rather than silently misrouting research
-// to some unrelated same-named agent. That loud failure is the correct, safe behavior here.
+// resolves this plugin's own agents as '<plugin name>:<agent name>' (this plugin's own name is
+// "ciso", per plugins/ciso/.claude-plugin/plugin.json). This was previously an untested assumption;
+// it has since been VERIFIED against a real install of this plugin -- installed from a branch into
+// ~/.claude/plugins/cache/claude-skills/ciso/, `ciso:vendor-researcher` resolved and two SOC 2 gap
+// controls were researched end to end. If that resolution ever breaks, agent() throws loudly --
+// every call fails with something like "agent type not found", zero agents get dispatched -- rather
+// than silently misrouting research to some unrelated same-named agent. That loud failure is the
+// correct, safe behavior here.
 const rawResults = await parallel(
   controls.map((control) => () =>
     agent(buildPrompt(control), {

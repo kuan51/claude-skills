@@ -1,10 +1,25 @@
 # Adding a certification to ciso
 
-`ciso` is built as **generic tracking core + one certification module** (today only HITRUST). This
-doc makes that boundary explicit so a second certification (SOC 2, ISO 27001, ...) can reuse the
-core instead of re-inventing it. It is a map and a contract, not a drop-in wizard: the generic
-*functions* already support multiple certifications, but some wrappers and data locations are still
-HITRUST-homed (see "What a clean split would still move").
+`ciso` is built as **generic tracking core + one module per certification** (today HITRUST and
+SOC 2). This doc makes that boundary explicit so a further certification (ISO 27001, PCI DSS, ...)
+can reuse the core instead of re-inventing it. It is a map and a contract, not a drop-in wizard: the
+generic *functions* already support multiple certifications, but some wrappers and data locations
+are still HITRUST-homed (see "What a clean split would still move").
+
+**SOC 2 is the worked example.** It was added against this contract without modifying a single core
+script -- `skills/soc2/` is a structure file, a `SKILL.md`, four references, one 100-line
+`record-scope.js`, and a catalog entry. Read it alongside this document; where the two disagree, the
+code is right. Two things it deliberately did *not* do, both of which a third certification should
+think just as hard about before doing:
+
+- **No research/verify/reconcile agent fan-out.** See "A canonical identifier is read, never
+  researched" below -- this is the single most important sourcing decision for a new certification.
+- **No new maturity model.** SOC 2's design-vs-operating-effectiveness split looks like the trigger
+  named below for extracting r2's PRISMA threading behind an adapter. It isn't: that distinction is
+  a property of the *engagement*, so it lives in `tier.scope.reportType` and the tier keeps a flat
+  `assessment.status` (where `met` means designed **and** operating effectively across the period).
+  Adding a maturity model is a core change; prefer scope metadata whenever the distinction is
+  per-engagement rather than per-control.
 
 ## The boundary
 
@@ -18,17 +33,55 @@ with `Object.keys`, and needs no code change to serve another certification:
 | Record an assessment (mechanical gate: no "met" without justification) | `skills/hitrust/lib/apply-assessment.js` (`applyAssessment(statePath, certKey, tier, id, payload)`) |
 | Merge background vendor research | `skills/hitrust/lib/roadmap/merge-roadmap.js`, `roadmap/workflow.js`, `roadmap/sanitize-control.js` |
 | Reconcile a control-set version bump | `skills/hitrust/lib/versioning/*.js` |
-| Render the dashboard (generic rollups over every cert/tier/domain) | `skills/_shared/render-dashboard.js` + `assets/dashboard-template.html` |
+| Render the dashboards (generic rollups over every cert/tier/domain) | `skills/_shared/render-dashboard.js` + `assets/dashboard-template.html` |
+| The catalog of certifications the meta index advertises | `assets/certifications.json` |
 
-**HITRUST-specific module** — replace these per certification:
+**Per-certification module** — provide these for each certification:
 
-| Concern | File |
-|---|---|
-| The control data (shipped, public, non-authoritative) | `skills/hitrust/controls/*.structure.json` |
-| The org-facing flow (register/import/interview/roadmap/upgrade) | `skills/hitrust/SKILL.md` + `skills/hitrust/references/` |
-| Licensed-export import (MyCSF shape) | `skills/hitrust/lib/merge-import.js` + `lib/xlsx-lite.js` |
-| Maintainer compile of the shipped structure | `skills/hitrust-controls-compiler/` |
-| Research/verification agent personas | `agents/` (fixed roster -- see note) |
+| Concern | HITRUST | SOC 2 |
+|---|---|---|
+| The control data (shipped, public, non-authoritative) | `skills/hitrust/controls/*.structure.json` | `skills/soc2/controls/type2.v2017tsc.structure.json` |
+| The org-facing flow | `skills/hitrust/SKILL.md` + `references/` (register/import/interview/roadmap/upgrade) | `skills/soc2/SKILL.md` + `references/` (register/scope/interview/roadmap) |
+| Whatever per-certification writer the flow needs | `lib/merge-import.js` + `lib/xlsx-lite.js` (MyCSF export import) | `lib/record-scope.js` (engagement scope) |
+| Maintainer compile of the shipped structure | `skills/hitrust-controls-compiler/` | *(none — hand-compiled; see above)* |
+| Research/verification agent personas | `agents/` (fixed roster -- see note) | *(none — reuses `vendor-researcher`)* |
+
+## A canonical identifier is read, never researched
+
+The first question for a new certification is not "how do we research this" but **"is the
+publisher's own catalog reachable?"** That answer decides everything downstream.
+
+| | Catalog freely published | Catalog license-gated |
+|---|---|---|
+| Examples | AICPA Trust Services Criteria (free account); PCI DSS v4.0.1 (free download) | HITRUST MyCSF (licensing agreement); ISO 27001 (paid per standard) |
+| Approach | **Extract identifiers directly from the document.** Require every control to carry its canonical id plus a `codeVerifiedBy` citation. | Canonical ids are **not publicly obtainable.** Ship honestly-scoped topics and route the org to its own licensed export. |
+| What ships | 100% canonically mapped (SOC 2: 61/61) | Topic-level entries, most without a canonical id |
+
+**A research fan-out cannot produce a canonical identifier.** It aggregates secondary sources into a
+confident consensus, and on precisely this kind of exact-enumeration question those sources are
+unreliable. Worked example from the SOC 2 compile: three independent write-ups gave three different
+answers for the Privacy criteria — one said 15 with P6 ending at P6.2, another "approximately 18", a
+third conflated the 8 series with 8 criteria. Reading the AICPA document settled it in minutes: 18,
+with P6 running P6.1–P6.7. More searching produced more contradiction, not convergence. That is the
+signal to stop searching and read the source.
+
+`hitrust-controls-compiler` exists because HITRUST's catalog is genuinely unreachable, and
+`e1.v11.8.structure.json`'s `coverageNote` records what reconstruction cost even done carefully.
+It is the right tool for an unreachable catalog and the wrong tool for a reachable one.
+
+**Extraction method**, when a publisher PDF has to be read: inflate its `FlateDecode` content streams
+with `zlib`, pull the parenthesized string literals, and normalize whitespace before matching (PDF
+text is kerning-split, so word boundaries are unreliable). Write the string-literal pattern as
+`\((?:[^()\\]|\\.)*\)` — excluding the backslash from the negated class. The obvious
+`\((?:[^()]|\\.)*\)` lets both branches match a backslash, which backtracks catastrophically the
+moment a binary stream happens to inflate cleanly; it ran fine on one copy of the TSC and hung
+indefinitely on another. Two habits that matter more than the code:
+verify that structural tokens are what you assume — the TSC's `P<n>.0` entries are *section headers*,
+not criteria — and **never anchor the identifier regex to the answer you expect**. The first SOC 2
+pass used `CC[1-9]|A1|C1|PI1|P[1-8]`, which could not have found a `CC10` or `P9`; re-running it
+unanchored is what turned "probably complete" into verified. Known limit: some publisher PDFs use
+filters this approach cannot read and need `pdftotext`. Don't commit the script — it runs once every
+few years and rots faster than twenty lines can be rewritten.
 
 ## The contract for a new certification
 
@@ -44,9 +97,17 @@ with `Object.keys`, and needs no code change to serve another certification:
    justification; in_progress needs current-state + closeness) applies to every certification.
 4. **Research** gaps via the roadmap workflow -- it's certification-agnostic and already sanitizes
    posture prose out of what leaves the machine (`sanitize-control.js`).
-5. **Render** with `render-dashboard.js` -- it discovers your certification/tiers/domains
-   automatically.
-6. Write your own org-facing `SKILL.md` (model your routing on `skills/hitrust/SKILL.md`).
+5. **List yourself in `assets/certifications.json`** -- `{ certKey, displayName, skill, tiers,
+   summary }`. This is what the meta index (`dashboard.html`) renders a card from, including for a
+   project that hasn't registered you yet, where the card shows your `summary` and tells the user to
+   run your `skill`. `certKey` must equal your skill's directory name and be `[a-z0-9-]` only;
+   `test/certifications-catalog.test.js` enforces both directions (every shipped
+   `<tier>.v*.structure.json` is claimed by an entry, and every declared tier ships a file).
+6. **Render** with `render-dashboard.js` -- it discovers your certification/tiers/domains
+   automatically and writes your page as `cert-<certKey>.html`. Per-control fields it doesn't know
+   about (SOC 2's `requiredPolicies`/`evidenceExamples`, say) render automatically in an "Additional
+   detail" block, so shipping richer control data needs no template change.
+7. Write your own org-facing `SKILL.md` (model your routing on `skills/hitrust/SKILL.md`).
 
 ## What a clean split ("option a") would still move
 

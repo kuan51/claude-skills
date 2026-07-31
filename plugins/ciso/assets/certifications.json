@@ -1,0 +1,16 @@
+[
+  {
+    "certKey": "hitrust",
+    "displayName": "HITRUST CSF",
+    "skill": "ciso:hitrust",
+    "tiers": ["e1", "i1", "r2"],
+    "summary": "Certifiable framework that harmonizes HIPAA, NIST, ISO and PCI into one assessment. Three nested tiers (e1 ⊂ i1 ⊂ r2); r2 additionally scores five PRISMA maturity dimensions per control."
+  },
+  {
+    "certKey": "soc2",
+    "displayName": "SOC 2 Type II",
+    "skill": "ciso:soc2",
+    "tiers": ["type2"],
+    "summary": "AICPA attestation report — the artifact US enterprise buyers ask for. Tracked against the 2017 Trust Services Criteria: 33 mandatory Common Criteria (CC1–CC9) plus the opt-in Availability, Confidentiality, Processing Integrity and Privacy categories."
+  }
+]

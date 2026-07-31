@@ -8,7 +8,7 @@ allowed-tools: Read, Bash, AskUserQuestion
 
 ## Overview
 
-Scaffolds the local, gitignored data store (`state.json`) and dashboard (`dashboard.html`) that every other `ciso` skill reads and writes. Safe to run against a project that's already been initialized -- it never overwrites an existing `state.json`, it only offers to refresh the dashboard.
+Scaffolds the local, gitignored data store (`state.json`) and dashboard pages (`dashboard.html` plus a `cert-<certKey>.html` per registered certification) that every other `ciso` skill reads and writes. Safe to run against a project that's already been initialized -- it never overwrites an existing `state.json`, it only offers to refresh the dashboard.
 
 ## When NOT to use
 
@@ -36,9 +36,9 @@ Scaffolds the local, gitignored data store (`state.json`) and dashboard (`dashbo
    ```
    node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <target-dir>
    ```
-   This reads `<target-dir>/state.json` and writes `<target-dir>/dashboard.html`. Do not hand-write or otherwise construct the dashboard HTML yourself -- this script is the only thing that ever produces it. With an empty `certifications: {}`, it renders an empty-state dashboard; that's expected for a brand-new project.
+   This reads `<target-dir>/state.json` and writes `<target-dir>/dashboard.html` (the index: one card per certification this plugin supports) plus one `<target-dir>/cert-<certKey>.html` per certification actually registered in state. It also deletes any `cert-*.html` left over from a certification no longer in state. Do not hand-write or otherwise construct the dashboard HTML yourself -- this script is the only thing that ever produces it. With an empty `certifications: {}`, it writes only the index, which lists every supported certification as "not tracked yet"; that's expected for a brand-new project.
 
 5. **Report to the user:**
-   - The absolute path to `dashboard.html`, and that they can open it directly in a browser -- no server needed.
+   - The absolute path to `dashboard.html`, that it's the index across every certification, and that they can open it directly in a browser -- no server needed.
    - Whether `.gitignore` was updated (or already covered the target directory).
    - That the natural next step is `ciso:hitrust`, to start registering and importing certification controls.
