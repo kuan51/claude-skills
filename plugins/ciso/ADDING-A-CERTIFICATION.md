@@ -98,10 +98,18 @@ correspond one-to-one with Annex A. HITRUST cannot qualify on either — no publ
 reconstruction against, and no reachable artifact, so a fan-out there produces consensus with nothing
 to falsify it.
 
-**Say what you actually did with the artifact.** Naming it obliges you to be exact about your own
-verification: whether you read its contents, or only confirmed it is the document you claim and that
-a reader can reach it. Both are worth more than secondary agreement alone; they are not the same
-claim, and `coverageNote` must not blur them. ISO's is recorded as the latter — see that file.
+**Say what you actually did with the artifact, and what it covers.** Naming it obliges you to be
+exact twice over. First, on your own verification: whether you read its contents, or only confirmed
+it is the document you claim and that a reader can reach it. Both beat secondary agreement alone;
+they are not the same claim, and `coverageNote` must not blur them. Second, on scope: an artifact
+that settles the *enumeration* usually does not settle the *subjects*, and saying "checked against
+the publisher" without that split silently upgrades everything downstream of it.
+
+ISO's records both. A maintainer read the ISO/IEC 27002:2022 preview and confirmed the four terminal
+numbers, so the closure rests on the publisher — but the per-control subjects still come from two
+secondary lists, the `A.` prefix is 27001's labelling of 27002's numbering, and ISO 27001 itself was
+never obtained. That is why the entries stay on `codeCorroboratedBy`: a verified enumeration does not
+promote a reconstructed identifier set to a read one.
 
 The lock is not theoretical. Compiling ISO 27001 turned up two live vendor pages carrying wrong
 Annex A data, and the arithmetic caught both: one printed a physical-controls range ending at 7.13

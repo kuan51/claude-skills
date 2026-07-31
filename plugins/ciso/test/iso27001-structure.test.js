@@ -163,14 +163,24 @@ test('a publisher artifact is named, so the closure is checkable against somethi
   );
 });
 
-// Naming an artifact makes it tempting to imply more was done with it than was. This module confirmed
-// the file is reachable and is the document claimed; it did not read the contents (the PDF is
-// encrypted). The distinction is the whole reason `codeVerifiedBy` is banned here, so it has to
-// survive in the prose too.
-test('coverageNote does not overstate what was done with the publisher artifact', () => {
+// Naming an artifact makes it tempting to imply more was done with it than was, in either direction.
+// A maintainer read the preview's contents and confirmed the four terminal numbers -- so the
+// enumeration rests on the publisher. Nothing else does: the per-control subjects and the "A." prefix
+// are still secondary, and ISO 27001 itself was never obtained. Both halves have to stay in the
+// prose, which is why this asserts the limits and not just the confirmation.
+test('coverageNote records the artifact check and its limits, overstating in neither direction', () => {
+  const note = structure.coverageNote;
   assert.match(
-    structure.coverageNote, /did NOT read its contents firsthand/,
-    'coverageNote must state plainly that the artifact\'s contents were not read'
+    note, /CONFIRMED BY A MAINTAINER READING THAT DOCUMENT DIRECTLY/,
+    'coverageNote must record that the terminal numbers were read from the publisher artifact'
+  );
+  assert.match(
+    note, /never obtained/,
+    'coverageNote must still say ISO/IEC 27001:2022 itself was never obtained'
+  );
+  assert.match(
+    note, /does NOT cover the per-control subject assignments/,
+    'coverageNote must scope the artifact check to the enumeration, not the subjects'
   );
 });
 
