@@ -1,7 +1,7 @@
 {
   "name": "ciso",
-  "version": "0.2.0",
-  "description": "Organizes work toward security certifications (HITRUST CSF and SOC 2 Type II), tracked via persistent local HTML dashboards -- an index across every supported certification plus one page each. Ships only structural control metadata; licensed requirement wording is imported per-org at runtime from a user-supplied file and stored only in the consuming project's local, gitignored data -- never in this repo.",
+  "version": "0.3.0",
+  "description": "Organizes work toward security certifications (HITRUST CSF, SOC 2 Type II and ISO/IEC 27001:2022), tracked via persistent local HTML dashboards -- an index across every supported certification plus one page each. Ships only structural control metadata; licensed requirement wording is imported per-org at runtime from a user-supplied file and stored only in the consuming project's local, gitignored data -- never in this repo.",
   "author": {
     "name": "claude-skills"
   }

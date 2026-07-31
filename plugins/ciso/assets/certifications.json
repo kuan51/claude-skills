@@ -12,5 +12,12 @@
     "skill": "ciso:soc2",
     "tiers": ["type2"],
     "summary": "AICPA attestation report — the artifact US enterprise buyers ask for. Tracked against the 2017 Trust Services Criteria: 33 mandatory Common Criteria (CC1–CC9) plus the opt-in Availability, Confidentiality, Processing Integrity and Privacy categories."
+  },
+  {
+    "certKey": "iso27001",
+    "displayName": "ISO/IEC 27001:2022",
+    "skill": "ciso:iso27001",
+    "tiers": ["isms"],
+    "summary": "The international ISMS certification, issued by an accredited body after a Stage 1 and Stage 2 audit. Both halves are tracked and neither is optional: 30 management-system requirements from clauses 4–10, plus all 93 Annex A controls across the organizational, people, physical and technological themes — whose include/exclude decisions are the draft Statement of Applicability."
   }
 ]
