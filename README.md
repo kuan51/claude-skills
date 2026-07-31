@@ -25,8 +25,9 @@ so it picks up the newly installed plugin.
 - **[data-analysis-review](plugins/data-analysis-review/)** — empirical, objective review of a
   data science project: independently re-derives findings from raw data and code, then checks
   whether the project's own stated conclusions hold up.
-- **[ciso](plugins/ciso/)** — organizes work toward security certifications (starting with
-  HITRUST CSF e1), tracked via a persistent local HTML dashboard.
+- **[ciso](plugins/ciso/)** — organizes work toward security certifications (HITRUST CSF and
+  SOC 2 Type II), tracked via persistent local HTML dashboards: an index across every supported
+  certification, plus a page for each.
 
 ## Adding a new plugin
 
@@ -37,6 +38,10 @@ Each plugin is self-contained under its own directory in `plugins/`, with its ow
    `plugins/data-analysis-review/.claude-plugin/plugin.json` for the shape).
 2. Add the plugin's own `skills/`, `agents/`, `commands/`, etc. under `plugins/<plugin-name>/`.
 3. Register it in the root `.claude-plugin/marketplace.json`'s `plugins` array, with
-   `"source": "./plugins/<plugin-name>"`.
+   `"source": "./plugins/<plugin-name>"`, and a `version` matching the one in its `plugin.json`.
 
 Unrelated plugins should not share files — each one owns its own directory tree.
+
+A plugin's `version` is duplicated between its own `plugin.json` and its `marketplace.json` entry,
+and the two must always agree — `plugin.json` is the source of truth. `test/marketplace-consistency.test.js`
+enforces that; see [CLAUDE.md](CLAUDE.md) for when to bump.
