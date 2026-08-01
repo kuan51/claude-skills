@@ -58,8 +58,16 @@ Each record needs three things. Ask for whatever the user did not supply.
 | `kind` | One of `pr`, `commit`, `ci-run`, `scan`, `doc`, `manual` |
 | `ref` | A URL, file path, or commit SHA -- the thing someone can go look at |
 | `summary` | One line: what this artifact *demonstrates* about the control |
+| `occurredAt` | *Optional.* ISO-8601 date the artifact itself happened -- merged, ran, was signed |
 
 `recordedAt` is stamped for you.
+
+**Set `occurredAt` whenever the artifact is older than today.** `recordedAt` is when you typed this;
+`occurredAt` is when the thing actually happened, and they are only the same for the as-you-go case
+this verb is built around. Attaching a 2024 PR during a 2025 SOC 2 observation period is ordinary,
+and without `occurredAt` a later `ciso:audit` compares the typing date against
+`scope.observationPeriodStart` and wrongly reports a control that was operating a year before the
+period opened as not met for it. When you have the PR or run in hand, take its real date.
 
 Two things worth insisting on:
 

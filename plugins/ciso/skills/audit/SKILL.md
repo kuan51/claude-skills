@@ -44,7 +44,8 @@ and the specific verb that fixes it.
    common recertification and surveillance cadence; say that you used it, since a given org's cycle
    may differ. → `ciso:interview`.
 3. **Stale evidence.** The control is `met`, has evidence, but the newest `recordedAt` is more than
-   12 months old. A control can drift a long way from a two-year-old PR. → `ciso:evidence`.
+   12 months old. Use `recordedAt` here, not `occurredAt` -- the question is when anyone last
+   confirmed the backing still exists, not how old the artifact is. → `ciso:evidence`.
 4. **Thin justification.** `met` with a justification under roughly 40 characters, or one that is
    effectively a restatement of the control ("we do this", "yes", "implemented"). The assessment
    gate only checks for non-blank, so this is where evasive answers surface. → `ciso:interview`.
@@ -64,11 +65,20 @@ maturity claimed on weaker ground than the tier below it.
 
 ## SOC 2: check the observation period
 
-For a Type II, compare each `met` control's evidence dates against
-`tier.scope.observationPeriodStart`. **A control whose only evidence postdates the start of the
-period is not `met` for that period** -- it is `in_progress` with a start date. Report these
-separately and prominently; the invariants file calls this the single most common way a
-self-assessment overstates readiness, and it is invisible unless something goes looking.
+For a Type II, compare each `met` control's evidence against `tier.scope.observationPeriodStart`,
+using **`occurredAt` where a record has it and falling back to `recordedAt` where it does not**.
+That distinction decides the answer: `occurredAt` is when the artifact happened, `recordedAt` is
+only when someone typed it in, so judging on `recordedAt` alone flags every control whose supporting
+work predates the period -- systematically the foundational ones (MFA, encryption, access review).
+
+**A control whose only evidence postdates the start of the period is not `met` for that period** --
+it is `in_progress` with a start date. Report these separately and prominently; the invariants file
+calls this the single most common way a self-assessment overstates readiness, and it is invisible
+unless something goes looking.
+
+Where a record has no `occurredAt` and its `recordedAt` falls inside the period, say the date is
+unconfirmed rather than asserting the control failed -- the artifact may well predate the period.
+Offer to re-attach it with `ciso:evidence` and a real `occurredAt`.
 
 ## ISO 27001: also produce the Statement of Applicability
 

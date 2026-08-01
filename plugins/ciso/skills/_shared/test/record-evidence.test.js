@@ -200,3 +200,35 @@ test('a rejected record writes nothing at all', () => {
   assert.throws(() => recordEvidence(statePath, 'soc2', 'type2', 'soc2-cc6.1', { ...VALID, kind: 'nope' }));
   assert.equal(fs.readFileSync(statePath, 'utf8'), before);
 });
+
+// occurredAt: the artifact's own date, distinct from recordedAt (write time). SOC 2 Type II turns
+// on whether a control operated across the observation period, so attaching a 2024 PR during a
+// 2025 period must not read as "started mid-period".
+test('occurredAt is optional, stored as ISO, and never confused with recordedAt', () => {
+  const statePath = mkStateDir();
+  const evidence = recordEvidence(statePath, 'soc2', 'type2', 'soc2-cc6.1', {
+    ...VALID,
+    occurredAt: '2024-03-11',
+  });
+
+  assert.equal(evidence[0].occurredAt, '2024-03-11T00:00:00.000Z');
+  assert.notEqual(evidence[0].occurredAt, evidence[0].recordedAt);
+  assert.ok(new Date(evidence[0].recordedAt) > new Date(evidence[0].occurredAt),
+    'recordedAt is write time and must be later than a backdated artifact');
+});
+
+test('occurredAt is omitted entirely when not supplied, so "unknown" is distinguishable from a date', () => {
+  const statePath = mkStateDir();
+  const evidence = recordEvidence(statePath, 'soc2', 'type2', 'soc2-cc6.1', VALID);
+  assert.ok(!('occurredAt' in evidence[0]), 'absent means nobody stated the artifact date');
+  assert.ok(evidence[0].recordedAt);
+});
+
+test('rejects an unparseable occurredAt rather than storing an epoch-era timestamp', () => {
+  const statePath = mkStateDir();
+  assert.throws(
+    () => recordEvidence(statePath, 'soc2', 'type2', 'soc2-cc6.1', { ...VALID, occurredAt: 'last spring' }),
+    /occurredAt must be an ISO-8601 date/
+  );
+  assert.deepEqual(controlIn(statePath, 'soc2-cc6.1').evidence, [], 'nothing written on rejection');
+});

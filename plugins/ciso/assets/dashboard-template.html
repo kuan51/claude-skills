@@ -675,7 +675,14 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       // esc() for a bare path or commit SHA, keeping the javascript:-URL protection either way.
       let line = '<span class="tag">' + esc(humanize(record.kind || 'unknown')) + '</span> ' + linkify(record.ref || '');
       if (record.summary) line += '<div>' + esc(record.summary) + '</div>';
-      if (record.recordedAt) line += '<div class="non-auth-note">Recorded ' + esc(record.recordedAt) + '</div>';
+      // Lead with the artifact's own date where it is known -- that is the one a SOC 2 Type II
+      // observation-period judgement turns on. recordedAt (write time) is the weaker fallback.
+      if (record.occurredAt) {
+        line += '<div class="non-auth-note">Occurred ' + esc(record.occurredAt) +
+          ' &middot; recorded ' + esc(record.recordedAt || 'unknown') + '</div>';
+      } else if (record.recordedAt) {
+        line += '<div class="non-auth-note">Recorded ' + esc(record.recordedAt) + '</div>';
+      }
       return '<li>' + line + '</li>';
     }).join('');
 

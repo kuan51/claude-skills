@@ -26,7 +26,14 @@ const path = require('path');
 // Fail-closed allowlist, matching record-scope.js's reasoning: an unrecognized key is a typo or a
 // field someone expected this script to understand, and either way rejecting loudly beats writing
 // it somewhere the dashboard and the skills will never look at again.
-const EVIDENCE_FIELDS = new Set(['kind', 'ref', 'summary']);
+// `occurredAt` is optional and is the ARTIFACT's own date -- when the PR merged, the CI run ran,
+// the policy was signed. `recordedAt` is stamped below at write time and answers a different
+// question: when did anyone last confirm this backing exists. Both are needed, because SOC 2
+// Type II turns on whether a control operated across the observation period: attaching a 2024 PR
+// during a 2025 period is ordinary as-you-go usage, and without occurredAt an audit comparing
+// dates against scope.observationPeriodStart would read the typing time and wrongly demote a
+// control that was operating a year before the period opened.
+const EVIDENCE_FIELDS = new Set(['kind', 'ref', 'summary', 'occurredAt']);
 
 // Closed enum. Deliberately coarse -- these describe where an artifact came from, not a taxonomy
 // of compliance evidence. "manual" is the escape hatch for anything asserted without an artifact.
@@ -59,6 +66,12 @@ function validate(record) {
   }
   if (isBlank(record.summary)) {
     throw new Error('recordEvidence: summary is required -- state what this artifact demonstrates');
+  }
+
+  // Optional, but if given it must be a real date -- a check comparing it against an observation
+  // period silently misreads an unparseable string as an epoch-era timestamp.
+  if (record.occurredAt !== undefined && Number.isNaN(Date.parse(record.occurredAt))) {
+    throw new Error(`recordEvidence: occurredAt must be an ISO-8601 date -- got "${record.occurredAt}"`);
   }
 }
 
@@ -97,12 +110,17 @@ function recordEvidence(stateJsonPath, certKey, tierKey, controlId, record) {
   // this field shipped -- coerce instead of migrating.
   if (!Array.isArray(control.evidence)) control.evidence = [];
 
-  control.evidence.push({
+  const entry = {
     kind: record.kind,
     ref: String(record.ref).trim(),
     summary: String(record.summary).trim(),
     recordedAt: new Date().toISOString(),
-  });
+  };
+  // Omitted entirely rather than stored null when unknown, so a reader can tell "the artifact
+  // predates this record" from "nobody said" -- and so `occurredAt || recordedAt` degrades to the
+  // as-you-go case, where the two are the same date anyway.
+  if (record.occurredAt !== undefined) entry.occurredAt = new Date(record.occurredAt).toISOString();
+  control.evidence.push(entry);
 
   fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
   return control.evidence;

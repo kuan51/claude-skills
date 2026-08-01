@@ -12,16 +12,18 @@ The eleven **model-invocable** verbs: `init`, `register`, `scope`, `import`, `in
 `disable-model-invocation` (maintainer-only, invoked explicitly as `/ciso:hitrust-controls-compiler`),
 so it must never be auto-selected -- queries about its job live in the corpus as negatives
 (`expected: null`), which doubles as a check that it stays out of the auto-trigger pool.
-`sync-tasks` is likewise excluded: it is invoked explicitly, never as part of an assessment flow.
+`sync-tasks` IS in scope: a user asks for it in their own words ("push our gaps into JIRA"), so it
+competes for selection like any other verb even though it never runs as part of an assessment flow.
 
 **With a verb surface, verb confusion is the failure mode that matters most.** Naming a
 certification no longer picks a skill -- every verb resolves the certification at runtime -- so the
 risk moved to adjacent verbs: `interview` (record a status) vs `audit` (report on statuses already
 recorded) vs `review` (read a code change) vs `evidence` (attach an artifact without changing a
-status), and `register` vs `init`. These have adjacent descriptions
-(both register control sets, run interviews, research vendor gaps) and differ mainly by framework
-name. The corpus carries queries naming *both* frameworks in each direction, and
-`test/corpus-shape.test.js` fails if they are ever dropped.
+status), and `register` vs `init`. These share vocabulary -- "review", "audit", "control",
+"record" -- and differ by what they *do* to the tracking data, which is a far thinner signal than a
+framework name was. `test/corpus-shape.test.js` fails if the corpus stops carrying a disambiguation
+query for each of them, but it only checks that the questions are still being asked; whether the
+model answers them correctly is what the run below measures.
 
 ## The corpus
 
@@ -66,8 +68,11 @@ The repo can't self-run model-in-the-loop scoring cheaply, so this is a manual/h
 After any change to a skill's `name`/`description`, after adding a skill (new trigger space can
 steal selections), or when a framework version bump reshapes a verb's description.
 
-**Adding a certification skill is the highest-risk case**: it does not merely add trigger space, it
-competes directly with every existing certification skill, whose descriptions all say some version
-of "register controls, run the assessment interview, research vendor gaps." Re-run the *whole*
-corpus then, not just the new skill's queries -- the regression to look for is an existing skill
-losing queries it used to win.
+**Adding a verb is the highest-risk case**: it does not merely add trigger space, it competes
+directly with every existing verb, and the verbs already share vocabulary. Re-run the *whole* corpus
+then, not just the new verb's queries -- the regression to look for is an existing verb losing
+queries it used to win.
+
+Adding a *certification* is not that case, and does not on its own require a re-run: a certification
+module ships no skill of its own (see ADDING-A-CERTIFICATION.md), so it adds no trigger space. Re-run
+only if it changed a verb's description.

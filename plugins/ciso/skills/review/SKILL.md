@@ -82,7 +82,9 @@ Group into three, and let any group be empty rather than padding it:
 
 Then, for a SOC 2 Type II, check the observation period: an artifact dated after
 `scope.observationPeriodStart` supports the control from that date forward, not across the period.
-Say it rather than letting the attachment imply more than it shows.
+Say it rather than letting the attachment imply more than it shows. You have the diff in hand, so
+you know the real merge or commit date -- carry it into `ciso:evidence` as `occurredAt`, which is
+what lets a later audit judge the period correctly instead of reading the attach time.
 
 ## After the review
 
