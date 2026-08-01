@@ -386,7 +386,7 @@ test('renderDashboard: an untracked project still renders the catalog, pointing 
   const html = fs.readFileSync(path.join(dir, 'dashboard.html'), 'utf8');
   // Not a blank page and not a dead end: the index is a catalog, so a project that has
   // registered nothing still learns what this plugin supports and how to start.
-  assert.ok(html.toLowerCase().includes('ciso:hitrust'), 'should point the user at the hitrust skill');
+  assert.ok(html.toLowerCase().includes('ciso:register'), 'should point the user at the verb that starts tracking');
   assert.ok(html.toLowerCase().includes('not tracked yet'), 'catalog entries with no state must render as untracked');
 });
 

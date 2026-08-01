@@ -16,6 +16,11 @@ const ADJACENT_STEMS = [
   'hitrust', 'ciso', 'mycsf', 'e1', 'i1', 'r2', 'control', 'certif', 'dashboard', 'interview',
   'import', 'register', 'upgrade', 'vendor', 'scaffold', 'init', 'track', 'compli', 'security',
   'structure', 'maturity', 'prisma', 'soc 2', 'domain', 'assess',
+  // Verb-surface stems: the near-miss negatives now include ordinary uses of the verbs' own
+  // English words ("review this PR for bugs", "audit our AWS bill"), which is exactly the
+  // over-triggering these skills are most exposed to.
+  'review', 'evidence', 'audit', 'scope', 'gap', 'jira', 'linear', 'ticket', 'annex', 'iso 27001',
+  'pull request',
 ];
 
 test('corpus declares the value/category vocabularies and a non-empty query list', () => {
@@ -46,32 +51,39 @@ test('every entry is well-formed and uses declared values/categories', () => {
 });
 
 test('every model-invocable skill and the null case are covered, across categories', () => {
-  const byExpected = { init: 0, hitrust: 0, soc2: 0, null: 0 };
+  const byExpected = {};
+  for (const value of corpus.expectedValues) byExpected[value === null ? 'null' : value] = 0;
+
   const categories = new Set();
   for (const entry of corpus.queries) {
     byExpected[entry.expected === null ? 'null' : entry.expected] += 1;
     categories.add(entry.category);
   }
-  assert.ok(byExpected.init >= 5, 'need a meaningful number of init queries');
-  assert.ok(byExpected.hitrust >= 5, 'need a meaningful number of hitrust queries');
-  assert.ok(byExpected.soc2 >= 5, 'need a meaningful number of soc2 queries');
+
+  // Derived from expectedValues rather than a hardcoded list, so adding a verb to the corpus
+  // vocabulary without writing queries for it fails here instead of silently shipping untested.
+  for (const [value, count] of Object.entries(byExpected)) {
+    assert.ok(count >= 4, `need a meaningful number of "${value}" queries, got ${count}`);
+  }
   assert.ok(byExpected.null >= 5, 'need negative-control queries');
   for (const cat of corpus.categories) {
     assert.ok(categories.has(cat), `no query exercises category "${cat}"`);
   }
 });
 
-// With two certification skills shipping, the failure mode that actually costs a user something
-// is cross-selection: a query that names one framework selecting the other. Guard that the corpus
-// keeps testing it rather than only testing each skill in isolation.
-test('the corpus tests hitrust/soc2 cross-selection in both directions', () => {
-  const mentionsBoth = corpus.queries.filter((e) => {
-    const q = e.query.toLowerCase();
-    return q.includes('hitrust') && q.includes('soc 2');
-  });
-  assert.ok(mentionsBoth.length >= 2, 'need queries naming both frameworks, to test that the right one wins');
-  assert.ok(mentionsBoth.some((e) => e.expected === 'hitrust'), 'need a both-frameworks query expecting hitrust');
-  assert.ok(mentionsBoth.some((e) => e.expected === 'soc2'), 'need a both-frameworks query expecting soc2');
+// The verbs are much closer in meaning to each other than the old per-certification skills were.
+// These are the pairs a real user actually collides: recording a status vs reporting on statuses
+// already recorded, reading a code change vs attaching an artifact, and setup vs scaffolding.
+// Whether the model actually gets them right is what the eval run measures -- this only guards
+// that the corpus keeps asking.
+test('the corpus disambiguates the verbs that genuinely overlap', () => {
+  const disambiguation = corpus.queries.filter((e) => e.category === 'disambiguation');
+  for (const verb of ['init', 'register', 'interview', 'audit', 'review', 'evidence']) {
+    assert.ok(
+      disambiguation.some((e) => e.expected === verb),
+      `no disambiguation query expects "${verb}" -- it is one of the verbs most likely to be confused for another`
+    );
+  }
 });
 
 test('negatives are adjacent (share a skill keyword), not random noise', () => {

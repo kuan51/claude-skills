@@ -1,6 +1,6 @@
 # Register (flow a)
 
-Read this when the routing step in `../SKILL.md` picks Register (the `type2` tier is missing from state).
+Read this when `ciso:register` dispatches here (the `type2` tier is missing from state).
 
 Run:
 ```
@@ -13,5 +13,5 @@ This merges the 61 shipped entries into `<docs/ciso-dir>/state.json` and creates
 After registering:
 
 1. Tell the user it's done, with the count broken out: 33 common criteria (CC1-CC9, always in scope) plus 3 Availability, 2 Confidentiality, 5 Processing Integrity and 18 Privacy criteria that are only in scope if they select those categories.
-2. **Restate the authority caveat from `../SKILL.md`** -- SOC 2 is a report not a certification; every criterion identifier was read from the AICPA document and carries a `codeVerifiedBy` citation, but every `topicSummary` is a paraphrase, not the criterion text.
+2. **Restate the authority caveat from `invariants.md`** -- SOC 2 is a report not a certification; every criterion identifier was read from the AICPA document and carries a `codeVerifiedBy` citation, but every `topicSummary` is a paraphrase, not the criterion text.
 3. Continue immediately into [Scope](scope.md). Do not go to the interview first: which categories are in scope determines which of the 51 entries should even be asked about.

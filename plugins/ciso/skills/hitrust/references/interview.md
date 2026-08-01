@@ -1,6 +1,6 @@
 # Interview (flow c)
 
-Read this when the routing step in `../SKILL.md` picks Interview. The core discipline invariants are summarized in `../SKILL.md`; the full mechanics -- and the reasoning behind the mechanical gate -- are here.
+Read this when `ciso:interview` dispatches here. The core discipline invariants live in `invariants.md`, which that verb reads first; the full mechanics -- and the reasoning behind the mechanical gate -- are here.
 
 Resumable, chunked by `domainKey` (the modern 19-domain numbering, `01`-`19`, every current tier's controls carry) and, within each chunk, committed in sub-batches of 4-6 controls at a time rather than as one whole-category commit -- see Part 1 step 4. A handful of e1 controls also carry a `legacyCategoryPrefix` (an OLDER, different numbering scheme derived from a real MyCSF control-reference code, e.g. `04` from `04.a`) -- that field is purely extra display metadata, never used for grouping, since it isn't present on every control and uses a different scheme than `domainKey`. **Must run inside native plan mode** -- this is a firm requirement, not a style choice: each sub-batch only counts as "committed" once the user approves it via `ExitPlanMode`.
 

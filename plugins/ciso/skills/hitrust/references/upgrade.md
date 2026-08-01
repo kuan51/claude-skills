@@ -1,6 +1,6 @@
 # Upgrade (flow e)
 
-Read this when the routing step in `../SKILL.md` detects a version upgrade -- i.e. the plugin's bundled `controls/<tier>.v*.structure.json` is a newer version than `state.json`'s `tiers.<tier>.controlSetVersion`. This check runs FIRST, before Register/Import/Interview/Roadmap, because interview and roadmap data may need reconciling against the new structure before those flows touch it.
+Read this when `ciso:upgrade` dispatches here -- i.e. the plugin's bundled `controls/<tier>.v*.structure.json` is a newer version than `state.json`'s `tiers.<tier>.controlSetVersion`. Every other verb checks for this first and stops, sending the user here, because interview and roadmap data may need reconciling against the new structure before those flows touch it.
 
 1. Tell the user a newer HITRUST framework version is available for this tier and ask (`AskUserQuestion`) whether to reconcile now or defer.
 2. If proceeding, run:

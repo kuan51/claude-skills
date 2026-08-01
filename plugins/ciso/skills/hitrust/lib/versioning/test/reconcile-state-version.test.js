@@ -32,6 +32,10 @@ function seededControl(entry, { assessment, roadmap } = {}) {
       inProgress: { currentState: null, estimatedCloseness: null },
       assessedAt: null,
     },
+    // Seeded by defaultControl() since 1.0.0. Load-bearing in this fixture: leaving it out is what
+    // let a missing 'evidence' in STATE_ONLY_FIELDS flag every carried-forward control needsReview
+    // while this suite stayed green.
+    evidence: [],
     roadmap: roadmap || {
       budgetTier: null,
       vendorResearch: [],
@@ -414,4 +418,50 @@ test('reconcileStateVersion: a removed r2 control is archived with its maturity 
   assert.ok(archived, 'r2-01-01 should be archived');
   assert.equal(archived.assessment.maturity.implemented.status, 'met');
   assert.equal(archived.assessment.maturity.implemented.justification, 'Done.');
+});
+
+// Every other test in this file builds its starting state from seededControl(), a local
+// re-implementation of register-tier.js's defaultControl(). That duplication is deliberate (this
+// module stays independent of register-tier.js) but it drifts silently: when defaultControl()
+// started seeding `evidence: []`, the fixture didn't, and STATE_ONLY_FIELDS didn't either -- so
+// every carried-forward control diffed as modified while this suite stayed green.
+//
+// This test closes the loop by registering through the REAL registerTier, so any future field
+// defaultControl() adds without a matching STATE_ONLY_FIELDS entry fails here.
+test('a control registered through the real registerTier only needs review if it actually changed', () => {
+  const { registerTier } = require('../../register-tier.js');
+
+  const stateJsonPath = makeTempState({
+    schemaVersion: '1.0.0',
+    generatedAt: '2020-01-01T00:00:00.000Z',
+    organization: { name: 'Example Org' },
+    certifications: {},
+    interviewSessions: [],
+  });
+
+  const structure = (version, thirdSummary) => ({
+    tier: 'e1',
+    controlSetVersion: version,
+    sourceAuthority: 'public-topic-level',
+    controls: [
+      { id: 'e1-01-01', domain: 'Info Protection', domainKey: '01', topicLabel: 'One', topicSummary: 'unchanged a', citations: [] },
+      { id: 'e1-01-02', domain: 'Info Protection', domainKey: '01', topicLabel: 'Two', topicSummary: 'unchanged b', citations: [] },
+      { id: 'e1-01-03', domain: 'Info Protection', domainKey: '01', topicLabel: 'Three', topicSummary: thirdSummary, citations: [] },
+    ],
+  });
+
+  registerTier(stateJsonPath, structure('11.8.0', 'original c'), 'hitrust', 'HITRUST CSF');
+  const result = reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', structure('11.9.0', 'REWORDED c'));
+
+  assert.equal(result.carriedForward, 3);
+  assert.equal(
+    result.needsReview,
+    1,
+    'only the control whose topicSummary changed should need review -- if this is 3, a field defaultControl() seeds is missing from STATE_ONLY_FIELDS'
+  );
+
+  const controls = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8')).certifications.hitrust.tiers.e1.controls;
+  assert.ok(!controls['e1-01-01'].needsReview, 'an unchanged control must not be flagged');
+  assert.ok(!controls['e1-01-02'].needsReview, 'an unchanged control must not be flagged');
+  assert.equal(controls['e1-01-03'].needsReview, true, 'the reworded control must be flagged');
 });

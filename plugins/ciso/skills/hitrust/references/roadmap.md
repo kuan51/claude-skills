@@ -1,6 +1,6 @@
 # Roadmap (flow d)
 
-Read this when the routing step in `../SKILL.md` offers Roadmap, or when running Roadmap standalone. Available as soon as ANY completed category/domain has un-researched gaps (see [Interview](interview.md) step 10) -- not gated on the whole tier finishing. Also invocable any time standalone, e.g. to pick up gaps that were deferred earlier. **Runs in the background:** it's launched fire-and-forget so it never blocks the interview, and its findings are merged in whenever it finishes (steps 2-4).
+Read this when `ciso:roadmap` dispatches here. Available as soon as ANY completed category/domain has un-researched gaps (see [Interview](interview.md) step 10) -- not gated on the whole tier finishing. Also invocable any time standalone, e.g. to pick up gaps that were deferred earlier. **Runs in the background:** it's launched fire-and-forget so it never blocks the interview, and its findings are merged in whenever it finishes (steps 2-4).
 
 1. **Budget tier.** Check `state.organization.budgetTier`:
    - If already set, tell the user "using your saved default: `<tier>`" and offer (`AskUserQuestion`) to keep it or change it for this run.

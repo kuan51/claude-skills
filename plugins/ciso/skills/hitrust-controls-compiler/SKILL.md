@@ -9,7 +9,7 @@ allowed-tools: Read, Write, WebSearch, Workflow, Skill
 
 **Maintainer-only tooling.** This is not part of the `ciso:<certification>` pattern an org uses to
 track its own HITRUST work -- it's how whoever maintains this plugin (re)compiles the public,
-shared e1/i1 structure files that ship inside it. An organization using `ciso:hitrust` never runs
+shared e1/i1 structure files that ship inside it. An organization using `ciso:register` and `ciso:interview` never runs
 this.
 
 ## Why this exists

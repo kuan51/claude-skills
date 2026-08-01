@@ -8,7 +8,7 @@ allowed-tools: Read, Bash, AskUserQuestion
 
 ## Overview
 
-Turns HITRUST controls with an unresolved `assessment.status` (`gap` or `in_progress`) into real tickets in JIRA or Linear, so compliance findings become actionable engineering work instead of living only in the static dashboard pages. Invoked explicitly by the user (e.g. "sync my HITRUST gaps to JIRA") — a separate concern from the `ciso:hitrust` assessment flow, never run automatically as part of it.
+Turns HITRUST controls with an unresolved `assessment.status` (`gap` or `in_progress`) into real tickets in JIRA or Linear, so compliance findings become actionable engineering work instead of living only in the static dashboard pages. Invoked explicitly by the user (e.g. "sync my HITRUST gaps to JIRA") — a separate concern from the `ciso:interview` assessment flow, never run automatically as part of it.
 
 Tickets are created via the pre-installed `mcp__atlassian__*` (JIRA/Confluence) or Linear MCP connector tools — never via a custom HTTP client, and never with an API token handled by this skill's own code. If the relevant connector isn't authorized yet, tell the user to authorize it via their claude.ai connector settings (or `/mcp` in an interactive session) and stop.
 
@@ -25,7 +25,7 @@ Tickets are created via the pre-installed `mcp__atlassian__*` (JIRA/Confluence) 
 
 ## Routing
 
-1. Determine the project's `docs/ciso/` path the same way `ciso:hitrust` does — check the current working directory's `docs/ciso/state.json` first; if that's not obviously right, ask the user. **If `state.json` doesn't exist, tell the user to run `ciso:init` (and register a tier via `ciso:hitrust`) first, and stop.**
+1. Determine the project's `docs/ciso/` path the same way every other verb does — check the current working directory's `docs/ciso/state.json` first; if that's not obviously right, ask the user. **If `state.json` doesn't exist, tell the user to run `ciso:init` (and register a tier via `ciso:register`) first, and stop.**
 2. Ask which certification (`certKey`, e.g. `"hitrust"`) and tier (`e1`/`i1`/`r2`) to sync, if there's more than one registered in `state.json`.
 3. Read `state.certifications.<certKey>.sync.destination` (see `lib/diff-tasks.js`'s `getDestination`). If it's not set:
    - Ask which tracker (JIRA or Linear), and the destination details for that tracker (JIRA: project key, issue type, whether Advanced Roadmaps is available; Linear: team/project).

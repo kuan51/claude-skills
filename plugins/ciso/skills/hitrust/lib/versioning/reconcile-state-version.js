@@ -9,7 +9,11 @@ const { diffStructureVersions } = require('./diff-structure-versions.js');
 // before diffing an existing tier's controls against a new structure file -- otherwise every
 // unchanged control would look "modified" (a bare structure entry never carries an `assessment`
 // object, so a naive field-by-field compare would flag it as a difference every time).
-const STATE_ONLY_FIELDS = ['assessment', 'roadmap', 'statementText', 'statementSource', 'needsReview'];
+// `evidence` belongs here for the same reason `assessment` does: register-tier.js seeds it, a bare
+// structure entry never carries it, and isDeepStrictEqual([], undefined) is false -- so omitting it
+// makes EVERY carried-forward control diff as modified and flags the whole tier needsReview,
+// destroying the one signal this reconcile exists to produce.
+const STATE_ONLY_FIELDS = ['assessment', 'evidence', 'roadmap', 'statementText', 'statementSource', 'needsReview'];
 
 // r2's five PRISMA maturity dimensions. Duplicated locally, per this file's own established
 // precedent of re-implementing register-tier.js's default shape independently (see the comment

@@ -12,7 +12,7 @@ Scaffolds the local, gitignored data store (`state.json`) and dashboard pages (`
 
 ## When NOT to use
 
-- `state.json` and `dashboard.html` already exist and you just want to add or update certification data -- use `ciso:hitrust` (or the relevant certification skill) instead; this skill only scaffolds, it doesn't populate certification content.
+- `state.json` and `dashboard.html` already exist and you just want to add or update certification data -- use `ciso:register` (to add a certification) or `ciso:interview` (to assess one) instead; this skill only scaffolds, it doesn't populate certification content.
 
 ## Process
 
@@ -41,4 +41,4 @@ Scaffolds the local, gitignored data store (`state.json`) and dashboard pages (`
 5. **Report to the user:**
    - The absolute path to `dashboard.html`, that it's the index across every certification, and that they can open it directly in a browser -- no server needed.
    - Whether `.gitignore` was updated (or already covered the target directory).
-   - That the natural next step is `ciso:hitrust`, to start registering and importing certification controls.
+   - That the natural next step is `ciso:register`, to add a certification (HITRUST CSF, SOC 2, or ISO/IEC 27001) and load its control set.
