@@ -1,16 +1,18 @@
 # Adding a certification to ciso
 
-`ciso` is built as **generic tracking core + one module per certification** (today HITRUST and
-SOC 2). This doc makes that boundary explicit so a further certification (ISO 27001, PCI DSS, ...)
-can reuse the core instead of re-inventing it. It is a map and a contract, not a drop-in wizard: the
-generic *functions* already support multiple certifications, but some wrappers and data locations
-are still HITRUST-homed (see "What a clean split would still move").
+`ciso` is built as **generic tracking core + one module per certification** (today HITRUST, SOC 2,
+ISO 27001 and CMMC). This doc makes that boundary explicit so a further certification can reuse the
+core instead of re-inventing it. It is a map and a contract, not a drop-in wizard: the generic
+*functions* already support multiple certifications, but some wrappers and data locations are still
+HITRUST-homed (see "What a clean split would still move").
 
 **SOC 2 is the worked example.** It was added against this contract without modifying a single core
-script -- `skills/soc2/` is a structure file, a `SKILL.md`, four references, one 100-line
-`record-scope.js`, and a catalog entry. Read it alongside this document; where the two disagree, the
-code is right. Two things it deliberately did *not* do, both of which a third certification should
-think just as hard about before doing:
+script -- `skills/soc2/` is a structure file, five references, one 100-line `record-scope.js`, and a
+catalog entry. (It shipped a `SKILL.md` too, until the verb restructure removed module-level skills
+entirely; see the contract's point 7.) **CMMC is the minimal example** — three structure files, four
+references, a catalog entry, and no `lib/` code whatsoever. Read both alongside this document; where
+any of them disagree, the code is right. Two things SOC 2 deliberately did *not* do, both of which a
+new certification should think just as hard about before doing:
 
 - **No research/verify/reconcile agent fan-out.** See "A canonical identifier is read, never
   researched" below -- this is the single most important sourcing decision for a new certification.
@@ -40,42 +42,76 @@ with `Object.keys`, and needs no code change to serve another certification:
 
 **Per-certification module** — provide these for each certification:
 
-| Concern | HITRUST | SOC 2 |
-|---|---|---|
-| The control data (shipped, public, non-authoritative) | `skills/hitrust/controls/*.structure.json` | `skills/soc2/controls/type2.v2017tsc.structure.json` |
-| **Always-loaded invariants** (content authority, core discipline) -- **required** | `skills/hitrust/references/invariants.md` | `skills/soc2/references/invariants.md` |
-| One reference file per verb the certification supports | `references/` (register/import/interview/roadmap/upgrade + r2-maturity) | `references/` (register/scope/interview/roadmap) |
-| Whatever per-certification writer the flow needs | `lib/merge-import.js` + `lib/xlsx-lite.js` (MyCSF export import) | `lib/record-scope.js` (engagement scope) |
-| Maintainer compile of the shipped structure | `skills/hitrust-controls-compiler/` | *(none — hand-compiled; see above)* |
-| Research/verification agent personas | `agents/` (fixed roster -- see note) | *(none — reuses `vendor-researcher`)* |
+| Concern | HITRUST | SOC 2 | CMMC |
+|---|---|---|---|
+| The control data (shipped, public, non-authoritative) | `skills/hitrust/controls/*.structure.json` | `skills/soc2/controls/type2.v2017tsc.structure.json` | `skills/cmmc/controls/level{1,2,3}.v32cfr170.structure.json` |
+| **Always-loaded invariants** (content authority, core discipline) -- **required** | `skills/hitrust/references/invariants.md` | `skills/soc2/references/invariants.md` | `skills/cmmc/references/invariants.md` |
+| One reference file per verb the certification supports | `references/` (register/import/interview/roadmap/upgrade + r2-maturity) | `references/` (register/scope/interview/roadmap) | `references/` (register/interview/roadmap) |
+| Whatever per-certification writer the flow needs | `lib/merge-import.js` + `lib/xlsx-lite.js` (MyCSF export import) | `lib/record-scope.js` (engagement scope) | *(none — the contract's level is the scope decision, made at register time)* |
+| Maintainer compile of the shipped structure | `skills/hitrust-controls-compiler/` | *(none — hand-compiled; see above)* | *(none — throwaway extractor, not committed; see "Extraction method")* |
+| Research/verification agent personas | `agents/` (fixed roster -- see note) | *(none — reuses `vendor-researcher`)* | *(none — reuses `vendor-researcher`)* |
 
-## Which certification next, and why not the other two
+CMMC is the cheapest module to date and adds **no** new `lib/` code at all: three structure files,
+three references plus invariants, a catalog entry and a test. It is the clearest demonstration that
+the core is genuinely certification-agnostic — and, unlike SOC 2's, its multi-tier shape exercised
+the tier machinery too.
+
+## Which certification next, and why the obvious #4 was abandoned mid-build
 
 Recorded so the decision isn't re-litigated from scratch. ISO 27001 was chosen as #3 on audience:
 SOC 2 + ISO 27001 is the most common dual pursuit, and the two share roughly 80% of their controls,
 which is what finally exercises the "one shared state.json makes overlap visible" claim beyond the
 healthcare-only HITRUST + SOC 2 pairing.
 
-- **PCI DSS v4.0.1 — the strongest candidate for #4.** Doctrinally cleaner than ISO: the catalog is a
-  free download, so it belongs in the left column and 100% canonical mapping is achievable exactly as
-  SOC 2 achieved 61/61. Its SAQ-type selection is a better fit for the `record-scope.js` precedent
-  than ISO's scoping was. Passed over only on audience breadth — it applies solely to organizations
-  handling card payments.
-- **NIST CSF 2.0 — deliberately not a module.** Public domain, no login, machine-readable from NIST:
-  by far the cheapest compile, and the only candidate whose actual subcategory text could ship. It is
-  not certifiable — no assessor, no report, no pass/fail — so it dilutes the plugin's thesis as a
-  certification module. Its value is as a future cross-framework spine, which is a different feature.
+**PCI DSS v4.0.1 was #4, and was abandoned after its enumeration had already been compiled.** Not on
+sourcing quality — that part went well. 250 Defined Approach Requirements were extracted and
+corroborated 250/250 against PCI SSC's own Spanish-language edition, which is publicly hosted on
+`listings.pcisecuritystandards.org`. It was abandoned on **licence**: PCI SSC's Terms and Conditions
+permit download for personal, non-commercial review, and separately prohibit distributing or
+preparing derivative works of their content. A paraphrased `topicSummary` in a public GPL-3.0 plugin
+is plausibly both. That is a *different* constraint from the one SOC 2 and ISO 27001 clear — theirs
+is copyright, which a paraphrase avoids by copying no protected expression, and which the 8-word
+check exists to enforce. PCI's is contract, and it reaches use rather than expression, so the 8-word
+check does not answer it. **Do not re-propose PCI DSS unless PCI SSC's Material License Agreement has
+actually been granted for this plugin.**
+
+**The general lesson, which is now step zero for any new certification:** reachability of a catalog
+says nothing about permission to build on it. Check the publisher's *terms of use* separately from
+its copyright posture, and do it **before** compiling, not after.
+
+CMMC took the #4 slot instead, and is the strongest sourcing position in the plugin — see the
+public-domain column below. Two candidates remain rejected on the same ground as each other:
+
+- **NIST CSF 2.0 and the HIPAA Security Rule — deliberately not modules.** Both are public domain and
+  cheap to compile; HIPAA is additionally the most-enforced regime in US healthcare. Neither is
+  **certifiable** — no assessor, no report, no pass/fail — so each dilutes the plugin's thesis as a
+  certification module. HIPAA is doubly redundant here: HITRUST already ships as the certifiable
+  wrapper around it. NIST CSF's value is as a future cross-framework spine, which is a different
+  feature.
 
 ## A canonical identifier is read, never researched
 
 The first question for a new certification is not "how do we research this" but **"is the
 publisher's own catalog reachable?"** That answer decides everything downstream.
 
-| | Catalog freely published | Catalog gated, enumeration closed | Catalog gated, enumeration unknowable |
-|---|---|---|---|
-| Examples | AICPA Trust Services Criteria (free account); PCI DSS v4.0.1 (free download) | ISO/IEC 27001:2022 Annex A (paid per standard) | HITRUST MyCSF (licensing agreement) |
-| Approach | **Extract identifiers directly from the document.** Require every control to carry its canonical id plus a `codeVerifiedBy` citation. | **Reconstruct the identifier set, then prove it closes.** Canonical id plus a `codeCorroboratedBy` citation naming ≥2 independent sources. | Canonical ids are **not publicly obtainable.** Ship honestly-scoped topics and route the org to its own licensed export. |
-| What ships | 100% canonically mapped (SOC 2: 61/61) | Canonically mapped, provenance marked weaker (ISO 27001: 93/93 Annex A) | Topic-level entries, most without a canonical id |
+| | Publisher's work is uncopyrighted | Catalog freely published | Catalog gated, enumeration closed | Catalog gated, enumeration unknowable |
+|---|---|---|---|---|
+| Examples | NIST SPs and the eCFR (CMMC) | AICPA Trust Services Criteria (free account) | ISO/IEC 27001:2022 Annex A (paid per standard) | HITRUST MyCSF (licensing agreement) |
+| Approach | **Ship the requirement text itself.** US Government works carry no copyright; NIST says so in each publication. Still extract, still cross-check, but nothing has to be paraphrased away. | **Extract identifiers directly from the document.** Require every control to carry its canonical id plus a `codeVerifiedBy` citation. | **Reconstruct the identifier set, then prove it closes.** Canonical id plus a `codeCorroboratedBy` citation naming ≥2 independent sources. | Canonical ids are **not publicly obtainable.** Ship honestly-scoped topics and route the org to its own licensed export. |
+| What ships | Verbatim requirements, `sourceAuthority: "publisher-verbatim"` (CMMC: 15 + 110 + 24) | 100% canonically mapped (SOC 2: 61/61) | Canonically mapped, provenance marked weaker (ISO 27001: 93/93 Annex A) | Topic-level entries, most without a canonical id |
+
+**The far-left column has an obligation the others don't: say which half is authoritative, because
+it is the reverse of every other module.** CMMC's `topicSummary` is the real requirement and its
+`topicLabel` is our derived shorthand — anywhere else in `ciso` the summary is the paraphrase. A user
+who has used the other modules will assume wrongly, so `invariants.md` states it and the interview
+flow repeats it once per session.
+
+**And a public-domain source can still be the wrong one.** CMMC binds NIST SP 800-171 **R2** and SP
+800-172 (Feb 2021), both of which NIST has since *withdrawn* in favour of Revision 3, while 32 CFR
+170.2 still incorporates the withdrawn editions by reference. Compiling from "the current NIST
+publication" would have produced a clean, well-cited, entirely wrong control set. When a regulation
+incorporates a standard by reference, the regulation's cited edition wins — check the incorporation
+clause, not the publisher's front page.
 
 ### The middle column is narrow, and has an admission test
 
