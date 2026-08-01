@@ -22,12 +22,6 @@
       ],
       "topicLabel": "Restrict access to systems and system components",
       "topicSummary": "Restrict access to systems and system components to only those information resources that are owned, provisioned, or issued by the organization.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -41,12 +35,6 @@
       ],
       "topicLabel": "Employ [Assignment",
       "topicSummary": "Employ [Assignment: organization-defined secure information transfer solutions] to control information flows between security domains on connected systems.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -60,12 +48,6 @@
       ],
       "topicLabel": "Employ [Assignment",
       "topicSummary": "Employ [Assignment: organization-defined sources of threat intelligence] as part of a risk assessment to guide and inform the development of organizational systems, security architectures, selection of security solutions, monitoring, threat hunting, and response and recovery activities.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -79,12 +61,6 @@
       ],
       "topicLabel": "Conduct cyber threat hunting activities [Selection",
       "topicSummary": "Conduct cyber threat hunting activities [Selection (one or more): [Assignment: organization- defined frequency]; [Assignment: organization-defined event]] to search for indicators of compromise in [Assignment: organization-defined systems] and detect, track, and disrupt threats that evade existing controls.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -98,12 +74,6 @@
       ],
       "topicLabel": "Employ advanced automation and analytics capabilities in support",
       "topicSummary": "Employ advanced automation and analytics capabilities in support of analysts to predict and identify risks to organizations, systems, and system components.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -117,12 +87,6 @@
       ],
       "topicLabel": "Document or reference in the system security plan",
       "topicSummary": "Document or reference in the system security plan the security solution selected, the rationale for the security solution, and the risk determination.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -136,12 +100,6 @@
       ],
       "topicLabel": "Assess the effectiveness of security solutions [Assignment",
       "topicSummary": "Assess the effectiveness of security solutions [Assignment: organization-defined frequency] to address anticipated risk to organizational systems and the organization based on current and accumulated threat intelligence.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -155,12 +113,6 @@
       ],
       "topicLabel": "Assess, respond to, and monitor supply chain risks",
       "topicSummary": "Assess, respond to, and monitor supply chain risks associated with organizational systems and system components.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -174,12 +126,6 @@
       ],
       "topicLabel": "Develop a plan for managing supply chain risks",
       "topicSummary": "Develop a plan for managing supply chain risks associated with organizational systems and system components; update the plan [Assignment: organization-defined frequency].",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -193,12 +139,6 @@
       ],
       "topicLabel": "Conduct penetration testing [Assignment",
       "topicSummary": "Conduct penetration testing [Assignment: organization-defined frequency], leveraging automated scanning tools and ad hoc tests using subject matter experts.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -212,12 +152,6 @@
       ],
       "topicLabel": "Employ [Selection",
       "topicSummary": "Employ [Selection: (one or more): [Assignment: organization-defined physical isolation techniques]; [Assignment: organization-defined logical isolation techniques]] in organizational systems and system components.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -231,12 +165,6 @@
       ],
       "topicLabel": "Verify the integrity of [Assignment",
       "topicSummary": "Verify the integrity of [Assignment: organization-defined security critical or essential software] using root of trust mechanisms or cryptographic signatures.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -250,12 +178,6 @@
       ],
       "topicLabel": "Ensure",
       "topicSummary": "Ensure that [Assignment: organization-defined systems and system components] are included in the scope of the specified enhanced security requirements or are segregated in purpose- specific networks.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -269,12 +191,6 @@
       ],
       "topicLabel": "Use threat indicator information and effective mitigations obtained from [Assignment",
       "topicSummary": "Use threat indicator information and effective mitigations obtained from [Assignment: organization-defined external organizations] to guide and inform intrusion detection and threat hunting.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -288,12 +204,6 @@
       ],
       "topicLabel": "Provide awareness training [Assignment",
       "topicSummary": "Provide awareness training [Assignment: organization-defined frequency] focused on recognizing and responding to threats from social engineering, advanced persistent threat actors, breaches, and suspicious behaviors; update the training [Assignment: organization- defined frequency] or when there are significant changes to the threat.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -307,12 +217,6 @@
       ],
       "topicLabel": "Include practical exercises in awareness training for [Assignment",
       "topicSummary": "Include practical exercises in awareness training for [Assignment: organization-defined roles] that are aligned with current threat scenarios and provide feedback to individuals involved in the training and their supervisors.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -326,12 +230,6 @@
       ],
       "topicLabel": "Establish and maintain an authoritative source and repository",
       "topicSummary": "Establish and maintain an authoritative source and repository to provide a trusted source and accountability for approved and implemented system components.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -345,12 +243,6 @@
       ],
       "topicLabel": "Employ automated mechanisms to detect misconfigured or unauthorized system components",
       "topicSummary": "Employ automated mechanisms to detect misconfigured or unauthorized system components; after detection, [Selection (one or more): remove the components; place the components in a quarantine or remediation network] to facilitate patching, re-configuration, or other mitigations.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -364,12 +256,6 @@
       ],
       "topicLabel": "Employ automated discovery and management tools to maintain an up-to-date",
       "topicSummary": "Employ automated discovery and management tools to maintain an up-to-date, complete, accurate, and readily available inventory of system components.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -383,12 +269,6 @@
       ],
       "topicLabel": "Identify and authenticate [Assignment",
       "topicSummary": "Identify and authenticate [Assignment: organization-defined systems and system components] before establishing a network connection using bidirectional authentication that is cryptographically based and replay resistant.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -402,12 +282,6 @@
       ],
       "topicLabel": "Employ automated or manual/procedural mechanisms to prohibit system",
       "topicSummary": "Employ automated or manual/procedural mechanisms to prohibit system components from connecting to organizational systems unless the components are known, authenticated, in a properly configured state, or in a trust profile.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -421,12 +295,6 @@
       ],
       "topicLabel": "Establish and maintain a security operations center capability",
       "topicSummary": "Establish and maintain a security operations center capability that operates [Assignment: organization-defined time period].",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -440,12 +308,6 @@
       ],
       "topicLabel": "Establish and maintain a cyber incident response team",
       "topicSummary": "Establish and maintain a cyber incident response team that can be deployed by the organization within [Assignment: organization-defined time period].",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -459,12 +321,6 @@
       ],
       "topicLabel": "Ensure",
       "topicSummary": "Ensure that organizational systems are protected if adverse information develops or is obtained about individuals with access to CUI.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 3,
-      "citations": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     }
   ]

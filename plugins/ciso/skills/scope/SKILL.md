@@ -1,6 +1,6 @@
 ---
 name: scope
-description: Use when defining the boundaries of a SOC 2 engagement before the assessment starts -- Type I versus Type II, which Trust Services Categories are in scope, the observation period, subservice organizations and how they are treated, the system description. Only SOC 2 has a scope step; HITRUST and ISO 27001 do not.
+description: Use when defining the boundaries of a SOC 2 engagement before the assessment starts -- Type I versus Type II, which Trust Services Categories are in scope, the observation period, subservice organizations and how they are treated, the system description. Only SOC 2 has a scope step; HITRUST, ISO 27001 and CMMC do not.
 allowed-tools: Read, Bash, AskUserQuestion
 ---
 

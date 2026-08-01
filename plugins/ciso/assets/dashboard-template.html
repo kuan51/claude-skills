@@ -573,7 +573,11 @@ const CISO_DATA = /*__CISO_DATA__*/null;
   // bookkeeping ones that would be noise. Everything else on a control falls through to
   // renderExtraFields below.
   const RENDERED_CONTROL_FIELDS = new Set([
-    'id', 'domain', 'domainKey', 'topicLabel', 'topicSummary', 'citations', 'codeCorroboratedBy',
+    'id', 'domain', 'domainKey', 'topicLabel', 'topicSummary', 'citations',
+    // codeCorroboratedBy and codeVerifiedBy are siblings -- the weaker and stronger provenance
+    // claim on the same identifier. Both belong here; listing only one made every SOC 2 and CMMC
+    // control print its verification URL as "Additional detail" on every card.
+    'codeCorroboratedBy', 'codeVerifiedBy',
     'assessment', 'evidence', 'roadmap', 'statementText', 'statementSource', 'type', 'level',
     'relatedControlCode', 'relatedControlName', 'legacyCategoryPrefix', 'baselineOverlap',
     'nonAuthoritative', 'applicabilityTier', 'reviewNote',

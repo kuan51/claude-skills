@@ -63,6 +63,12 @@ which matched exactly, 110/110. Three specific failures are recorded because eac
 - `pdftotext -layout` collapses the multi-column requirement pages, scrambling 3.1.6–3.1.8; xpdf's
   `-simple` mode is what pairs ids with statements correctly.
 
+**Agreeing identifiers prove nothing about the prose beside them**, so the requirement *text* was
+validated separately: the whole set was re-extracted under `-simple2`, an independent typesetting of
+the same pages, and all 110 summaries matched byte for byte. Without that, a requirement truncated at
+a page break would still have passed the "ends in a period" check whenever its first portion happened
+to end a sentence.
+
 ## Sourcing position: a new column
 
 NIST states in each publication that the work *"is not subject to copyright in the United States"*,
@@ -85,10 +91,27 @@ CMMC is the minimal example of the contract: the core needed **zero** changes, a
 changed — `ciso:scope` remains SOC-2-only, because for CMMC the contract's level *is* the scope
 decision and it is made at register time.
 
+## One thing the first pass got wrong
+
+The initial structure files carried four per-control fields that were byte-identical on every
+control: `citations`, `cmmcLevel`, `requirementTextIsVerbatim`, and a per-control copy of the
+file-level citation list. That is the same defect a prior review stripped out of ISO 27001 — and
+worse than the line count, `ADDING-A-CERTIFICATION.md` point 6 renders unknown per-control fields in
+the dashboard's "Additional detail" block, so two of them printed as constant noise on all 134
+control cards. Anything genuinely constant belongs at file level: `sourceAuthority` already carries
+"these are verbatim" and `tier` already carries which level this is. level2 went 1,995 → 1,335 lines,
+and a test now asserts none of them return.
+
+Fixing it surfaced a real template bug: `RENDERED_CONTROL_FIELDS` listed `codeCorroboratedBy` but not
+its sibling `codeVerifiedBy`, so every SOC 2 and CMMC control was printing its verification URL as
+"Additional detail" too. Both are now listed.
+
 ## Verification
 
-295 tests pass across all four locations. End-to-end in a scratch project: init → register `level2`
+296 tests pass across all four locations. End-to-end in a scratch project: init → register `level2`
 and `level3` → assessment gate (rejects `met` without justification) → all four statuses →
 `record-evidence` → `render-dashboard`. The rendered page carries `"total":110` with
 `"applicableTotal":109`, confirming `not_applicable` leaves the compliance denominator while staying
-in the total, and `134`/`133` across the certification.
+in the total, and `134`/`133` across the certification. After the cleanup, `requirementTextIsVerbatim`
+and `cmmcLevel` appear 0 times in the rendered page (from 134 each) while the verbatim requirement
+text, domain rollups and evidence links all still render.

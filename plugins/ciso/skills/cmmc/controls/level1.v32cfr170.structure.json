@@ -20,12 +20,6 @@
       ],
       "topicLabel": "Limit information system access to authorized users",
       "topicSummary": "Limit information system access to authorized users, processes acting on behalf of authorized users, or devices (including other information systems).",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -38,12 +32,6 @@
       ],
       "topicLabel": "Limit information system access to the types",
       "topicSummary": "Limit information system access to the types of transactions and functions that authorized users are permitted to execute.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -56,12 +44,6 @@
       ],
       "topicLabel": "Verify and control/limit connections to and use",
       "topicSummary": "Verify and control/limit connections to and use of external information systems.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -74,12 +56,6 @@
       ],
       "topicLabel": "Control information posted or processed on publicly accessible information systems",
       "topicSummary": "Control information posted or processed on publicly accessible information systems.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -92,12 +68,6 @@
       ],
       "topicLabel": "Identify information system users",
       "topicSummary": "Identify information system users, processes acting on behalf of users, or devices.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -110,12 +80,6 @@
       ],
       "topicLabel": "Authenticate the identities of those users",
       "topicSummary": "Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -128,12 +92,6 @@
       ],
       "topicLabel": "Sanitize or destroy information system media containing Federal",
       "topicSummary": "Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -146,12 +104,6 @@
       ],
       "topicLabel": "Limit physical access to organizational information systems",
       "topicSummary": "Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -164,12 +116,6 @@
       ],
       "topicLabel": "Escort visitors and monitor visitor activity",
       "topicSummary": "Escort visitors and monitor visitor activity; maintain audit logs of physical access; and control and manage physical access devices.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -182,12 +128,6 @@
       ],
       "topicLabel": "Monitor, control, and protect organizational communications",
       "topicSummary": "Monitor, control, and protect organizational communications ( i.e., information transmitted or received by organizational information systems) at the external boundaries and key internal boundaries of the information systems.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -200,12 +140,6 @@
       ],
       "topicLabel": "Implement subnetworks for publicly accessible system components",
       "topicSummary": "Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -218,12 +152,6 @@
       ],
       "topicLabel": "Identify, report, and correct information and information system",
       "topicSummary": "Identify, report, and correct information and information system flaws in a timely manner.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -236,12 +164,6 @@
       ],
       "topicLabel": "Provide protection from malicious code at appropriate locations",
       "topicSummary": "Provide protection from malicious code at appropriate locations within organizational information systems.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -254,12 +176,6 @@
       ],
       "topicLabel": "Update malicious code protection mechanisms",
       "topicSummary": "Update malicious code protection mechanisms when new releases are available.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     },
     {
@@ -272,12 +188,6 @@
       ],
       "topicLabel": "Perform periodic scans of the information system",
       "topicSummary": "Perform periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed.",
-      "requirementTextIsVerbatim": true,
-      "cmmcLevel": 1,
-      "citations": [
-        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "nonAuthoritative": true
     }
   ]

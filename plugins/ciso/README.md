@@ -1,17 +1,19 @@
 # ciso
 
 Organizes work toward security certifications — today **HITRUST CSF** (e1/i1/r2),
-**SOC 2 Type II** and **ISO/IEC 27001:2022** — tracked in persistent, local HTML dashboards you open directly in a browser
-(no server required). Ships only structural control metadata; actual requirement wording and your
-organization's real assessment data are imported/generated per-project and stored only locally,
-gitignored by default — never in this repo.
+**SOC 2 Type II**, **ISO/IEC 27001:2022** and **CMMC** (level1/level2/level3) — tracked in
+persistent, local HTML dashboards you open directly in a browser (no server required). Ships
+structural control metadata, plus verbatim requirement text in the one case where the publisher's
+work carries no copyright (CMMC's NIST and eCFR sources). Licensed or copyrighted requirement
+wording, and your organization's real assessment data, are imported/generated per-project and stored
+only locally, gitignored by default — never in this repo.
 
 Not installed yet? See the [repo root README](../../README.md) for how to add this marketplace
 and install the plugin.
 
 ## When to use it
 
-- You're starting or maintaining a HITRUST CSF, SOC 2 Type II or ISO 27001 effort and want a
+- You're starting or maintaining a HITRUST CSF, SOC 2 Type II, ISO 27001 or CMMC effort and want a
   durable, visual record of where every control stands — not just a chat transcript.
 - You're pursuing more than one. They overlap heavily — SOC 2 and ISO 27001 especially — and one
   dashboard per certification over one shared state file is what makes that overlap visible
@@ -44,7 +46,9 @@ and install the plugin.
    export with the exact requirement wording. SOC 2 sends you to `ciso:scope` next, because which
    Trust Services Categories are in scope decides which criteria even get asked. ISO 27001 registers
    both halves at once — the 30 management-system requirements from clauses 4–10 *and* all 93
-   Annex A controls — since neither is optional.
+   Annex A controls — since neither is optional. CMMC asks which level your *contract* requires
+   (15 requirements at level1, 110 at level2, a further 24 at level3) and registers level2 alongside
+   level3, because the enhanced requirements sit on top of all 110 rather than replacing them.
 4. Run `ciso:interview` — the control-by-control conversation, inside a real plan-mode session and
    chunked so you can stop and resume across sittings. **Under the hood:** for each control it asks
    *met / in progress / gap / not applicable / defer*, and mechanically refuses to record a "met"
@@ -94,6 +98,12 @@ feed in from your own machine.
   sold rather than published: its identifiers were *corroborated* from convergent public sources
   rather than read from ISO's own document (the field is `codeCorroboratedBy`, deliberately not
   SOC 2's `codeVerifiedBy`), and ISO's control titles and clause headings appear nowhere here.
+  **CMMC is the deliberate exception, and it is not a loophole:** NIST states in each of its
+  publications that the work "is not subject to copyright in the United States," and eCFR
+  regulations are US Government works, so that module ships the real requirement text. Note the
+  authority split runs the *opposite* way there — CMMC's `topicSummary` is the requirement itself
+  and its `topicLabel` is our derived shorthand. (PCI DSS was compiled and then dropped for exactly
+  this reason in reverse: its catalog is reachable, but PCI SSC's terms forbid derivative works.)
 - **Your organization's posture never leaves your project.** Assessment status, your written
   justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
   project data. The one flow that reaches the internet — background vendor research for gaps — is

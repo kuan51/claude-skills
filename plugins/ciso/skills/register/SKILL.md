@@ -1,6 +1,6 @@
 ---
 name: register
-description: Use when adding a security certification -- HITRUST CSF, SOC 2, or ISO/IEC 27001 -- to ciso tracking for the first time, loading its control set into docs/ciso/state.json so the controls can then be assessed. This is the setup step that comes before any assessment; use ciso:interview to actually assess the controls it registers.
+description: Use when adding a security certification -- HITRUST CSF, SOC 2, ISO/IEC 27001, or CMMC -- to ciso tracking for the first time, loading its control set into docs/ciso/state.json so the controls can then be assessed. This is the setup step that comes before any assessment; use ciso:interview to actually assess the controls it registers.
 allowed-tools: Read, Bash, AskUserQuestion
 ---
 

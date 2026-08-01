@@ -113,19 +113,34 @@ test('ids are derived from the canonical identifier and namespaced by tier', () 
 
 test('every requirement ships the fields the dashboard and interview depend on', () => {
   for (const s of [level1, level2, level3]) {
+    assert.ok(Array.isArray(s.citations) && s.citations.length > 0, `${s.tier} has no citations`);
     for (const c of s.controls) {
       for (const field of ['id', 'domain', 'domainKey', 'topicLabel', 'topicSummary']) {
         assert.ok(c[field] && String(c[field]).trim().length > 0, `${c.id} is missing ${field}`);
       }
-      assert.ok(Array.isArray(c.citations) && c.citations.length > 0, `${c.id} has no citations`);
+    }
+  }
+});
+
+test('no per-control field repeats a value that is constant across the file', () => {
+  // The ISO compile shipped citations and a corroboration array byte-identical on all 123 controls,
+  // which bloated the file and printed the same row on every dashboard card. Anything genuinely
+  // constant belongs at file level -- `sourceAuthority` already carries "these are verbatim", and
+  // `tier` already carries which CMMC level this is.
+  for (const s of [level1, level2, level3]) {
+    for (const c of s.controls) {
+      assert.equal(c.citations, undefined, `${c.id} repeats the file-level citations`);
+      assert.equal(c.requirementTextIsVerbatim, undefined, `${c.id} duplicates sourceAuthority`);
+      assert.equal(c.cmmcLevel, undefined, `${c.id} duplicates the tier`);
     }
   }
 });
 
 test('the requirement text is verbatim, and the derived label is never mistaken for it', () => {
   for (const s of [level1, level2, level3]) {
+    // The verbatim claim is made once, at file level, not repeated on every control.
+    assert.equal(s.sourceAuthority, 'publisher-verbatim');
     for (const c of s.controls) {
-      assert.equal(c.requirementTextIsVerbatim, true, `${c.id} does not claim verbatim text`);
       // Verbatim regulatory text is a complete sentence. A fragment means the extractor truncated.
       assert.match(c.topicSummary, /\.\s*$/, `${c.id}'s summary is not a complete sentence`);
       // Labels are ours, cut from the requirement's opening clause -- they must never end on a
