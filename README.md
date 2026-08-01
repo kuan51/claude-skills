@@ -26,8 +26,11 @@ so it picks up the newly installed plugin.
   data science project: independently re-derives findings from raw data and code, then checks
   whether the project's own stated conclusions hold up.
 - **[ciso](plugins/ciso/)** — organizes work toward security certifications (HITRUST CSF,
-  SOC 2 Type II and ISO/IEC 27001:2022), tracked via persistent local HTML dashboards: an index
-  across every supported certification, plus a page for each.
+  SOC 2 Type II and ISO/IEC 27001:2022) alongside the development work that satisfies them.
+  Action-oriented verbs — register a control set, run the assessment interview, review a PR for
+  control impact, attach a merged PR or CI run as evidence, audit how ready you actually are —
+  tracked via persistent local HTML dashboards: an index across every supported certification,
+  plus a page for each.
 
 ## Adding a new plugin
 

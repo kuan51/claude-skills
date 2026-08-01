@@ -1,6 +1,6 @@
 # Scope (flow b)
 
-Read this when the routing step in `../SKILL.md` picks Scope (the `type2` tier exists but its `scope` is missing or incomplete).
+Read this when `ciso:scope` dispatches here (the `type2` tier exists but its `scope` is missing or incomplete).
 
 Scope is the set of decisions made **before** any criterion is assessed. It is worth its own flow because SOC 2 engagements fail on scope more often than on any single control: scope too broad and cost and timeline balloon; too narrow and the report omits a system where customer data actually lives, which the service auditor will find.
 

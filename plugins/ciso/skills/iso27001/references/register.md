@@ -1,6 +1,6 @@
 # Register (flow a)
 
-Read this when the routing step in `../SKILL.md` picks Register (the `isms` tier is missing from state).
+Read this when `ciso:register` dispatches here (the `isms` tier is missing from state).
 
 Run:
 ```
@@ -13,5 +13,5 @@ This merges the 123 shipped entries into `<docs/ciso-dir>/state.json` and create
 After registering:
 
 1. Tell the user it's done, with the split broken out: **30 management-system clause requirements** (clauses 4-10, `CL4`-`CL10`) and **93 Annex A controls** (`A5` 37, `A6` 8, `A7` 14, `A8` 34). Say plainly that both halves are assessed and neither is optional -- an org that has "done the controls" but not the clauses is not certifiable, and clause work is where first attempts most often stall.
-2. **Restate the authority caveat from `../SKILL.md`** -- ISO 27001 is sold rather than published, so identifiers were *corroborated*, not *verified*, and every label and summary is our paraphrase rather than ISO's wording. Mention the 30-vs-34 clause granularity convention here rather than waiting for a user to notice a mismatch with their certification body's checklist.
+2. **Restate the authority caveat from `invariants.md`** -- ISO 27001 is sold rather than published, so identifiers were *corroborated*, not *verified*, and every label and summary is our paraphrase rather than ISO's wording. Mention the 30-vs-34 clause granularity convention here rather than waiting for a user to notice a mismatch with their certification body's checklist.
 3. Continue into [Interview](interview.md). Unlike SOC 2 there is no scope step to run first.

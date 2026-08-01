@@ -54,6 +54,13 @@ function defaultControl(entry, sourceAuthority, tierKey) {
     statementText: null,
     statementSource: sourceAuthority || 'structural-only',
     assessment,
+    // Development artifacts supporting this control -- PRs, commits, CI runs, scans, documents.
+    // Written only by _shared/record-evidence.js, and deliberately a sibling of `assessment`
+    // rather than a field inside it: the two are independent axes, which is what lets ciso:audit
+    // report a control marked "met" with nothing behind it. Controls registered before this field
+    // existed simply have no `evidence` key; every reader treats absent as empty, so there is no
+    // migration step for tracking data already sitting in a project's gitignored docs/ciso/.
+    evidence: [],
     roadmap: {
       budgetTier: null,
       vendorResearch: [],

@@ -1,6 +1,6 @@
 # Roadmap (flow c)
 
-Read this when the routing step in `../SKILL.md` offers Roadmap, or when running Roadmap standalone. Available as soon as ANY completed domain has un-researched gaps -- not gated on the whole tier finishing. **Runs in the background:** launched fire-and-forget so it never blocks the interview, with findings merged in whenever it finishes.
+Read this when `ciso:roadmap` dispatches here. Available as soon as ANY completed domain has un-researched gaps -- not gated on the whole tier finishing. **Runs in the background:** launched fire-and-forget so it never blocks the interview, with findings merged in whenever it finishes.
 
 The roadmap workflow is certification-agnostic core (see `ADDING-A-CERTIFICATION.md`); it lives under `skills/hitrust/lib/roadmap/` for historical reasons and needs no ISO-specific variant.
 

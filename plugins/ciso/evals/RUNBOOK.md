@@ -7,14 +7,18 @@ cares about -- a skill that *under-triggers* (misses a query it should own) and 
 
 ## What's in scope
 
-The three **model-invocable** skills: `init`, `hitrust`, and `soc2`. `hitrust-controls-compiler` is
+The eleven **model-invocable** verbs: `init`, `register`, `scope`, `import`, `interview`, `roadmap`,
+`upgrade`, `review`, `evidence`, `audit`, and `sync-tasks`. `hitrust-controls-compiler` is
 `disable-model-invocation` (maintainer-only, invoked explicitly as `/ciso:hitrust-controls-compiler`),
 so it must never be auto-selected -- queries about its job live in the corpus as negatives
 (`expected: null`), which doubles as a check that it stays out of the auto-trigger pool.
 `sync-tasks` is likewise excluded: it is invoked explicitly, never as part of an assessment flow.
 
-**With two certification skills, cross-selection is the failure mode that matters most.** A query
-naming one framework must never select the other -- `hitrust` and `soc2` have adjacent descriptions
+**With a verb surface, verb confusion is the failure mode that matters most.** Naming a
+certification no longer picks a skill -- every verb resolves the certification at runtime -- so the
+risk moved to adjacent verbs: `interview` (record a status) vs `audit` (report on statuses already
+recorded) vs `review` (read a code change) vs `evidence` (attach an artifact without changing a
+status), and `register` vs `init`. These have adjacent descriptions
 (both register control sets, run interviews, research vendor gaps) and differ mainly by framework
 name. The corpus carries queries naming *both* frameworks in each direction, and
 `test/corpus-shape.test.js` fails if they are ever dropped.
@@ -23,10 +27,10 @@ name. The corpus carries queries naming *both* frameworks in each direction, and
 
 `trigger-corpus.json` -> `queries[]`, each `{ query, expected, category }`:
 
-- `expected`: `"init"`, `"hitrust"`, `"soc2"`, or `null` (no ciso skill should fire).
+- `expected`: any verb name from the corpus's `expectedValues`, or `null` (no ciso skill should fire).
 - `category`: `explicit` (names the skill/action), `implicit` (describes the need), `contextual`
-  (assumes project state), `disambiguation` (plausibly confusable between two ciso skills -- init vs
-  a certification skill, or hitrust vs soc2), or `negative` (shares keywords with a skill but should
+  (assumes project state), `disambiguation` (plausibly confusable between two ciso verbs -- init vs
+  register, interview vs audit, review vs evidence), or `negative` (shares keywords with a skill but should
   trigger neither -- adjacent intent, not random noise, per the rubric).
 
 `corpus-shape.test.js` validates the corpus is well-formed (run via `node --test`); it does **not**
@@ -40,9 +44,10 @@ The repo can't self-run model-in-the-loop scoring cheaply, so this is a manual/h
    represented in both). Iterate skill descriptions only against the tuning set; report the number
    from the held-out set.
 2. For each held-out query, start a **fresh** Claude Code session in a project where ciso is
-   installed (and, for `contextual`/`hitrust`/`soc2` queries, where `docs/ciso/state.json` already
-   exists), paste the query, and record which skill Claude auto-invokes (or none). For the
-   hitrust-vs-soc2 disambiguation queries, seed `state.json` with **both** certifications
+   installed (and, for `contextual` queries and any verb other than `init`, where
+   `docs/ciso/state.json` already exists **with a certification registered**), paste the query, and
+   record which skill Claude auto-invokes (or none). For queries naming a certification, seed
+   `state.json` with **more than one** certification
    registered -- a query like "add SOC 2 alongside it" only tests what it claims to if the other
    certification is actually present.
 3. **Run each query 3x** -- single runs are too noisy. Take the majority selection.
@@ -59,7 +64,7 @@ The repo can't self-run model-in-the-loop scoring cheaply, so this is a manual/h
 ## When to re-run
 
 After any change to a skill's `name`/`description`, after adding a skill (new trigger space can
-steal selections), or when a HITRUST framework version bump reshapes the `hitrust` description.
+steal selections), or when a framework version bump reshapes a verb's description.
 
 **Adding a certification skill is the highest-risk case**: it does not merely add trigger space, it
 competes directly with every existing certification skill, whose descriptions all say some version

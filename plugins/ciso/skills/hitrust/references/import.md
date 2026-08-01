@@ -1,6 +1,6 @@
 # Import (flow b)
 
-Read this when the routing step in `../SKILL.md` offers Import. Optional but strongly recommended before running the interview -- without it, controls only carry a short topic label/summary, not the actual requirement wording.
+Read this when `ciso:import` dispatches here. Optional but strongly recommended before running the interview -- without it, controls only carry a short topic label/summary, not the actual requirement wording.
 
 1. Ask the user, conversationally, for the absolute path to their MyCSF `<tier>` requirements export (a `.xlsx` file). Validate the path exists and ends in `.xlsx`; if not, say so and ask again.
 2. For **e1**, run:

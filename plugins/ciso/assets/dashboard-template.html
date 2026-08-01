@@ -342,6 +342,9 @@
   }
   .roadmap-row { display: flex; gap: 10px; font-size: 13.5px; margin-bottom: 5px; flex-wrap: wrap; }
   .roadmap-label { color: var(--paper-faint); min-width: 130px; font-family: var(--mono); font-size: 11px; }
+  /* Nested object inside an Additional-detail row (sync-tasks' tracker, and its r2 subtasks one
+     level deeper). Grows the row into a block so the inner labels line up under their parent. */
+  .roadmap-nested { flex: 1 1 100%; padding-left: 12px; border-left: 1px solid var(--line); }
   .roadmap-list { margin: 2px 0 0 20px; padding: 0; }
 
   .no-matches { padding: 16px 18px; color: var(--paper-faint); font-style: italic; }
@@ -536,9 +539,21 @@ const CISO_DATA = /*__CISO_DATA__*/null;
         return '<div class="roadmap-row"><span class="roadmap-label">' + esc(label) + '</span>' +
           '<ul class="roadmap-list">' + items + '</ul></div>';
       }
+      // A plain object recurses rather than hitting esc(String(value)) below, which stringifies to
+      // the useless "[object Object]". sync-tasks' `tracker` is exactly this shape, and its r2
+      // `subtasks` nests one level deeper -- so this has to recurse, not special-case the top
+      // level, or the same bug reappears one level in.
+      if (value && typeof value === 'object') {
+        return '<div class="roadmap-row"><span class="roadmap-label">' + esc(label) + '</span>' +
+          '<div class="roadmap-nested">' + renderKeyValueRows(value) + '</div></div>';
+      }
+      // linkify() rather than esc() for the same reason the array branch above uses it: it is a
+      // strict superset -- only ^https?:// becomes an anchor, everything else falls through to
+      // esc() unchanged -- so a scalar URL (tracker.url, say) is clickable without weakening the
+      // javascript:-URL protection on anything that isn't one.
       const display = (value === null || value === undefined || value === '')
         ? '<span class="placeholder">Not set</span>'
-        : esc(String(value));
+        : linkify(value);
       return '<div class="roadmap-row"><span class="roadmap-label">' + esc(label) + '</span><span>' + display + '</span></div>';
     }).join('');
   }
@@ -559,7 +574,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
   // renderExtraFields below.
   const RENDERED_CONTROL_FIELDS = new Set([
     'id', 'domain', 'domainKey', 'topicLabel', 'topicSummary', 'citations', 'codeCorroboratedBy',
-    'assessment', 'roadmap', 'statementText', 'statementSource', 'type', 'level',
+    'assessment', 'evidence', 'roadmap', 'statementText', 'statementSource', 'type', 'level',
     'relatedControlCode', 'relatedControlName', 'legacyCategoryPrefix', 'baselineOverlap',
     'nonAuthoritative', 'applicabilityTier', 'reviewNote',
   ]);
@@ -639,6 +654,35 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     return html;
   }
 
+  // Development artifacts backing this control, written by _shared/record-evidence.js. Rendered
+  // explicitly here, which is why 'evidence' is in RENDERED_CONTROL_FIELDS above -- the two go
+  // together, or the block either duplicates or vanishes.
+  //
+  // The empty case is deliberately not silent for a control claiming met/in-progress: "met" with
+  // nothing behind it is exactly what ciso:audit flags, so the dashboard says it too.
+  function renderEvidence(evidence, status) {
+    const records = Array.isArray(evidence) ? evidence : [];
+
+    if (records.length === 0) {
+      if (status !== 'met' && status !== 'in_progress') return '';
+      return '<div class="control-field"><span class="field-label">Evidence</span>' +
+        '<span class="placeholder">No evidence recorded -- attach a PR, commit, CI run or document with <code>ciso:evidence</code>.</span></div>';
+    }
+
+    const items = records.map(function (record) {
+      if (!record || typeof record !== 'object') return '<li>' + esc(String(record)) + '</li>';
+      // linkify() rather than esc() on ref: it renders http(s) URLs as links and falls back to
+      // esc() for a bare path or commit SHA, keeping the javascript:-URL protection either way.
+      let line = '<span class="tag">' + esc(humanize(record.kind || 'unknown')) + '</span> ' + linkify(record.ref || '');
+      if (record.summary) line += '<div>' + esc(record.summary) + '</div>';
+      if (record.recordedAt) line += '<div class="non-auth-note">Recorded ' + esc(record.recordedAt) + '</div>';
+      return '<li>' + line + '</li>';
+    }).join('');
+
+    return '<div class="control-field"><span class="field-label">Evidence</span>' +
+      '<ul class="citation-list">' + items + '</ul></div>';
+  }
+
   function renderControlRow(control) {
     const assessment = effectiveAssessment(control);
     const status = assessment.status;
@@ -713,6 +757,8 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     if (assessment.assessedAt) {
       html += '<div class="control-field mono"><span class="field-label" style="font-family:var(--mono)">Assessed at</span>' + esc(assessment.assessedAt) + '</div>';
     }
+
+    html += renderEvidence(control.evidence, status);
 
     if (control.assessment && control.assessment.maturity) {
       html += renderMaturityBreakdown(control.assessment.maturity);
@@ -955,7 +1001,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
 
     if (entries.length === 0) {
       overview.innerHTML = '<div class="empty-state">No certifications tracked yet, and this plugin\'s ' +
-        'certification catalog is empty. Run <code>ciso:hitrust</code> to register HITRUST CSF.</div>';
+        'certification catalog is empty. Run <code>ciso:register</code> to add one.</div>';
       return;
     }
 

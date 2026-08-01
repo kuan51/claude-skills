@@ -395,8 +395,8 @@ test('a control with no extra fields renders no extra-fields block at all', () =
 // ---------------------------------------------------------------------------
 
 const TEST_CATALOG = [
-  { certKey: 'hitrust', displayName: 'HITRUST CSF', skill: 'ciso:hitrust', tiers: ['e1'], summary: 'Healthcare harmonizing framework.' },
-  { certKey: 'soc2', displayName: 'SOC 2 Type II', skill: 'ciso:soc2', tiers: ['type2'], summary: 'AICPA Trust Services Criteria.' },
+  { certKey: 'hitrust', displayName: 'HITRUST CSF', skill: 'ciso:register', tiers: ['e1'], summary: 'Healthcare harmonizing framework.' },
+  { certKey: 'soc2', displayName: 'SOC 2 Type II', skill: 'ciso:register', tiers: ['type2'], summary: 'AICPA Trust Services Criteria.' },
 ];
 
 test('index view: a tracked certification links to its own page; an untracked one names the skill that starts it', () => {
@@ -408,7 +408,7 @@ test('index view: a tracked certification links to its own page; an untracked on
 
   assert.ok(overviewHtml.includes('SOC 2 Type II'), 'a catalog certification this project does not track must still appear');
   assert.ok(overviewHtml.includes('not tracked yet'));
-  assert.ok(overviewHtml.includes('ciso:soc2'), 'an untracked card must name the skill that would start it');
+  assert.ok(overviewHtml.includes('ciso:register'), 'an untracked card must name the verb that would start it');
   assert.ok(!overviewHtml.includes('href="cert-soc2.html"'), 'an untracked certification has no page to link to');
 
   assert.equal(drilldownsHtml, '', 'the index renders no control drilldowns');
@@ -448,4 +448,102 @@ test('index view: the certification page title and the index title differ, so br
   const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
   assert.notEqual(renderIndexClientSide(state, TEST_CATALOG).title, renderClientSide(state).title);
   assert.ok(renderClientSide(state).title.includes('HITRUST CSF'));
+});
+
+// ---------------------------------------------------------------------------
+// Evidence records, and the nested-object fallback that renders sync-tasks' tracker
+// ---------------------------------------------------------------------------
+
+test('evidence: records render with kind, a linkified ref and the summary', () => {
+  const state = baseState({
+    c1: makeControl({
+      id: 'e1-11-01',
+      assessment: { status: 'met', justification: 'Enforced in CI.', inProgress: {}, assessedAt: '2026-01-01T00:00:00.000Z' },
+      evidence: [
+        { kind: 'pr', ref: 'https://github.com/example/repo/pull/123', summary: 'Adds audit logging', recordedAt: '2026-02-01T00:00:00.000Z' },
+        { kind: 'ci-run', ref: 'build-4471', summary: 'Log assertions green on main', recordedAt: '2026-02-02T00:00:00.000Z' },
+      ],
+    }),
+  });
+
+  const { drilldownsHtml } = renderClientSide(state);
+
+  assert.ok(drilldownsHtml.includes('Evidence'), 'the evidence block must be labelled');
+  assert.ok(drilldownsHtml.includes('Adds audit logging'));
+  assert.ok(drilldownsHtml.includes('Log assertions green on main'));
+  assert.ok(
+    drilldownsHtml.includes('href="https://github.com/example/repo/pull/123"'),
+    'an http(s) ref must become a clickable link'
+  );
+  assert.ok(drilldownsHtml.includes('build-4471'), 'a non-URL ref must still render as text');
+  assert.ok(drilldownsHtml.includes('Ci Run') || drilldownsHtml.includes('Ci-run'), 'the kind must be shown');
+});
+
+test('evidence: a met control with none says so, rather than looking identical to an evidenced one', () => {
+  const evidenced = baseState({
+    c1: makeControl({
+      id: 'e1-11-01',
+      assessment: { status: 'met', justification: 'Enforced in CI.', inProgress: {}, assessedAt: '2026-01-01T00:00:00.000Z' },
+      evidence: [{ kind: 'pr', ref: 'https://example.com/pr/1', summary: 'Does the thing', recordedAt: '2026-02-01T00:00:00.000Z' }],
+    }),
+  });
+  const bare = baseState({
+    c1: makeControl({
+      id: 'e1-11-01',
+      assessment: { status: 'met', justification: 'Enforced in CI.', inProgress: {}, assessedAt: '2026-01-01T00:00:00.000Z' },
+      evidence: [],
+    }),
+  });
+
+  assert.ok(renderClientSide(bare).drilldownsHtml.includes('No evidence recorded'));
+  assert.ok(!renderClientSide(evidenced).drilldownsHtml.includes('No evidence recorded'));
+});
+
+test('evidence: an unassessed control is not nagged about missing evidence', () => {
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01', evidence: [] }) });
+  assert.ok(!renderClientSide(state).drilldownsHtml.includes('No evidence recorded'));
+});
+
+test('evidence: a control registered before the field existed renders as if empty', () => {
+  const control = makeControl({ id: 'e1-11-01' });
+  delete control.evidence;
+  assert.doesNotThrow(() => renderClientSide(baseState({ c1: control })));
+});
+
+test('evidence: renders once -- explicitly, never also via the extra-fields fallback', () => {
+  const state = baseState({
+    c1: makeControl({
+      id: 'e1-11-01',
+      assessment: { status: 'met', justification: 'Enforced in CI.', inProgress: {}, assessedAt: '2026-01-01T00:00:00.000Z' },
+      evidence: [{ kind: 'pr', ref: 'https://example.com/pr/1', summary: 'Uniquely worded summary', recordedAt: '2026-02-01T00:00:00.000Z' }],
+    }),
+  });
+
+  const { drilldownsHtml } = renderClientSide(state);
+  const occurrences = drilldownsHtml.split('Uniquely worded summary').length - 1;
+  assert.equal(occurrences, 1, 'evidence is in RENDERED_CONTROL_FIELDS, so the fallback must not render it a second time');
+});
+
+test('extra fields: a nested object renders its keys, never the string "[object Object]"', () => {
+  // sync-tasks writes `tracker` as a plain object, and r2 nests `subtasks` one level deeper.
+  // Both used to hit esc(String(value)) and render as "[object Object]".
+  const state = baseState({
+    c1: makeControl({
+      id: 'e1-11-01',
+      tracker: {
+        system: 'jira',
+        id: 'SEC-412',
+        url: 'https://example.atlassian.net/browse/SEC-412',
+        status: 'open',
+        subtasks: { implemented: { id: 'SEC-413', status: 'open' } },
+      },
+    }),
+  });
+
+  const { drilldownsHtml } = renderClientSide(state);
+
+  assert.ok(!drilldownsHtml.includes('[object Object]'), 'a nested object must never stringify to [object Object]');
+  assert.ok(drilldownsHtml.includes('SEC-412'), 'the tracker id must be visible');
+  assert.ok(drilldownsHtml.includes('SEC-413'), 'a nested subtask must recurse, not stop at the top level');
+  assert.ok(drilldownsHtml.includes('href="https://example.atlassian.net/browse/SEC-412"'), 'the ticket URL must be clickable');
 });

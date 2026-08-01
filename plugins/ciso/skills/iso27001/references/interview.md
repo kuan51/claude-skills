@@ -1,6 +1,6 @@
 # Interview (flow b)
 
-Read this when the routing step in `../SKILL.md` picks Interview. The core discipline invariants are summarized in `../SKILL.md`; the full mechanics are here.
+Read this when `ciso:interview` dispatches here. The core discipline invariants live in `invariants.md`, which that verb reads first; the full mechanics are here.
 
 Resumable, chunked by `domainKey` (`CL4`-`CL10` for the clauses, `A5`-`A8` for the Annex A themes) and, within each chunk, committed in sub-batches of 4-6 requirements at a time rather than as one whole-domain commit. **Must run inside native plan mode** -- a firm requirement, not a style choice: each sub-batch only counts as "committed" once the user approves it via `ExitPlanMode`.
 

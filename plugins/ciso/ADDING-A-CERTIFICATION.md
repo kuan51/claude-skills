@@ -33,15 +33,18 @@ with `Object.keys`, and needs no code change to serve another certification:
 | Record an assessment (mechanical gate: no "met" without justification) | `skills/hitrust/lib/apply-assessment.js` (`applyAssessment(statePath, certKey, tier, id, payload)`) |
 | Merge background vendor research | `skills/hitrust/lib/roadmap/merge-roadmap.js`, `roadmap/workflow.js`, `roadmap/sanitize-control.js` |
 | Reconcile a control-set version bump | `skills/hitrust/lib/versioning/*.js` |
+| Attach evidence (a PR, commit, CI run, scan, doc) to a control | `skills/_shared/record-evidence.js` (`recordEvidence(statePath, certKey, tier, id, record)`) |
 | Render the dashboards (generic rollups over every cert/tier/domain) | `skills/_shared/render-dashboard.js` + `assets/dashboard-template.html` |
 | The catalog of certifications the meta index advertises | `assets/certifications.json` |
+| **Every org-facing verb** (`register`, `scope`, `import`, `interview`, `roadmap`, `upgrade`, `review`, `evidence`, `audit`) | `skills/<verb>/SKILL.md` -- generic, resolves `certKey` at runtime |
 
 **Per-certification module** — provide these for each certification:
 
 | Concern | HITRUST | SOC 2 |
 |---|---|---|
 | The control data (shipped, public, non-authoritative) | `skills/hitrust/controls/*.structure.json` | `skills/soc2/controls/type2.v2017tsc.structure.json` |
-| The org-facing flow | `skills/hitrust/SKILL.md` + `references/` (register/import/interview/roadmap/upgrade) | `skills/soc2/SKILL.md` + `references/` (register/scope/interview/roadmap) |
+| **Always-loaded invariants** (content authority, core discipline) -- **required** | `skills/hitrust/references/invariants.md` | `skills/soc2/references/invariants.md` |
+| One reference file per verb the certification supports | `references/` (register/import/interview/roadmap/upgrade + r2-maturity) | `references/` (register/scope/interview/roadmap) |
 | Whatever per-certification writer the flow needs | `lib/merge-import.js` + `lib/xlsx-lite.js` (MyCSF export import) | `lib/record-scope.js` (engagement scope) |
 | Maintainer compile of the shipped structure | `skills/hitrust-controls-compiler/` | *(none — hand-compiled; see above)* |
 | Research/verification agent personas | `agents/` (fixed roster -- see note) | *(none — reuses `vendor-researcher`)* |
@@ -172,14 +175,35 @@ few years and rots faster than twenty lines can be rewritten.
 5. **List yourself in `assets/certifications.json`** -- `{ certKey, displayName, skill, tiers,
    summary }`. This is what the meta index (`dashboard.html`) renders a card from, including for a
    project that hasn't registered you yet, where the card shows your `summary` and tells the user to
-   run your `skill`. `certKey` must equal your skill's directory name and be `[a-z0-9-]` only;
+   run your `skill` (`ciso:register` for every certification today). `certKey` must equal your
+   module's directory name under `skills/` and be `[a-z0-9-]` only;
    `test/certifications-catalog.test.js` enforces both directions (every shipped
    `<tier>.v*.structure.json` is claimed by an entry, and every declared tier ships a file).
 6. **Render** with `render-dashboard.js` -- it discovers your certification/tiers/domains
    automatically and writes your page as `cert-<certKey>.html`. Per-control fields it doesn't know
    about (SOC 2's `requiredPolicies`/`evidenceExamples`, say) render automatically in an "Additional
    detail" block, so shipping richer control data needs no template change.
-7. Write your own org-facing `SKILL.md` (model your routing on `skills/hitrust/SKILL.md`).
+7. **Ship `references/invariants.md`, plus one reference file per verb you support.**
+   **Do not write a `SKILL.md`** -- a certification module is not a skill. The org-facing surface is
+   verbs (`ciso:register`, `ciso:interview`, ...), and each one resolves `certKey` at runtime and
+   then reads `skills/<certKey>/references/<verb>.md`. Adding a certification therefore adds **zero**
+   skills.
+
+   `references/invariants.md` is mandatory and is the one file every verb reads, on every
+   invocation, immediately after resolving `certKey`. It carries what used to live in a
+   certification's always-loaded `SKILL.md`: the content-authority statements (what your shipped
+   control set is and is not, and what must be said to the user before they rely on it) and your
+   core discipline. A verb-first surface has many entry points instead of one, so this file is the
+   only thing standing between a user and acting on a non-authoritative control set without being
+   told it is one. `test/skills-frontmatter.test.js` enforces that it exists, that no certification
+   module ships a `SKILL.md`, and that every cert-aware verb still reads it.
+
+   Only ship a reference file for a verb your certification actually supports. `ciso:scope` is SOC 2
+   only; `ciso:import` and `ciso:upgrade` are HITRUST only. A verb with no matching file says so
+   plainly and names the certifications that do support it -- do not scaffold an empty file to make
+   the matrix look full. `ciso:review`, `ciso:evidence` and `ciso:audit` read assessment data rather
+   than certification mechanics and need no reference file at all (with one exception: `ciso:audit`
+   reads `iso27001/references/soa.md` when producing ISO's Statement of Applicability).
 
 ## What a clean split ("option a") would still move
 

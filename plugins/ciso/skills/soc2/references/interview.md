@@ -1,6 +1,6 @@
 # Interview (flow c)
 
-Read this when the routing step in `../SKILL.md` picks Interview. The core discipline invariants are summarized in `../SKILL.md`; the full mechanics are here.
+Read this when `ciso:interview` dispatches here. The core discipline invariants live in `invariants.md`, which that verb reads first; the full mechanics are here.
 
 Resumable, chunked by `domainKey` (the criteria family: `CC1`-`CC9`, `A1`, `C1`, `PI1`, and `P1`-`P8`) and, within each chunk, committed in sub-batches of 4-6 criteria at a time rather than as one whole-family commit. **Must run inside native plan mode** -- a firm requirement, not a style choice: each sub-batch only counts as "committed" once the user approves it via `ExitPlanMode`.
 
