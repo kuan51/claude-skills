@@ -1,0 +1,1335 @@
+{
+  "tier": "level2",
+  "controlSetVersion": "v32cfr170",
+  "sourceAuthority": "publisher-verbatim",
+  "nonAuthoritative": true,
+  "compiledAt": "2026-07-31T00:00:00.000Z",
+  "coverageNote": "CMMC Level 2: all 110 security requirements of NIST SP 800-171 Revision 2, which 32 CFR 170.14(c)(2) states \"are identical to the requirements in NIST SP 800-171 R2.\" What is solid here, stated plainly: (1) Every topicSummary is the VERBATIM requirement text from NIST SP 800-171 R2, extracted from the NIST-hosted PDF at nvlpubs.nist.gov. NIST states in that document that it \"is not subject to copyright in the United States,\" so unlike the HITRUST, SOC 2 and ISO 27001 modules this one ships the authoritative wording rather than a paraphrase. Attribution to NIST is requested by NIST and is carried in every citation. (2) The enumeration is 110 requirements across 14 families (3.1 Access Control 22, 3.2 Awareness and Training 3, 3.3 Audit and Accountability 9, 3.4 Configuration Management 9, 3.5 Identification and Authentication 11, 3.6 Incident Response 3, 3.7 Maintenance 6, 3.8 Media Protection 9, 3.9 Personnel Security 2, 3.10 Physical Protection 6, 3.11 Risk Assessment 3, 3.12 Security Assessment 4, 3.13 System and Communications Protection 16, 3.14 System and Information Integrity 7). It was cross-checked against the document's own Appendix D mapping tables -- an independently typeset listing of the same identifiers elsewhere in the publication -- and the two sets matched exactly, 110 of 110, with no id in one and not the other. Three extraction traps are recorded because each would have shipped confident wrong output: the running footer merges into some requirement lines and silently swallowed 3.1.5; a 1..n sequentiality check cannot detect a missing LAST child, so it is not sufficient on its own; and pdftotext -layout collapses the multi-column requirement pages, scrambling 3.1.6 through 3.1.8 -- -simple mode is what pairs ids with their statements correctly. The requirement TEXT was validated separately from the identifiers, because agreeing ids prove nothing about the prose beside them: the whole set was re-extracted under pdftotext -simple2, an independent typesetting of the same pages, and all 110 summaries matched byte for byte. (3) Every topicLabel is DERIVED, cut from the requirement's own opening clause. Revision 2 gives no per-requirement titles (Revision 3 does), so these are ours: readable, but carrying no authority. Read the topicSummary for the requirement itself. (4) IMPORTANT VERSION TRAP: NIST WITHDREW SP 800-171 R2 on 14 May 2024 and superseded it with Revision 3. CMMC still binds Revision 2 -- 32 CFR 170.2 incorporates it by reference, and the rule was not updated to R3. An organization that assesses itself against the current NIST publication is assessing against the wrong control set for CMMC purposes. This module deliberately tracks the withdrawn R2 because that is what the regulation requires. (5) Level 2 applies to CUI and is validated either by a C3PAO certification assessment or, for a subset of programs, by self-assessment -- which one applies is set by your contract, not by this tool. Confirm scope, level and assessment type with your contracting officer and your C3PAO.",
+  "citations": [
+    "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170",
+    "https://doi.org/10.6028/NIST.SP.800-171r2",
+    "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-171r2.pdf"
+  ],
+  "controls": [
+    {
+      "id": "cmmc-l2-3.1.1",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Limit system access to authorized users",
+      "topicSummary": "Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.2",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Limit system access to the types of transactions and functions",
+      "topicSummary": "Limit system access to the types of transactions and functions that authorized users are permitted to execute.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.3",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control the flow of CUI",
+      "topicSummary": "Control the flow of CUI in accordance with approved authorizations.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.4",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Separate the duties of individuals to reduce",
+      "topicSummary": "Separate the duties of individuals to reduce the risk of malevolent activity without collusion.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.5",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Employ the principle of least privilege",
+      "topicSummary": "Employ the principle of least privilege, including for specific security functions and privileged accounts.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.6",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Use non-privileged accounts or roles",
+      "topicSummary": "Use non-privileged accounts or roles when accessing nonsecurity functions.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.7",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.7",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Prevent non-privileged users from executing privileged functions",
+      "topicSummary": "Prevent non-privileged users from executing privileged functions and capture the execution of such functions in audit logs.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.8",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.8",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Limit unsuccessful logon attempts",
+      "topicSummary": "Limit unsuccessful logon attempts.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.9",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.9",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Provide privacy and security notices consistent with applicable CUI rules",
+      "topicSummary": "Provide privacy and security notices consistent with applicable CUI rules.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.10",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.10",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Use session lock with pattern-hiding displays to prevent",
+      "topicSummary": "Use session lock with pattern-hiding displays to prevent access and viewing of data after a period of inactivity.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.11",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.11",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Terminate a user session after a defined condition",
+      "topicSummary": "Terminate (automatically) a user session after a defined condition.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.12",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.12",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Monitor and control remote access sessions",
+      "topicSummary": "Monitor and control remote access sessions.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.13",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.13",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Employ cryptographic mechanisms to protect the confidentiality",
+      "topicSummary": "Employ cryptographic mechanisms to protect the confidentiality of remote access sessions.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.14",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.14",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Route remote access via managed access control points",
+      "topicSummary": "Route remote access via managed access control points.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.15",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.15",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Authorize remote execution of privileged commands and remote",
+      "topicSummary": "Authorize remote execution of privileged commands and remote access to security-relevant information.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.16",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.16",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Authorize wireless access prior to allowing such connections",
+      "topicSummary": "Authorize wireless access prior to allowing such connections.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.17",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.17",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Protect wireless access using authentication and encryption",
+      "topicSummary": "Protect wireless access using authentication and encryption.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.18",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.18",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control connection of mobile devices",
+      "topicSummary": "Control connection of mobile devices.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.19",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.19",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Encrypt CUI on mobile devices and mobile computing platforms",
+      "topicSummary": "Encrypt CUI on mobile devices and mobile computing platforms.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.20",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.20",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Verify and control/limit connections to and use of external systems",
+      "topicSummary": "Verify and control/limit connections to and use of external systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.21",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.21",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Limit use of portable storage devices on external systems",
+      "topicSummary": "Limit use of portable storage devices on external systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.1.22",
+      "domain": "Access Control",
+      "domainKey": "3.1",
+      "relatedControlCode": "3.1.22",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control CUI posted or processed on publicly accessible systems",
+      "topicSummary": "Control CUI posted or processed on publicly accessible systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.2.1",
+      "domain": "Awareness and Training",
+      "domainKey": "3.2",
+      "relatedControlCode": "3.2.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Ensure",
+      "topicSummary": "Ensure that managers, systems administrators, and users of organizational systems are made aware of the security risks associated with their activities and of the applicable policies, standards, and procedures related to the security of those systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.2.2",
+      "domain": "Awareness and Training",
+      "domainKey": "3.2",
+      "relatedControlCode": "3.2.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Ensure",
+      "topicSummary": "Ensure that personnel are trained to carry out their assigned information security-related duties and responsibilities.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.2.3",
+      "domain": "Awareness and Training",
+      "domainKey": "3.2",
+      "relatedControlCode": "3.2.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Provide security awareness training on recognizing and reporting",
+      "topicSummary": "Provide security awareness training on recognizing and reporting potential indicators of insider threat.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.1",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Create and retain system audit logs and records",
+      "topicSummary": "Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.2",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Ensure",
+      "topicSummary": "Ensure that the actions of individual system users can be uniquely traced to those users, so they can be held accountable for their actions.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.3",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Review and update logged events",
+      "topicSummary": "Review and update logged events.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.4",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Alert in the event of an audit logging process failure",
+      "topicSummary": "Alert in the event of an audit logging process failure.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.5",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Correlate audit record review",
+      "topicSummary": "Correlate audit record review, analysis, and reporting processes for investigation and response to indications of unlawful, unauthorized, suspicious, or unusual activity.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.6",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Provide audit record reduction and report generation",
+      "topicSummary": "Provide audit record reduction and report generation to support on-demand analysis and reporting.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.7",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.7",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Provide a system capability",
+      "topicSummary": "Provide a system capability that compares and synchronizes internal system clocks with an authoritative source to generate time stamps for audit records.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.8",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.8",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Protect audit information and audit logging tools from unauthorized access",
+      "topicSummary": "Protect audit information and audit logging tools from unauthorized access, modification, and deletion.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.3.9",
+      "domain": "Audit and Accountability",
+      "domainKey": "3.3",
+      "relatedControlCode": "3.3.9",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Limit management of audit logging functionality",
+      "topicSummary": "Limit management of audit logging functionality to a subset of privileged users.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.1",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Establish and maintain baseline configurations and inventories",
+      "topicSummary": "Establish and maintain baseline configurations and inventories of organizational systems (including hardware, software, firmware, and documentation) throughout the respective system development life cycles.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.2",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Establish and enforce security configuration settings for information",
+      "topicSummary": "Establish and enforce security configuration settings for information technology products employed in organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.3",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Track, review, approve or disapprove, and log changes",
+      "topicSummary": "Track, review, approve or disapprove, and log changes to organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.4",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Analyze the security impact of changes prior to implementation",
+      "topicSummary": "Analyze the security impact of changes prior to implementation.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.5",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Define, document, approve, and enforce physical and logical",
+      "topicSummary": "Define, document, approve, and enforce physical and logical access restrictions associated with changes to organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.6",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Employ the principle of least functionality by configuring",
+      "topicSummary": "Employ the principle of least functionality by configuring organizational systems to provide only essential capabilities.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.7",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.7",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Restrict, disable, or prevent the use of nonessential",
+      "topicSummary": "Restrict, disable, or prevent the use of nonessential programs, functions, ports, protocols, and services.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.8",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.8",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Apply deny-by-exception policy to prevent the use",
+      "topicSummary": "Apply deny-by-exception (blacklisting) policy to prevent the use of unauthorized software or deny-all, permit-by-exception (whitelisting) policy to allow the execution of authorized software.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.4.9",
+      "domain": "Configuration Management",
+      "domainKey": "3.4",
+      "relatedControlCode": "3.4.9",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control and monitor user-installed software",
+      "topicSummary": "Control and monitor user-installed software.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.1",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Identify system users, processes acting on behalf",
+      "topicSummary": "Identify system users, processes acting on behalf of users, and devices.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.2",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Authenticate the identities of users",
+      "topicSummary": "Authenticate (or verify) the identities of users, processes, or devices, as a prerequisite to allowing access to organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.3",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Use multifactor authentication for local and network access",
+      "topicSummary": "Use multifactor authentication for local and network access to privileged accounts and for network access to non-privileged accounts.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.4",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Employ replay-resistant authentication mechanisms for network access",
+      "topicSummary": "Employ replay-resistant authentication mechanisms for network access to privileged and non- privileged accounts.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.5",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Prevent reuse of identifiers for a defined period",
+      "topicSummary": "Prevent reuse of identifiers for a defined period.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.6",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Disable identifiers after a defined period of inactivity",
+      "topicSummary": "Disable identifiers after a defined period of inactivity.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.7",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.7",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Enforce a minimum password complexity and change of characters",
+      "topicSummary": "Enforce a minimum password complexity and change of characters when new passwords are created.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.8",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.8",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Prohibit password reuse for a specified number of generations",
+      "topicSummary": "Prohibit password reuse for a specified number of generations.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.9",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.9",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Allow temporary password use for system logons",
+      "topicSummary": "Allow temporary password use for system logons with an immediate change to a permanent password.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.10",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.10",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Store and transmit only cryptographically-protected passwords",
+      "topicSummary": "Store and transmit only cryptographically-protected passwords.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.5.11",
+      "domain": "Identification and Authentication",
+      "domainKey": "3.5",
+      "relatedControlCode": "3.5.11",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Obscure feedback of authentication information",
+      "topicSummary": "Obscure feedback of authentication information.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.6.1",
+      "domain": "Incident Response",
+      "domainKey": "3.6",
+      "relatedControlCode": "3.6.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Establish an operational incident-handling capability for organizational systems",
+      "topicSummary": "Establish an operational incident-handling capability for organizational systems that includes preparation, detection, analysis, containment, recovery, and user response activities.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.6.2",
+      "domain": "Incident Response",
+      "domainKey": "3.6",
+      "relatedControlCode": "3.6.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Track, document, and report incidents to designated officials",
+      "topicSummary": "Track, document, and report incidents to designated officials and/or authorities both internal and external to the organization.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.6.3",
+      "domain": "Incident Response",
+      "domainKey": "3.6",
+      "relatedControlCode": "3.6.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Test the organizational incident response capability",
+      "topicSummary": "Test the organizational incident response capability.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.7.1",
+      "domain": "Maintenance",
+      "domainKey": "3.7",
+      "relatedControlCode": "3.7.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Perform maintenance on organizational systems",
+      "topicSummary": "Perform maintenance on organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.7.2",
+      "domain": "Maintenance",
+      "domainKey": "3.7",
+      "relatedControlCode": "3.7.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Provide controls on the tools",
+      "topicSummary": "Provide controls on the tools, techniques, mechanisms, and personnel used to conduct system maintenance.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.7.3",
+      "domain": "Maintenance",
+      "domainKey": "3.7",
+      "relatedControlCode": "3.7.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Ensure equipment removed for off-site maintenance is sanitized",
+      "topicSummary": "Ensure equipment removed for off-site maintenance is sanitized of any CUI.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.7.4",
+      "domain": "Maintenance",
+      "domainKey": "3.7",
+      "relatedControlCode": "3.7.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Check media containing diagnostic and test programs",
+      "topicSummary": "Check media containing diagnostic and test programs for malicious code before the media are used in organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.7.5",
+      "domain": "Maintenance",
+      "domainKey": "3.7",
+      "relatedControlCode": "3.7.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Require multifactor authentication to establish nonlocal maintenance sessions",
+      "topicSummary": "Require multifactor authentication to establish nonlocal maintenance sessions via external network connections and terminate such connections when nonlocal maintenance is complete.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.7.6",
+      "domain": "Maintenance",
+      "domainKey": "3.7",
+      "relatedControlCode": "3.7.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Supervise the maintenance activities of maintenance personnel without",
+      "topicSummary": "Supervise the maintenance activities of maintenance personnel without required access authorization.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.1",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Protect system media containing CUI, both paper and digital",
+      "topicSummary": "Protect (i.e., physically control and securely store) system media containing CUI, both paper and digital.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.2",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Limit access to CUI on system media to authorized users",
+      "topicSummary": "Limit access to CUI on system media to authorized users.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.3",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Sanitize or destroy system media containing CUI before",
+      "topicSummary": "Sanitize or destroy system media containing CUI before disposal or release for reuse.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.4",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Mark media with necessary CUI markings and distribution limitations",
+      "topicSummary": "Mark media with necessary CUI markings and distribution limitations.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.5",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control access to media containing CUI and maintain",
+      "topicSummary": "Control access to media containing CUI and maintain accountability for media during transport outside of controlled areas.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.6",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Implement cryptographic mechanisms to protect the confidentiality",
+      "topicSummary": "Implement cryptographic mechanisms to protect the confidentiality of CUI stored on digital media during transport unless otherwise protected by alternative physical safeguards.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.7",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.7",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control the use of removable media on system components",
+      "topicSummary": "Control the use of removable media on system components.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.8",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.8",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Prohibit the use of portable storage devices",
+      "topicSummary": "Prohibit the use of portable storage devices when such devices have no identifiable owner.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.8.9",
+      "domain": "Media Protection",
+      "domainKey": "3.8",
+      "relatedControlCode": "3.8.9",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Protect the confidentiality of backup CUI at storage locations",
+      "topicSummary": "Protect the confidentiality of backup CUI at storage locations.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.9.1",
+      "domain": "Personnel Security",
+      "domainKey": "3.9",
+      "relatedControlCode": "3.9.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Screen individuals prior to authorizing access to organizational",
+      "topicSummary": "Screen individuals prior to authorizing access to organizational systems containing CUI.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.9.2",
+      "domain": "Personnel Security",
+      "domainKey": "3.9",
+      "relatedControlCode": "3.9.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Ensure",
+      "topicSummary": "Ensure that organizational systems containing CUI are protected during and after personnel actions such as terminations and transfers.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.10.1",
+      "domain": "Physical Protection",
+      "domainKey": "3.10",
+      "relatedControlCode": "3.10.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Limit physical access to organizational systems",
+      "topicSummary": "Limit physical access to organizational systems, equipment, and the respective operating environments to authorized individuals.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.10.2",
+      "domain": "Physical Protection",
+      "domainKey": "3.10",
+      "relatedControlCode": "3.10.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Protect and monitor the physical facility and support",
+      "topicSummary": "Protect and monitor the physical facility and support infrastructure for organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.10.3",
+      "domain": "Physical Protection",
+      "domainKey": "3.10",
+      "relatedControlCode": "3.10.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Escort visitors and monitor visitor activity",
+      "topicSummary": "Escort visitors and monitor visitor activity.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.10.4",
+      "domain": "Physical Protection",
+      "domainKey": "3.10",
+      "relatedControlCode": "3.10.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Maintain audit logs of physical access",
+      "topicSummary": "Maintain audit logs of physical access.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.10.5",
+      "domain": "Physical Protection",
+      "domainKey": "3.10",
+      "relatedControlCode": "3.10.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control and manage physical access devices",
+      "topicSummary": "Control and manage physical access devices.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.10.6",
+      "domain": "Physical Protection",
+      "domainKey": "3.10",
+      "relatedControlCode": "3.10.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Enforce safeguarding measures for CUI at alternate work sites",
+      "topicSummary": "Enforce safeguarding measures for CUI at alternate work sites.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.11.1",
+      "domain": "Risk Assessment",
+      "domainKey": "3.11",
+      "relatedControlCode": "3.11.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Periodically assess the risk to organizational operations",
+      "topicSummary": "Periodically assess the risk to organizational operations (including mission, functions, image, or reputation), organizational assets, and individuals, resulting from the operation of organizational systems and the associated processing, storage, or transmission of CUI.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.11.2",
+      "domain": "Risk Assessment",
+      "domainKey": "3.11",
+      "relatedControlCode": "3.11.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Scan for vulnerabilities in organizational systems and applications periodically",
+      "topicSummary": "Scan for vulnerabilities in organizational systems and applications periodically and when new vulnerabilities affecting those systems and applications are identified.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.11.3",
+      "domain": "Risk Assessment",
+      "domainKey": "3.11",
+      "relatedControlCode": "3.11.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Remediate vulnerabilities",
+      "topicSummary": "Remediate vulnerabilities in accordance with risk assessments.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.12.1",
+      "domain": "Security Assessment",
+      "domainKey": "3.12",
+      "relatedControlCode": "3.12.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Periodically assess the security controls in organizational systems",
+      "topicSummary": "Periodically assess the security controls in organizational systems to determine if the controls are effective in their application.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.12.2",
+      "domain": "Security Assessment",
+      "domainKey": "3.12",
+      "relatedControlCode": "3.12.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Develop and implement plans of action designed",
+      "topicSummary": "Develop and implement plans of action designed to correct deficiencies and reduce or eliminate vulnerabilities in organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.12.3",
+      "domain": "Security Assessment",
+      "domainKey": "3.12",
+      "relatedControlCode": "3.12.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Monitor security controls on an ongoing basis",
+      "topicSummary": "Monitor security controls on an ongoing basis to ensure the continued effectiveness of the controls.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.12.4",
+      "domain": "Security Assessment",
+      "domainKey": "3.12",
+      "relatedControlCode": "3.12.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Develop, document, and periodically update system security plans",
+      "topicSummary": "Develop, document, and periodically update system security plans that describe system boundaries, system environments of operation, how security requirements are implemented, and the relationships with or connections to other systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.1",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Monitor, control, and protect communications at the external",
+      "topicSummary": "Monitor, control, and protect communications (i.e., information transmitted or received by organizational systems) at the external boundaries and key internal boundaries of organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.2",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Employ architectural designs, software development techniques, and systems engineering principles",
+      "topicSummary": "Employ architectural designs, software development techniques, and systems engineering principles that promote effective information security within organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.3",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Separate user functionality from system management functionality",
+      "topicSummary": "Separate user functionality from system management functionality.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.4",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Prevent unauthorized and unintended information transfer via shared system resources",
+      "topicSummary": "Prevent unauthorized and unintended information transfer via shared system resources.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.5",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Implement subnetworks for publicly accessible system components",
+      "topicSummary": "Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.6",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Deny network communications traffic by default and allow",
+      "topicSummary": "Deny network communications traffic by default and allow network communications traffic by exception (i.e., deny all, permit by exception).",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.7",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.7",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Prevent remote devices from simultaneously establishing non-remote connections",
+      "topicSummary": "Prevent remote devices from simultaneously establishing non-remote connections with organizational systems and communicating via some other connection to resources in external networks (i.e., split tunneling).",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.8",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.8",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Implement cryptographic mechanisms to prevent unauthorized disclosure",
+      "topicSummary": "Implement cryptographic mechanisms to prevent unauthorized disclosure of CUI during transmission unless otherwise protected by alternative physical safeguards.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.9",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.9",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Terminate network connections associated with communications sessions",
+      "topicSummary": "Terminate network connections associated with communications sessions at the end of the sessions or after a defined period of inactivity.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.10",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.10",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Establish and manage cryptographic keys for cryptography employed",
+      "topicSummary": "Establish and manage cryptographic keys for cryptography employed in organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.11",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.11",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Employ FIPS-validated cryptography",
+      "topicSummary": "Employ FIPS-validated cryptography when used to protect the confidentiality of CUI.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.12",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.12",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Prohibit remote activation of collaborative computing devices",
+      "topicSummary": "Prohibit remote activation of collaborative computing devices and provide indication of devices in use to users present at the device.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.13",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.13",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control and monitor the use of mobile code",
+      "topicSummary": "Control and monitor the use of mobile code.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.14",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.14",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Control and monitor the use of Voice over",
+      "topicSummary": "Control and monitor the use of Voice over Internet Protocol (VoIP) technologies.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.15",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.15",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Protect the authenticity of communications sessions",
+      "topicSummary": "Protect the authenticity of communications sessions.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.13.16",
+      "domain": "System and Communications Protection",
+      "domainKey": "3.13",
+      "relatedControlCode": "3.13.16",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Protect the confidentiality of CUI at rest",
+      "topicSummary": "Protect the confidentiality of CUI at rest.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.14.1",
+      "domain": "System and Information Integrity",
+      "domainKey": "3.14",
+      "relatedControlCode": "3.14.1",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Identify, report, and correct system flaws in a timely manner",
+      "topicSummary": "Identify, report, and correct system flaws in a timely manner.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.14.2",
+      "domain": "System and Information Integrity",
+      "domainKey": "3.14",
+      "relatedControlCode": "3.14.2",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Provide protection from malicious code at designated locations",
+      "topicSummary": "Provide protection from malicious code at designated locations within organizational systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.14.3",
+      "domain": "System and Information Integrity",
+      "domainKey": "3.14",
+      "relatedControlCode": "3.14.3",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Monitor system security alerts and advisories and take",
+      "topicSummary": "Monitor system security alerts and advisories and take action in response.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.14.4",
+      "domain": "System and Information Integrity",
+      "domainKey": "3.14",
+      "relatedControlCode": "3.14.4",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Update malicious code protection mechanisms",
+      "topicSummary": "Update malicious code protection mechanisms when new releases are available.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.14.5",
+      "domain": "System and Information Integrity",
+      "domainKey": "3.14",
+      "relatedControlCode": "3.14.5",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Perform periodic scans of organizational systems and real-time",
+      "topicSummary": "Perform periodic scans of organizational systems and real-time scans of files from external sources as files are downloaded, opened, or executed.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.14.6",
+      "domain": "System and Information Integrity",
+      "domainKey": "3.14",
+      "relatedControlCode": "3.14.6",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Monitor organizational systems",
+      "topicSummary": "Monitor organizational systems, including inbound and outbound communications traffic, to detect attacks and indicators of potential attacks.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l2-3.14.7",
+      "domain": "System and Information Integrity",
+      "domainKey": "3.14",
+      "relatedControlCode": "3.14.7",
+      "codeVerifiedBy": [
+        "https://doi.org/10.6028/NIST.SP.800-171r2"
+      ],
+      "topicLabel": "Identify unauthorized use of organizational systems",
+      "topicSummary": "Identify unauthorized use of organizational systems.",
+      "nonAuthoritative": true
+    }
+  ]
+}

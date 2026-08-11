@@ -1,0 +1,194 @@
+{
+  "tier": "level1",
+  "controlSetVersion": "v32cfr170",
+  "sourceAuthority": "publisher-verbatim",
+  "nonAuthoritative": true,
+  "compiledAt": "2026-07-31T00:00:00.000Z",
+  "coverageNote": "CMMC Level 1, the 15 basic safeguarding requirements at 48 CFR 52.204-21(b)(1)(i) through (xv), which 32 CFR 170.14(b) adopts as the Level 1 security requirements. What is solid here, stated plainly: (1) Every topicSummary is the VERBATIM regulatory text, read out of the eCFR API for 48 CFR 52.204-21 -- not a paraphrase. Federal regulations are US Government works and carry no copyright, which is why this module can ship the real text where the HITRUST, SOC 2 and ISO 27001 modules deliberately cannot. (2) The identifiers are the regulation's own roman-numeral paragraph designations; there is no other numbering for these. All 15 were extracted from a single eCFR fetch and the count matches 32 CFR 170.14(b)(1). (3) Every topicLabel is DERIVED -- a short phrase cut from the requirement's own opening clause so the dashboard and interview have something readable. It is not regulatory text and carries no authority; read the topicSummary for that. (4) Level 1 covers Federal Contract Information (FCI), not CUI, and is validated by annual self-assessment with an affirmation in SPRS -- there is no certificate and no C3PAO for Level 1. Confirm your contract's actual CMMC level and the applicable DFARS clause with your contracting officer before relying on any of this.",
+  "citations": [
+    "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170",
+    "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+  ],
+  "controls": [
+    {
+      "id": "cmmc-l1-i",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(i)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Limit information system access to authorized users",
+      "topicSummary": "Limit information system access to authorized users, processes acting on behalf of authorized users, or devices (including other information systems).",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-ii",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(ii)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Limit information system access to the types",
+      "topicSummary": "Limit information system access to the types of transactions and functions that authorized users are permitted to execute.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-iii",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(iii)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Verify and control/limit connections to and use",
+      "topicSummary": "Verify and control/limit connections to and use of external information systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-iv",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(iv)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Control information posted or processed on publicly accessible information systems",
+      "topicSummary": "Control information posted or processed on publicly accessible information systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-v",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(v)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Identify information system users",
+      "topicSummary": "Identify information system users, processes acting on behalf of users, or devices.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-vi",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(vi)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Authenticate the identities of those users",
+      "topicSummary": "Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-vii",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(vii)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Sanitize or destroy information system media containing Federal",
+      "topicSummary": "Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-viii",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(viii)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Limit physical access to organizational information systems",
+      "topicSummary": "Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-ix",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(ix)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Escort visitors and monitor visitor activity",
+      "topicSummary": "Escort visitors and monitor visitor activity; maintain audit logs of physical access; and control and manage physical access devices.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-x",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(x)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Monitor, control, and protect organizational communications",
+      "topicSummary": "Monitor, control, and protect organizational communications ( i.e., information transmitted or received by organizational information systems) at the external boundaries and key internal boundaries of the information systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-xi",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(xi)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Implement subnetworks for publicly accessible system components",
+      "topicSummary": "Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-xii",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(xii)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Identify, report, and correct information and information system",
+      "topicSummary": "Identify, report, and correct information and information system flaws in a timely manner.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-xiii",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(xiii)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Provide protection from malicious code at appropriate locations",
+      "topicSummary": "Provide protection from malicious code at appropriate locations within organizational information systems.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-xiv",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(xiv)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Update malicious code protection mechanisms",
+      "topicSummary": "Update malicious code protection mechanisms when new releases are available.",
+      "nonAuthoritative": true
+    },
+    {
+      "id": "cmmc-l1-xv",
+      "domain": "Basic Safeguarding of Federal Contract Information",
+      "domainKey": "FCI",
+      "relatedControlCode": "52.204-21(b)(1)(xv)",
+      "codeVerifiedBy": [
+        "https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21"
+      ],
+      "topicLabel": "Perform periodic scans of the information system",
+      "topicSummary": "Perform periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed.",
+      "nonAuthoritative": true
+    }
+  ]
+}
