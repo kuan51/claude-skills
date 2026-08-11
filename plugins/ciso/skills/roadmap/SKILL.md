@@ -27,7 +27,7 @@ Always start here, every invocation:
    Mandatory, before step 5.
 5. **Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/roadmap.md`.**
 
-All three certifications support this verb.
+Every certification supports this verb.
 
 ## The one invariant that matters most here
 

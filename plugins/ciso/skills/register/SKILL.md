@@ -14,7 +14,8 @@ existing controls and assessments are never touched, only ids missing from state
 
 This is a **dispatching verb** -- it resolves which certification the user means and then follows
 that certification module's own `register.md`. The mechanics differ per certification (HITRUST picks
-one of three nested tiers; SOC 2 and ISO 27001 each have exactly one).
+one of three nested tiers, e1 ⊂ i1 ⊂ r2; CMMC picks one of three independent tiers, where
+`level3` requires `level2` also be registered and met; SOC 2 and ISO 27001 each have exactly one).
 
 ## Routing
 
@@ -27,7 +28,7 @@ Always start here, every invocation:
 3. **Resolve the certification.** Unlike every other verb, register works on certifications that
    are *not* in state yet, so resolve against the shipped catalog at
    `${CLAUDE_PLUGIN_ROOT}/assets/certifications.json` rather than against `state.certifications`:
-   - The user named one (or said "HITRUST", "SOC 2", "ISO 27001", "27001") → use it.
+   - The user named one (or said "HITRUST", "SOC 2", "ISO 27001", "27001", "CMMC") → use it.
    - Otherwise `AskUserQuestion` with the catalog's entries, showing each `summary` so the choice is
      informed. Mention which are already registered -- re-registering is safe but usually means the
      user wanted a different verb.
@@ -36,7 +37,7 @@ Always start here, every invocation:
    failure this step prevents.
 5. **Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/register.md`.**
 
-All three certifications support this verb.
+Every certification supports this verb.
 
 ## After registering
 
@@ -47,3 +48,5 @@ Re-render the dashboard, then point the user at the natural next step:
 - **HITRUST** → offer `ciso:import` if the org has its own licensed MyCSF export; otherwise
   `ciso:interview`.
 - **ISO 27001** → `ciso:interview`.
+- **CMMC** → `ciso:interview` directly. There is no scope step; the level chosen at registration
+  is the scope.

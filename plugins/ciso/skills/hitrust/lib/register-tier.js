@@ -34,7 +34,7 @@ function defaultMaturityDimension() {
 // Measured/Managed, each independently assessable) instead of a flat status -- r2 is the only
 // HITRUST tier that scores multiple PRISMA maturity dimensions; e1/i1 keep the flat shape since
 // they are officially Implemented-only. See docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md.
-function defaultControl(entry, sourceAuthority, tierKey) {
+function defaultControl(entry, sourceAuthority, tierKey, structureCodeVerifiedBy) {
   const assessment = tierKey === 'r2'
     ? {
         status: null,
@@ -51,6 +51,11 @@ function defaultControl(entry, sourceAuthority, tierKey) {
       };
 
   return Object.assign({}, entry, {
+    // CMMC ships this identical on every control, so the structure file carries it once at
+    // file level instead -- this is what puts it back on each control in state.json, the
+    // shape the dashboard's Sources block reads. Every other module keeps its own per-control
+    // value (entry.codeVerifiedBy), which always wins over the file-level fallback.
+    codeVerifiedBy: entry.codeVerifiedBy || structureCodeVerifiedBy,
     statementText: null,
     statementSource: sourceAuthority || 'structural-only',
     assessment,
@@ -131,7 +136,7 @@ function registerTier(stateJsonPath, structure, certKey, certDisplayName) {
   let added = 0;
   for (const entry of resolvedStructure.controls) {
     if (!Object.prototype.hasOwnProperty.call(tier.controls, entry.id)) {
-      tier.controls[entry.id] = defaultControl(entry, tierSourceAuthority, tierKey);
+      tier.controls[entry.id] = defaultControl(entry, tierSourceAuthority, tierKey, resolvedStructure.codeVerifiedBy);
       added += 1;
     }
   }

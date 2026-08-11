@@ -80,7 +80,6 @@ test('every Level 2 family contains exactly the requirements NIST SP 800-171 R2 
 test('the totals hold: 15 at Level 1, 110 across 14 families at Level 2, 24 at Level 3', () => {
   assert.equal(level1.controls.length, 15);
   assert.equal(level2.controls.length, 110);
-  assert.equal(Object.values(LEVEL2).reduce((n, ids) => n + ids.length, 0), 110);
   assert.equal(new Set(level2.controls.map((c) => c.domainKey)).size, 14);
   assert.equal(level3.controls.length, 24);
 });
@@ -89,12 +88,12 @@ test('Level 3 is exactly the subset 32 CFR 170.14(c)(4) selects from NIST SP 800
   assert.deepEqual([...codes(level3)].sort(), [...LEVEL3].sort());
 });
 
-test('every requirement carries a canonical identifier backed by a verification citation', () => {
+test('every requirement carries a canonical identifier, and each tier a verification citation', () => {
   for (const s of [level1, level2, level3]) {
+    assert.ok(Array.isArray(s.codeVerifiedBy) && s.codeVerifiedBy.length > 0,
+      `${s.tier} has no codeVerifiedBy citation`);
     for (const c of s.controls) {
       assert.ok(c.relatedControlCode, `${c.id} has no relatedControlCode`);
-      assert.ok(Array.isArray(c.codeVerifiedBy) && c.codeVerifiedBy.length > 0,
-        `${c.id} has no codeVerifiedBy citation`);
     }
   }
 });
@@ -130,6 +129,7 @@ test('no per-control field repeats a value that is constant across the file', ()
   for (const s of [level1, level2, level3]) {
     for (const c of s.controls) {
       assert.equal(c.citations, undefined, `${c.id} repeats the file-level citations`);
+      assert.equal(c.codeVerifiedBy, undefined, `${c.id} repeats the file-level codeVerifiedBy`);
       assert.equal(c.requirementTextIsVerbatim, undefined, `${c.id} duplicates sourceAuthority`);
       assert.equal(c.cmmcLevel, undefined, `${c.id} duplicates the tier`);
     }

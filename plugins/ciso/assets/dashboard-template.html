@@ -742,7 +742,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     // which would render the same URLs twice, once here and once via renderExtraFields.
     const sources = (Array.isArray(control.citations) && control.citations.length > 0)
       ? control.citations
-      : control.codeCorroboratedBy;
+      : (control.codeCorroboratedBy || control.codeVerifiedBy);
     if (Array.isArray(sources) && sources.length > 0) {
       html += '<div class="control-field"><span class="field-label">Sources</span><ul class="citation-list">';
       html += sources.map(function (url) {
