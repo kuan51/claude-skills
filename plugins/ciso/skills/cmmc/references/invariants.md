@@ -49,8 +49,8 @@ This module's `sourceAuthority` is `publisher-verbatim`, which no other certific
 - **Strong: every `topicSummary` is the real requirement text**, not a paraphrase. NIST states in both
   publications that the work *"is not subject to copyright in the United States"*, and federal
   regulations in the eCFR are US Government works. That is why this module can ship authoritative
-  wording where HITRUST, SOC 2 and ISO 27001 deliberately cannot. NIST asks for attribution and every
-  entry carries it in `citations`.
+  wording where HITRUST, SOC 2 and ISO 27001 deliberately cannot. NIST asks for attribution; each tier
+  file carries it once, at the file level, in `citations` and `codeVerifiedBy`.
 - **Strong: the identifiers.** Level 1's are the regulation's own paragraph designations. Level 2's
   110 ids across 14 families were extracted from the NIST PDF and cross-checked against that
   document's own Appendix D mapping tables — an independently typeset listing of the same ids — which

@@ -320,6 +320,33 @@ test('defaultControl without tierKey (e1/i1) keeps the existing flat assessment 
   assert.equal(control.assessment.maturity, undefined);
 });
 
+test('registering each bundled CMMC tier backfills the file-level codeVerifiedBy onto every control', () => {
+  const cmmcControlsDir = path.join(__dirname, '..', '..', '..', 'cmmc', 'controls');
+  for (const tier of ['level1', 'level2', 'level3']) {
+    const structure = loadStructure(path.join(cmmcControlsDir, `${tier}.v32cfr170.structure.json`));
+    assert.ok(
+      Array.isArray(structure.codeVerifiedBy) && structure.codeVerifiedBy.length > 0,
+      `${tier} structure file must carry a file-level codeVerifiedBy`
+    );
+    assert.equal(structure.controls.some((c) => c.codeVerifiedBy !== undefined), false,
+      `${tier} structure file must not carry a per-control codeVerifiedBy`);
+
+    const stateJsonPath = makeTempState();
+    const result = registerTier(stateJsonPath, structure, 'cmmc', 'CMMC');
+    assert.equal(result.added, structure.controls.length);
+
+    const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
+    const registeredTier = state.certifications.cmmc.tiers[structure.tier];
+    for (const control of Object.values(registeredTier.controls)) {
+      assert.deepEqual(
+        control.codeVerifiedBy,
+        structure.codeVerifiedBy,
+        `${control.id} must be backfilled with the file-level codeVerifiedBy`
+      );
+    }
+  }
+});
+
 test('registering the bundled r2.v11.8.structure.json seeds every control with the maturity shape', () => {
   const structure = loadStructure(resolveStructurePath('r2'));
   const stateJsonPath = makeTempState();

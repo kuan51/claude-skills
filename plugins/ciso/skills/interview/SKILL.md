@@ -33,7 +33,7 @@ Always start here, every invocation:
    check that must happen before any flow touches control data.
 5. **Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/interview.md`.**
 
-All three certifications support this verb.
+Every certification supports this verb.
 
 ## Two per-certification bindings
 

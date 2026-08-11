@@ -321,6 +321,28 @@ test('a fully deepened r2 control (all 5 dimensions assessed) shows a 5 / 5 matu
   assert.ok(drilldownsHtml.includes('5 / 5 maturity dims'));
 });
 
+test('Sources falls back to codeVerifiedBy when citations and codeCorroboratedBy are both absent', () => {
+  const state = baseState({
+    c1: makeControl({ id: 'e1-11-01', codeVerifiedBy: ['https://example.com/verified'] }),
+  });
+  const { drilldownsHtml } = renderClientSide(state);
+  assert.ok(drilldownsHtml.includes('href="https://example.com/verified"'), 'codeVerifiedBy must render as a Sources link when no other source field exists');
+});
+
+test('a control carrying both citations and codeVerifiedBy renders only citations in Sources, and codeVerifiedBy never appears twice', () => {
+  const state = baseState({
+    c1: makeControl({
+      id: 'e1-11-01',
+      citations: ['https://example.com/secondary'],
+      codeVerifiedBy: ['https://example.com/verified'],
+    }),
+  });
+  const { drilldownsHtml } = renderClientSide(state);
+  assert.ok(drilldownsHtml.includes('href="https://example.com/secondary"'), 'citations must still win the Sources fallback');
+  assert.ok(!drilldownsHtml.includes('href="https://example.com/verified"'), 'codeVerifiedBy must not also render once citations already won');
+  assert.ok(!drilldownsHtml.includes('Additional detail'), 'codeVerifiedBy must not leak into Additional detail either');
+});
+
 test('only http(s) URLs become links; a javascript: URL renders as inert text in citations and vendor sourceUrls', () => {
   const state = baseR2State({
     c1: makeR2Control({

@@ -10,16 +10,16 @@
     "https://doi.org/10.6028/NIST.SP.800-172",
     "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-172.pdf"
   ],
+  "codeVerifiedBy": [
+    "https://doi.org/10.6028/NIST.SP.800-172",
+    "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
+  ],
   "controls": [
     {
       "id": "cmmc-l3-3.1.2e",
       "domain": "Access Control",
       "domainKey": "3.1",
       "relatedControlCode": "3.1.2e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Restrict access to systems and system components",
       "topicSummary": "Restrict access to systems and system components to only those information resources that are owned, provisioned, or issued by the organization.",
       "nonAuthoritative": true
@@ -29,10 +29,6 @@
       "domain": "Access Control",
       "domainKey": "3.1",
       "relatedControlCode": "3.1.3e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Employ [Assignment",
       "topicSummary": "Employ [Assignment: organization-defined secure information transfer solutions] to control information flows between security domains on connected systems.",
       "nonAuthoritative": true
@@ -42,10 +38,6 @@
       "domain": "Risk Assessment",
       "domainKey": "3.11",
       "relatedControlCode": "3.11.1e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Employ [Assignment",
       "topicSummary": "Employ [Assignment: organization-defined sources of threat intelligence] as part of a risk assessment to guide and inform the development of organizational systems, security architectures, selection of security solutions, monitoring, threat hunting, and response and recovery activities.",
       "nonAuthoritative": true
@@ -55,10 +47,6 @@
       "domain": "Risk Assessment",
       "domainKey": "3.11",
       "relatedControlCode": "3.11.2e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Conduct cyber threat hunting activities [Selection",
       "topicSummary": "Conduct cyber threat hunting activities [Selection (one or more): [Assignment: organization- defined frequency]; [Assignment: organization-defined event]] to search for indicators of compromise in [Assignment: organization-defined systems] and detect, track, and disrupt threats that evade existing controls.",
       "nonAuthoritative": true
@@ -68,10 +56,6 @@
       "domain": "Risk Assessment",
       "domainKey": "3.11",
       "relatedControlCode": "3.11.3e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Employ advanced automation and analytics capabilities in support",
       "topicSummary": "Employ advanced automation and analytics capabilities in support of analysts to predict and identify risks to organizations, systems, and system components.",
       "nonAuthoritative": true
@@ -81,10 +65,6 @@
       "domain": "Risk Assessment",
       "domainKey": "3.11",
       "relatedControlCode": "3.11.4e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Document or reference in the system security plan",
       "topicSummary": "Document or reference in the system security plan the security solution selected, the rationale for the security solution, and the risk determination.",
       "nonAuthoritative": true
@@ -94,10 +74,6 @@
       "domain": "Risk Assessment",
       "domainKey": "3.11",
       "relatedControlCode": "3.11.5e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Assess the effectiveness of security solutions [Assignment",
       "topicSummary": "Assess the effectiveness of security solutions [Assignment: organization-defined frequency] to address anticipated risk to organizational systems and the organization based on current and accumulated threat intelligence.",
       "nonAuthoritative": true
@@ -107,10 +83,6 @@
       "domain": "Risk Assessment",
       "domainKey": "3.11",
       "relatedControlCode": "3.11.6e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Assess, respond to, and monitor supply chain risks",
       "topicSummary": "Assess, respond to, and monitor supply chain risks associated with organizational systems and system components.",
       "nonAuthoritative": true
@@ -120,10 +92,6 @@
       "domain": "Risk Assessment",
       "domainKey": "3.11",
       "relatedControlCode": "3.11.7e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Develop a plan for managing supply chain risks",
       "topicSummary": "Develop a plan for managing supply chain risks associated with organizational systems and system components; update the plan [Assignment: organization-defined frequency].",
       "nonAuthoritative": true
@@ -133,10 +101,6 @@
       "domain": "Security Assessment",
       "domainKey": "3.12",
       "relatedControlCode": "3.12.1e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Conduct penetration testing [Assignment",
       "topicSummary": "Conduct penetration testing [Assignment: organization-defined frequency], leveraging automated scanning tools and ad hoc tests using subject matter experts.",
       "nonAuthoritative": true
@@ -146,10 +110,6 @@
       "domain": "System and Communications Protection",
       "domainKey": "3.13",
       "relatedControlCode": "3.13.4e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Employ [Selection",
       "topicSummary": "Employ [Selection: (one or more): [Assignment: organization-defined physical isolation techniques]; [Assignment: organization-defined logical isolation techniques]] in organizational systems and system components.",
       "nonAuthoritative": true
@@ -159,10 +119,6 @@
       "domain": "System and Information Integrity",
       "domainKey": "3.14",
       "relatedControlCode": "3.14.1e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Verify the integrity of [Assignment",
       "topicSummary": "Verify the integrity of [Assignment: organization-defined security critical or essential software] using root of trust mechanisms or cryptographic signatures.",
       "nonAuthoritative": true
@@ -172,10 +128,6 @@
       "domain": "System and Information Integrity",
       "domainKey": "3.14",
       "relatedControlCode": "3.14.3e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Ensure",
       "topicSummary": "Ensure that [Assignment: organization-defined systems and system components] are included in the scope of the specified enhanced security requirements or are segregated in purpose- specific networks.",
       "nonAuthoritative": true
@@ -185,10 +137,6 @@
       "domain": "System and Information Integrity",
       "domainKey": "3.14",
       "relatedControlCode": "3.14.6e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Use threat indicator information and effective mitigations obtained from [Assignment",
       "topicSummary": "Use threat indicator information and effective mitigations obtained from [Assignment: organization-defined external organizations] to guide and inform intrusion detection and threat hunting.",
       "nonAuthoritative": true
@@ -198,10 +146,6 @@
       "domain": "Awareness and Training",
       "domainKey": "3.2",
       "relatedControlCode": "3.2.1e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Provide awareness training [Assignment",
       "topicSummary": "Provide awareness training [Assignment: organization-defined frequency] focused on recognizing and responding to threats from social engineering, advanced persistent threat actors, breaches, and suspicious behaviors; update the training [Assignment: organization- defined frequency] or when there are significant changes to the threat.",
       "nonAuthoritative": true
@@ -211,10 +155,6 @@
       "domain": "Awareness and Training",
       "domainKey": "3.2",
       "relatedControlCode": "3.2.2e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Include practical exercises in awareness training for [Assignment",
       "topicSummary": "Include practical exercises in awareness training for [Assignment: organization-defined roles] that are aligned with current threat scenarios and provide feedback to individuals involved in the training and their supervisors.",
       "nonAuthoritative": true
@@ -224,10 +164,6 @@
       "domain": "Configuration Management",
       "domainKey": "3.4",
       "relatedControlCode": "3.4.1e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Establish and maintain an authoritative source and repository",
       "topicSummary": "Establish and maintain an authoritative source and repository to provide a trusted source and accountability for approved and implemented system components.",
       "nonAuthoritative": true
@@ -237,10 +173,6 @@
       "domain": "Configuration Management",
       "domainKey": "3.4",
       "relatedControlCode": "3.4.2e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Employ automated mechanisms to detect misconfigured or unauthorized system components",
       "topicSummary": "Employ automated mechanisms to detect misconfigured or unauthorized system components; after detection, [Selection (one or more): remove the components; place the components in a quarantine or remediation network] to facilitate patching, re-configuration, or other mitigations.",
       "nonAuthoritative": true
@@ -250,10 +182,6 @@
       "domain": "Configuration Management",
       "domainKey": "3.4",
       "relatedControlCode": "3.4.3e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Employ automated discovery and management tools to maintain an up-to-date",
       "topicSummary": "Employ automated discovery and management tools to maintain an up-to-date, complete, accurate, and readily available inventory of system components.",
       "nonAuthoritative": true
@@ -263,10 +191,6 @@
       "domain": "Identification and Authentication",
       "domainKey": "3.5",
       "relatedControlCode": "3.5.1e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Identify and authenticate [Assignment",
       "topicSummary": "Identify and authenticate [Assignment: organization-defined systems and system components] before establishing a network connection using bidirectional authentication that is cryptographically based and replay resistant.",
       "nonAuthoritative": true
@@ -276,10 +200,6 @@
       "domain": "Identification and Authentication",
       "domainKey": "3.5",
       "relatedControlCode": "3.5.3e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Employ automated or manual/procedural mechanisms to prohibit system",
       "topicSummary": "Employ automated or manual/procedural mechanisms to prohibit system components from connecting to organizational systems unless the components are known, authenticated, in a properly configured state, or in a trust profile.",
       "nonAuthoritative": true
@@ -289,10 +209,6 @@
       "domain": "Incident Response",
       "domainKey": "3.6",
       "relatedControlCode": "3.6.1e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Establish and maintain a security operations center capability",
       "topicSummary": "Establish and maintain a security operations center capability that operates [Assignment: organization-defined time period].",
       "nonAuthoritative": true
@@ -302,10 +218,6 @@
       "domain": "Incident Response",
       "domainKey": "3.6",
       "relatedControlCode": "3.6.2e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Establish and maintain a cyber incident response team",
       "topicSummary": "Establish and maintain a cyber incident response team that can be deployed by the organization within [Assignment: organization-defined time period].",
       "nonAuthoritative": true
@@ -315,10 +227,6 @@
       "domain": "Personnel Security",
       "domainKey": "3.9",
       "relatedControlCode": "3.9.2e",
-      "codeVerifiedBy": [
-        "https://doi.org/10.6028/NIST.SP.800-172",
-        "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170"
-      ],
       "topicLabel": "Ensure",
       "topicSummary": "Ensure that organizational systems are protected if adverse information develops or is obtained about individuals with access to CUI.",
       "nonAuthoritative": true
