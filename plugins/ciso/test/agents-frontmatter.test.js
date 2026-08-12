@@ -17,13 +17,17 @@ const FORBIDDEN_TOOLS = ['Write', 'Edit', 'Agent'];
 //     web sources (public HITRUST advisories/pages) to research or verify citations.
 //   - hitrust-controls-reconciler: pure text reconciliation over data already handed to
 //     it in its prompt -- no web or file access needed at all.
-//   - vendor-researcher: needs to search/fetch vendor and SaaS product information.
+//   - vendor-researcher: needs to search/fetch vendor and SaaS product information. Deliberately
+//     NOT granted Read: roadmap/workflow.js embeds the sanitized control inline in the prompt, so
+//     nothing ever hands this agent a path -- and Read would be a way around the fail-closed
+//     SUBJECT_FIELDS allowlist in roadmap/sanitize-control.js, since an agent that can both read
+//     docs/ciso/state.json and reach the network could carry org-private posture notes off-machine.
 // Keep this in sync with plugins/ciso/agents/*.md whenever one is added or changed.
 const EXPECTED_TOOLS = {
   'hitrust-topic-researcher': 'Read, WebSearch, WebFetch',
   'hitrust-controls-reconciler': 'Read',
   'hitrust-controls-verifier': 'Read, WebSearch, WebFetch',
-  'vendor-researcher': 'Read, WebSearch, WebFetch',
+  'vendor-researcher': 'WebSearch, WebFetch',
 };
 const EXPECTED_NAMES = Object.keys(EXPECTED_TOOLS);
 
