@@ -137,9 +137,10 @@ than one is registered.
 
 ## Architecture
 
-ciso is a **generic tracking core + one module per certification** (today, HITRUST, SOC 2 and
-ISO 27001). The core — scaffolding, registration, the assessment gate, versioning, background
-vendor research, evidence, and the dashboards — is certification-agnostic and keyed by `certKey`.
+ciso is a **generic tracking core + one module per certification** (today, HITRUST, SOC 2,
+ISO 27001 and CMMC). The core — scaffolding, registration, the assessment gate, versioning,
+background vendor research, evidence, and the dashboards — is certification-agnostic and keyed by
+`certKey`.
 
 The org-facing surface is **verbs**: one skill per action, each resolving the certification at
 runtime. A certification module ships no `SKILL.md` of its own — it is control data, reference
@@ -147,8 +148,8 @@ files, and whatever import or scope handling it needs, dispatched into by the ve
 reads that module's `references/invariants.md` first, which is what guarantees a user is always told
 what the shipped control set is and is not before acting on it.
 
-That boundary is why a fourth certification costs no new skills. SOC 2 was built against it without
+That boundary is why a new certification costs no new skills. SOC 2 was built against it without
 changing a single core script, and ISO 27001 without adding any runtime code at all. To see the
 exact core/module boundary, how a certification's identifiers may and may not be sourced, and the
-contract for adding a fourth (PCI DSS is the strongest candidate), read
+contract for adding a fifth, read
 [ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
