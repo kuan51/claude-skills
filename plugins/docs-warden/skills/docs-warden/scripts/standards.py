@@ -8,6 +8,19 @@ check_standards walks this table and never names a standard itself.
 what a document set looks like on disk -- which is what makes an overlay for a
 paid standard shippable in a public plugin at all. See references/standards.md
 before adding one.
+
+Two fields are read by the skill rather than by any script, and saying so here
+is the point: a field that looks load-bearing and is not is worse than an
+absent one.
+
+  infer            whether the level may be proposed from what the repository
+                   shows, or must be asked for. SKILL.md's init step reads it.
+                   No script can enforce this -- proposing is what the agent
+                   does -- so the table is where the answer is recorded.
+  source_version   the edition each artifact list was derived from. Named in a
+                   passing row so a scorecard says what it was checked against,
+                   and carried in the reference document's currency warning.
+                   Nothing detects that a standard has moved.
 """
 
 # Paths wanted by more than one standard, named once so the union dedupes and a
@@ -119,6 +132,9 @@ STANDARDS = {
     "iec-62304": {
         "name": "IEC 62304",
         "level_name": "safety class",
+        # The only entry that had no source_version, so a passing row could not
+        # name what it was checked against the way the other three do.
+        "source_version": "IEC 62304:2006/AMD1:2015",
         # A hazard assignment made outside the repository. The skill proposes
         # an archetype; it must never propose this. See SKILL.md's init step.
         "infer": False,

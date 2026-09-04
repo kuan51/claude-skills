@@ -12,7 +12,8 @@ Two independent ways a document goes stale:
                    mode, where the code moved and no date was involved.
 
 Calendar staleness fails. Code drift warns: a document can legitimately outlive
-a refactor.
+a refactor. A review_by further out than the declared review_cadence_days warns
+too -- that is the loophole the cadence exists to close.
 """
 import argparse
 import datetime as dt
@@ -56,6 +57,14 @@ def main() -> int:
 
     config = load_config(repo) or {}
     today = dt.date.today()
+    # The cadence used to be printed and nothing else, so a document could
+    # declare review_by 2099-01-01 under a 180-day cadence and never be
+    # reported again. A date further out than the cadence is not a promise to
+    # review; it is a promise not to.
+    cadence = config.get("review_cadence_days")
+    horizon = None
+    if isinstance(cadence, int) and not isinstance(cadence, bool) and cadence > 0:
+        horizon = today + dt.timedelta(days=cadence)
     # Asked once. This was inside the loop below, forking a git process per
     # document to re-answer a question that cannot change during the run.
     tracked = is_git_repo(repo)
@@ -75,6 +84,10 @@ def main() -> int:
                 warnings.append(f"{rel}: review_by '{review_by}' is not an ISO date")
             if due and due < today:
                 failures.append(f"{rel}: review_by {due.isoformat()} passed {(today - due).days} day(s) ago")
+            elif due and horizon and due > horizon:
+                warnings.append(
+                    f"{rel}: review_by {due.isoformat()} is {(due - today).days} "
+                    f"day(s) out, past the {cadence} day cadence")
 
         if not tracked:
             continue
@@ -99,7 +112,6 @@ def main() -> int:
                 f"Move entries older than 90 days into {RUNLOG_ARCHIVE_DIR}/YYYY-QN.md."
             )
 
-    cadence = config.get("review_cadence_days")
     if cadence:
         print(f"review cadence: {cadence} days\n")
 

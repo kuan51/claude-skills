@@ -4,6 +4,7 @@
 No test framework: the repo has none, and these need to run in CI behind a
 plain python3 invocation. Each check builds its own scratch repo under /tmp.
 """
+import datetime as dt
 import json
 import os
 import re
@@ -222,6 +223,38 @@ def test_an_unknown_forge_fails_rather_than_requiring_nothing():
 # Newline as a name, because a literal escape inside a manifest written
 # by these tests is a backslash this shell mangles on the way in.
 NL = chr(10)
+
+
+def test_a_review_date_beyond_the_cadence_is_reported():
+    """review_cadence_days was printed by freshness.py and enforced nowhere, so
+    a document could declare review_by 2099-01-01 under a 180-day cadence and
+    never be asked about again. Setting a date that far out is not a promise to
+    review; it is a promise not to."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL + "review_cadence_days: 180" + NL,
+            encoding="utf-8")
+        (repo / "docs" / "far.md").write_text(
+            "---" + NL + "owner: t" + NL + "review_by: 2099-01-01" + NL
+            + "---" + NL + NL + "x" + NL, encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "freshness.py"), str(repo)],
+            capture_output=True, text=True, check=False)
+        out = result.stdout + result.stderr
+        assert "docs/far.md" in out and "cadence" in out, out
+        # Within the cadence, it says nothing: the rule must not simply
+        # complain about every future date.
+        soon = (dt.date.today() + dt.timedelta(days=30)).isoformat()
+        (repo / "docs" / "far.md").write_text(
+            "---" + NL + "owner: t" + NL + "review_by: " + soon + NL
+            + "---" + NL + NL + "x" + NL, encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "freshness.py"), str(repo)],
+            capture_output=True, text=True, check=False)
+        assert "cadence" not in (result.stdout + result.stderr).replace(
+            "review cadence: 180 days", ""), result.stdout
 
 
 def test_a_repository_can_add_a_requirement_of_its_own():
