@@ -24,9 +24,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from archetypes import ARCHETYPE_FILES
 from standards import STANDARDS
 from _common import (
-    ARCHETYPE_FILES,
     DECISIONS,
     DECISIONS_DIR,
     GENERATED_MARKER,

@@ -44,15 +44,6 @@ UNIVERSAL_FILES = [
     ".gitignore",
 ]
 
-ARCHETYPE_FILES = {
-    "it-tooling": ["docs/runbook.md"],
-    "service": ["docs/architecture/arc42.md"],
-    # CHANGELOG stays at root: npm, GitHub releases, and
-    # @semantic-release/changelog all look for it there by default.
-    "library": ["CHANGELOG.md"],
-    "firmware": ["docs/architecture/"],
-}
-
 
 def parse_front_matter(text: str):
     """Return (front_matter_dict, body) for already-read text. Split out of
