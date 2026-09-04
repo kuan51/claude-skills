@@ -47,9 +47,11 @@ Pick the mode from what the human asked for. When it is ambiguous, ask.
 Triggered by "scaffold docs", "set up documentation", "document this repo".
 
 1. Detect the archetype from the file tree (`references/archetypes.md`).
-2. **Show the proposal and wait for confirmation.** Archetype, owner, which
-   standards apply and at what level, and the exact file list you intend to
-   create. Never write `.docs-warden.yml` from a guess.
+2. **Show the proposal and wait for confirmation.** Archetype, forge, owner,
+   which standards apply and at what level, and the exact file list you intend
+   to create. Never write `.docs-warden.yml` from a guess.
+   The forge may be proposed from `git remote -v` — it is observable, like the
+   archetype — but say which one you read it from.
    Some levels may be proposed and some must be asked for --
    `references/standards.md` says which. An IEC 62304 safety class is never
    proposed: it comes from a hazard analysis outside the repository.
@@ -138,8 +140,8 @@ Every repo, both worlds, gets these. Full specification in
 | `docs/RUNLOG.md` | What happened outside git. Append-only, `PLANNED` then `CONFIRMED`. |
 | `docs/GLOSSARY.md` | One word, one meaning. |
 | `docs/SECURITY.md` | Reporting route and posture. GitHub reads it from `docs/` as well as the root. |
-| `.github/PULL_REQUEST_TEMPLATE.md` | Forces docs into the same PR. |
-| `.github/CODEOWNERS` | Review gate on `docs/`. |
+| a change template | Forces docs into the same PR. Path depends on `forge:`. |
+| a review gate | Ownership of `docs/`. Path depends on `forge:`. |
 | `.docs-warden.yml` | The manifest that drives all of the above. |
 
 Archetype overlays add to this set; they never remove from it. See

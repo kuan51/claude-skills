@@ -111,21 +111,54 @@ Internal repos: a stub naming where to report a vulnerability and who owns triag
 Regulated repos: the full document, covering supported versions, the reporting
 route and its response time, the threat model link, and the disclosure policy.
 
-## .github/PULL_REQUEST_TEMPLATE.md
+## The forge overlay: a change template and a review gate
 
-Its job is one checkbox:
+Two controls, spelled differently by every hosting platform, so they are
+declared rather than assumed. `forge:` in `.docs-warden.yml` selects the
+spelling; omitting it means `github`, which is what every repository scaffolded
+so far assumes.
+
+| `forge:` | Required |
+|---|---|
+| `github` (default) | `.github/PULL_REQUEST_TEMPLATE.md`, `.github/CODEOWNERS` |
+| `gitlab` | `.gitlab/merge_request_templates/`, and `CODEOWNERS` at the root, in `docs/`, or in `.gitlab/` |
+| `none` | nothing |
+
+These used to be required of every repository unconditionally, which failed a
+GitLab or Gitea repo forever for something that is not a documentation defect —
+the same reasoning that keeps `LICENSE` out of the universal set, applied
+consistently.
+
+**`none` is a real loss, not a clean escape.** The gate still has to exist
+somewhere; choosing `none` means nothing checks that it does. Prefer naming the
+paths with `extra_files` over selecting it.
+
+### What the change template is for
+
+One checkbox:
 
 ```markdown
 - [ ] Docs updated, or explicitly N/A because: ______
 ```
 
-Forcing the "why not" into the PR is what stops docs drifting. "N/A" alone is not
-an answer.
+Forcing the "why not" into the change request is what stops docs drifting. "N/A"
+alone is not an answer.
 
-## .github/CODEOWNERS
+### What the review gate is for
 
 `docs/` and the root documents are owned by the `owner` in `.docs-warden.yml`, so
 documentation changes get a reviewer who cares about them.
+
+## A note on `docs/`
+
+Every path this plugin knows is rooted at `docs/`, and that is deliberate — an
+opinionated layout is the thing being enforced. Two consequences worth stating
+rather than discovering:
+
+- A repository that keeps documentation somewhere else (`documentation/`,
+  `website/`) cannot be audited without moving it.
+- A monorepo cannot be audited per-package. Point the scripts at each package
+  directory separately, or accept one scorecard for the whole tree.
 
 ## .docs-warden.yml
 
@@ -133,6 +166,7 @@ The manifest every script reads.
 
 ```yaml
 archetype: it-tooling        # it-tooling | service | library | firmware
+forge: github                # github | gitlab | none; omitted means github
 owner: rex
 review_cadence_days: 180
 standards:                   # omit when none apply; see standards.md

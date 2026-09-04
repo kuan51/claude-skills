@@ -38,11 +38,40 @@ UNIVERSAL_FILES = [
     RUNLOG,
     GLOSSARY,
     SECURITY,
-    ".github/PULL_REQUEST_TEMPLATE.md",
-    ".github/CODEOWNERS",
     MANIFEST,
     ".gitignore",
 ]
+
+# The review gate and the pull-request template are real controls, and every
+# forge spells them differently. They sat in UNIVERSAL_FILES unconditionally,
+# so a GitLab or Gitea repository failed required-files forever for something
+# that is not a documentation defect -- the same argument that keeps LICENSE
+# out of the universal set, decided the other way by accident.
+#
+# Absent from the manifest means github, because that is what every repository
+# scaffolded so far assumes. Declaring it wrong is a failure, not a fallback.
+FORGE_DEFAULT = "github"
+
+FORGES = {
+    "github": [
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        ".github/CODEOWNERS",
+    ],
+    # GitLab's own documented locations: merge request templates are read from
+    # .gitlab/merge_request_templates/, and CODEOWNERS from the repository
+    # root, docs/ or .gitlab/ -- first one found wins, so any of the three
+    # satisfies this.
+    "gitlab": [
+        ".gitlab/merge_request_templates/",
+        ("CODEOWNERS", "docs/CODEOWNERS", ".gitlab/CODEOWNERS"),
+    ],
+    # A forge whose template convention this table does not know. Nothing is
+    # required, and that is a real loss rather than a clean escape: the gate
+    # that forces documentation into the same change still has to exist
+    # somewhere, and now nothing checks that it does. Prefer naming the paths
+    # with extra_files over selecting none.
+    "none": [],
+}
 
 
 def parse_front_matter(text: str):

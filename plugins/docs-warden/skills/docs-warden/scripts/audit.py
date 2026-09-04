@@ -28,6 +28,8 @@ from archetypes import ARCHETYPES
 from standards import STANDARDS
 from _common import (
     DECISIONS,
+    FORGES,
+    FORGE_DEFAULT,
     DECISIONS_DIR,
     GENERATED_MARKER,
     GLOSSARY,
@@ -78,6 +80,8 @@ def check(cid, state, reason, fix=""):
 
 ARCHETYPE_FIX = ("Set archetype in .docs-warden.yml to one of the known values. "
                  "See references/archetypes.md.")
+FORGE_FIX = ("Set forge in .docs-warden.yml to one of the known values. "
+             "See references/universal-set.md.")
 
 
 def check_required_files(repo, config):
@@ -95,8 +99,15 @@ def check_required_files(repo, config):
         return check("required-files", "fail",
                      f"{problem}; known: {', '.join(sorted(ARCHETYPES))}.",
                      ARCHETYPE_FIX)
+    forge = (config or {}).get("forge", FORGE_DEFAULT)
+    if forge not in FORGES:
+        return check("required-files", "fail",
+                     f"unknown forge {forge!r}; known: "
+                     f"{', '.join(sorted(FORGES))}.",
+                     FORGE_FIX)
     spec = ARCHETYPES.get(archetype, {})
-    expected = list(UNIVERSAL_FILES) + list(spec.get("files", ()))
+    expected = (list(UNIVERSAL_FILES) + list(FORGES[forge])
+                + list(spec.get("files", ())))
     # _artifact_satisfied, not a second path test: this one accepted a bare
     # is_dir(), so firmware's docs/architecture/ was satisfied by an empty
     # directory while check_standards refused exactly that ("an empty

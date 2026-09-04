@@ -141,12 +141,20 @@ def _universal_repo(repo, archetype):
     """
     sys.path.insert(0, str(SCRIPTS))
     try:
-        from _common import UNIVERSAL_FILES
+        from _common import FORGES, FORGE_DEFAULT, UNIVERSAL_FILES
     finally:
         sys.path.pop(0)
-    for rel in UNIVERSAL_FILES:
+    # The default forge's paths too: they left the universal set when forge
+    # became declarable, and a helper that stopped writing them would make
+    # every caller assert against a required-files failure it did not mean.
+    for rel in list(UNIVERSAL_FILES) + list(FORGES[FORGE_DEFAULT]):
+        rel = rel[0] if isinstance(rel, tuple) else rel
         target = repo / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
+        if rel.endswith("/"):
+            target.mkdir(parents=True, exist_ok=True)
+            target = target / "Default.md"
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("x" + chr(10), encoding="utf-8")
     (repo / ".docs-warden.yml").write_text(
         "archetype: " + archetype + chr(10) + "owner: t" + chr(10),
@@ -172,6 +180,43 @@ def test_an_empty_required_directory_is_not_a_present_document():
         entry = _audit_check(repo, "required-files")
         assert entry["state"] == "pass", \
             f"one document in it is enough: {entry}"
+
+
+def test_a_gitlab_repo_is_not_failed_for_having_no_dot_github():
+    """.github/PULL_REQUEST_TEMPLATE.md and .github/CODEOWNERS were universal,
+    so a GitLab repository failed required-files permanently for a forge
+    convention it does not use. The plugin already refused to put LICENSE in
+    the universal set on exactly this reasoning."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / "docs" / "runbook.md").write_text("x", encoding="utf-8")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + chr(10) + "forge: gitlab" + chr(10),
+            encoding="utf-8")
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "fail", "GitLab's own paths are still required"
+        assert "merge_request_templates" in entry["reason"], entry["reason"]
+        # Any of GitLab's three documented CODEOWNERS locations satisfies it.
+        (repo / ".gitlab" / "merge_request_templates").mkdir(parents=True)
+        (repo / ".gitlab" / "merge_request_templates" / "Default.md").write_text(
+            "x", encoding="utf-8")
+        (repo / "docs" / "CODEOWNERS").write_text("* @team", encoding="utf-8")
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "pass", entry
+
+
+def test_an_unknown_forge_fails_rather_than_requiring_nothing():
+    """Same shape as the archetype guard: a typo must not quietly delete the
+    review gate from the required set."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + chr(10) + "forge: githbu" + chr(10),
+            encoding="utf-8")
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "fail", entry
+        assert "githbu" in entry["reason"] and "github" in entry["reason"], \
+            entry["reason"]
 
 
 def test_required_files_says_how_much_the_archetype_declares_but_cannot_check():
