@@ -117,6 +117,27 @@ def load_config(repo: Path):
     return data if isinstance(data, dict) else None
 
 
+def parse_glossary(path: Path):
+    """Return [(term, [rejected, ...])] from the glossary table."""
+    entries = []
+    text = path.read_text(encoding="utf-8", errors="replace")
+    for line in text.splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        term, rejected = cells[0], cells[2]
+        if not term or term.lower() == "term" or set(term) <= {"-", ":", " "}:
+            continue
+        if term.startswith("{{"):  # untouched template row
+            continue
+        rejects = [r.strip() for r in rejected.split(",")
+                   if r.strip() and not r.strip().startswith("{{")]
+        entries.append((term, rejects))
+    return entries
+
+
 def adr_files(repo: Path):
     """Decision record files, sorted by id."""
     decisions = repo / DECISIONS_DIR
