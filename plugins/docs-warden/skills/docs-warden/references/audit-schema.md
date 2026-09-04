@@ -206,10 +206,19 @@ treating a `pass` as coverage.
 
 ### 11. `manifest`
 
-Emitted only when `.docs-warden.yml` is absent or unreadable. It is then the sole
-`fail`, and every archetype-dependent check is `skipped` — the audit cannot know
-what the repository is.
-**Fix:** run init mode to create `.docs-warden.yml`.
+Always runs, and reports the manifest itself.
+
+`fail` when `.docs-warden.yml` is absent or unreadable — the audit cannot know
+what the repository is, and every archetype-dependent check is then `skipped`.
+Also `fail` for a manifest it can read but not believe: a waiver naming a check
+that does not exist, a waiver with no reason, a waiver on `manifest` itself, or
+an `extra_files` that is not a list of paths. Those are reported here rather
+than by the check they refer to, because a waiver for a check id that does not
+exist would otherwise waive nothing, silently, and read as a control that is in
+place.
+
+This check cannot be waived.
+**Fix:** run init mode to create `.docs-warden.yml`, or correct the key named.
 
 ### 12. `links`
 
