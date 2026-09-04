@@ -1,7 +1,10 @@
 # Audit scorecard
 
-`audit.py <repo> [<repo> ...]` writes `docs-scorecard.json` and prints a Markdown
-table. Given several paths it prints one row per repo — the cross-repo view.
+`audit.py <repo> [<repo> ...]` writes `docs-scorecard.json` into each repository it
+audits and prints a Markdown table. Given several paths it prints one row per repo —
+the cross-repo view — and still writes each repo its own scorecard, in the single-object
+shape below. `--json-out PATH` overrides that: everything goes to `PATH` instead, as
+one object for a single repo and as an array of them for several.
 
 Every check returns one of four states, and the distinction between the last two is
 the one that matters:

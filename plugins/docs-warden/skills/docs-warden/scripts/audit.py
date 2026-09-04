@@ -3,8 +3,10 @@
 
 Usage: audit.py <repo> [<repo> ...] [--json-out PATH] [--quiet]
 
-Prints a Markdown scorecard and writes docs-scorecard.json. Several paths gives
-one row per repo, which is the cross-repo view.
+Prints a Markdown scorecard and writes docs-scorecard.json into each repo it
+audits. Several paths gives one row per repo, which is the cross-repo view, and
+each repo still gets its own scorecard. --json-out sends everything to that one
+path instead: one object for a single repo, an array of them for several.
 
 Every check returns pass, warn, fail, or skipped. A check whose tool is missing
 reports skipped and never pass -- a scorecard that quietly passes checks it never
@@ -901,11 +903,29 @@ def main() -> int:
     if not args.quiet:
         print(render_aggregate(reports) if len(reports) > 1 else render_single(reports[0]))
 
-    payload = reports if len(reports) > 1 else reports[0]
-    out_path = args.json_out or (Path(reports[0]["repo"]) / "docs-scorecard.json")
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    if args.json_out:
+        # One path was asked for, so everything lands there: a single report for
+        # one repo, the array for several.
+        payload = reports if len(reports) > 1 else reports[0]
+        args.json_out.write_text(json.dumps(payload, indent=2) + "\n",
+                                 encoding="utf-8")
+        written = [args.json_out]
+    else:
+        # Each repository's own scorecard, in its own tree, in the single-object
+        # shape references/audit-schema.md documents. Auditing several used to
+        # write the whole array into the first repo -- giving it a shape its
+        # readers do not parse, carrying another repository's results into a
+        # tree that may be published, and leaving every repo after the first
+        # with no scorecard at all.
+        written = []
+        for report in reports:
+            path = Path(report["repo"]) / "docs-scorecard.json"
+            path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+            written.append(path)
     if not args.quiet:
-        print(f"\nwrote {out_path}")
+        print()
+        for path in written:
+            print(f"wrote {path}")
 
     return 1 if any(r["summary"]["fail"] for r in reports) else 0
 

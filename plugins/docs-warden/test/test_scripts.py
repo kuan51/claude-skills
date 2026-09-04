@@ -289,6 +289,44 @@ def test_the_audit_and_the_generator_read_one_glossary_the_same_way():
             assert "capture" in entry["reason"], (label, entry["reason"])
 
 
+def test_each_audited_repo_gets_its_own_scorecard():
+    """Auditing several repositories wrote the whole array into the first one:
+    a shape references/audit-schema.md does not describe, carrying the other
+    repositories' results into a tree that may be published, and leaving every
+    repo after the first with no scorecard at all.
+
+    --json-out still collects everything into the one path that was asked for.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        repos = []
+        for name in ("one", "two"):
+            repo = Path(tmp) / name
+            (repo / "docs").mkdir(parents=True)
+            (repo / "README.md").write_text("# " + name + "\n", encoding="utf-8")
+            repos.append(repo)
+        subprocess.run(
+            [sys.executable, str(SCRIPTS / "audit.py"), *[str(r) for r in repos],
+             "--quiet"],
+            capture_output=True, check=False)
+        for repo in repos:
+            card_path = repo / "docs-scorecard.json"
+            assert card_path.is_file(), f"{repo.name} got no scorecard"
+            card = json.loads(card_path.read_text(encoding="utf-8"))
+            assert isinstance(card, dict), \
+                f"{repo.name}'s scorecard is a {type(card).__name__}, not the documented object"
+            assert Path(card["repo"]).name == repo.name, \
+                f"{repo.name}'s scorecard reports {card['repo']}"
+
+        # One path asked for, one file written, holding both.
+        out = Path(tmp) / "all.json"
+        subprocess.run(
+            [sys.executable, str(SCRIPTS / "audit.py"), *[str(r) for r in repos],
+             "--quiet", "--json-out", str(out)],
+            capture_output=True, check=False)
+        both = json.loads(out.read_text(encoding="utf-8"))
+        assert isinstance(both, list) and len(both) == 2, both
+
+
 def _regulated_repo(tmp):
     """A class-A regulated repo with every required artifact present, and a
     requirements/ directory that is non-empty but declares no REQ heading --
