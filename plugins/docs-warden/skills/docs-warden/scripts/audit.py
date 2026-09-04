@@ -24,7 +24,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from archetypes import ARCHETYPE_FILES
+from archetypes import ARCHETYPES
 from standards import STANDARDS
 from _common import (
     DECISIONS,
@@ -89,21 +89,29 @@ def check_required_files(repo, config):
     # correct run but for that count, and a repo genuinely missing its runbook
     # passing. check_standards already refuses an unknown standard id this way;
     # the other axis did not.
-    if config is not None and archetype not in ARCHETYPE_FILES:
+    if config is not None and archetype not in ARCHETYPES:
         problem = ("no archetype declared" if archetype is None
                    else f"unknown archetype {archetype!r}")
         return check("required-files", "fail",
-                     f"{problem}; known: {', '.join(sorted(ARCHETYPE_FILES))}.",
+                     f"{problem}; known: {', '.join(sorted(ARCHETYPES))}.",
                      ARCHETYPE_FIX)
-    expected = list(UNIVERSAL_FILES)
-    for extra in ARCHETYPE_FILES.get(archetype, []):
-        expected.append(extra)
+    spec = ARCHETYPES.get(archetype, {})
+    expected = list(UNIVERSAL_FILES) + list(spec.get("files", ()))
     missing = [
         f for f in expected
         if not ((repo / f).is_dir() if f.endswith("/") else (repo / f).is_file())
     ]
     if not missing:
-        return check("required-files", "pass", f"All {len(expected)} required files present.")
+        # The archetype wants documents no path test can verify -- a generated
+        # API reference is real work that an empty docs/reference/ would satisfy.
+        # Counted in the reason rather than left implied, so a reader comparing
+        # references/archetypes.md against the scorecard sees the same number in
+        # both places instead of reporting the overlay as broken.
+        unchecked = spec.get("unchecked", ())
+        note = (f" {len(unchecked)} further document(s) declared but not checked; "
+                "see references/archetypes.md." if unchecked else "")
+        return check("required-files", "pass",
+                     f"All {len(expected)} required files present.{note}")
     return check(
         "required-files", "fail", "Missing: " + ", ".join(missing),
         "Run init mode; it creates only what is missing.",

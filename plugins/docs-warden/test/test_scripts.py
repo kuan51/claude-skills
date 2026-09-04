@@ -134,6 +134,45 @@ def test_a_known_archetype_still_demands_its_own_documents():
             f"it-tooling's own document should still be required: {entry['reason']}"
 
 
+def _universal_repo(repo, archetype):
+    """A repo carrying every universal file, so required-files turns on the
+    archetype's contribution alone. Derived from UNIVERSAL_FILES rather than
+    retyped, so a change to that set cannot quietly make these assert nothing.
+    """
+    sys.path.insert(0, str(SCRIPTS))
+    try:
+        from _common import UNIVERSAL_FILES
+    finally:
+        sys.path.pop(0)
+    for rel in UNIVERSAL_FILES:
+        target = repo / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("x" + chr(10), encoding="utf-8")
+    (repo / ".docs-warden.yml").write_text(
+        "archetype: " + archetype + chr(10) + "owner: t" + chr(10),
+        encoding="utf-8")
+    return repo
+
+
+def test_required_files_says_how_much_the_archetype_declares_but_cannot_check():
+    """references/archetypes.md promises a service repo docs/how-to/,
+    docs/reference/ and a generated API reference; the audit demands only
+    arc42.md. Nothing said so, and the standards overlays already had the
+    convention -- an artifact named without a (not checked) marker is a promise
+    the check keeps. A pass that counts the gap keeps the two honest about each
+    other."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "service")
+        (repo / "docs" / "architecture").mkdir(parents=True, exist_ok=True)
+        (repo / "docs" / "architecture" / "arc42.md").write_text(
+            "x", encoding="utf-8")
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "pass", entry
+        assert "not checked" in entry["reason"], \
+            f"the unchecked documents should be counted: {entry['reason']}"
+        assert "archetypes.md" in entry["reason"], entry["reason"]
+
+
 def test_documents_are_found_when_the_repo_itself_lives_under_a_skipped_directory():
     """markdown_docs() matched its skip set against the absolute path, so a repo
     checked out beneath build/ or dist/ -- a CI workspace root, commonly --
