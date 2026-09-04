@@ -1,3 +1,9 @@
+---
+owner: kuan51
+review_by: 2027-03-03
+generated: false
+---
+
 # Design: `data-analysis-review` gating flow mode-awareness
 
 **Date:** 2026-07-20

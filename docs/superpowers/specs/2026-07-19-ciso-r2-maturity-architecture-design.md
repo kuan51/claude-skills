@@ -1,3 +1,9 @@
+---
+owner: kuan51
+review_by: 2027-03-03
+generated: false
+---
+
 # Design: `ciso` r2 PRISMA maturity architecture
 
 **Date:** 2026-07-19

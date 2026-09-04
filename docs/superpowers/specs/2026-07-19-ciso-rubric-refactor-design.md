@@ -1,3 +1,9 @@
+---
+owner: kuan51
+review_by: 2027-03-03
+generated: false
+---
+
 # ciso plugin — rubric-driven refactor (Approach C)
 
 ## Context
