@@ -19,6 +19,17 @@ the regulation's; the file paths are this plugin's.
 advice.** It says nine documents exist. Conformity is assessed against the
 regulation by people qualified to do it.
 
+## Where this table came from
+
+The Annex VII enumeration below was taken from a **secondary reproduction** of
+the annex, not from the EUR-Lex text, which serves the regulation through
+JavaScript and could not be read directly here. Confirm it against the
+regulation before relying on it -- more so than the other overlays in this
+directory, whose artifact lists were derived from their primary sources.
+
+The two dates above, and the SBOM obligation in Annex I Part II(1), are
+corroborated across several independent sources.
+
 ## No level axis
 
 The CRA classifies products — default, important (Annex III class I and II), and
