@@ -92,5 +92,5 @@ Validated interactively via a rendered mockup reusing the dashboard's actual CSS
 2. Manual: register r2 in a scratch project, run the default interview for a few controls (Implemented-only), and confirm the resulting `state.json` matches the shape in section 2 exactly.
 3. Manual: run a deepening pass on one control across all five dimensions, including one case that deliberately attempts to mark Managed as `met` before Measured is `met`, to confirm the validation error fires with a clear message.
 4. Browser smoke-test: open the regenerated dashboard and confirm the `N / 5 maturity dims` badge and its disclosure render correctly for both a shallow and a deepened control, and that the new domain-level depth gauge shows a sane, correctly-computed value.
-5. Grep `plugins/ciso/` for any Xenter-specific or PII string (standing project discipline) — expected to already be clean since this pass introduces no organization-specific content.
+5. Grep `plugins/ciso/` for any organization-specific or PII string (standing project discipline) — expected to already be clean since this pass introduces no organization-specific content.
 6. `git diff --stat` confirms `e1.v11.8.structure.json` and `i1.v11.8.structure.json` are byte-identical/untouched by this pass.

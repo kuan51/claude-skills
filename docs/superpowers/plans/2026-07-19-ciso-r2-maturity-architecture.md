@@ -1560,7 +1560,7 @@ git commit -m "docs(ciso): document r2's Implemented-first interview default and
 
 1. Run the full suite once more: `node --test $(find plugins/ciso -name '*.test.js')` — expect 100% pass, zero regressions in e1/i1 behavior.
 2. `git diff --stat` against the commit before Task 1 confirms `e1.v11.8.structure.json` and `i1.v11.8.structure.json` are untouched.
-3. Grep `plugins/ciso/` for any Xenter-specific or PII string — expected clean, since this pass introduces no organization-specific content.
+3. Grep `plugins/ciso/` for any organization-specific or PII string — expected clean, since this pass introduces no organization-specific content.
 4. Manual: register r2 in a scratch project (`node register-tier.js <dir> hitrust "HITRUST CSF" r2`), run the interview for 2-3 controls via `apply-assessment.js` with `"dimension": "implemented"`, then deepen one control across all 5 dimensions including a deliberate Managed-before-Measured attempt to confirm the validation error. Regenerate and open the dashboard to confirm everything renders as expected.
 
 ## Execution Handoff
