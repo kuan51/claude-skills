@@ -99,6 +99,61 @@ def _audit_check(repo, check_id, *extra):
     return _one_check(card, check_id)
 
 
+def test_documents_are_found_when_the_repo_itself_lives_under_a_skipped_directory():
+    """markdown_docs() matched its skip set against the absolute path, so a repo
+    checked out beneath build/ or dist/ -- a CI workspace root, commonly --
+    matched every one of its own documents and yielded nothing. phi-secrets then
+    reported "No PHI or secret patterns in documentation" over an empty
+    population, which is the false green this tool exists to catch.
+
+    Both directions asserted: the repo's own build/ must still be skipped, or
+    the fix regresses into skipping nothing at all.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "build" / "checkout"
+        (repo / "docs").mkdir(parents=True)
+        (repo / "docs" / "notes.md").write_text(
+            "# Notes" + chr(10) * 2 + "MRN: 12345678" + chr(10), encoding="utf-8")
+        entry = _audit_check(repo, "phi-secrets")
+        assert entry["state"] == "fail", \
+            f"the repo is under build/, so its documents went unread: {entry}"
+        assert "docs/notes.md" in entry["reason"], entry["reason"]
+
+        # The repo's own build/ output tree is still vendored, still skipped.
+        (repo / "build").mkdir()
+        (repo / "build" / "generated.md").write_text(
+            "MRN: 87654321" + chr(10), encoding="utf-8")
+        entry = _audit_check(repo, "phi-secrets")
+        assert "build/generated.md" not in entry["reason"], \
+            f"the skip set stopped skipping anything: {entry['reason']}"
+
+
+def test_trace_matrix_reads_the_tree_when_the_repo_lives_under_a_skipped_directory():
+    """Same defect in trace_matrix.py's SKIP_DIRS filter, four lines below the
+    comment warning about exactly this for is_test(). Every source file was
+    skipped, so every requirement reported "no test" and the standards check
+    failed a conforming repository."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "vendor" / "checkout"
+        (repo / "docs" / "regulatory" / "requirements").mkdir(parents=True)
+        (repo / "docs" / "regulatory" / "requirements" / "r.md").write_text(
+            "## REQ-FIX-001" + chr(10) * 2 + "The thing works." + chr(10),
+            encoding="utf-8")
+        (repo / "src").mkdir()
+        (repo / "src" / "thing.py").write_text(
+            "# REQ-FIX-001" + chr(10) + "def thing(): pass" + chr(10),
+            encoding="utf-8")
+        (repo / "tests").mkdir()
+        (repo / "tests" / "test_thing.py").write_text(
+            "def test_REQ_FIX_001_works(): pass" + chr(10), encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "trace_matrix.py"), str(repo)],
+            capture_output=True, text=True, check=False)
+        assert result.returncode == 0, \
+            f"the repo is under vendor/, so its source went unread: {result.stderr}"
+        assert "REQ-FIX-001" not in result.stderr, result.stderr
+
+
 def _regulated_repo(tmp):
     """A class-A regulated repo with every required artifact present, and a
     requirements/ directory that is non-empty but declares no REQ heading --

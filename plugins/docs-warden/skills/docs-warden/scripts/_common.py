@@ -157,7 +157,11 @@ def markdown_docs(repo: Path):
     generated trees."""
     skip = {".git", "node_modules", "vendor", "dist", "build", ".venv"}
     for path in sorted(repo.rglob("*.md")):
-        if any(part in skip for part in path.parts):
+        # Relative to the audited repo, never the absolute path: a repo checked
+        # out under a directory called build/ or dist/ -- a CI workspace root,
+        # commonly -- matched every one of its own documents against the skip
+        # set and yielded nothing, which turned check_phi_secrets into a pass.
+        if any(part in skip for part in path.relative_to(repo).parts):
             continue
         yield path
 

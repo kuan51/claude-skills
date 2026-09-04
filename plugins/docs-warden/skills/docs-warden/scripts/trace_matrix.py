@@ -102,9 +102,12 @@ def main() -> int:
     for path in sorted(repo.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
             continue
-        if any(part in SKIP_DIRS for part in path.parts):
-            continue
         rel = path.relative_to(repo).as_posix()
+        # Relative, for the same reason is_test() is: an absolute path carries
+        # every ancestor directory, so a repo living under build/ or vendor/
+        # skipped its whole tree and reported every requirement untested.
+        if any(part in SKIP_DIRS for part in Path(rel).parts):
+            continue
         # The requirements themselves are the declaration, not coverage, and the
         # matrix lists every ID by definition -- counting either would let the
         # matrix prove its own completeness.
