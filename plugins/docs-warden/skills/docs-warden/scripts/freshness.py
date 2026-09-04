@@ -56,6 +56,9 @@ def main() -> int:
 
     config = load_config(repo) or {}
     today = dt.date.today()
+    # Asked once. This was inside the loop below, forking a git process per
+    # document to re-answer a question that cannot change during the run.
+    tracked = is_git_repo(repo)
     failures, warnings = [], []
 
     for path in markdown_docs(repo):
@@ -73,7 +76,7 @@ def main() -> int:
             if due and due < today:
                 failures.append(f"{rel}: review_by {due.isoformat()} passed {(today - due).days} day(s) ago")
 
-        if not is_git_repo(repo):
+        if not tracked:
             continue
         doc_epoch = last_commit_epoch(repo, rel)
         if doc_epoch is None:
