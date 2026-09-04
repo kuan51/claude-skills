@@ -223,5 +223,7 @@ terms.
   level, and the control families it leaves out.
 - `references/standards/eu-cra.md` — EU CRA Annex VII artifacts, the two dates,
   and what the overlay cannot check.
+- `references/standards/nist-ssdf.md` — SSDF practices that produce a document,
+  and the ones that do not.
 - `../clarity/SKILL.md` — the plain-English writing standard, and the source of the
   `Clarity` Vale style this skill's `.vale.ini` depends on.

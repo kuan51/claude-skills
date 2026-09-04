@@ -1,0 +1,41 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+---
+
+# Toolchain and build environments
+
+<!-- SSDF PO.3.1 wants the tools or tool types each toolchain must include and
+     how the components integrate; PO.3.2 the security of the toolchain itself;
+     PO.5.1 that each environment involved in development is separated and
+     protected. One document covers all three because they describe one thing. -->
+
+## Tools in the chain
+
+| Stage | Tool | Version pinned in | What it is there to catch |
+|-------|------|-------------------|---------------------------|
+| {{STAGE}} | {{TOOL}} | {{LOCKFILE_OR_CONFIG}} | {{PURPOSE}} |
+
+## How the toolchain itself is protected
+
+<!-- PO.3.2: who may change the pipeline, how tool versions are pinned, how
+     build inputs are verified. -->
+
+{{TOOLCHAIN_HARDENING}}
+
+## Environments
+
+<!-- PO.5.1: how development, build and release environments are separated, and
+     what stops one reaching another. -->
+
+| Environment | What runs there | Separated from the others by |
+|-------------|-----------------|------------------------------|
+| {{ENVIRONMENT}} | {{PURPOSE}} | {{BOUNDARY}} |
+
+## What the pipeline records
+
+<!-- PO.3.3: generate and collect the artifacts that show the process was
+     followed. Say where those logs and attestations are kept, and for how long. -->
+
+{{EVIDENCE_AND_RETENTION}}

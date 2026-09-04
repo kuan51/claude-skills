@@ -36,6 +36,11 @@ VULNERABILITY_HANDLING = "docs/vulnerability-handling.md"
 APPLIED_STANDARDS = "docs/applied-standards.md"
 DECLARATION_OF_CONFORMITY = "docs/declaration-of-conformity.md"
 VERIFICATION_DIR = "docs/verification/"
+MAINTAINERS = "docs/MAINTAINERS.md"
+REMEDIATION_POLICY = "docs/remediation-policy.md"
+VERIFY_RELEASE = "docs/how-to/verify-release.md"
+SECURITY_REQUIREMENTS = "docs/security-requirements.md"
+TOOLCHAIN = "docs/toolchain.md"
 
 _IEC_62304_A = [
     "docs/regulatory/software-development-plan.md",
@@ -63,7 +68,7 @@ _OSPS_1 = [
     LICENSE,                    # OSPS-LE-02, OSPS-LE-03
 ]
 _OSPS_2 = _OSPS_1 + [
-    "docs/MAINTAINERS.md",      # OSPS-GV-01.01, .02
+    MAINTAINERS,                # OSPS-GV-01.01, .02
     "docs/dependencies.md",     # OSPS-DO-06.01
     "docs/how-to/build.md",     # OSPS-DO-07.01
     ARCHITECTURE_DIR,           # OSPS-SA-01.01
@@ -73,8 +78,8 @@ _OSPS_2 = _OSPS_1 + [
 _OSPS_3 = _OSPS_2 + [
     SUPPORT,                    # OSPS-DO-04.01, OSPS-DO-05.01
     THREAT_MODEL,               # OSPS-SA-03.02
-    "docs/how-to/verify-release.md",   # OSPS-DO-03.01, .02
-    "docs/remediation-policy.md",      # OSPS-VM-05.01, OSPS-VM-06.01
+    VERIFY_RELEASE,             # OSPS-DO-03.01, .02
+    REMEDIATION_POLICY,         # OSPS-VM-05.01, OSPS-VM-06.01
 ]
 
 # Regulation (EU) 2024/2847, free from EUR-Lex. Paths follow Annex VII's eight
@@ -92,6 +97,22 @@ _EU_CRA = [
     APPLIED_STANDARDS,            # VII.5  standards and specifications applied
     VERIFICATION_DIR,             # VII.6  test reports
     DECLARATION_OF_CONFORMITY,    # VII.7  EU declaration of conformity
+]
+
+# NIST SP 800-218 v1.1, a US Government work and free from csrc.nist.gov.
+# Practice ids are NIST's; the paths are this plugin's. Only tasks that produce
+# a document in the repository are represented -- most of the 42 are activities
+# or tracker work, and references/standards/nist-ssdf.md says which.
+_NIST_SSDF = [
+    SECURITY_REQUIREMENTS,        # PO.1.1, PO.1.2  identify and document
+    MAINTAINERS,                  # PO.2.1  roles and responsibilities
+    TOOLCHAIN,                    # PO.3.1 toolchain, PO.5.1 environments
+    REMEDIATION_POLICY,           # PO.4.1  criteria for security checks
+    VERIFY_RELEASE,               # PS.2.1  verifying release integrity
+    SBOM,                         # PS.3.2  provenance data
+    ARCHITECTURE_DIR,             # PW.1    design to meet security requirements
+    THREAT_MODEL,                 # PW.1.1  threat and attack-surface modelling
+    VULNERABILITY_HANDLING,       # RV.1.3  disclosure and remediation policy
 ]
 
 STANDARDS = {
@@ -127,5 +148,16 @@ STANDARDS = {
         "artifacts": _EU_CRA,
         "extra": [],
         "reference": "references/standards/eu-cra.md",
+    },
+    "nist-ssdf": {
+        "name": "NIST SSDF",
+        "level_name": None,
+        # Whether federal attestation applies is a commercial fact. Ask.
+        "infer": False,
+        "source_version": "SP 800-218 v1.1",
+        "levels": None,
+        "artifacts": _NIST_SSDF,
+        "extra": [],
+        "reference": "references/standards/nist-ssdf.md",
     },
 }
