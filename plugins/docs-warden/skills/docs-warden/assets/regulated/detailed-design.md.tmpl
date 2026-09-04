@@ -1,0 +1,43 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+qms_record: pending
+---
+
+# {{SYSTEM_NAME}} detailed design
+
+Class C only. This is the level below `docs/architecture/arc42.md`: the module
+or unit decomposition an implementer or reviewer needs, not restated
+architecture.
+
+<!-- CONSULT: regulatory lead for the boundary between this document and the
+     hazard analysis -- any design decision made specifically to control a
+     hazard belongs in both, traceably. -->
+
+## Module decomposition
+
+| Module | Responsibility | Requirements implemented |
+|--------|-----------------|---------------------------|
+| {{MODULE}} | {{RESPONSIBILITY}} | {{REQ_IDS}} |
+
+## Interfaces
+
+| Interface | Direction | Data | Error handling |
+|-----------|-----------|------|-----------------|
+| {{INTERFACE}} | {{IN_OR_OUT}} | {{DATA_SHAPE}} | {{ERROR_HANDLING}} |
+
+## Data design
+
+{{KEY_DATA_STRUCTURES_AND_WHY_THEY_ARE_SHAPED_THAT_WAY}}
+
+## Algorithms
+
+{{ANY_ALGORITHM_WHOSE_CORRECTNESS_ISNT_OBVIOUS_FROM_THE_CODE}}
+
+## Error and fault handling
+
+{{HOW_EACH_MODULE_DETECTS_AND_RESPONDS_TO_A_FAULT}}
+
+<!-- CONSULT: regulatory lead -- fault handling tied to a hazard mitigation
+     needs sign-off, not a generated draft. -->

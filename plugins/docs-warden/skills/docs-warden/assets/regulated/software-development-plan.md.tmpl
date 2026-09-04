@@ -1,0 +1,54 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+qms_record: pending
+safety_class: {{SAFETY_CLASS}}
+---
+
+# Software development plan
+
+<!-- CONSULT: regulatory lead. This template gives structure only. Every
+     statement of process, scope, or classification must be written or approved
+     by someone qualified to make it. -->
+
+## Scope
+
+{{WHAT_SOFTWARE_THIS_COVERS}}
+
+## Safety classification
+
+Class {{SAFETY_CLASS}}.
+
+<!-- CONSULT: regulatory lead - the rationale for this classification, and the
+     hazard analysis it derives from. -->
+
+## Development lifecycle
+
+{{LIFECYCLE_MODEL}}
+
+## Deliverables
+
+| Deliverable | Where it lives | eQMS record |
+|-------------|----------------|-------------|
+| Requirements | `docs/regulatory/requirements/` | {{RECORD}} |
+| Architecture | `docs/architecture/` | {{RECORD}} |
+| Verification | `docs/regulatory/verification/` | {{RECORD}} |
+| SOUP list | `docs/regulatory/soup.md` | {{RECORD}} |
+| Traceability | `docs/regulatory/traceability-matrix.md` (generated) | {{RECORD}} |
+
+## Configuration management
+
+Git holds the working artifacts. A release is a git tag. Controlled, signed records
+live in the eQMS and are referenced by `qms_record` in each document's front matter.
+
+## Problem resolution
+
+Tracked in Jira. This repository links to issues; it does not duplicate them.
+
+## Verification strategy
+
+{{HOW_EACH_REQUIREMENT_GETS_TESTED}}
+
+Every `REQ-` ID must appear in at least one test name. `trace_matrix.py` fails the
+build otherwise.

@@ -1,0 +1,21 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "pressure-service",
+      "version": "1.4.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "pytest",
+      "version": "8.2.0",
+      "purl": "pkg:pypi/pytest@8.2.0",
+      "scope": "excluded"
+    }
+  ]
+}

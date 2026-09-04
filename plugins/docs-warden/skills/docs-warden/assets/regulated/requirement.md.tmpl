@@ -1,0 +1,26 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+qms_record: pending
+---
+
+# {{AREA}} requirements
+
+Each requirement carries a stable ID of the form `REQ-{{AREA}}-NNN`. The ID appears
+in the code that implements it and in the name of every test that verifies it.
+`trace_matrix.py` builds the traceability matrix from those tags and fails on any
+requirement with no test.
+
+IDs are never reused and never renumbered. Retire one by marking it obsolete here.
+
+## REQ-{{AREA}}-001
+
+**Requirement.** {{SHALL_STATEMENT}}
+
+**Rationale.** {{WHY}}
+
+**Verification.** {{HOW_IT_IS_TESTED}}
+
+<!-- CONSULT: regulatory lead for the shall-statement wording and for any
+     requirement with patient-safety impact. -->

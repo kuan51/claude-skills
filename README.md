@@ -31,6 +31,12 @@ so it picks up the newly installed plugin.
   control impact, attach a merged PR or CI run as evidence, audit how ready you actually are —
   tracked via persistent local HTML dashboards: an index across every supported certification,
   plus a page for each.
+- **[docs-warden](plugins/docs-warden/)** — repository documentation governance:
+  scaffolds a document set scaled to what the repo actually is, audits it for what is
+  missing, stale, or off-standard, keeps architecture decision records append-only
+  and indexed, and reports where the docs have drifted from the code instead of
+  silently rewriting them. Includes a plain-English Vale style and an optional
+  IEC 62304 overlay.
 
 ## Adding a new plugin
 

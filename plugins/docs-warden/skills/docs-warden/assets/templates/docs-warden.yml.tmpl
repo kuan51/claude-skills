@@ -1,0 +1,11 @@
+# Drives every docs-warden script. Confirm every value before writing.
+archetype: {{ARCHETYPE}}        # it-tooling | service | library | firmware
+regulated: {{REGULATED}}        # true | false
+safety_class: {{SAFETY_CLASS}}  # null | A | B | C  (IEC 62304)
+owner: {{OWNER}}
+review_cadence_days: 180
+
+# CI regenerates each path with its command and fails on any diff.
+generated_docs: []
+#  - path: docs/reference/cli.md
+#    command: ["pwsh", "./build/Export-Help.ps1"]

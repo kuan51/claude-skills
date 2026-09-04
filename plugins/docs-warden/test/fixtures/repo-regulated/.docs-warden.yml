@@ -1,0 +1,6 @@
+archetype: service
+regulated: true
+safety_class: B
+owner: platform-team
+review_cadence_days: 180
+generated_docs: []

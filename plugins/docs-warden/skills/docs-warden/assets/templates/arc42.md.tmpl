@@ -1,0 +1,88 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+qms_record: pending
+---
+
+# {{SYSTEM_NAME}} architecture
+
+The useful subset of arc42 for a service: introduction and goals, context and
+scope, building block view, runtime view, deployment view, architecture
+decisions, and risks and technical debt. Sections not listed here (2, 4, 8, 10, 11)
+are skipped rather than filled with placeholders — a full arc42 with empty
+sections is worse than a short one that is true.
+
+## 1. Introduction and goals
+
+{{WHAT_THIS_SYSTEM_DOES_AND_WHY_IT_EXISTS}}
+
+**Quality goals.**
+
+| Priority | Quality goal | Motivation |
+|----------|--------------|------------|
+| 1 | {{QUALITY_GOAL}} | {{WHY_IT_MATTERS}} |
+
+## 3. Context and scope
+
+**Business context.** {{WHO_AND_WHAT_THIS_SYSTEM_TALKS_TO}}
+
+**Technical context.**
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#1625FF','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000BA8','lineColor':'#000BA8','secondaryColor':'#7BA0FF','tertiaryColor':'#C7D7FF','background':'#FFFFFF','mainBkg':'#1625FF','fontFamily':'Instrument Sans, Aptos, sans-serif','fontSize':'14px'}}}%%
+C4Context
+    title {{SYSTEM_NAME}} - system context
+    Person(user, "{{USER}}", "{{USER_DESCRIPTION}}")
+    System(system, "{{SYSTEM_NAME}}", "{{SYSTEM_DESCRIPTION}}")
+    System_Ext(dependency, "{{DEPENDENCY}}", "{{DEPENDENCY_DESCRIPTION}}")
+    Rel(user, system, "{{INTERACTION}}")
+    Rel(system, dependency, "{{INTERACTION}}")
+```
+
+## 5. Building block view
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#1625FF','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000BA8','lineColor':'#000BA8','secondaryColor':'#7BA0FF','tertiaryColor':'#C7D7FF','background':'#FFFFFF','mainBkg':'#1625FF','fontFamily':'Instrument Sans, Aptos, sans-serif','fontSize':'14px'}}}%%
+C4Container
+    title {{SYSTEM_NAME}} - containers
+    Container(api, "{{API_CONTAINER}}", "{{TECH}}", "{{RESPONSIBILITY}}")
+    ContainerDb(store, "{{DATA_STORE}}", "{{TECH}}", "{{RESPONSIBILITY}}")
+    Rel(api, store, "{{INTERACTION}}")
+```
+
+{{WHAT_EACH_BUILDING_BLOCK_IS_RESPONSIBLE_FOR}}
+
+## 6. Runtime view
+
+{{THE_SCENARIO_MOST_WORTH_WALKING_THROUGH}}
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'primaryColor':'#1625FF','primaryTextColor':'#FFFFFF','primaryBorderColor':'#000BA8','lineColor':'#000BA8','secondaryColor':'#7BA0FF','tertiaryColor':'#C7D7FF','background':'#FFFFFF','mainBkg':'#1625FF','fontFamily':'Instrument Sans, Aptos, sans-serif','fontSize':'14px'}}}%%
+sequenceDiagram
+    participant Caller as {{CALLER}}
+    participant System as {{SYSTEM_NAME}}
+    Caller->>System: {{REQUEST}}
+    System-->>Caller: {{RESPONSE}}
+```
+
+## 7. Deployment view
+
+{{WHERE_THIS_RUNS_AND_HOW_IT_GETS_THERE}}
+
+## 9. Architecture decisions
+
+Decisions with system-wide consequences are recorded as ADRs in
+`docs/decisions/`, not restated here. Link the ones that shaped this
+architecture:
+
+- {{DECISION_LINK}}
+
+## 12. Risks and technical debt
+
+| Risk / debt | Impact | Mitigation |
+|-------------|--------|------------|
+| {{RISK_OR_DEBT}} | {{IMPACT}} | {{MITIGATION}} |
+
+<!-- CONSULT: regulatory lead for any risk with a patient-safety impact --
+     this section is architectural, not the hazard analysis. -->

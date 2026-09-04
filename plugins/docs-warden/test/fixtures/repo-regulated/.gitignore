@@ -1,0 +1,5 @@
+docs-scorecard.json
+styles/config/vocabularies/Project/
+styles/Clarity/GlossaryTerms.yml
+*.env
+.env.*
