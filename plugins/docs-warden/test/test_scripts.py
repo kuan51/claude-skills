@@ -166,6 +166,46 @@ def _full_card(repo, *extra):
     return json.loads(out.read_text(encoding="utf-8"))
 
 
+def test_audit_reports_a_malformed_generated_docs_instead_of_crashing():
+    """A single entry written as a mapping rather than a one-item list is the
+    natural mistake, and iterating it yielded that mapping's keys -- bare
+    strings, whose .get raised AttributeError and took the whole run down. The
+    same defect the standards key had; this is the sibling reading the same
+    manifest.
+
+    Driven through the CLI, because the damage was to the run and not to the
+    check: a scorecard has to exist afterwards and still carry every check.
+    """
+    # Each shape, and what the reason has to name. A mapping or a scalar is not
+    # a list at all, and saying so beats iterating it and calling its keys or
+    # its characters "invalid entries" -- which is what the reader gets without
+    # the outer guard, and it points at nothing they can edit.
+    shapes = {
+        "a mapping": ("\n  path: docs/x.md\n  command: [echo, hi]", "must be a list"),
+        "a bare scalar": (" docs/x.md", "must be a list"),
+        "a list of strings": ("\n  - docs/x.md", "must be a mapping"),
+    }
+    for label, (value, expected) in shapes.items():
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / ".docs-warden.yml").write_text(
+                "archetype: it-tooling\nowner: t\ngenerated_docs:" + value + "\n",
+                encoding="utf-8")
+            card = _full_card(repo, "--run-generators")
+            entry = _one_check(card, "generated-docs")
+            assert entry["state"] == "fail", (label, entry)
+            assert expected in entry["reason"], (label, entry["reason"])
+            assert ".docs-warden.yml" in entry["fix"], (label, entry["fix"])
+            assert len(card["checks"]) >= 11, \
+                f"{label}: the other checks were lost: {len(card['checks'])}"
+
+            # Without --run-generators too: the manifest is wrong whether or
+            # not the commands run, and the skipped branch happily reported
+            # a count of entries derived from a shape that has none.
+            plain = _one_check(_full_card(repo), "generated-docs")
+            assert plain["state"] == "fail", (label, plain)
+
+
 def test_audit_survives_a_document_that_is_not_valid_utf8():
     """One Latin-1 byte -- an accent out of a legacy Windows editor -- raised
     UnicodeDecodeError from check_readme_shape and cost the whole scorecard,

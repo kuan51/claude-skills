@@ -254,10 +254,42 @@ def check_adr_index(repo, script_dir):
     )
 
 
+# A manifest defect, not a generator defect, so it names the file to edit.
+GENERATED_DOCS_FIX = ("Give generated_docs as a list of entries, each a mapping "
+                      "with path and command, in .docs-warden.yml. "
+                      "See references/audit-schema.md.")
+
+
 def check_generated_docs(repo, config, run_generators):
     entries = (config or {}).get("generated_docs") or []
     if not entries:
         return check("generated-docs", "skipped", "No generated_docs declared.", "")
+    # Shape is checked before the --run-generators gate, because a wrong
+    # manifest is worth reporting on the default, safe invocation and not only
+    # on the opt-in one -- the skipped branch below used to answer a malformed
+    # manifest with a count of entries it does not have. A single entry written
+    # as a mapping rather than a one-item list is the natural mistake, and
+    # iterating it yielded that mapping's keys: bare strings, whose .get raised
+    # AttributeError and took the whole audit down with it.
+    if not isinstance(entries, list):
+        return check(
+            "generated-docs", "fail",
+            f"generated_docs must be a list of entries, "
+            f"got {type(entries).__name__}.",
+            GENERATED_DOCS_FIX)
+    malformed = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            malformed.append(f"{entry!r} (entry must be a mapping)")
+        elif (not entry.get("path")
+                or not isinstance(entry.get("command"), list)
+                or not entry.get("command")):
+            malformed.append(
+                f"{entry.get('path') or '?'} (command must be a non-empty list)")
+    if malformed:
+        return check("generated-docs", "fail",
+                     "Invalid entries: " + ", ".join(malformed),
+                     GENERATED_DOCS_FIX + " Keep path inside the repository.")
     if not run_generators:
         return check(
             "generated-docs", "skipped",
@@ -267,10 +299,7 @@ def check_generated_docs(repo, config, run_generators):
         )
     stale, skipped, rejected, errored, missing = [], [], [], [], []
     for entry in entries:
-        path, command = entry.get("path"), entry.get("command")
-        if not path or not isinstance(command, list) or not command:
-            rejected.append(f"{path or '?'} (command must be a non-empty list)")
-            continue
+        path, command = entry["path"], entry["command"]
         # Confines the comparison target, not the command. "repo / path"
         # silently discards repo for an absolute path and ".." escapes upward;
         # .resolve() also follows a symlink out before the prefix test. Either
@@ -327,7 +356,7 @@ def check_generated_docs(repo, config, run_generators):
                 target.unlink()  # generator created it; do not leave it behind
     if rejected:
         return check("generated-docs", "fail", "Invalid entries: " + ", ".join(rejected),
-                     "Give command as a list of arguments, and keep path inside the repo.")
+                     GENERATED_DOCS_FIX + " Keep path inside the repository.")
     if errored:
         return check("generated-docs", "fail", "Generator failed: " + "; ".join(errored),
                      "Fix the generator so it exits 0, then re-run.")
