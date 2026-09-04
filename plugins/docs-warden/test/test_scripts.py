@@ -1406,6 +1406,29 @@ def test_standards_reports_a_malformed_table_entry_instead_of_crashing():
             assert "x" in entry["reason"], (label, entry["reason"])
 
 
+def test_a_standard_with_a_broken_entry_is_not_named_as_a_co_claimant():
+    """A row names the other standards wanting the same artifact, so one file
+    visibly settles several rows. A standard whose own table entry is
+    malformed was named there too, because it registered its artifacts before
+    anything looked at its rules -- asserting a claim the audit had not been
+    able to resolve. Resolving rule names with the rest of the entry ended
+    that, and this pins it: only standards the audit understands are named."""
+    table = {
+        "good": {"name": "Good", "levels": None, "extra": [],
+                 "artifacts": ["docs/shared.md"]},
+        "typo": {"name": "Typo", "levels": None, "extra": ["no_such_rule"],
+                 "artifacts": ["docs/shared.md"]},
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        rows = _standards_entries(tmp, {"good": True, "typo": True}, table)
+    good, typo = rows["standards:good"], rows["standards:typo"]
+    assert good["state"] == "fail" and typo["state"] == "fail", rows
+    assert "docs/shared.md" in good["reason"], good["reason"]
+    assert "Typo" not in good["reason"], \
+        f"a standard that did not resolve should claim nothing: {good['reason']}"
+    assert "no_such_rule" in typo["reason"], typo["reason"]
+
+
 def test_standards_fix_points_at_whichever_file_is_actually_wrong():
     """A typo in .docs-warden.yml and a genuinely absent document are repaired in
     different files. One shared fix string told everyone to scaffold artifacts,
