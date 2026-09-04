@@ -38,6 +38,23 @@ invent it.
 Visual design. Colors, logos, Mermaid theming, badges, and product-name casing are
 out of scope; if your project has a brand or style guide, that owns them.
 
+**Organisational compliance.** This marketplace holds two plugins that both say
+the word "standard", and the split is worth knowing before you pick one:
+
+| | `docs-warden` | `ciso` |
+|---|---|---|
+| Scope | one repository's files | an organisation's control programme |
+| Asks | does this repo hold the documents its standards require? | is this control implemented, and where is the evidence? |
+| Standards | IEC 62304, OSPS Baseline, EU CRA, NIST SSDF | HITRUST CSF, SOC 2 Type II, ISO/IEC 27001, CMMC |
+| Output | a scorecard per repo | a persistent dashboard per certification |
+
+They do not overlap and neither reads the other's state. A repository question
+("does this repo have an SBOM directory?") is this plugin. An organisational one
+("who approves access reviews, and when did we last run one?") is `ciso`.
+
+Neither answers *"are we compliant"*. A passing `standards` row is an existence
+test over file paths — see `skills/docs-warden/references/standards.md`.
+
 ## Scripts
 
 Run with `python3`; each takes a repo path and is safe to run repeatedly. They need
