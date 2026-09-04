@@ -361,6 +361,61 @@ def test_the_fixtures_still_report_what_they_were_built_to_report():
             assert result.returncode == 0, f"{name}: {result.stderr.strip()}"
 
 
+def test_adr_new_numbers_the_next_record_and_fills_the_template():
+    """adr_new.py had no test at all. Its two jobs are picking the next id and
+    substituting the template's tokens; an unsubstituted {{ID}} reaching a
+    record is the kind of thing nobody notices until adr_index.py renders it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = repo / "docs" / "decisions"
+        decisions.mkdir(parents=True)
+        (decisions / "DEC-0007-earlier.md").write_text(
+            "---\nid: DEC-0007\nstatus: accepted\n---\n", encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "adr_new.py"), str(repo),
+             "Use one glossary parser"],
+            capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stderr
+        written = sorted(p.name for p in decisions.glob("DEC-*.md"))
+        assert "DEC-0008-use-one-glossary-parser.md" in written, written
+        body = (decisions / "DEC-0008-use-one-glossary-parser.md").read_text(
+            encoding="utf-8")
+        # Only the four the script substitutes. The rest of the {{...}} are
+        # prompts for the humans who made the decision, and stay.
+        for token in ("{{ID}}", "{{TITLE}}", "{{DATE}}", "{{DECIDERS}}"):
+            assert token not in body, f"{token} survived:\n{body}"
+        assert "DEC-0008" in body and "Use one glossary parser" in body, body
+        assert "proposed" in body, "a new record starts proposed"
+
+
+def test_glossary_to_vale_writes_the_swap_rule_for_a_rejected_term():
+    """glossary_to_vale.py had no test either, and it is the half of the
+    glossary contract the audit does not run: the audit reports a rejected term
+    it finds in prose, this turns the same term into the Vale rule that catches
+    it everywhere else."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / "docs" / "GLOSSARY.md").write_text(
+            "| Term | Definition | Do not use | Source |\n"
+            "|------|------------|------------|--------|\n"
+            "| Snapshot | A captured window. | capture, grab | here |\n",
+            encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "glossary_to_vale.py"), str(repo)],
+            capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stderr
+        vocab = repo / "styles" / "config" / "vocabularies" / "Project"
+        assert vocab.joinpath("accept.txt").read_text(
+            encoding="utf-8").split() == ["Snapshot"]
+        assert vocab.joinpath("reject.txt").read_text(
+            encoding="utf-8").split() == ["capture", "grab"]
+        rule = (repo / "styles" / "Clarity" / "GlossaryTerms.yml").read_text(
+            encoding="utf-8")
+        assert '"capture": "Snapshot"' in rule, rule
+        assert '"grab": "Snapshot"' in rule, rule
+
+
 def _regulated_repo(tmp):
     """A class-A regulated repo with every required artifact present, and a
     requirements/ directory that is non-empty but declares no REQ heading --
