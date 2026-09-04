@@ -23,6 +23,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 from archetypes import ARCHETYPES
 from standards import STANDARDS
@@ -852,28 +853,51 @@ def check_readme_shape(repo):
     return check("readme-shape", "pass", f"Sections present, {lines} lines.")
 
 
+# Every check, in report order, each as (id, how to run it). A list rather than
+# a literal in audit() so the set of checks is something to read and something
+# to iterate: the ids are needed before the checks run -- to validate a waiver
+# against them -- and a caller that wants one check should not have to know
+# which of four argument shapes it takes.
+#
+# The id appears here and again inside the check's own return. That duplication
+# is deliberate and guarded: audit() asserts the two agree, so the registry can
+# be the authority on what exists without either copy drifting.
+CHECKS = [
+    ("required-files", lambda c: check_required_files(c.repo, c.config)),
+    ("front-matter", lambda c: check_front_matter(c.repo)),
+    ("adr-immutability", lambda c: check_adr_immutability(c.repo)),
+    ("adr-index", lambda c: check_adr_index(c.repo, c.script_dir)),
+    ("generated-docs",
+     lambda c: check_generated_docs(c.repo, c.config, c.run_generators)),
+    ("lint", lambda c: check_lint(c.repo)),
+    ("links", lambda c: check_links(c.repo)),
+    ("glossary-reject-terms", lambda c: check_glossary_reject_terms(c.repo)),
+    ("phi-secrets", lambda c: check_phi_secrets(c.repo)),
+    ("standards", lambda c: check_standards(c.repo, c.config, c.script_dir)),
+    ("readme-shape", lambda c: check_readme_shape(c.repo)),
+]
+
+CHECK_IDS = frozenset(cid for cid, _ in CHECKS)
+
+STATES = ("pass", "warn", "fail", "skipped")
+
+
 def audit(repo: Path, script_dir: Path, run_generators=False):
     config = load_config(repo)
-    checks = [
-        check_required_files(repo, config),
-        check_front_matter(repo),
-        check_adr_immutability(repo),
-        check_adr_index(repo, script_dir),
-        check_generated_docs(repo, config, run_generators),
-        check_lint(repo),
-        check_links(repo),
-        check_glossary_reject_terms(repo),
-        check_phi_secrets(repo),
-        check_standards(repo, config, script_dir),
-        check_readme_shape(repo),
-    ]
+    context = SimpleNamespace(repo=repo, config=config, script_dir=script_dir,
+                              run_generators=run_generators)
+    checks = []
+    for cid, run in CHECKS:
+        entry = run(context)
+        assert entry["id"] == cid, \
+            f"the registry calls this {cid!r} and it reports {entry['id']!r}"
+        checks.append(entry)
     if config is None:
         checks.insert(0, check(
             "manifest", "fail", "No .docs-warden.yml; archetype unknown.",
             "Run init mode to propose one. Do not guess the archetype.",
         ))
-    summary = {s: sum(1 for c in checks if c["state"] == s)
-               for s in ("pass", "warn", "fail", "skipped")}
+    summary = {s: sum(1 for c in checks if c["state"] == s) for s in STATES}
     return {
         "schema": SCHEMA_VERSION,
         "repo": str(repo),
