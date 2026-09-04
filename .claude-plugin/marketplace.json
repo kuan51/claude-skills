@@ -25,7 +25,7 @@
     },
     {
       "name": "docs-warden",
-      "description": "Keeps repository documentation consistent and honest. Scaffolds a universal document set scaled by repo archetype, audits existing repos for missing, stale, or off-standard docs, enforces append-only architecture decision records, and regenerates the generated ones so drift from the code is reported rather than discovered. Ships a plain-English Vale style alongside it, plus an optional IEC 62304 overlay that describes document structure only and never invents regulatory content.",
+      "description": "Keeps repository documentation consistent and honest. Scaffolds a universal document set scaled by repo archetype, audits existing repos for missing, stale, or off-standard docs, enforces append-only architecture decision records, and regenerates the generated ones so drift from the code is reported rather than discovered. Ships a plain-English Vale style alongside it, plus optional compliance overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and NIST SSDF, each describing document structure only and never inventing regulatory content.",
       "version": "0.1.0",
       "source": "./plugins/docs-warden",
       "author": {

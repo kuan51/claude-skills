@@ -35,8 +35,9 @@ so it picks up the newly installed plugin.
   scaffolds a document set scaled to what the repo actually is, audits it for what is
   missing, stale, or off-standard, keeps architecture decision records append-only
   and indexed, and reports where the docs have drifted from the code instead of
-  silently rewriting them. Includes a plain-English Vale style and an optional
-  IEC 62304 overlay.
+  silently rewriting them. Includes a plain-English Vale style and compliance
+  overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and
+  NIST SSDF.
 
 ## Adding a new plugin
 
