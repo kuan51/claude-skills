@@ -52,17 +52,20 @@ build-and-flash runbook.
 **Hints:** embedded toolchain files, `*.c` / `*.h` / `*.rs` with board
 configuration, linker scripts, a partition table.
 
-## regulated: true
+## Standards are overlays, not archetypes
 
-An overlay on any of the four above, not an archetype of its own. Its artifact set
-is scaled by `safety_class` and specified separately.
+A standard applies on top of any of the four above rather than replacing one.
+Declare them under `standards:` in `.docs-warden.yml`; each has its own
+artifact set, scaled by a level axis where it has one. See
+`standards.md`.
 
 **Hints:** `REQ-` tags in code or test names, references to IEC 62304 or the FDA, a
-`safety_class` already set, an existing `docs/regulatory/` tree.
+a safety class already set, an existing `docs/regulatory/` tree.
 
-Never infer `regulated: true` and act on it. Ask. Getting this wrong in either
+Never infer a safety class and act on it. Ask. Getting this wrong in either
 direction is expensive: false positive buries an IT repo in regulatory stubs, false
-negative hides a gap in a device repo.
+negative hides a gap in a device repo. Not every standard is like this --
+`standards.md` says which may be proposed.
 
 ## On Diátaxis
 
@@ -73,6 +76,6 @@ structure; they are four empty folders.
 
 ## On arc42
 
-`service` and regulated class B or C only. Take the subset listed above. A full
+`service`, and IEC 62304 class B or C, only. Take the subset listed above. A full
 arc42 with five empty sections is worse than a one-page architecture note that is
 true.

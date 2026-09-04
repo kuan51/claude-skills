@@ -133,10 +133,10 @@ The manifest every script reads.
 
 ```yaml
 archetype: it-tooling        # it-tooling | service | library | firmware
-regulated: false
-safety_class: null           # null | A | B | C  (IEC 62304)
 owner: rex
 review_cadence_days: 180
+standards:                   # omit when none apply; see standards.md
+  iec-62304: C
 generated_docs:
   - path: docs/reference/cli.md
     command: ["pwsh", "./build/Export-Help.ps1"]
@@ -155,8 +155,9 @@ sandboxed and runs with your own privileges. If it writes files other than
 resolve, not what the command itself can touch.
 
 Propose these values from the detection hints in `archetypes.md`, show them, and
-**wait for confirmation** before writing the file. A guessed `safety_class` is
-worse than no file at all.
+**wait for confirmation** before writing the file. A guessed safety class is
+worse than no file at all; `standards.md` says which levels may be proposed and
+which must be asked for.
 
 ## .gitignore
 

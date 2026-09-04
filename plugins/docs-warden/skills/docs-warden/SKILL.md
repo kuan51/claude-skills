@@ -47,9 +47,12 @@ Pick the mode from what the human asked for. When it is ambiguous, ask.
 Triggered by "scaffold docs", "set up documentation", "document this repo".
 
 1. Detect the archetype from the file tree (`references/archetypes.md`).
-2. **Show the proposal and wait for confirmation.** Archetype, regulated status,
-   safety class, owner, and the exact file list you intend to create. Never write
-   `.docs-warden.yml` from a guess.
+2. **Show the proposal and wait for confirmation.** Archetype, owner, which
+   standards apply and at what level, and the exact file list you intend to
+   create. Never write `.docs-warden.yml` from a guess.
+   Some levels may be proposed and some must be asked for --
+   `references/standards.md` says which. An IEC 62304 safety class is never
+   proposed: it comes from a hazard analysis outside the repository.
 3. Write `.docs-warden.yml`.
 4. Create only the **missing** files from `assets/templates/`. Never overwrite an
    existing document; list what you skipped and why.
@@ -133,8 +136,8 @@ Every repo, both worlds, gets these. Full specification in
 | `.docs-warden.yml` | The manifest that drives all of the above. |
 
 Archetype overlays add to this set; they never remove from it. See
-`references/archetypes.md`. Regulated repos take a further overlay -- see
-`references/standards/iec-62304.md`.
+`references/archetypes.md`. A repository may also declare one or more
+standards, each adding its own artifacts -- see `references/standards.md`.
 
 ### Migrating a repo scaffolded before the docs/ move
 
@@ -214,6 +217,7 @@ terms.
 - `references/adr-format.md` — decision record format and the immutability rule.
 - `references/audit-schema.md` — every check, its meaning, and its fix.
 - `references/anti-drift.md` — linters, freshness, ownership, and the CI gap.
+- `references/standards.md` — how overlays are declared, and how to add one.
 - `references/standards/iec-62304.md` — IEC 62304 artifacts by safety class.
 - `../clarity/SKILL.md` — the plain-English writing standard, and the source of the
   `Clarity` Vale style this skill's `.vale.ini` depends on.

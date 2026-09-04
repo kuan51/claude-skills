@@ -1,6 +1,5 @@
 archetype: it-tooling
-regulated: false
-safety_class: null
 owner: it-team
 review_cadence_days: 180
+standards: {}
 generated_docs: []

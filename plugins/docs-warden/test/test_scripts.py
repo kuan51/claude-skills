@@ -60,7 +60,7 @@ def test_audit_reports_a_failing_generator_instead_of_in_sync():
             encoding="utf-8")
         (repo / "target.md").write_text("untouched\n", encoding="utf-8")
         (repo / ".docs-warden.yml").write_text(
-            "archetype: it-tooling\nregulated: false\nsafety_class: null\n"
+            "archetype: it-tooling\n"
             "owner: t\nreview_cadence_days: 180\n"
             'generated_docs:\n  - path: target.md\n    command: ["python3", "gen.py"]\n',
             encoding="utf-8")
@@ -117,13 +117,13 @@ def _regulated_repo(tmp):
     (repo / "sbom").mkdir()
     (repo / "sbom" / "sbom.json").write_text("{}\n", encoding="utf-8")
     (repo / ".docs-warden.yml").write_text(
-        "archetype: service\nregulated: true\nsafety_class: A\n"
+        "archetype: service\nstandards:\n  iec-62304: A\n"
         "owner: t\nreview_cadence_days: 180\n", encoding="utf-8")
     return repo
 
 
 def test_audit_reports_a_failing_trace_matrix_instead_of_every_requirement_tested():
-    """check_regulated grepped trace_matrix.py's stderr for 'FAIL ' lines and
+    """check_standards grepped trace_matrix.py's stderr for 'FAIL ' lines and
     never read its returncode. trace_matrix.py exits 1 with no FAIL line when
     there is no requirements directory, or one that declares nothing -- so
     'untested' came back empty and a regulated repo with zero requirements was
@@ -135,7 +135,7 @@ def test_audit_reports_a_failing_trace_matrix_instead_of_every_requirement_teste
             capture_output=True, text=True, check=False)
         assert matrix.returncode != 0, "premise broken: trace_matrix.py exited 0"
 
-        entry = _audit_check(repo, "regulated")
+        entry = _audit_check(repo, "standards")
         assert entry["state"] != "pass", \
             f"a repo with no declared requirements was reported {entry['state']}: {entry['reason']}"
         assert "trace_matrix" in entry["reason"], \
@@ -195,7 +195,7 @@ def test_audit_fails_a_generator_that_never_writes_its_declared_path():
         repo = Path(tmp)
         (repo / "docs").mkdir()
         (repo / ".docs-warden.yml").write_text(
-            "archetype: it-tooling\nregulated: false\nsafety_class: null\n"
+            "archetype: it-tooling\n"
             "owner: t\nreview_cadence_days: 180\n"
             'generated_docs:\n  - path: does-not-exist.md\n    command: ["true"]\n',
             encoding="utf-8")
@@ -235,7 +235,7 @@ def test_generated_docs_confines_the_declared_path_to_the_repo():
                 '  - path: escape.md\n    command: ["true"]\n')
 
         (repo / ".docs-warden.yml").write_text(
-            "archetype: it-tooling\nregulated: false\nsafety_class: null\n"
+            "archetype: it-tooling\n"
             "owner: t\nreview_cadence_days: 180\ngenerated_docs:\n"
             + "".join(vectors.values()),
             encoding="utf-8")
@@ -473,6 +473,113 @@ def test_lint_names_the_install_for_an_adopted_but_missing_tool():
             f"expected skipped, got {entry['state']}: {entry['reason']}"
         assert "vale" in entry["fix"] and "vale" in entry["reason"], \
             f"vale should be named as adopted but unrun: {entry['reason']} / {entry['fix']}"
+
+
+# A table of pretend standards. The guards below are properties of the
+# mechanism, not of whichever standards happen to be registered today, so
+# pinning them to the real table would re-break them every time it grows.
+_SYNTHETIC = {
+    "levelled": {
+        "name": "Levelled", "level_name": "tier", "infer": True,
+        "levels": {"1": ["docs/one.md"], "2": ["docs/one.md", "docs/two.md"]},
+        "extra": [],
+    },
+    "flat": {
+        "name": "Flat", "level_name": None, "infer": False, "levels": None,
+        "artifacts": ["docs/one.md"], "extra": [],
+    },
+}
+
+
+def _standards_entry(repo, declared, table=None):
+    """check_standards against `repo` with `declared` as its standards map.
+
+    In-process rather than through audit.py's CLI, so the standards table can
+    be swapped for the synthetic one above.
+    """
+    audit = _import_audit()
+    real = audit.STANDARDS
+    if table is not None:
+        audit.STANDARDS = table
+    try:
+        return audit.check_standards(Path(repo), {"standards": declared}, SCRIPTS)
+    finally:
+        audit.STANDARDS = real
+
+
+def test_standards_accepts_an_integer_level():
+    """YAML parses `tier: 2` to an int and `safety_class: C` to a str, and both
+    are valid levels. A bare membership test against string keys rejects the
+    int -- on the happy path, for every standard with a numeric axis."""
+    with tempfile.TemporaryDirectory() as tmp:
+        docs = Path(tmp) / "docs"
+        docs.mkdir()
+        for name in ("one.md", "two.md"):
+            (docs / name).write_text("x", encoding="utf-8")
+        entry = _standards_entry(tmp, {"levelled": 2}, _SYNTHETIC)
+        assert entry["state"] == "pass", \
+            f"a valid integer level should resolve: {entry['reason']}"
+
+
+def test_standards_rejects_a_level_on_a_standard_that_has_none():
+    with tempfile.TemporaryDirectory() as tmp:
+        entry = _standards_entry(tmp, {"flat": 2}, _SYNTHETIC)
+        assert entry["state"] == "fail", entry
+        assert "takes no level" in entry["reason"], entry["reason"]
+
+
+def test_standards_rejects_a_bare_true_where_a_level_is_required():
+    """Python's 1 == True, so an equality-based guard would also let `flat: 1`
+    through. Both directions have to be identity-checked."""
+    with tempfile.TemporaryDirectory() as tmp:
+        entry = _standards_entry(tmp, {"levelled": True}, _SYNTHETIC)
+        assert entry["state"] == "fail", entry
+        assert "tier is True" in entry["reason"], entry["reason"]
+        flat = _standards_entry(tmp, {"flat": 1}, _SYNTHETIC)
+        assert "takes no level" in flat["reason"], flat["reason"]
+
+
+def test_standards_rejects_an_unknown_id():
+    with tempfile.TemporaryDirectory() as tmp:
+        entry = _standards_entry(tmp, {"nope": True}, _SYNTHETIC)
+        assert entry["state"] == "fail", entry
+        assert "unknown standard" in entry["reason"], entry["reason"]
+
+
+def test_standards_requires_a_shared_artifact_once():
+    """Two standards wanting the same path is the normal case, not a conflict.
+    It must be reported once, naming both, or a repo adopting three overlapping
+    standards gets the same missing file three times."""
+    with tempfile.TemporaryDirectory() as tmp:
+        entry = _standards_entry(tmp, {"levelled": 1, "flat": True}, _SYNTHETIC)
+        assert entry["reason"].count("missing docs/one.md") == 1, entry["reason"]
+        assert "Levelled" in entry["reason"] and "Flat" in entry["reason"], \
+            f"both claimants should be named: {entry['reason']}"
+
+
+def test_standards_runs_extra_rules_only_for_the_standard_that_declares_them():
+    """qms_record and trace_requirements belong to IEC 62304 alone. They used to
+    run whenever `regulated` was truthy, which was fine while 62304 was the only
+    overlay. Under a standards list they must dispatch per entry, or every
+    adopter of any other standard is told to add a qms_record."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / "docs" / "one.md").write_text("x", encoding="utf-8")
+        # A regulatory tree with no qms_record anywhere: 62304's rule would
+        # flag this, and no other standard should.
+        regulatory = repo / "docs" / "regulatory"
+        regulatory.mkdir()
+        (regulatory / "plan.md").write_text(
+            """---
+owner: t
+---
+
+# Plan
+""", encoding="utf-8")
+        entry = _standards_entry(repo, {"flat": True}, _SYNTHETIC)
+        assert entry["state"] == "pass", \
+            f"a standard declaring no extra rules had them run: {entry['reason']}"
 
 
 def _import_audit():

@@ -20,11 +20,11 @@ never ran is worse than no scorecard, because people believe it.
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "repo": "/path/to/repo",
   "generated_at": "2026-09-01T12:00:00Z",
   "archetype": "it-tooling",
-  "regulated": false,
+  "standards": {"iec-62304": "C"},
   "summary": {"pass": 6, "warn": 2, "fail": 1, "skipped": 1},
   "checks": [
     {
@@ -142,12 +142,18 @@ contents is also required. Generated regions are excluded from the line count:
 their length measures the data they render, not anything a human wrote.
 `warn`, not `fail` — a long README is a smell, not a defect.
 
-### 10. `regulated`
+### 10. `standards`
 
-Only for a repository whose `.docs-warden.yml` sets `regulated: true`; `skipped`
-otherwise. Checks that the safety class's artifacts are present and that every
-`REQ-<AREA>-NNN` in `docs/regulatory/requirements/` is named by a test. `fail`
-reports the missing artifact or the untraced requirement. `standards/iec-62304.md`
+Only for a repository that declares any under `standards:` in `.docs-warden.yml`;
+`skipped` otherwise. Checks that every artifact required by every declared
+standard is present, and runs the rules belonging to those standards -- for IEC
+62304, that each document names a `qms_record` and that every `REQ-<AREA>-NNN` in
+`docs/regulatory/requirements/` is named by a test. `fail` reports the missing
+artifact, naming which standard wanted it, or the untraced requirement.
+
+An artifact two standards share is required once. A declared standard this
+plugin does not know, or a level a standard does not define, is a `fail` rather
+than a silent skip. See `standards.md`. `standards/iec-62304.md`
 holds the artifact table and marks the rows this check does not enforce — read it
 before treating a `pass` as coverage.
 **Fix:** add the artifact, or add a test that names the requirement ID.

@@ -1,6 +1,6 @@
 archetype: service
-regulated: true
-safety_class: B
 owner: platform-team
 review_cadence_days: 180
+standards:
+  iec-62304: B
 generated_docs: []

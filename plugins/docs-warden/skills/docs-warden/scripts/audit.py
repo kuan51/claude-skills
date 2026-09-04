@@ -22,6 +22,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from standards import STANDARDS
 from _common import (
     ARCHETYPE_FILES,
     DECISIONS,
@@ -42,7 +43,7 @@ from _common import (
     strip_code,
 )
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Deliberately broad. A false positive costs a minute; a miss puts patient data
 # into a git history that cannot be rewritten.
@@ -54,26 +55,6 @@ PHI_PATTERNS = [
     (r"\b(?:password|pwd|secret|api[_-]?key)\s*=\s*['\"][^'\"]{6,}['\"]", "hardcoded credential"),
     (r"\b(?:Server|Data Source)=[^;\s]+;.*(?:Password|Pwd)=", "connection string"),
 ]
-
-# Scaled by safety_class. See references/standards/iec-62304.md, and re-confirm
-# with the regulatory lead: this skill does not track standards.
-REGULATED_FILES = {
-    "A": [
-        "docs/regulatory/software-development-plan.md",
-        "docs/regulatory/requirements/",
-        "docs/regulatory/soup.md",
-        "docs/regulatory/threat-model.md",
-        "docs/regulatory/ddf-index.md",
-        "sbom/",
-        "docs/regulatory/verification/unit.md",
-    ],
-}
-REGULATED_FILES["B"] = REGULATED_FILES["A"] + [
-    "docs/architecture/arc42.md",
-    "docs/regulatory/verification/integration.md",
-    "docs/regulatory/verification/system.md",
-]
-REGULATED_FILES["C"] = REGULATED_FILES["B"] + ["docs/architecture/detailed-design.md"]
 
 README_SECTIONS = ["quick start", "documentation"]
 README_MAX_LINES = 150
@@ -599,37 +580,35 @@ def check_phi_secrets(repo):
     return check("phi-secrets", "pass", "No PHI or secret patterns in documentation.")
 
 
-def check_regulated(repo, config, script_dir):
-    if not (config or {}).get("regulated"):
-        return check("regulated", "skipped", "Repository is not marked regulated.", "")
-    safety_class = (config or {}).get("safety_class")
-    if safety_class not in REGULATED_FILES:
-        return check(
-            "regulated", "fail",
-            f"regulated is true but safety_class is {safety_class!r}; expected A, B or C.",
-            "Set safety_class with the regulatory lead. Do not guess it.",
-        )
+def _rule_qms_record(repo, script_dir):
+    """Every regulated document names the eQMS record it belongs to.
 
+    Git holds the working artifact; the eQMS holds the signed record. A repo of
+    unsigned Markdown is not a design history, so the link is mandatory --
+    'pending' is a legitimate value, absent is not.
+    """
+    root = repo / "docs" / "regulatory"
+    if not root.is_dir():
+        return []
     problems = []
-    for name in REGULATED_FILES[safety_class]:
-        target = repo / name
-        present = target.is_dir() and any(target.iterdir()) if name.endswith("/") else target.is_file()
-        if not present:
-            problems.append(f"missing {name}")
-
-    for path in sorted((repo / "docs" / "regulatory").rglob("*.md")) if (repo / "docs" / "regulatory").is_dir() else []:
+    for path in sorted(root.rglob("*.md")):
         if path.read_text(encoding="utf-8", errors="replace").startswith(GENERATED_MARKER):
             continue  # generated from the source; the source carries the record
         front, _ = read_front_matter(path)
         if "qms_record" not in front:
             problems.append(f"{path.relative_to(repo).as_posix()} has no qms_record")
+    return problems
 
+
+def _rule_trace_requirements(repo, script_dir):
+    """Every requirement has at least one test, per trace_matrix.py."""
     result = subprocess.run(
         [sys.executable, str(script_dir / "trace_matrix.py"), str(repo)],
         capture_output=True, text=True, check=False,
     )
     untested = [line.split()[1] for line in result.stderr.splitlines()
                 if line.startswith("FAIL ")]
+    problems = []
     # A non-zero exit with no FAIL line is trace_matrix.py declining to trace at
     # all -- no requirements directory, nothing declared, or a crash. Only FAIL
     # lines were read, so those exits left "untested" empty and the check
@@ -642,15 +621,75 @@ def check_regulated(repo, config, script_dir):
                         f"{' | '.join(tail) or 'no stderr'}")
     if untested:
         problems.append("no test for " + ", ".join(untested))
+    return problems
+
+
+# Rules that belong to one standard rather than to the check. Keyed by the names
+# used in standards.py's "extra". Dispatched per declared standard, never once
+# for the whole check: a repo declaring only a standard that wants none of these
+# must not have them run against it.
+EXTRA_RULES = {
+    "qms_record": _rule_qms_record,
+    "trace_requirements": _rule_trace_requirements,
+}
+
+
+def check_standards(repo, config, script_dir):
+    declared = (config or {}).get("standards") or {}
+    if not declared:
+        return check("standards", "skipped", "No standards declared.", "")
+
+    problems, labels = [], []
+    # Path -> the standards that want it, so an artifact two standards share is
+    # required once and reported once, naming both.
+    wanted = {}
+    for sid, level in declared.items():
+        spec = STANDARDS.get(sid)
+        if spec is None:
+            problems.append(
+                f"unknown standard {sid!r}; known: {', '.join(sorted(STANDARDS))}")
+            continue
+        levels = spec.get("levels")
+        if levels is None:
+            # Identity, not equality: Python's 1 == True would let a level slip
+            # through on a standard that has no level axis.
+            if level is not True:
+                problems.append(
+                    f"{sid} takes no level; expected true, got {level!r}")
+                continue
+            artifacts, label = spec["artifacts"], spec["name"]
+        else:
+            # YAML gives back a str for "C" and an int for 2, and both are valid
+            # levels. Normalise before the lookup or every numeric axis is
+            # rejected as unknown on its happy path.
+            key = str(level)
+            if key not in levels:
+                problems.append(
+                    f"{sid} {spec['level_name']} is {level!r}; expected "
+                    + " or ".join(sorted(levels)))
+                continue
+            artifacts = levels[key]
+            label = f"{spec['name']} {spec['level_name']} {key}"
+        labels.append(label)
+        for name in artifacts:
+            wanted.setdefault(name, []).append(spec["name"])
+        for rule in spec.get("extra", ()):
+            problems += EXTRA_RULES[rule](repo, script_dir)
+
+    for name, owners in wanted.items():
+        target = repo / name
+        present = target.is_dir() and any(target.iterdir()) if name.endswith("/") else target.is_file()
+        if not present:
+            problems.append(f"missing {name} ({', '.join(owners)})")
 
     if problems:
         return check(
-            "regulated", "fail", "; ".join(problems),
+            "standards", "fail", "; ".join(problems),
             "Scaffold the missing artifacts, and add a test for every requirement. "
             "Regulatory content needs the regulatory lead, not a generated draft.",
         )
-    return check("regulated", "pass",
-                 f"Class {safety_class} artifacts present, every requirement tested.")
+    return check("standards", "pass",
+                 f"{len(wanted)} artifact(s) present for {', '.join(labels)}.")
 
 
 def check_readme_shape(repo):
@@ -690,7 +729,7 @@ def audit(repo: Path, script_dir: Path, run_generators=False):
         check_links(repo),
         check_glossary_reject_terms(repo),
         check_phi_secrets(repo),
-        check_regulated(repo, config, script_dir),
+        check_standards(repo, config, script_dir),
         check_readme_shape(repo),
     ]
     if config is None:
@@ -705,7 +744,7 @@ def audit(repo: Path, script_dir: Path, run_generators=False):
         "repo": str(repo),
         "generated_at": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
         "archetype": (config or {}).get("archetype"),
-        "regulated": (config or {}).get("regulated"),
+        "standards": (config or {}).get("standards") or {},
         "summary": summary,
         "checks": checks,
     }
@@ -714,10 +753,18 @@ def audit(repo: Path, script_dir: Path, run_generators=False):
 ICON = {"pass": "pass", "warn": "warn", "fail": "FAIL", "skipped": "skip"}
 
 
+def _standards_label(declared):
+    """"iec-62304 C, eu-cra" -- a level is shown only where one exists."""
+    if not declared:
+        return "none"
+    return ", ".join(k if v is True else f"{k} {v}" for k, v in declared.items())
+
+
 def render_single(report):
     out = [f"# Documentation scorecard: {Path(report['repo']).name}", ""]
     s = report["summary"]
-    out.append(f"archetype `{report['archetype']}` | regulated `{report['regulated']}` | "
+    out.append(f"archetype `{report['archetype']}` | "
+               f"standards `{_standards_label(report['standards'])}` | "
                f"{s['pass']} pass, {s['warn']} warn, {s['fail']} fail, {s['skipped']} skipped")
     out += ["", "| Check | State | Reason | Fix |", "|-------|-------|--------|-----|"]
     for c in report["checks"]:

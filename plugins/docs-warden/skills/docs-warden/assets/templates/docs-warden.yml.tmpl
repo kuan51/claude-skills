@@ -1,9 +1,13 @@
 # Drives every docs-warden script. Confirm every value before writing.
 archetype: {{ARCHETYPE}}        # it-tooling | service | library | firmware
-regulated: {{REGULATED}}        # true | false
-safety_class: {{SAFETY_CLASS}}  # null | A | B | C  (IEC 62304)
 owner: {{OWNER}}
 review_cadence_days: 180
+
+# Compliance overlays, each adding required artifacts on top of the archetype.
+# Omit the key, or leave it empty, when none apply. A standard with a level axis
+# takes its level; one without takes true. See references/standards.md.
+standards: {{STANDARDS}}
+#  iec-62304: C      # safety class A | B | C -- assigned outside the repo. Ask.
 
 # CI regenerates each path with its command and fails on any diff.
 generated_docs: []
