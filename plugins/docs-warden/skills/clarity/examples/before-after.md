@@ -3,13 +3,14 @@
 Six worked examples across firmware, service and IT-tooling domains. All content
 is synthetic.
 
-Vale skips blockquote content in Markdown, so running the linter over this file
-does not reproduce the findings below -- the "before" text sits inside quotes and
-is never scanned. That is useful to know generally: quoting a bad example in a
-blockquote will not trip the linter, and neither will it in your own documentation.
-Verified with vale 3.9.1.
+Vale scans blockquote content, so the deliberately bad "before" text below would
+trip the very rules it illustrates. The examples are wrapped in `vale off` / `vale
+on` markers rather than left to generate noise on every run. Checked with vale
+3.17.1; vale 3.9.1 skipped blockquotes and needed no markers.
 
 ---
+
+<!-- vale off -->
 
 ## 1. Runbook step — safety condition order
 
@@ -118,3 +119,5 @@ is still not ours to change: the wording is traceable and may be under change
 control. Raise it with the requirement's owner. Rewriting "provided that at least
 three cardiac cycles have been captured" into something tidier risks changing what
 was verified.
+
+<!-- vale on -->

@@ -474,7 +474,7 @@ LINT_TOOLS = [
         "blocking": False,
         "argv": lambda path: [path, "--minAlertLevel=warning", "."],
         "runners": [],
-        "install": "download vale 3.9.1 from errata-ai/vale releases",
+        "install": "download vale 3.17.1 from errata-ai/vale releases",
     },
     {
         "name": "lychee",

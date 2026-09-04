@@ -11,8 +11,12 @@ gets switched off, and then it checks nothing at all.
 
 In anything touching patient safety, the condition precedes the instruction.
 
+<!-- vale off -->
+
 > Wrong: Stop the procedure if the sensor is disconnected.
 > Right: If the sensor is disconnected, stop the procedure.
+
+<!-- vale on -->
 
 A reader working through a procedure acts on the first clause they read. Leading
 with the instruction lets them act before learning it does not apply. This is the
@@ -73,12 +77,17 @@ those packages:
 Those two packages default to their own thresholds. We do not override them: one
 set of numbers, maintained upstream, beats two sets drifting apart here.
 
-## What the linter cannot see
+## Quoted prose is linted too
 
-Vale skips blockquote content in Markdown (verified with vale 3.9.1). Prose quoted
-inside `>` is never scanned. This is usually what you want -- quoted regulatory
-text and quoted examples should not be flagged -- but it also means a procedure
-step written inside a blockquote is unchecked.
+Vale scans blockquote content in Markdown: prose inside `>` is checked like any
+other line. So quoting a bad example to illustrate a rule trips that rule, and
+quoted regulatory text is flagged like your own wording.
+
+Wrap those passages in `<!-- vale off -->` and `<!-- vale on -->` rather than
+assuming the quote hides them. `examples/before-after.md` does exactly this.
+
+Checked with vale 3.17.1. Vale 3.9.1 skipped blockquotes, and documentation
+written against that behaviour will start reporting findings on the bump.
 
 ## Applied by hand, not by the linter
 
