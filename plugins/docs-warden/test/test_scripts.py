@@ -442,6 +442,24 @@ def test_a_waiver_for_a_check_that_does_not_exist_is_reported():
         assert "requird-files" in entry["reason"], entry["reason"]
 
 
+def test_a_waiver_naming_a_standard_that_does_not_exist_is_reported():
+    """One missing hyphen in standards:iec62304 passed validation, because the
+    family prefix was known, and then waived nothing -- leaving a manifest the
+    audit believed and a check the reader thought was excused."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL + "standards:" + NL
+            + "  iec-62304: A" + NL + "waivers:" + NL
+            + '  "standards:iec62304": "regulatory lead signed off"' + NL,
+            encoding="utf-8")
+        entry = _audit_check(repo, "manifest")
+        assert entry["state"] == "fail", entry
+        assert "iec62304" in entry["reason"], entry["reason"]
+        assert _audit_check(repo, "standards:iec-62304")["state"] == "fail", \
+            "the real check is still reported, since nothing valid waived it"
+
+
 def test_the_manifest_check_cannot_waive_itself():
     """It is the check that validates waivers. Waiving it would let a
     malformed manifest silence its own report."""

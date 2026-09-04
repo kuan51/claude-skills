@@ -99,7 +99,15 @@ def _waivable(cid):
     """
     if cid == "manifest":
         return False
-    return cid in CHECK_IDS or cid.split(":", 1)[0] in CHECK_IDS
+    if cid in CHECK_IDS:
+        return True
+    family, _, member = cid.partition(":")
+    # The member has to exist, not merely the family. Accepting any suffix
+    # under a known prefix let "standards:iec62304" -- one missing hyphen --
+    # validate clean and then waive nothing, so the scorecard reported a
+    # manifest it believed and a check the reader thought was excused. That is
+    # the exact failure this guard exists to prevent, inside the guard.
+    return family == "standards" and member in STANDARDS
 
 
 def check_manifest(repo, config):
