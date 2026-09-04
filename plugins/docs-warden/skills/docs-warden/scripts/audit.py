@@ -845,16 +845,10 @@ def check_standards(repo, config, script_dir):
     """One check per declared standard, id "standards:<id>".
 
     A single row for every standard could not say which one was failing, which
-    is the question a fleet scorecard exists to answer.
-
-    **This reverses how a shared artifact is reported.** It used to be named
-    once across the whole check, on the reasoning that a repo keeps one SBOM
-    and should be told once. Under per-standard rows that would leave
-    standards:eu-cra passing while the CRA's own Annex VII SBOM is absent --
-    a false green, reported under whichever standard happened to come first in
-    the manifest. Each row now names every artifact it wants, and names the
-    other standards that want it too, so the reader still knows one file
-    settles several rows. What is deduped is the work, not the reporting.
+    is the question a fleet scorecard exists to answer. Every row names every
+    artifact it wants, including the ones another standard wants too -- see
+    references/standards.md, "Overlapping artifacts", for why that repetition
+    is deliberate.
     """
     declared = (config or {}).get("standards") or {}
     if not declared:
