@@ -257,6 +257,119 @@ def test_a_review_date_beyond_the_cadence_is_reported():
             "review cadence: 180 days", ""), result.stdout
 
 
+SKILL_ROOT = SCRIPTS.parent
+
+
+def _table(name):
+    sys.path.insert(0, str(SCRIPTS))
+    try:
+        module = __import__(name)
+        return module
+    finally:
+        sys.path.pop(0)
+
+
+def _artifact_paths(entry):
+    """Every path an artifact entry names, tuple of alternatives flattened."""
+    return list(entry) if isinstance(entry, tuple) else [entry]
+
+
+def test_the_shipped_standards_table_is_well_formed():
+    """references/standards.md invites contributors to add a dict entry, and
+    nothing checked the entries already there. The PR that added three of them
+    verified the reference paths resolve by hand, which is exactly the kind of
+    assurance that survives one round. ciso ships structure tests over its
+    control data for this reason."""
+    standards = _table("standards").STANDARDS
+    audit = _import_audit()
+    assert standards, "the table is empty"
+    for sid, spec in standards.items():
+        assert sid == sid.lower() and " " not in sid, f"{sid} is not an id"
+        for field in ("name", "reference", "source_version", "infer"):
+            assert field in spec, f"{sid} has no {field}"
+        reference = SKILL_ROOT / spec["reference"]
+        assert reference.is_file(), \
+            f"{sid} points at {spec['reference']}, which does not exist"
+        levels, artifacts = spec.get("levels"), spec.get("artifacts")
+        assert (levels is None) != (artifacts is None), \
+            f"{sid} must declare exactly one of levels or artifacts"
+        if levels is not None:
+            assert spec.get("level_name"), \
+                f"{sid} has levels and no level_name to report a bad one with"
+            assert levels, f"{sid} declares an empty levels map"
+            for key, entries in levels.items():
+                assert isinstance(key, str), \
+                    f"{sid} level {key!r} is not a string; YAML gives an int " \
+                    "back for a numeric axis and the lookup normalises to str"
+                assert entries, f"{sid} level {key} requires nothing"
+        for rule in spec.get("extra", ()):
+            assert rule in audit.EXTRA_RULES, \
+                f"{sid} names extra rule {rule!r}, which does not exist"
+        pools = list(levels.values()) if levels is not None else [artifacts]
+        for pool in pools:
+            for entry in pool:
+                for path in _artifact_paths(entry):
+                    assert isinstance(path, str) and path, f"{sid}: {entry!r}"
+                    assert not path.startswith(("/", "~")) and ".." not in path, \
+                        f"{sid} names {path}, which is not repository-relative"
+
+
+def test_every_standard_reference_marks_what_it_does_not_check():
+    """Each overlay's reference document must say what it leaves out, or the
+    first person comparing it against the published standard reports it as
+    broken. standards.md requires this of a new entry; nothing enforced it."""
+    standards = _table("standards").STANDARDS
+    for sid, spec in standards.items():
+        text = (SKILL_ROOT / spec["reference"]).read_text(encoding="utf-8")
+        # standards.md names two ways to satisfy this, and both are in use: a
+        # section saying what was left out, or a (not checked) marker on rows
+        # of the artifact table. Either counts; neither does not.
+        lowered = text.lower()
+        assert ("(not checked)" in lowered or "does not check" in lowered
+                or "leaves out" in lowered), \
+            f"{spec['reference']} never says what it does not check"
+        assert spec["source_version"] in text, \
+            f"{spec['reference']} does not name the edition it was read from " \
+            f"({spec['source_version']}), so nothing dates it"
+
+
+def test_the_shipped_archetype_table_is_well_formed():
+    """The half of the plugin every consumer meets, and until now the half
+    with no test at all."""
+    archetypes = _table("archetypes").ARCHETYPES
+    assert archetypes, "the table is empty"
+    reference = (SKILL_ROOT / "references" / "archetypes.md").read_text(
+        encoding="utf-8")
+    for aid, spec in archetypes.items():
+        for field in ("name", "files", "unchecked", "infer"):
+            assert field in spec, f"{aid} has no {field}"
+        assert spec["files"], f"{aid} requires nothing"
+        assert f"## {aid}" in reference, \
+            f"{aid} has no section in references/archetypes.md"
+        for path in spec["files"]:
+            assert isinstance(path, str) and not path.startswith("/"), \
+                f"{aid}: {path!r}"
+        if spec["unchecked"]:
+            assert "(not checked)" in reference, \
+                "archetypes.md must mark the rows the audit does not verify"
+
+
+def test_every_check_id_is_declared_once():
+    """The registry declares an id and the check reports one. audit() asserts
+    they agree per run; this asserts the registry itself has no duplicate,
+    which would make one check's row silently replace another's."""
+    audit = _import_audit()
+    ids = [cid for cid, _ in audit.CHECKS]
+    assert len(ids) == len(set(ids)), sorted(ids)
+    assert audit.CHECK_IDS == frozenset(ids)
+    for forge, paths in _table("_common").FORGES.items():
+        assert isinstance(paths, list), forge
+        for entry in paths:
+            for path in _artifact_paths(entry):
+                assert isinstance(path, str) and not path.startswith("/"), \
+                    f"{forge}: {path!r}"
+
+
 def test_a_repository_can_add_a_requirement_of_its_own():
     """Every requirement was skill-owned, so a team with a document their
     standard genuinely needs had nowhere to say so and no reason to trust a
