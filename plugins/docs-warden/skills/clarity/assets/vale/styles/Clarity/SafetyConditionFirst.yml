@@ -1,0 +1,8 @@
+extends: existence
+message: "Put the condition before the instruction: '%s'"
+link: https://github.com/kuan51/claude-skills/tree/master/plugins/docs-warden
+level: warning
+nonword: true
+scope: sentence
+tokens:
+  - '(?:Stop|Halt|Abort|Cancel|Discontinue|Disconnect|Remove|Replace|Shut down|Power off|Do not [a-z]+)\b[^.!?\n]{0,120}?\s(?:if|when|unless)\s[^.!?\n]+'

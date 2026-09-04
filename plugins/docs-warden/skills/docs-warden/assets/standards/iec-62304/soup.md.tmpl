@@ -1,0 +1,22 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+qms_record: pending
+---
+
+# SOUP list
+
+Software of unknown provenance: every third-party component this software depends
+on at runtime.
+
+<!-- CONSULT: regulatory lead for the anomaly review conclusions. Listing a
+     component is mechanical; judging whether its known anomalies are acceptable
+     in this device is not. -->
+
+| Component | Version | Source | Purpose | Anomalies reviewed | Conclusion |
+|-----------|---------|--------|---------|--------------------|------------|
+| {{NAME}} | {{VERSION}} | {{URL_OR_REGISTRY}} | {{WHY_WE_USE_IT}} | {{DATE_OR_NO}} | {{ACCEPTABLE_OR_NOT}} |
+
+Keep this current with the lock file. The audit warns when the lock file is newer
+than this document, because that means dependencies moved and this list did not.

@@ -1,0 +1,6 @@
+archetype: it-tooling
+owner: it-team
+review_cadence_days: 365
+standards:
+  osps-baseline: 1
+generated_docs: []

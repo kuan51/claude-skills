@@ -31,6 +31,11 @@ and install the plugin.
 - You want the actual audit. This plugin never produces a HITRUST certification, a SOC 2 report or
   an ISO 27001 certificate — only an authorized HITRUST assessor, a licensed CPA firm and an
   accredited certification body do that. It gets you ready for them.
+- You want to know whether **one repository** holds the documents a standard requires — that is
+  `docs-warden` in this same marketplace, which audits repository files against IEC 62304, the
+  OSPS Baseline, the EU CRA and NIST SSDF. This plugin tracks organisational controls and their
+  evidence; that one scores a repo's document set. They share no state and neither reads the
+  other's.
 
 ## Quickstart
 

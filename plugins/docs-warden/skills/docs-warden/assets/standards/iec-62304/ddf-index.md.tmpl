@@ -1,0 +1,29 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+qms_record: pending
+---
+
+# Design file index
+
+Maps each design-control element to where it lives in git and to its controlled
+record in the eQMS.
+
+<!-- CONSULT: regulatory lead. QMSR took effect 2026-02-02 and folds the design
+     history file into ISO 13485 "Medical Device File" language; confirm which
+     terminology this project's quality system uses before relying on this. -->
+
+Paths reference **git tags**, never branches. A branch moves; an auditor asking
+what shipped needs something that does not.
+
+| Element | Git path | Tag | eQMS record |
+|---------|----------|-----|-------------|
+| Development plan | `docs/regulatory/software-development-plan.md` | {{TAG}} | {{RECORD}} |
+| Requirements | `docs/regulatory/requirements/` | {{TAG}} | {{RECORD}} |
+| Architecture | `docs/architecture/arc42.md` | {{TAG}} | {{RECORD}} |
+| Verification | `docs/regulatory/verification/` | {{TAG}} | {{RECORD}} |
+| SOUP | `docs/regulatory/soup.md` | {{TAG}} | {{RECORD}} |
+| Traceability | `docs/regulatory/traceability-matrix.md` | {{TAG}} | {{RECORD}} |
+| SBOM | `sbom/` | {{TAG}} | {{RECORD}} |
+| Threat model | `docs/regulatory/threat-model.md` | {{TAG}} | {{RECORD}} |

@@ -1,0 +1,50 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+---
+
+# Conventions
+
+How we work in this repository **today**. Edited in place as the standard changes.
+
+No history here. A dated entry in this file means you wanted a decision record —
+see [DECISIONS.md](DECISIONS.md).
+
+## Stack
+
+{{LANGUAGES_RUNTIMES_VERSIONS}}
+
+## Repository layout
+
+{{DIRECTORY_PURPOSES}}
+
+## Branches and commits
+
+{{BRANCH_NAMING}}
+
+Commit messages follow Conventional Commits: `type(scope): subject`, imperative,
+72 characters at most.
+
+## Naming
+
+{{NAMING_RULES}}
+
+## Testing
+
+{{TEST_COMMAND_AND_EXPECTATIONS}}
+
+## Documentation
+
+Every pull request updates the affected documents or says why not.
+Accepted decision records are never edited; supersede them instead.
+
+## Generated files
+
+Do not hand-edit these. CI regenerates each and fails on any diff.
+
+| Path | Regenerate with |
+|------|-----------------|
+| `docs/DECISIONS.md` | `adr_index.py .` |
+| `docs/decisions/README.md` | the same command |
+| {{GENERATED_PATH}} | `{{GENERATED_COMMAND}}` |

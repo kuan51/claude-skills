@@ -1,0 +1,41 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+---
+
+# {{SYSTEM}} runbook
+
+## When to use this
+
+{{SITUATION}}
+
+## Before you start
+
+- {{PREREQUISITE}}
+
+## Procedure
+
+1. {{STEP}}
+2. {{STEP}}
+
+<!-- One instruction per step. Condition before instruction:
+     "If the sensor is disconnected, stop." -->
+
+## Verify it worked
+
+```bash
+{{VERIFICATION_COMMAND}}
+```
+
+Expected: {{EXPECTED_OUTPUT}}
+
+## If it goes wrong
+
+| Symptom | Cause | Do this |
+|---------|-------|---------|
+| {{SYMPTOM}} | {{CAUSE}} | {{ACTION}} |
+
+## Rollback
+
+{{HOW_TO_UNDO}}

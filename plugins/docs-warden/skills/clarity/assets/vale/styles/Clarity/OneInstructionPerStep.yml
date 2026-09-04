@@ -1,0 +1,8 @@
+extends: existence
+message: "Split '%s' into separate steps. One instruction per step."
+level: suggestion
+nonword: true
+scope: sentence
+tokens:
+  - ',\s*then\s'
+  - '\sand\s+then\s'

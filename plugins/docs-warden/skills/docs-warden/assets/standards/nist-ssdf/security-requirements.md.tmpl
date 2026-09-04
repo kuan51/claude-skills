@@ -1,0 +1,36 @@
+---
+owner: {{OWNER}}
+review_by: {{REVIEW_BY}}
+generated: false
+---
+
+# Security requirements
+
+<!-- SSDF PO.1.1 and PO.1.2: identify and document the security requirements for
+     the development infrastructure and for the software itself. PO.1.3 adds the
+     ones passed on to third parties supplying components. -->
+
+## For the software
+
+<!-- Where these come from -- law, regulation, contract, risk assessment -- and
+     what each one obliges. Requirements traced by ID belong in
+     docs/regulatory/requirements/ if this repository also carries IEC 62304. -->
+
+| Requirement | Source | Where it is met |
+|-------------|--------|-----------------|
+| {{REQUIREMENT}} | {{LAW_CONTRACT_OR_RISK}} | {{DOCUMENT_OR_CONTROL}} |
+
+## For the development infrastructure
+
+{{REQUIREMENTS_ON_THE_TOOLCHAIN_AND_ENVIRONMENTS}}
+
+## Passed on to suppliers
+
+<!-- PO.1.3: what third parties supplying commercial or open source components
+     are required to meet, and how that is communicated to them. -->
+
+{{SUPPLIER_REQUIREMENTS}}
+
+## How often this is reviewed
+
+{{REVIEW_TRIGGER_AND_CADENCE}}

@@ -1,0 +1,3 @@
+# Python bytecode, from the docs-warden scripts and their test suite.
+__pycache__/
+*.pyc

@@ -1,0 +1,6 @@
+extends: existence
+message: "Requirement statement '%s'. Flag concerns; never rewrite the wording yourself."
+level: suggestion
+nonword: true
+tokens:
+  - '\bREQ-[A-Z][A-Z0-9]*-\d+\b'
