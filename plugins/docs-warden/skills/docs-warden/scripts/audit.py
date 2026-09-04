@@ -634,6 +634,28 @@ EXTRA_RULES = {
 }
 
 
+def _artifact_present(repo, name):
+    """One artifact path. A trailing slash means a directory with something in
+    it -- an empty docs/reference/ is not an interface description."""
+    target = repo / name
+    if name.endswith("/"):
+        return target.is_dir() and any(target.iterdir())
+    return target.is_file()
+
+
+def _artifact_satisfied(repo, entry):
+    """`entry` is a path, or a tuple of paths any one of which satisfies it.
+
+    Standards name alternatives for the same artifact -- the OSPS Baseline
+    accepts a licence at LICENSE, COPYING, LICENSES/ or LICENSE/. Demanding one
+    spelling would report a conforming repository as failing, which is the
+    fastest way to teach people the overlay is wrong.
+    """
+    if isinstance(entry, tuple):
+        return any(_artifact_present(repo, alt) for alt in entry)
+    return _artifact_present(repo, entry)
+
+
 def check_standards(repo, config, script_dir):
     declared = (config or {}).get("standards") or {}
     if not declared:
@@ -676,10 +698,9 @@ def check_standards(repo, config, script_dir):
         for rule in spec.get("extra", ()):
             problems += EXTRA_RULES[rule](repo, script_dir)
 
-    for name, owners in wanted.items():
-        target = repo / name
-        present = target.is_dir() and any(target.iterdir()) if name.endswith("/") else target.is_file()
-        if not present:
+    for entry, owners in wanted.items():
+        if not _artifact_satisfied(repo, entry):
+            name = " or ".join(entry) if isinstance(entry, tuple) else entry
             problems.append(f"missing {name} ({', '.join(owners)})")
 
     if problems:

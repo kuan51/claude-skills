@@ -582,6 +582,26 @@ owner: t
             f"a standard declaring no extra rules had them run: {entry['reason']}"
 
 
+def test_standards_accepts_any_spelling_of_an_alternative_artifact():
+    """The OSPS Baseline names four acceptable locations for a licence. A repo
+    that uses COPYING conforms, and telling it a LICENSE is missing is the
+    fastest way to teach people the overlay is wrong. Runs against the real
+    standards table, because the alternatives are that table's content."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "COPYING").write_text("MIT" + chr(10), encoding="utf-8")
+        (repo / "CONTRIBUTING.md").write_text("# Contributing" + chr(10), encoding="utf-8")
+        entry = _standards_entry(repo, {"osps-baseline": 1})
+        assert entry["state"] == "pass", \
+            f"COPYING should satisfy the licence artifact: {entry['reason']}"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        entry = _standards_entry(tmp, {"osps-baseline": 1})
+        assert entry["state"] == "fail", entry
+        assert "COPYING" in entry["reason"], \
+            f"the reason should name every accepted spelling: {entry['reason']}"
+
+
 def _import_audit():
     """Import audit.py as a module. It does `from _common import ...`, so its
     own directory has to be importable, not just the file."""

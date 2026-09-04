@@ -219,5 +219,7 @@ terms.
 - `references/anti-drift.md` — linters, freshness, ownership, and the CI gap.
 - `references/standards.md` — how overlays are declared, and how to add one.
 - `references/standards/iec-62304.md` — IEC 62304 artifacts by safety class.
+- `references/standards/osps-baseline.md` — OSPS Baseline artifacts by maturity
+  level, and the control families it leaves out.
 - `../clarity/SKILL.md` — the plain-English writing standard, and the source of the
   `Clarity` Vale style this skill's `.vale.ini` depends on.
