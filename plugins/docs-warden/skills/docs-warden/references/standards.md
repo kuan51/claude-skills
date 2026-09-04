@@ -61,6 +61,14 @@ standard that asks for one at `docs/threat-model.md` means the same document.
 and the other may be a pointer to it. This is resolved here, in prose, rather
 than in code, because it is one file.
 
+## Where a shared artifact's template lives
+
+Templates sit under `assets/standards/<id>/`, grouped by the standard that
+introduced them. A path two standards want has one template, in the directory of
+whichever asked first -- `SUPPORT.md.tmpl` is under `osps-baseline/` and the CRA
+uses it too. Each artifact table says where. Copying it into a second directory
+would give one document two templates that drift.
+
 ## Adding a standard
 
 One entry in `scripts/standards.py`, plus a reference document beside this one.

@@ -31,6 +31,12 @@ SUPPORT = "SUPPORT.md"
 LICENSE = ("LICENSE", "COPYING", "LICENSES/", "LICENSE/")
 CONTRIBUTING = ("CONTRIBUTING.md", "CONTRIBUTING/")
 
+PRODUCT_DESCRIPTION = "docs/product-description.md"
+VULNERABILITY_HANDLING = "docs/vulnerability-handling.md"
+APPLIED_STANDARDS = "docs/applied-standards.md"
+DECLARATION_OF_CONFORMITY = "docs/declaration-of-conformity.md"
+VERIFICATION_DIR = "docs/verification/"
+
 _IEC_62304_A = [
     "docs/regulatory/software-development-plan.md",
     "docs/regulatory/requirements/",
@@ -71,6 +77,23 @@ _OSPS_3 = _OSPS_2 + [
     "docs/remediation-policy.md",      # OSPS-VM-05.01, OSPS-VM-06.01
 ]
 
+# Regulation (EU) 2024/2847, free from EUR-Lex. Paths follow Annex VII's eight
+# numbered points; the comment on each row says which. No level axis: the CRA's
+# risk classes (default, important class I and II, critical) select the
+# conformity assessment route, not the document set, so encoding one here would
+# imply a scaling the regulation does not have.
+_EU_CRA = [
+    PRODUCT_DESCRIPTION,          # VII.1  general description, purpose, versions
+    ARCHITECTURE_DIR,             # VII.2  design and development
+    VULNERABILITY_HANDLING,       # VII.2  vulnerability handling processes
+    SBOM,                         # VII.2 and VII.8, and Annex I Pt II(1)
+    SECURITY_ASSESSMENT,          # VII.3  cybersecurity risk assessment
+    SUPPORT,                      # VII.4  support period
+    APPLIED_STANDARDS,            # VII.5  standards and specifications applied
+    VERIFICATION_DIR,             # VII.6  test reports
+    DECLARATION_OF_CONFORMITY,    # VII.7  EU declaration of conformity
+]
+
 STANDARDS = {
     "iec-62304": {
         "name": "IEC 62304",
@@ -92,5 +115,17 @@ STANDARDS = {
         "levels": {"1": _OSPS_1, "2": _OSPS_2, "3": _OSPS_3},
         "extra": [],
         "reference": "references/standards/osps-baseline.md",
+    },
+    "eu-cra": {
+        "name": "EU Cyber Resilience Act",
+        "level_name": None,
+        # Whether a product is placed on the EU market is a commercial fact the
+        # repository cannot show. Ask.
+        "infer": False,
+        "source_version": "Regulation (EU) 2024/2847",
+        "levels": None,
+        "artifacts": _EU_CRA,
+        "extra": [],
+        "reference": "references/standards/eu-cra.md",
     },
 }

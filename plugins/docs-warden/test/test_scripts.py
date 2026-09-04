@@ -602,6 +602,17 @@ def test_standards_accepts_any_spelling_of_an_alternative_artifact():
             f"the reason should name every accepted spelling: {entry['reason']}"
 
 
+def test_standards_dedupes_a_real_shared_artifact_across_two_standards():
+    """sbom/ is wanted by IEC 62304 and by the CRA's Annex VII, and a medical
+    device sold in the EU is under both. The repo keeps one SBOM, so it must be
+    told once, naming both -- not once per standard that wanted it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        entry = _standards_entry(tmp, {"iec-62304": "A", "eu-cra": True})
+        assert entry["reason"].count("missing sbom/") == 1, entry["reason"]
+        for owner in ("IEC 62304", "EU Cyber Resilience Act"):
+            assert owner in entry["reason"], (owner, entry["reason"])
+
+
 def _import_audit():
     """Import audit.py as a module. It does `from _common import ...`, so its
     own directory has to be importable, not just the file."""

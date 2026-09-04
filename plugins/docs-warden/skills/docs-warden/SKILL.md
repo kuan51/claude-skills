@@ -221,5 +221,7 @@ terms.
 - `references/standards/iec-62304.md` — IEC 62304 artifacts by safety class.
 - `references/standards/osps-baseline.md` — OSPS Baseline artifacts by maturity
   level, and the control families it leaves out.
+- `references/standards/eu-cra.md` — EU CRA Annex VII artifacts, the two dates,
+  and what the overlay cannot check.
 - `../clarity/SKILL.md` — the plain-English writing standard, and the source of the
   `Clarity` Vale style this skill's `.vale.ini` depends on.
