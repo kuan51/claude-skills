@@ -28,6 +28,7 @@ from _common import (
     load_config,
     markdown_docs,
     read_front_matter,
+    review_date,
 )
 
 RUNLOG_ROTATE_LINES = 500
@@ -66,13 +67,9 @@ def main() -> int:
 
         review_by = front.get("review_by")
         if review_by:
-            due = review_by if isinstance(review_by, dt.date) else None
+            due = review_date(review_by)
             if due is None:
-                try:
-                    due = dt.date.fromisoformat(str(review_by))
-                except ValueError:
-                    warnings.append(f"{rel}: review_by '{review_by}' is not an ISO date")
-                    due = None
+                warnings.append(f"{rel}: review_by '{review_by}' is not an ISO date")
             if due and due < today:
                 failures.append(f"{rel}: review_by {due.isoformat()} passed {(today - due).days} day(s) ago")
 

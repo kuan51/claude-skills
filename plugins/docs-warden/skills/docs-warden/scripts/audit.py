@@ -40,6 +40,7 @@ from _common import (
     markdown_docs,
     parse_front_matter,
     read_front_matter,
+    review_date,
     strip_code,
 )
 
@@ -132,14 +133,10 @@ def check_front_matter(repo):
         if absent:
             missing.append(f"{name} ({', '.join(absent)})")
             continue
-        raw = front["review_by"]
-        due = raw if isinstance(raw, dt.date) else None
+        due = review_date(front["review_by"])
         if due is None:
-            try:
-                due = dt.date.fromisoformat(str(raw))
-            except ValueError:
-                missing.append(f"{name} (review_by not an ISO date)")
-                continue
+            missing.append(f"{name} (review_by not an ISO date)")
+            continue
         if due < today:
             overdue.append(f"{name} (due {due.isoformat()})")
     if missing:

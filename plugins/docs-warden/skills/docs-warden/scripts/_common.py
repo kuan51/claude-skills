@@ -4,6 +4,7 @@ Kept deliberately small: front matter parsing, config loading, and the two git
 questions the audit needs. Anything used by exactly one script lives in that
 script instead.
 """
+import datetime as dt
 import re
 import subprocess
 from pathlib import Path
@@ -79,6 +80,26 @@ def read_front_matter(path: Path):
     except (OSError, UnicodeDecodeError):
         return {}, ""
     return parse_front_matter(text)
+
+
+def review_date(value):
+    """A review_by front-matter value as a date, or None if it is not one.
+
+    datetime.datetime subclasses datetime.date, so a YAML timestamp --
+    "review_by: 2026-01-01 09:00:00" is one -- satisfied an
+    isinstance(value, dt.date) test and then raised TypeError the moment it was
+    compared with today's date, taking the whole audit down. Narrowed to
+    datetime first, and shared so the audit and the freshness report cannot
+    drift into two answers for one question.
+    """
+    if isinstance(value, dt.datetime):
+        return value.date()
+    if isinstance(value, dt.date):
+        return value
+    try:
+        return dt.date.fromisoformat(str(value))
+    except ValueError:
+        return None
 
 
 def load_config(repo: Path):

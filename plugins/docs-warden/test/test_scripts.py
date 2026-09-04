@@ -232,6 +232,35 @@ def test_audit_survives_a_document_that_is_not_valid_utf8():
             _one_check(card, "readme-shape")
 
 
+def test_review_by_may_carry_a_time_without_killing_the_run():
+    """PyYAML resolves "review_by: 2020-01-01 09:00:00" to a datetime, and
+    datetime subclasses date -- so it satisfied the isinstance(v, dt.date) test
+    and then raised TypeError the moment it met today's date. The audit died
+    before writing a scorecard; freshness.py died before reporting any document.
+
+    Both readers now go through _common.review_date, so they cannot drift into
+    two answers for one question.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / "docs" / "note.md").write_text(
+            "---\nowner: t\nreview_by: 2020-01-01 09:00:00\n---\n\n# Note\n\nx\n",
+            encoding="utf-8")
+        card = _full_card(repo)
+        entry = _one_check(card, "front-matter")
+        assert entry["state"] == "warn", \
+            f"a past review_by with a time should be overdue, not {entry}"
+        assert "2020-01-01" in entry["reason"], entry["reason"]
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "freshness.py"), str(repo)],
+            capture_output=True, text=True, check=False)
+        assert result.returncode == 1, \
+            f"freshness.py did not report the stale document: {result.stderr}"
+        assert "review_by 2020-01-01 passed" in result.stdout, result.stdout
+
+
 def _regulated_repo(tmp):
     """A class-A regulated repo with every required artifact present, and a
     requirements/ directory that is non-empty but declares no REQ heading --
