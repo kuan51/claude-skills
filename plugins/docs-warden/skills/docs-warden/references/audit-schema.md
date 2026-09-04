@@ -147,7 +147,7 @@ their length measures the data they render, not anything a human wrote.
 Only for a repository whose `.docs-warden.yml` sets `regulated: true`; `skipped`
 otherwise. Checks that the safety class's artifacts are present and that every
 `REQ-<AREA>-NNN` in `docs/regulatory/requirements/` is named by a test. `fail`
-reports the missing artifact or the untraced requirement. `regulated-overlay.md`
+reports the missing artifact or the untraced requirement. `standards/iec-62304.md`
 holds the artifact table and marks the rows this check does not enforce — read it
 before treating a `pass` as coverage.
 **Fix:** add the artifact, or add a test that names the requirement ID.

@@ -134,7 +134,7 @@ Every repo, both worlds, gets these. Full specification in
 
 Archetype overlays add to this set; they never remove from it. See
 `references/archetypes.md`. Regulated repos take a further overlay -- see
-`references/regulated-overlay.md`.
+`references/standards/iec-62304.md`.
 
 ### Migrating a repo scaffolded before the docs/ move
 
@@ -214,6 +214,6 @@ terms.
 - `references/adr-format.md` — decision record format and the immutability rule.
 - `references/audit-schema.md` — every check, its meaning, and its fix.
 - `references/anti-drift.md` — linters, freshness, ownership, and the CI gap.
-- `references/regulated-overlay.md` — IEC 62304 artifacts by safety class.
+- `references/standards/iec-62304.md` — IEC 62304 artifacts by safety class.
 - `../clarity/SKILL.md` — the plain-English writing standard, and the source of the
   `Clarity` Vale style this skill's `.vale.ini` depends on.

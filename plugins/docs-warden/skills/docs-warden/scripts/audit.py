@@ -55,7 +55,7 @@ PHI_PATTERNS = [
     (r"\b(?:Server|Data Source)=[^;\s]+;.*(?:Password|Pwd)=", "connection string"),
 ]
 
-# Scaled by safety_class. See references/regulated-overlay.md, and re-confirm
+# Scaled by safety_class. See references/standards/iec-62304.md, and re-confirm
 # with the regulatory lead: this skill does not track standards.
 REGULATED_FILES = {
     "A": [
