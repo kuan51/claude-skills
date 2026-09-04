@@ -154,6 +154,26 @@ def _universal_repo(repo, archetype):
     return repo
 
 
+def test_an_empty_required_directory_is_not_a_present_document():
+    """A firmware repo whose docs/architecture/ existed and was empty reported
+    "All 11 required files present". check_standards refused the same shape in
+    the same file -- "an empty docs/reference/ is not an interface
+    description" -- so the audit answered one question two ways depending on
+    which check asked it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "firmware")
+        (repo / "docs" / "architecture").mkdir(parents=True, exist_ok=True)
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "fail", \
+            f"an empty directory should not satisfy the archetype: {entry}"
+        assert "docs/architecture/" in entry["reason"], entry["reason"]
+        (repo / "docs" / "architecture" / "overview.md").write_text(
+            "x", encoding="utf-8")
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "pass", \
+            f"one document in it is enough: {entry}"
+
+
 def test_required_files_says_how_much_the_archetype_declares_but_cannot_check():
     """references/archetypes.md promises a service repo docs/how-to/,
     docs/reference/ and a generated API reference; the audit demands only

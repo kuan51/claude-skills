@@ -97,10 +97,14 @@ def check_required_files(repo, config):
                      ARCHETYPE_FIX)
     spec = ARCHETYPES.get(archetype, {})
     expected = list(UNIVERSAL_FILES) + list(spec.get("files", ()))
-    missing = [
-        f for f in expected
-        if not ((repo / f).is_dir() if f.endswith("/") else (repo / f).is_file())
-    ]
+    # _artifact_satisfied, not a second path test: this one accepted a bare
+    # is_dir(), so firmware's docs/architecture/ was satisfied by an empty
+    # directory while check_standards refused exactly that ("an empty
+    # docs/reference/ is not an interface description"). One question, one
+    # answer -- and it is the shared resolver that understands a tuple of
+    # alternative spellings.
+    missing = [_artifact_label(f) for f in expected
+               if not _artifact_satisfied(repo, f)]
     if not missing:
         # The archetype wants documents no path test can verify -- a generated
         # API reference is real work that an empty docs/reference/ would satisfy.
@@ -695,6 +699,11 @@ def _artifact_present(repo, name):
     return target.is_file()
 
 
+def _artifact_label(entry):
+    """How an artifact reads in a report: "LICENSE or COPYING" for a tuple."""
+    return " or ".join(entry) if isinstance(entry, tuple) else entry
+
+
 def _artifact_satisfied(repo, entry):
     """`entry` is a path, or a tuple of paths any one of which satisfies it.
 
@@ -791,8 +800,8 @@ def check_standards(repo, config, script_dir):
 
     for entry, owners in wanted.items():
         if not _artifact_satisfied(repo, entry):
-            shown = " or ".join(entry) if isinstance(entry, tuple) else entry
-            problems.append(f"missing {shown} ({', '.join(owners)})")
+            problems.append(
+                f"missing {_artifact_label(entry)} ({', '.join(owners)})")
 
     if config_problems or problems:
         # Config first: while the manifest is wrong the artifact list derived
