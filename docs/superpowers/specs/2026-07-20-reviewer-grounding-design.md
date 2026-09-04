@@ -1,3 +1,9 @@
+---
+owner: kuan51
+review_by: 2027-03-03
+generated: false
+---
+
 # Design: `data-analysis-review` reviewer grounding (fabrication guard, model pin, guidance routing)
 
 **Date:** 2026-07-20

@@ -1,3 +1,9 @@
+---
+owner: kuan51
+review_by: 2027-03-03
+generated: false
+---
+
 # CISO Dashboard → PM Tool Task Sync (JIRA + Linear)
 
 ## Context

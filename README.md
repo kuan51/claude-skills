@@ -3,7 +3,7 @@
 A Claude Code plugin marketplace: a growing collection of skills spanning different subject
 matters, not limited to any one domain.
 
-## Installing
+## Quick start
 
 This is a Claude Code plugin marketplace — the same slash commands work wherever you're running
 Claude Code: the CLI, the desktop app, or the web app (claude.ai/code).
