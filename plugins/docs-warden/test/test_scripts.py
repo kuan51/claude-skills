@@ -327,6 +327,40 @@ def test_each_audited_repo_gets_its_own_scorecard():
         assert isinstance(both, list) and len(both) == 2, both
 
 
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+
+
+def test_the_fixtures_still_report_what_they_were_built_to_report():
+    """assert_scorecard.py existed with no caller, its docstring claiming a CI
+    run that does not ship. It is the assertion the fixtures deserve: the
+    regulated one carries planted defects, and a bare non-zero exit would still
+    pass if the audit started failing for some unrelated reason and stopped
+    detecting them.
+
+    Only environment-independent checks are named. lint is left out: it reports
+    skipped or pass depending on whether vale and lychee are installed here.
+    """
+    expectations = {
+        "repo-it-tooling": ["required-files=pass", "adr-index=pass", "links=pass",
+                            "phi-secrets=pass", "standards=pass"],
+        "repo-regulated": ["required-files=pass", "adr-index=pass", "links=pass",
+                           "phi-secrets=pass", "front-matter=warn",
+                           "standards=fail"],
+    }
+    for name, expected in expectations.items():
+        with tempfile.TemporaryDirectory() as tmp:
+            card = Path(tmp) / "card.json"
+            subprocess.run(
+                [sys.executable, str(SCRIPTS / "audit.py"), str(FIXTURES / name),
+                 "--quiet", "--json-out", str(card)],
+                capture_output=True, check=False)
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).resolve().parent
+                                     / "assert_scorecard.py"), str(card), *expected],
+                capture_output=True, text=True, check=False)
+            assert result.returncode == 0, f"{name}: {result.stderr.strip()}"
+
+
 def _regulated_repo(tmp):
     """A class-A regulated repo with every required artifact present, and a
     requirements/ directory that is non-empty but declares no REQ heading --
