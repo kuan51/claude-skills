@@ -50,7 +50,7 @@ from _common import (
     strip_code,
 )
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # Deliberately broad. A false positive costs a minute; a miss puts patient data
 # into a git history that cannot be rewritten.
@@ -738,90 +738,118 @@ ARTIFACT_FIX = ("Scaffold the missing artifacts, and add a test for every requir
                 "Regulatory content needs the regulatory lead, not a generated draft.")
 
 
+def _resolve_standard(sid, level, spec):
+    """(label, artifacts) for one declared standard, or (None, problem)."""
+    name = spec.get("name", sid)
+    levels = spec.get("levels")
+    if levels is None:
+        # Identity, not equality: Python's 1 == True would let a level slip
+        # through on a standard that has no level axis.
+        if level is not True:
+            return None, f"{sid} takes no level; expected true, got {level!r}"
+        artifacts = spec.get("artifacts")
+        if artifacts is None:
+            return None, (f"the standards table entry for {sid} declares "
+                          "neither levels nor artifacts")
+        return (name, name, artifacts), None
+    level_name = spec.get("level_name") or "level"
+    # YAML gives back a str for "C" and an int for 2, and both are valid
+    # levels. Normalise before the lookup or every numeric axis is rejected
+    # as unknown on its happy path.
+    key = str(level)
+    if key not in levels:
+        return None, (f"{sid} {level_name} is {level!r}; expected "
+                      + " or ".join(sorted(levels)))
+    return (name, f"{name} {level_name} {key}", levels[key]), None
+
+
 def check_standards(repo, config, script_dir):
+    """One check per declared standard, id "standards:<id>".
+
+    A single row for every standard could not say which one was failing, which
+    is the question a fleet scorecard exists to answer.
+
+    **This reverses how a shared artifact is reported.** It used to be named
+    once across the whole check, on the reasoning that a repo keeps one SBOM
+    and should be told once. Under per-standard rows that would leave
+    standards:eu-cra passing while the CRA's own Annex VII SBOM is absent --
+    a false green, reported under whichever standard happened to come first in
+    the manifest. Each row now names every artifact it wants, and names the
+    other standards that want it too, so the reader still knows one file
+    settles several rows. What is deduped is the work, not the reporting.
+    """
     declared = (config or {}).get("standards") or {}
     if not declared:
-        return check("standards", "skipped", "No standards declared.", "")
-    # Every other shape YAML can produce here used to reach .items() and take the
-    # whole run down with an AttributeError -- no scorecard, and the ten other
-    # checks lost with it. "standards: true" is what someone migrating from the
-    # old "regulated: true" writes first.
+        return [check("standards", "skipped", "No standards declared.", "")]
+    # Every other shape YAML can produce here used to reach .items() and take
+    # the whole run down with an AttributeError -- no scorecard, and the ten
+    # other checks lost with it. "standards: true" is what someone migrating
+    # from the old "regulated: true" writes first.
     if not isinstance(declared, dict):
-        return check(
+        return [check(
             "standards", "fail",
             f"standards must be a mapping of standard to level, "
             f"got {type(declared).__name__}.",
-            CONFIG_FIX)
+            CONFIG_FIX)]
 
-    # Config problems are a wrong manifest or a malformed standards table entry;
-    # artifact problems are documents that are genuinely absent. Kept apart so
-    # each gets the fix that actually applies, and so a wrong manifest is
-    # reported before a list of artifacts derived from it.
-    config_problems, problems, labels = [], [], []
-    # Path -> the standards that want it, so an artifact two standards share is
-    # required once and reported once, naming both.
-    wanted = {}
+    # Resolve every standard before checking any, so a row can name the other
+    # claimants of an artifact it shares.
+    resolved, broken, wanted = {}, {}, {}
     for sid, level in declared.items():
         spec = STANDARDS.get(sid)
         if spec is None:
-            config_problems.append(
-                f"unknown standard {sid!r}; known: {', '.join(sorted(STANDARDS))}")
+            broken[sid] = (f"unknown standard {sid!r}; "
+                           f"known: {', '.join(sorted(STANDARDS))}")
             continue
         # spec.get throughout, not spec[...]: a malformed entry is a bug in the
         # standards table, and references/standards.md invites people to add
         # entries. It should be reported, not raised through the whole audit.
-        name = spec.get("name", sid)
-        levels = spec.get("levels")
-        if levels is None:
-            # Identity, not equality: Python's 1 == True would let a level slip
-            # through on a standard that has no level axis.
-            if level is not True:
-                config_problems.append(
-                    f"{sid} takes no level; expected true, got {level!r}")
-                continue
-            artifacts = spec.get("artifacts")
-            if artifacts is None:
-                config_problems.append(
-                    f"the standards table entry for {sid} declares neither "
-                    "levels nor artifacts")
-                continue
-            label = name
-        else:
-            level_name = spec.get("level_name") or "level"
-            # YAML gives back a str for "C" and an int for 2, and both are valid
-            # levels. Normalise before the lookup or every numeric axis is
-            # rejected as unknown on its happy path.
-            key = str(level)
-            if key not in levels:
-                config_problems.append(
-                    f"{sid} {level_name} is {level!r}; expected "
-                    + " or ".join(sorted(levels)))
-                continue
-            artifacts = levels[key]
-            label = f"{name} {level_name} {key}"
-        labels.append(label)
+        ok, problem = _resolve_standard(sid, level, spec)
+        if ok is None:
+            broken[sid] = problem
+            continue
+        resolved[sid] = ok
+        for entry in ok[2]:
+            wanted.setdefault(entry, []).append(ok[0])
+
+    entries = []
+    for sid in declared:
+        cid = f"standards:{sid}"
+        if sid in broken:
+            entries.append(check(cid, "fail", broken[sid], CONFIG_FIX))
+            continue
+        name, label, artifacts = resolved[sid]
+        problems = []
         for entry in artifacts:
-            wanted.setdefault(entry, []).append(name)
-        for rule in spec.get("extra", ()):
+            if _artifact_satisfied(repo, entry):
+                continue
+            others = [o for o in wanted[entry] if o != name]
+            also = f" (also {', '.join(others)})" if others else ""
+            problems.append(f"missing {_artifact_label(entry)}{also}")
+        # Dispatched here, inside the standard that declares them, so a repo
+        # adopting only a standard that wants none never has them run.
+        for rule in STANDARDS[sid].get("extra", ()):
             runner = EXTRA_RULES.get(rule)
             if runner is None:
-                config_problems.append(
-                    f"the standards table entry for {sid} names unknown rule {rule!r}")
-                continue
+                entries.append(check(
+                    cid, "fail",
+                    f"the standards table entry for {sid} names unknown rule "
+                    f"{rule!r}", CONFIG_FIX))
+                problems = None
+                break
             problems += runner(repo, script_dir)
-
-    for entry, owners in wanted.items():
-        if not _artifact_satisfied(repo, entry):
-            problems.append(
-                f"missing {_artifact_label(entry)} ({', '.join(owners)})")
-
-    if config_problems or problems:
-        # Config first: while the manifest is wrong the artifact list derived
-        # from it cannot be trusted, so that is the fix worth showing.
-        return check("standards", "fail", "; ".join(config_problems + problems),
-                     CONFIG_FIX if config_problems else ARTIFACT_FIX)
-    return check("standards", "pass",
-                 f"{len(wanted)} artifact(s) present for {', '.join(labels)}.")
+        if problems is None:
+            continue
+        if problems:
+            entries.append(check(cid, "fail", "; ".join(problems),
+                                 ARTIFACT_FIX))
+        else:
+            version = STANDARDS[sid].get("source_version")
+            against = f" against {version}" if version else ""
+            entries.append(check(
+                cid, "pass",
+                f"{len(artifacts)} artifact(s) present for {label}{against}."))
+    return entries
 
 
 def check_readme_shape(repo):
@@ -873,6 +901,7 @@ CHECKS = [
     ("links", lambda c: check_links(c.repo)),
     ("glossary-reject-terms", lambda c: check_glossary_reject_terms(c.repo)),
     ("phi-secrets", lambda c: check_phi_secrets(c.repo)),
+    # Returns several: one per declared standard, each id-prefixed "standards:".
     ("standards", lambda c: check_standards(c.repo, c.config, c.script_dir)),
     ("readme-shape", lambda c: check_readme_shape(c.repo)),
 ]
@@ -888,10 +917,15 @@ def audit(repo: Path, script_dir: Path, run_generators=False):
                               run_generators=run_generators)
     checks = []
     for cid, run in CHECKS:
-        entry = run(context)
-        assert entry["id"] == cid, \
-            f"the registry calls this {cid!r} and it reports {entry['id']!r}"
-        checks.append(entry)
+        result = run(context)
+        for entry in (result if isinstance(result, list) else [result]):
+            # A family is allowed to fan out under its own prefix -- one row
+            # per declared standard -- but not to report under someone else's
+            # id, which is how a check goes missing from the scorecard without
+            # anything saying so.
+            assert entry["id"] == cid or entry["id"].startswith(cid + ":"), \
+                f"the registry calls this {cid!r} and it reports {entry['id']!r}"
+            checks.append(entry)
     if config is None:
         checks.insert(0, check(
             "manifest", "fail", "No .docs-warden.yml; archetype unknown.",

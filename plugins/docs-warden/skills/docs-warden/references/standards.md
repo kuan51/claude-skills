@@ -48,11 +48,23 @@ Standards with no level axis (`levels: None`) take `true` and nothing else. The
 check identity-tests that value, because Python's `1 == True` would otherwise
 let a meaningless level through.
 
+## One check per standard
+
+Each declared standard gets its own scorecard row, `standards:<id>`. A single
+combined row could not say which standard was failing, which is the question a
+fleet scorecard exists to answer.
+
 ## Overlapping artifacts
 
-Two standards wanting the same file is normal, not a conflict. The check takes
-the union, requires each path once, and names every standard that wanted it.
-Shared paths are constants in `standards.py` so a move stays one edit.
+Two standards wanting the same file is normal, not a conflict. One file
+satisfies both — shared paths are constants in `standards.py` so a move stays
+one edit — and **both rows name it**, each naming the other claimant.
+
+This is a deliberate reversal. A single combined check named a shared artifact
+once, so a repo adopting three overlapping standards was not told the same
+thing three times. Under per-standard rows that would leave the standards it
+was not reported under passing while their artifact is absent, with the choice
+falling to manifest order. The work is deduplicated; the reporting is not.
 
 One genuine disagreement exists. IEC 62304 keeps its threat model at
 `docs/regulatory/threat-model.md`, with the rest of its design history; a

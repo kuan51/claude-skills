@@ -481,10 +481,10 @@ def test_the_fixtures_still_report_what_they_were_built_to_report():
     """
     expectations = {
         "repo-it-tooling": ["required-files=pass", "adr-index=pass", "links=pass",
-                            "phi-secrets=pass", "standards=pass"],
+                            "phi-secrets=pass", "standards:osps-baseline=pass"],
         "repo-regulated": ["required-files=pass", "adr-index=pass", "links=pass",
                            "phi-secrets=pass", "front-matter=warn",
-                           "standards=fail"],
+                           "standards:iec-62304=fail"],
     }
     for name, expected in expectations.items():
         with tempfile.TemporaryDirectory() as tmp:
@@ -591,7 +591,7 @@ def test_audit_reports_a_failing_trace_matrix_instead_of_every_requirement_teste
             capture_output=True, text=True, check=False)
         assert matrix.returncode != 0, "premise broken: trace_matrix.py exited 0"
 
-        entry = _audit_check(repo, "standards")
+        entry = _audit_check(repo, "standards:iec-62304")
         assert entry["state"] != "pass", \
             f"a repo with no declared requirements was reported {entry['state']}: {entry['reason']}"
         assert "trace_matrix" in entry["reason"], \
@@ -947,8 +947,8 @@ _SYNTHETIC = {
 }
 
 
-def _standards_entry(repo, declared, table=None):
-    """check_standards against `repo` with `declared` as its standards map.
+def _standards_entries(repo, declared, table=None):
+    """Every check_standards row for `repo`, keyed by check id.
 
     In-process rather than through audit.py's CLI, so the standards table can
     be swapped for the synthetic one above.
@@ -958,9 +958,18 @@ def _standards_entry(repo, declared, table=None):
     if table is not None:
         audit.STANDARDS = table
     try:
-        return audit.check_standards(Path(repo), {"standards": declared}, SCRIPTS)
+        rows = audit.check_standards(Path(repo), {"standards": declared},
+                                     SCRIPTS)
     finally:
         audit.STANDARDS = real
+    return {row["id"]: row for row in rows}
+
+
+def _standards_entry(repo, declared, table=None):
+    """The single row, for the many tests that declare one standard."""
+    rows = _standards_entries(repo, declared, table)
+    assert len(rows) == 1, f"expected one row, got {sorted(rows)}"
+    return next(iter(rows.values()))
 
 
 def test_standards_accepts_an_integer_level():
@@ -1002,15 +1011,28 @@ def test_standards_rejects_an_unknown_id():
         assert "unknown standard" in entry["reason"], entry["reason"]
 
 
-def test_standards_requires_a_shared_artifact_once():
+def test_a_shared_artifact_is_named_in_every_row_that_wants_it():
     """Two standards wanting the same path is the normal case, not a conflict.
-    It must be reported once, naming both, or a repo adopting three overlapping
-    standards gets the same missing file three times."""
+
+    This reverses the earlier contract, which named a shared artifact once
+    across a single combined check so a repo adopting three overlapping
+    standards was not told the same thing three times. Under per-standard rows
+    that would leave the standards it was *not* reported under passing while
+    their artifact is absent -- a false green, assigned by manifest order. Each
+    row now names it, and names the co-claimants, so one fix visibly settles
+    several rows.
+    """
     with tempfile.TemporaryDirectory() as tmp:
-        entry = _standards_entry(tmp, {"levelled": 1, "flat": True}, _SYNTHETIC)
-        assert entry["reason"].count("missing docs/one.md") == 1, entry["reason"]
-        assert "Levelled" in entry["reason"] and "Flat" in entry["reason"], \
-            f"both claimants should be named: {entry['reason']}"
+        rows = _standards_entries(tmp, {"levelled": 1, "flat": True},
+                                  _SYNTHETIC)
+        assert set(rows) == {"standards:levelled", "standards:flat"}, sorted(rows)
+        for cid, other in (("standards:levelled", "Flat"),
+                           ("standards:flat", "Levelled")):
+            reason = rows[cid]["reason"]
+            assert rows[cid]["state"] == "fail", rows[cid]
+            assert reason.count("missing docs/one.md") == 1, reason
+            assert other in reason, \
+                f"{cid} should name the co-claimant so one fix covers both: {reason}"
 
 
 def test_standards_runs_extra_rules_only_for_the_standard_that_declares_them():
@@ -1058,15 +1080,16 @@ def test_standards_accepts_any_spelling_of_an_alternative_artifact():
             f"the reason should name every accepted spelling: {entry['reason']}"
 
 
-def test_standards_dedupes_a_real_shared_artifact_across_two_standards():
+def test_a_real_shared_artifact_names_its_co_claimant_in_both_rows():
     """sbom/ is wanted by IEC 62304 and by the CRA's Annex VII, and a medical
-    device sold in the EU is under both. The repo keeps one SBOM, so it must be
-    told once, naming both -- not once per standard that wanted it."""
+    device sold in the EU is under both. One SBOM satisfies both, and each row
+    says so rather than either row staying silent about a file it requires."""
     with tempfile.TemporaryDirectory() as tmp:
-        entry = _standards_entry(tmp, {"iec-62304": "A", "eu-cra": True})
-        assert entry["reason"].count("missing sbom/") == 1, entry["reason"]
-        for owner in ("IEC 62304", "EU Cyber Resilience Act"):
-            assert owner in entry["reason"], (owner, entry["reason"])
+        rows = _standards_entries(tmp, {"iec-62304": "A", "eu-cra": True})
+        assert rows["standards:iec-62304"]["reason"].count("missing sbom/") == 1
+        assert rows["standards:eu-cra"]["reason"].count("missing sbom/") == 1
+        assert "EU Cyber Resilience Act" in rows["standards:iec-62304"]["reason"]
+        assert "IEC 62304" in rows["standards:eu-cra"]["reason"]
 
 
 def test_standards_reports_a_non_mapping_instead_of_crashing():

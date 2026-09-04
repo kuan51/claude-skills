@@ -23,7 +23,7 @@ never ran is worse than no scorecard, because people believe it.
 
 ```json
 {
-  "schema": 2,
+  "schema": 3,
   "repo": "/path/to/repo",
   "generated_at": "2026-09-01T12:00:00Z",
   "archetype": "it-tooling",
@@ -145,23 +145,33 @@ contents is also required. Generated regions are excluded from the line count:
 their length measures the data they render, not anything a human wrote.
 `warn`, not `fail` — a long README is a smell, not a defect.
 
-### 10. `standards`
+### 10. `standards:<id>` — one row per declared standard
 
-Only for a repository that declares any under `standards:` in `.docs-warden.yml`;
-`skipped` otherwise. Checks that every artifact required by every declared
-standard is present, and runs the rules belonging to those standards -- for IEC
-62304, that each document names a `qms_record` and that every `REQ-<AREA>-NNN` in
-`docs/regulatory/requirements/` is named by a test. `fail` reports the missing
-artifact, naming which standard wanted it, or the untraced requirement.
+A repository declaring nothing gets a single `standards` row, `skipped`. One
+that declares any gets **one check per standard**, id `standards:iec-62304`,
+`standards:eu-cra` and so on. That is what lets the cross-repo view name the
+standard that is failing rather than reporting a repo as merely non-compliant.
 
-An artifact two standards share is required once. A declared standard this
-plugin does not know, a level a standard does not define, and a `standards:` key
-that is not a mapping are each a `fail` rather than a silent skip -- and never a
-crash, because aborting the run would take the other ten checks' results with it.
-**Fix** points at `.docs-warden.yml` for those, and at scaffolding only when the
-manifest is sound and documents are genuinely absent. See `standards.md`. `standards/iec-62304.md`
-holds the artifact table and marks the rows this check does not enforce — read it
-before treating a `pass` as coverage.
+Each row checks that every artifact that standard requires is present, and runs
+the rules belonging to it — for IEC 62304, that each document names a
+`qms_record` and that every `REQ-<AREA>-NNN` in `docs/regulatory/requirements/`
+is named by a test. Rules dispatch per standard: a repo declaring only the OSPS
+Baseline never has 62304's rules run against it.
+
+**An artifact two standards share is named in both rows**, each naming the
+other claimant, so one file visibly settles both. It is the work that is
+deduplicated, not the reporting: naming it under only the first standard in the
+manifest would leave the second passing while the document it requires is
+absent.
+
+A declared standard this plugin does not know, a level a standard does not
+define, and a `standards:` key that is not a mapping are each a `fail` rather
+than a silent skip — and never a crash, because aborting the run would take
+every other check's result with it. **Fix** points at `.docs-warden.yml` for
+those, and at scaffolding only when the manifest is sound and documents are
+genuinely absent. See `standards.md`; each `standards/<id>.md` holds the
+artifact table and marks the rows this check does not enforce — read it before
+treating a `pass` as coverage.
 **Fix:** add the artifact, or add a test that names the requirement ID.
 
 ### 11. `manifest`
