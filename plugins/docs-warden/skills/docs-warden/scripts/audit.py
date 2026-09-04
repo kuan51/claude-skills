@@ -811,6 +811,14 @@ ARTIFACT_FIX = ("Scaffold the missing artifacts, and add a test for every requir
 def _resolve_standard(sid, level, spec):
     """(label, artifacts) for one declared standard, or (None, problem)."""
     name = spec.get("name", sid)
+    # Every other malformed-entry problem is reported from here. This one used
+    # to be found later, mid-artifact-check, and needed a sentinel and a break
+    # to abandon the row it was halfway through building -- two paths to the
+    # same "the table entry is wrong" report.
+    for rule in spec.get("extra", ()):
+        if rule not in EXTRA_RULES:
+            return None, (f"the standards table entry for {sid} names unknown "
+                          f"rule {rule!r}")
     levels = spec.get("levels")
     if levels is None:
         # Identity, not equality: Python's 1 == True would let a level slip
@@ -897,19 +905,10 @@ def check_standards(repo, config, script_dir):
             also = f" (also {', '.join(others)})" if others else ""
             problems.append(f"missing {_artifact_label(entry)}{also}")
         # Dispatched here, inside the standard that declares them, so a repo
-        # adopting only a standard that wants none never has them run.
+        # adopting only a standard that wants none never has them run. Every
+        # name resolved in _resolve_standard, so this cannot miss.
         for rule in STANDARDS[sid].get("extra", ()):
-            runner = EXTRA_RULES.get(rule)
-            if runner is None:
-                entries.append(check(
-                    cid, "fail",
-                    f"the standards table entry for {sid} names unknown rule "
-                    f"{rule!r}", CONFIG_FIX))
-                problems = None
-                break
-            problems += runner(repo, script_dir)
-        if problems is None:
-            continue
+            problems += EXTRA_RULES[rule](repo, script_dir)
         if problems:
             entries.append(check(cid, "fail", "; ".join(problems),
                                  ARTIFACT_FIX))
