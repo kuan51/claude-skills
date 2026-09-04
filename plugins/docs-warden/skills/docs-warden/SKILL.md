@@ -56,6 +56,13 @@ Triggered by "scaffold docs", "set up documentation", "document this repo".
 3. Write `.docs-warden.yml`.
 4. Create only the **missing** files from `assets/templates/`. Never overwrite an
    existing document; list what you skipped and why.
+   **For every standard confirmed in step 2, also create its missing artifacts**
+   from `assets/standards/<id>/`. Without this the audit in step 6 reports every
+   overlay artifact as missing. A path two standards share has one template, in
+   the directory of whichever introduced it -- `SUPPORT.md.tmpl` is under
+   `osps-baseline/` and the EU CRA uses it too. The artifact table in each
+   `references/standards/<id>.md` says which template covers which path, and
+   which rows have no template because no repository file satisfies them.
    Copy `assets/lint/` into place, and `assets/ci/.pre-commit-config.yaml` to the
    repo root; `pre-commit install` then runs the three linters before each push.
    **Never copy `scripts/` into the target repo.** A copy buys nothing and forks
