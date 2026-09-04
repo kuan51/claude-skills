@@ -152,8 +152,11 @@ standard is present, and runs the rules belonging to those standards -- for IEC
 artifact, naming which standard wanted it, or the untraced requirement.
 
 An artifact two standards share is required once. A declared standard this
-plugin does not know, or a level a standard does not define, is a `fail` rather
-than a silent skip. See `standards.md`. `standards/iec-62304.md`
+plugin does not know, a level a standard does not define, and a `standards:` key
+that is not a mapping are each a `fail` rather than a silent skip -- and never a
+crash, because aborting the run would take the other ten checks' results with it.
+**Fix** points at `.docs-warden.yml` for those, and at scaffolding only when the
+manifest is sound and documents are genuinely absent. See `standards.md`. `standards/iec-62304.md`
 holds the artifact table and marks the rows this check does not enforce — read it
 before treating a `pass` as coverage.
 **Fix:** add the artifact, or add a test that names the requirement ID.

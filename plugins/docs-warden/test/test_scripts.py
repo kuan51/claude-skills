@@ -613,6 +613,65 @@ def test_standards_dedupes_a_real_shared_artifact_across_two_standards():
             assert owner in entry["reason"], (owner, entry["reason"])
 
 
+def test_standards_reports_a_non_mapping_instead_of_crashing():
+    """`standards:` holding anything but a map used to reach .items() and take
+    the whole audit down with an AttributeError -- no scorecard written, and the
+    ten other checks lost with it. `standards: true` is the first thing someone
+    migrating from the old `regulated: true` writes.
+
+    Goes through audit.py's CLI rather than check_standards directly, because
+    the damage was to the run, not to the check: _audit_check reads the
+    scorecard file, so it raises if the audit died before writing one.
+    """
+    for value in ("true", "iec-62304", chr(10) + "  - iec-62304"):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / ".docs-warden.yml").write_text(
+                "archetype: it-tooling" + chr(10) + "owner: t" + chr(10)
+                + "standards: " + value + chr(10), encoding="utf-8")
+            entry = _audit_check(repo, "standards")
+            assert entry["state"] == "fail", (value, entry)
+            assert "must be a mapping" in entry["reason"], (value, entry["reason"])
+
+
+def test_standards_reports_a_malformed_table_entry_instead_of_crashing():
+    """references/standards.md invites contributors to add an entry to
+    scripts/standards.py, so a half-written one is reachable by following the
+    documentation. Each of these used to raise KeyError through the whole audit
+    rather than naming the entry at fault."""
+    broken = {
+        "no artifacts and no levels":
+            ({"x": {"name": "X", "levels": None, "extra": []}}, True),
+        "an extra rule that does not exist":
+            ({"x": {"name": "X", "levels": None, "artifacts": [],
+                    "extra": ["typo_rule"]}}, True),
+        "no level_name to report a bad level with":
+            ({"x": {"name": "X", "levels": {"1": []}, "extra": []}}, 9),
+    }
+    for label, (table, level) in broken.items():
+        with tempfile.TemporaryDirectory() as tmp:
+            entry = _standards_entry(tmp, {"x": level}, table)
+            assert entry["state"] == "fail", (label, entry)
+            assert "x" in entry["reason"], (label, entry["reason"])
+
+
+def test_standards_fix_points_at_whichever_file_is_actually_wrong():
+    """A typo in .docs-warden.yml and a genuinely absent document are repaired in
+    different files. One shared fix string told everyone to scaffold artifacts,
+    which for a misspelled standard id is advice for a problem they do not have
+    and points away from the one-character edit that fixes it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        typo = _standards_entry(tmp, {"iec62304": "C"})
+        assert ".docs-warden.yml" in typo["fix"], typo["fix"]
+        bad_level = _standards_entry(tmp, {"iec-62304": "D"})
+        assert ".docs-warden.yml" in bad_level["fix"], bad_level["fix"]
+        # An empty directory declaring a real standard at a real level: the
+        # artifacts are simply not there yet, and scaffolding is the answer.
+        absent = _standards_entry(tmp, {"iec-62304": "A"})
+        assert "Scaffold" in absent["fix"], absent["fix"]
+        assert ".docs-warden.yml" not in absent["fix"], absent["fix"]
+
+
 def _import_audit():
     """Import audit.py as a module. It does `from _common import ...`, so its
     own directory has to be importable, not just the file."""

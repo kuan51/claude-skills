@@ -656,59 +656,97 @@ def _artifact_satisfied(repo, entry):
     return _artifact_present(repo, entry)
 
 
+# Two fixes, because two different things go wrong here and they are repaired in
+# different files. Telling someone with a typo in .docs-warden.yml to scaffold
+# artifacts sends them to the wrong place entirely.
+CONFIG_FIX = ("Correct the standards map in .docs-warden.yml, or the entry in "
+              "scripts/standards.py that it names. See references/standards.md.")
+ARTIFACT_FIX = ("Scaffold the missing artifacts, and add a test for every requirement. "
+                "Regulatory content needs the regulatory lead, not a generated draft.")
+
+
 def check_standards(repo, config, script_dir):
     declared = (config or {}).get("standards") or {}
     if not declared:
         return check("standards", "skipped", "No standards declared.", "")
+    # Every other shape YAML can produce here used to reach .items() and take the
+    # whole run down with an AttributeError -- no scorecard, and the ten other
+    # checks lost with it. "standards: true" is what someone migrating from the
+    # old "regulated: true" writes first.
+    if not isinstance(declared, dict):
+        return check(
+            "standards", "fail",
+            f"standards must be a mapping of standard to level, "
+            f"got {type(declared).__name__}.",
+            CONFIG_FIX)
 
-    problems, labels = [], []
+    # Config problems are a wrong manifest or a malformed standards table entry;
+    # artifact problems are documents that are genuinely absent. Kept apart so
+    # each gets the fix that actually applies, and so a wrong manifest is
+    # reported before a list of artifacts derived from it.
+    config_problems, problems, labels = [], [], []
     # Path -> the standards that want it, so an artifact two standards share is
     # required once and reported once, naming both.
     wanted = {}
     for sid, level in declared.items():
         spec = STANDARDS.get(sid)
         if spec is None:
-            problems.append(
+            config_problems.append(
                 f"unknown standard {sid!r}; known: {', '.join(sorted(STANDARDS))}")
             continue
+        # spec.get throughout, not spec[...]: a malformed entry is a bug in the
+        # standards table, and references/standards.md invites people to add
+        # entries. It should be reported, not raised through the whole audit.
+        name = spec.get("name", sid)
         levels = spec.get("levels")
         if levels is None:
             # Identity, not equality: Python's 1 == True would let a level slip
             # through on a standard that has no level axis.
             if level is not True:
-                problems.append(
+                config_problems.append(
                     f"{sid} takes no level; expected true, got {level!r}")
                 continue
-            artifacts, label = spec["artifacts"], spec["name"]
+            artifacts = spec.get("artifacts")
+            if artifacts is None:
+                config_problems.append(
+                    f"the standards table entry for {sid} declares neither "
+                    "levels nor artifacts")
+                continue
+            label = name
         else:
+            level_name = spec.get("level_name") or "level"
             # YAML gives back a str for "C" and an int for 2, and both are valid
             # levels. Normalise before the lookup or every numeric axis is
             # rejected as unknown on its happy path.
             key = str(level)
             if key not in levels:
-                problems.append(
-                    f"{sid} {spec['level_name']} is {level!r}; expected "
+                config_problems.append(
+                    f"{sid} {level_name} is {level!r}; expected "
                     + " or ".join(sorted(levels)))
                 continue
             artifacts = levels[key]
-            label = f"{spec['name']} {spec['level_name']} {key}"
+            label = f"{name} {level_name} {key}"
         labels.append(label)
-        for name in artifacts:
-            wanted.setdefault(name, []).append(spec["name"])
+        for entry in artifacts:
+            wanted.setdefault(entry, []).append(name)
         for rule in spec.get("extra", ()):
-            problems += EXTRA_RULES[rule](repo, script_dir)
+            runner = EXTRA_RULES.get(rule)
+            if runner is None:
+                config_problems.append(
+                    f"the standards table entry for {sid} names unknown rule {rule!r}")
+                continue
+            problems += runner(repo, script_dir)
 
     for entry, owners in wanted.items():
         if not _artifact_satisfied(repo, entry):
-            name = " or ".join(entry) if isinstance(entry, tuple) else entry
-            problems.append(f"missing {name} ({', '.join(owners)})")
+            shown = " or ".join(entry) if isinstance(entry, tuple) else entry
+            problems.append(f"missing {shown} ({', '.join(owners)})")
 
-    if problems:
-        return check(
-            "standards", "fail", "; ".join(problems),
-            "Scaffold the missing artifacts, and add a test for every requirement. "
-            "Regulatory content needs the regulatory lead, not a generated draft.",
-        )
+    if config_problems or problems:
+        # Config first: while the manifest is wrong the artifact list derived
+        # from it cannot be trusted, so that is the fix worth showing.
+        return check("standards", "fail", "; ".join(config_problems + problems),
+                     CONFIG_FIX if config_problems else ARTIFACT_FIX)
     return check("standards", "pass",
                  f"{len(wanted)} artifact(s) present for {', '.join(labels)}.")
 
@@ -775,9 +813,16 @@ ICON = {"pass": "pass", "warn": "warn", "fail": "FAIL", "skipped": "skip"}
 
 
 def _standards_label(declared):
-    """"iec-62304 C, eu-cra" -- a level is shown only where one exists."""
+    """"iec-62304 C, eu-cra" -- a level is shown only where one exists.
+
+    Guarded the same way check_standards is: this renders whatever the manifest
+    held, and a non-mapping there must not take the renderer down after the
+    check already reported it honestly.
+    """
     if not declared:
         return "none"
+    if not isinstance(declared, dict):
+        return "malformed"
     return ", ".join(k if v is True else f"{k} {v}" for k, v in declared.items())
 
 
