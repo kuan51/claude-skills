@@ -13,6 +13,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+import yaml
+
 SCRIPTS = Path(__file__).resolve().parent.parent / "skills" / "docs-warden" / "scripts"
 
 
@@ -799,6 +801,40 @@ def test_adr_new_numbers_the_next_record_and_fills_the_template():
         assert "proposed" in body, "a new record starts proposed"
 
 
+def test_adr_new_quotes_yaml_special_characters():
+    """deciders: [@kuan51] is invalid YAML -- @ is a reserved indicator that
+    must be quoted -- so a raw --deciders substitution broke the whole front
+    matter block silently (yaml.safe_load raises, every caller falls back to
+    {}). A title containing ": " breaks the same way. Both must come out
+    quoted in the front matter and, for the title, still verbatim in the
+    heading a few lines down, which reuses the same {{TITLE}} token raw."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs" / "decisions").mkdir(parents=True)
+        title = "Use Postgres: not MySQL"
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "adr_new.py"), str(repo), title,
+             "--deciders", "@kuan51, alice"],
+            capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stderr
+        path = next((repo / "docs" / "decisions").glob("DEC-0001-*.md"))
+        body = path.read_text(encoding="utf-8")
+
+        front = yaml.safe_load(body.split("---")[1])
+        # id round-trips through the same substitution pass as title -- if the
+        # targeted "title: {{TITLE}}" replace ever silently no-ops (e.g. the
+        # template's spacing drifts), {{TITLE}} falls through unquoted to the
+        # generic loop and produces invalid YAML. A title with no ": " would
+        # still happen to parse in that broken case, so id is the guard that
+        # turns a silent no-op into a hard failure rather than a false pass.
+        assert front["id"] == "DEC-0001", front
+        assert front["title"] == title, front
+        assert front["deciders"] == ["@kuan51", "alice"], front
+
+        assert f"# DEC-0001: {title}" in body, \
+            f"heading must carry the unquoted title:\n{body}"
+
+
 def test_glossary_to_vale_writes_the_swap_rule_for_a_rejected_term():
     """glossary_to_vale.py had no test either, and it is the half of the
     glossary contract the audit does not run: the audit reports a rejected term
@@ -912,6 +948,24 @@ def test_adr_immutability_asks_accepted_the_same_way_load_adrs_does():
                  f"{entry['state']}: {entry['reason']}")
             assert "DEC-0001" in entry["reason"], \
                 f"status: {status_line} -- {entry['reason']}"
+
+
+def test_adr_immutability_fails_a_record_whose_front_matter_does_not_parse():
+    """deciders: [@kuan51] is invalid YAML, and parse_front_matter swallows
+    the YAMLError into {} -- which load_adrs turns into status: "", quietly
+    dropping the record out of the 'accepted' filter with no finding raised
+    anywhere (check_front_matter skips docs/decisions/ entirely). No git repo
+    here on purpose: the parse check must run before the is_git_repo gate, or
+    an un-committed broken record would report 'skipped' instead of 'fail'."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs" / "decisions").mkdir(parents=True)
+        (repo / "docs" / "decisions" / "DEC-0001-t.md").write_text(
+            "---\nid: DEC-0001\ntitle: T\nstatus: accepted\ndate: 2026-01-01\n"
+            "deciders: [@kuan51]\n---\n\n# T\n\nbody\n", encoding="utf-8")
+        entry = _audit_check(repo, "adr-immutability")
+        assert entry["state"] == "fail", entry
+        assert "DEC-0001-t.md" in entry["reason"], entry
 
 
 def test_audit_fails_a_generator_that_never_writes_its_declared_path():

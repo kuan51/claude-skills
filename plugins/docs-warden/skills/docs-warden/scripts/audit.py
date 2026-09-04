@@ -38,6 +38,7 @@ from _common import (
     RUNLOG,
     RUNLOG_ARCHIVE_DIR,
     UNIVERSAL_FILES,
+    adr_files,
     git,
     is_git_repo,
     load_adrs,
@@ -224,7 +225,8 @@ def long_lived_docs(repo):
             continue
         # Decision records carry their own front matter (id, status, date) and
         # are immutable once accepted, so a review_by on one would be a promise
-        # nobody is allowed to keep.
+        # nobody is allowed to keep. Whether the front matter itself is even
+        # parseable is checked separately, by check_adr_immutability.
         if path.resolve().parent == decisions:
             continue
         yield path
@@ -274,6 +276,27 @@ def check_front_matter(repo):
 
 
 def check_adr_immutability(repo):
+    # A DEC file whose front matter fails to parse -- bad YAML, an unreadable
+    # file, a missing or non-dict "---" block -- comes back as {} from
+    # read_front_matter no matter which of those it was (_common.py), which
+    # load_adrs then turns into status: "" and drops from the filter below
+    # with no finding raised. Caught here, before that fallback ever runs, so
+    # a broken accepted record cannot silently stop being checked. Reads each
+    # file again below via load_adrs -- deliberate, not a missed shared pass:
+    # keeps this check's front-matter concern independent of the accepted-
+    # record logic that follows it.
+    unparsed = [
+        path.relative_to(repo).as_posix()
+        for path in adr_files(repo)
+        if not read_front_matter(path)[0]
+    ]
+    if unparsed:
+        return check(
+            "adr-immutability", "fail",
+            "Front matter did not parse: " + ", ".join(unparsed),
+            "Fix the YAML -- quote any value with @, :, #, or another "
+            "reserved indicator character.",
+        )
     if not is_git_repo(repo):
         return check("adr-immutability", "skipped", "Not a git repository.", "")
     records = [r for r in load_adrs(repo) if r["status"] == "accepted"]

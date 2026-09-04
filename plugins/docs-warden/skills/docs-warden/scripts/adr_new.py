@@ -13,6 +13,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 from _common import DECISIONS_DIR, adr_files
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "templates" / "adr.md.tmpl"
@@ -21,6 +23,20 @@ TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "templates" / "ad
 def slugify(title: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
     return slug[:60].rstrip("-")
+
+
+def yaml_line(key: str, value) -> str:
+    """A YAML-safe "key: value" line, quoted only when the value needs it (a
+    bare @kuan51 or a title with ": " is otherwise invalid YAML). width is set
+    absurdly high because PyYAML wraps at ~80 columns by default, which would
+    fold a long title across lines and land a line break inside the front
+    matter."""
+    return yaml.safe_dump({key: value}, width=10**9).rstrip("\n")
+
+
+def yaml_flow_list(items) -> str:
+    """A YAML flow sequence like [alice, '@bob'], quoting only where needed."""
+    return yaml.safe_dump(items, default_flow_style=True, width=10**9).strip()
 
 
 def next_id(repo: Path) -> str:
@@ -50,12 +66,17 @@ def main() -> int:
         print(f"error: {path} already exists", file=sys.stderr)
         return 1
 
+    deciders = [d.strip() for d in args.deciders.split(",") if d.strip()]
     body = TEMPLATE.read_text(encoding="utf-8")
+    # Targeted replaces first, so the front-matter title is quoted but the
+    # markdown heading a few lines down (which reuses {{TITLE}} raw) is not.
+    body = body.replace("title: {{TITLE}}", yaml_line("title", args.title), 1)
+    body = body.replace(
+        "deciders: [{{DECIDERS}}]", "deciders: " + yaml_flow_list(deciders), 1)
     for token, value in {
         "{{ID}}": record_id,
         "{{TITLE}}": args.title,
         "{{DATE}}": dt.date.today().isoformat(),
-        "{{DECIDERS}}": args.deciders,
     }.items():
         body = body.replace(token, value)
 
