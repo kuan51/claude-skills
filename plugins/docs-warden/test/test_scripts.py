@@ -261,6 +261,34 @@ def test_review_by_may_carry_a_time_without_killing_the_run():
         assert "review_by 2020-01-01 passed" in result.stdout, result.stdout
 
 
+def test_the_audit_and_the_generator_read_one_glossary_the_same_way():
+    """Two parsers for one table, and the audit had the stricter one: it split
+    the raw line and demanded six cells, so a row written without its trailing
+    pipe -- valid GitHub Markdown -- was dropped. glossary_to_vale.py strips the
+    outer pipes first and kept the row, so the Vale reject list enforced terms
+    the audit simultaneously reported as nonexistent.
+    """
+    rows = [
+        "| Term | Definition | Do not use | Source |",
+        "|:-----|:-----------|:-----------|:-------|",
+        "| Snapshot | A captured window. | capture | here |",
+    ]
+    for label, table in {
+        "no trailing pipe": "\n".join(r.rstrip("|").rstrip() for r in rows),
+        "alignment colons": "\n".join(rows),
+    }.items():
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "docs").mkdir()
+            (repo / "docs" / "GLOSSARY.md").write_text(table + "\n", encoding="utf-8")
+            (repo / "docs" / "note.md").write_text(
+                "We take a capture every hour.\n", encoding="utf-8")
+            entry = _audit_check(repo, "glossary-reject-terms")
+            assert entry["state"] == "fail", \
+                f"{label}: the glossary declares 'capture' and note.md uses it: {entry}"
+            assert "capture" in entry["reason"], (label, entry["reason"])
+
+
 def _regulated_repo(tmp):
     """A class-A regulated repo with every required artifact present, and a
     requirements/ directory that is non-empty but declares no REQ heading --

@@ -39,6 +39,7 @@ from _common import (
     load_config,
     markdown_docs,
     parse_front_matter,
+    parse_glossary,
     read_front_matter,
     review_date,
     strip_code,
@@ -562,16 +563,13 @@ def check_glossary_reject_terms(repo):
     glossary = repo / GLOSSARY
     if not glossary.is_file():
         return check("glossary-reject-terms", "skipped", f"No {GLOSSARY}.", "")
-    rejects = []
-    text = glossary.read_text(encoding="utf-8", errors="replace")
-    for line in text.splitlines():
-        cells = [c.strip() for c in line.split("|")]
-        if len(cells) < 6 or cells[1].lower() in ("term", "") or set(cells[1]) <= {"-"}:
-            continue
-        for term in cells[3].split(","):
-            term = term.strip()
-            if term and not term.startswith("{{"):
-                rejects.append(term)
+    # The same parser glossary_to_vale.py builds the Vale reject list with. A
+    # second split of the same table lived here and was the stricter of the two:
+    # it needed six cells, so a row without a trailing pipe -- valid GitHub
+    # Markdown -- was dropped, and the audit reported "declares no rejected
+    # terms" about a glossary the generator was already enforcing. Its
+    # separator-row guard also missed alignment colons.
+    rejects = sorted({r for _, rejected in parse_glossary(glossary) for r in rejected})
     if not rejects:
         return check("glossary-reject-terms", "skipped",
                      "Glossary declares no rejected terms.",
