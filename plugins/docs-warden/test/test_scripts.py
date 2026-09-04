@@ -217,18 +217,32 @@ def test_generated_docs_confines_the_declared_path_to_the_repo():
         outside = Path(tmp) / "outside3.md"
         outside.write_text("---\nowner: t\nreview_by: 2099-01-01\n---\n\nx\n",
                            encoding="utf-8")
-        (repo / "escape.md").symlink_to(outside)
+        vectors = {
+            "outside1.md":
+                f'  - path: {Path(tmp) / "outside1.md"}\n    command: ["true"]\n',
+            "outside2.md":
+                '  - path: ../outside2.md\n    command: ["true"]\n',
+        }
+        try:
+            (repo / "escape.md").symlink_to(outside)
+        except OSError:
+            # Creating one needs SeCreateSymbolicLinkPrivilege on Windows,
+            # which a stock account does not hold. The absolute and .. vectors
+            # still run; say the third did not rather than passing quietly.
+            print("  note: symlink vector not covered -- cannot create one here")
+        else:
+            vectors["escape.md"] = (
+                '  - path: escape.md\n    command: ["true"]\n')
+
         (repo / ".docs-warden.yml").write_text(
             "archetype: it-tooling\nregulated: false\nsafety_class: null\n"
             "owner: t\nreview_cadence_days: 180\ngenerated_docs:\n"
-            f'  - path: {Path(tmp) / "outside1.md"}\n    command: ["true"]\n'
-            '  - path: ../outside2.md\n    command: ["true"]\n'
-            '  - path: escape.md\n    command: ["true"]\n',
+            + "".join(vectors.values()),
             encoding="utf-8")
         entry = _audit_check(repo, "generated-docs", "--run-generators")
         assert entry["state"] == "fail", \
             f"an out-of-repo path was reported {entry['state']}: {entry['reason']}"
-        for name in ["outside1.md", "outside2.md", "escape.md"]:
+        for name in vectors:
             assert name in entry["reason"], \
                 f"{name} was not rejected: {entry['reason']}"
 
@@ -271,32 +285,6 @@ def test_adr_pointer_has_no_table_and_link_resolves():
         assert target.is_file(), f"link target does not resolve: {target}"
         assert target == (repo / "docs" / "DECISIONS.md").resolve(), \
             f"link points to {target}, not docs/DECISIONS.md"
-
-
-def _audit_check_with_path(repo, check_id, extra_path):
-    """Run audit.py with extra_path prepended to PATH, so a stub linter is
-    discoverable, and return the one scorecard entry asked for."""
-    out = Path(repo) / "scorecard-path.json"
-    env = dict(os.environ)
-    env["PATH"] = f"{extra_path}{os.pathsep}{env.get('PATH', '')}"
-    subprocess.run(
-        [sys.executable, str(SCRIPTS / "audit.py"), str(repo),
-         "--json-out", str(out), "--quiet"],
-        capture_output=True, check=False, env=env)
-    card = json.loads(out.read_text(encoding="utf-8"))
-    return _one_check(card, check_id)
-
-
-def _stub_tool(directory, name, exit_code):
-    """Write an executable stub that exits with exit_code, so check_lint sees a
-    tool on PATH without the real binary being installed."""
-    d = Path(directory)
-    d.mkdir(parents=True, exist_ok=True)
-    tool = d / name
-    tool.write_text(f"#!/bin/sh\necho '{name} stub output'\nexit {exit_code}\n",
-                    encoding="utf-8")
-    tool.chmod(0o755)
-    return d
 
 
 def test_links_fails_on_a_dangling_relative_link_and_passes_once_it_resolves():
@@ -388,6 +376,29 @@ def test_links_ignores_untracked_and_ignored_markdown_in_a_git_repo():
             f"a git-ignored file was scanned: {entry['reason']}"
 
 
+def _lint_entry(repo, installed):
+    """check_lint against `repo` with exactly `installed` discoverable -- a map
+    of tool name to the exit code its run reports.
+
+    Patches which() and run() in-process rather than putting a stub on PATH. A
+    stub written as an extensionless sh script is invisible to which() on
+    Windows, which matches PATHEXT extensions only, so whichever linters the
+    machine happened to have installed answered instead -- and these tests
+    flipped between one box and the next, and between before and after someone
+    installed vale.
+    """
+    audit = _import_audit()
+    real_which, real_run = audit.shutil.which, audit.subprocess.run
+    audit.shutil.which = lambda name, *a, **k: (
+        f"/stub/{name}" if name in installed else None)
+    audit.subprocess.run = lambda argv, **k: subprocess.CompletedProcess(
+        argv, installed[Path(argv[0]).name], stdout="", stderr="")
+    try:
+        return audit.check_lint(Path(repo))
+    finally:
+        audit.shutil.which, audit.subprocess.run = real_which, real_run
+
+
 def test_lint_fails_when_a_blocking_tool_reports_findings():
     """DEC-0004: markdownlint and lychee block from the start. check_lint capped
     every tool at warn, so audit.py exited 0 where CI blocks."""
@@ -396,9 +407,8 @@ def test_lint_fails_when_a_blocking_tool_reports_findings():
         repo.mkdir()
         (repo / "README.md").write_text("# R\n", encoding="utf-8")
         (repo / "lychee.toml").write_text("offline = false\n", encoding="utf-8")
-        bindir = _stub_tool(Path(tmp) / "bin", "lychee", 1)
 
-        entry = _audit_check_with_path(repo, "lint", bindir)
+        entry = _lint_entry(repo, {"lychee": 1})
         assert entry["state"] == "fail", \
             f"lychee findings were reported {entry['state']}, not fail: {entry['reason']}"
         assert "lychee" in entry["reason"], \
@@ -412,9 +422,8 @@ def test_lint_only_warns_when_vale_alone_reports_findings():
         repo.mkdir()
         (repo / "README.md").write_text("# R\n", encoding="utf-8")
         (repo / ".vale.ini").write_text("StylesPath = styles\n", encoding="utf-8")
-        bindir = _stub_tool(Path(tmp) / "bin", "vale", 1)
 
-        entry = _audit_check_with_path(repo, "lint", bindir)
+        entry = _lint_entry(repo, {"vale": 1})
         assert entry["state"] == "warn", \
             f"vale findings were reported {entry['state']}, not warn: {entry['reason']}"
 
@@ -428,9 +437,8 @@ def test_lint_never_reports_a_bare_pass_when_a_tool_was_absent():
         repo.mkdir()
         (repo / "README.md").write_text("# R\n", encoding="utf-8")
         (repo / ".vale.ini").write_text("StylesPath = styles\n", encoding="utf-8")
-        bindir = _stub_tool(Path(tmp) / "bin", "vale", 0)
 
-        entry = _audit_check_with_path(repo, "lint", bindir)
+        entry = _lint_entry(repo, {"vale": 0})
         assert entry["state"] != "pass", \
             f"one clean tool of three reported {entry['state']}: {entry['reason']}"
         assert "markdownlint-cli2" in entry["reason"] and "lychee" in entry["reason"], \
@@ -460,7 +468,7 @@ def test_lint_names_the_install_for_an_adopted_but_missing_tool():
         (repo / "README.md").write_text("# R\n", encoding="utf-8")
         (repo / ".vale.ini").write_text("StylesPath = styles\n", encoding="utf-8")
 
-        entry = _audit_check(repo, "lint")
+        entry = _lint_entry(repo, {})
         assert entry["state"] == "skipped", \
             f"expected skipped, got {entry['state']}: {entry['reason']}"
         assert "vale" in entry["fix"] and "vale" in entry["reason"], \
@@ -484,8 +492,8 @@ def test_lint_runner_resolves_npx_instead_of_returning_a_bare_name():
     whole scorecard -- not just the lint row, but every check that needs no
     tooling at all. which() had already resolved the path; this threw it away.
 
-    Asserted on the argv rather than through a stub on PATH: _stub_tool writes
-    an extensionless sh script, which is exactly what Windows cannot execute.
+    Asserted on the argv rather than through a stub on PATH: a stub written as
+    an extensionless sh script is invisible to which() on Windows.
     """
     audit = _import_audit()
     tool = next(t for t in audit.LINT_TOOLS if t["name"] == "markdownlint-cli2")
@@ -514,8 +522,7 @@ def test_lint_runner_falls_back_to_bunx_when_only_bun_is_installed():
     --help` and so is not a contract.) Hence ordered candidate argvs.
 
     Monkeypatched rather than stubbed on PATH for the same reason as the npx
-    test above: _stub_tool writes an extensionless sh script, so this is the
-    only lint test that runs on Windows -- where bunx is bunx.exe.
+    test above -- and here it also matters that bunx is bunx.exe on Windows.
     """
     audit = _import_audit()
     tool = next(t for t in audit.LINT_TOOLS if t["name"] == "markdownlint-cli2")
