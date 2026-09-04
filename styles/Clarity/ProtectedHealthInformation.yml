@@ -1,0 +1,10 @@
+extends: existence
+message: "Possible PHI or secret in documentation: '%s'"
+level: error
+nonword: true
+tokens:
+  - '\b\d{3}-\d{2}-\d{4}\b'
+  - '\bMRN[:\s#]*\d{4,}\b'
+  - '\b(?:DOB|date of birth)[:\s]*\d{1,4}[-/]\d{1,2}[-/]\d{1,4}\b'
+  - '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+  - '\b(?:password|pwd|secret|api[_-]?key)\s*=\s*[''"][^''"]{6,}[''"]'

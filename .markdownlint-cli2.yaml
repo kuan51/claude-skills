@@ -1,0 +1,42 @@
+# Copy to the repository root.
+config:
+  default: true
+
+  # Prose wraps where the author wrapped it. Tables and links routinely exceed
+  # any limit and reflowing them makes diffs unreadable.
+  MD013: false
+
+  # Headings must not skip levels: screen readers navigate by them.
+  MD001: true
+
+  # Our documents carry a "title:" front matter field AND an H1. By default
+  # MD025 counts the front matter title as a heading and calls the H1 a
+  # duplicate. Empty pattern means front matter is not treated as a title.
+  MD025:
+    front_matter_title: ""
+
+  MD024:
+    siblings_only: true
+
+  # A bare URL is not a link. Use [text](url).
+  MD034: true
+
+  # First line need not be a top-level heading: our documents start with YAML
+  # front matter.
+  MD041: false
+
+  # Inline HTML is needed for the README picture element and CONSULT markers.
+  MD033: false
+
+  # Table pipe alignment. Added in markdownlint 0.41; it demands padded pipes
+  # across every table, which churns diffs whenever a cell changes width and
+  # says nothing about whether the table renders.
+  MD060: false
+
+globs:
+  - "**/*.md"
+
+ignores:
+  - node_modules/**
+  - .venv/**
+  - styles/**

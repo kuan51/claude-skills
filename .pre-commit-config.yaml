@@ -1,0 +1,21 @@
+# Copy to the repository root, then run: pre-commit install
+#
+# Same three linters as CI, so the feedback arrives before the push rather than
+# after it. Pin these versions; verify a version exists before writing it down.
+repos:
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.2
+    hooks:
+      - id: markdownlint-cli2
+
+  - repo: https://github.com/errata-ai/vale
+    rev: v3.17.1
+    hooks:
+      - id: vale
+        args: [--minAlertLevel=warning]
+
+  - repo: https://github.com/lycheeverse/lychee
+    rev: lychee-v0.24.2
+    hooks:
+      - id: lychee
+        args: [--config, lychee.toml, --no-progress]
