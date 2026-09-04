@@ -91,7 +91,8 @@ def main() -> int:
 
     runlog = repo / RUNLOG
     if runlog.is_file():
-        lines = len(runlog.read_text(encoding="utf-8").splitlines())
+        lines = len(runlog.read_text(
+            encoding="utf-8", errors="replace").splitlines())
         if lines > RUNLOG_ROTATE_LINES:
             warnings.append(
                 f"{RUNLOG}: {lines} lines, past the {RUNLOG_ROTATE_LINES} line rotation point. "

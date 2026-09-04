@@ -96,7 +96,8 @@ def main() -> int:
 
     stale = []
     for path, content in targets.items():
-        current = path.read_text(encoding="utf-8") if path.is_file() else None
+        current = (path.read_text(encoding="utf-8", errors="replace")
+                   if path.is_file() else None)
         if current == content:
             continue
         stale.append(path)

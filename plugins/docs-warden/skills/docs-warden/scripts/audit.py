@@ -537,7 +537,8 @@ def check_glossary_reject_terms(repo):
     if not glossary.is_file():
         return check("glossary-reject-terms", "skipped", f"No {GLOSSARY}.", "")
     rejects = []
-    for line in glossary.read_text(encoding="utf-8").splitlines():
+    text = glossary.read_text(encoding="utf-8", errors="replace")
+    for line in text.splitlines():
         cells = [c.strip() for c in line.split("|")]
         if len(cells) < 6 or cells[1].lower() in ("term", "") or set(cells[1]) <= {"-"}:
             continue
@@ -756,7 +757,11 @@ def check_readme_shape(repo):
     if not readme.is_file():
         return check("readme-shape", "fail", f"No {README}.",
                      "Copy assets/templates/README.md.tmpl.")
-    text = readme.read_text(encoding="utf-8")
+    # errors="replace", like every other document this file reads: one
+    # non-UTF-8 byte -- a Latin-1 accent out of a legacy editor -- used to
+    # raise UnicodeDecodeError here and cost the whole scorecard, all ten
+    # other checks with it.
+    text = readme.read_text(encoding="utf-8", errors="replace")
     lowered = text.lower()
     # Line count only: a generated region is machine-owned, so its length
     # measures the data it renders, not anything a human wrote. Section

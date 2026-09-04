@@ -28,7 +28,8 @@ HEADER = (
 def parse_glossary(path: Path):
     """Return [(term, [rejected, ...])] from the glossary table."""
     entries = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    text = path.read_text(encoding="utf-8", errors="replace")
+    for line in text.splitlines():
         if not line.strip().startswith("|"):
             continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]

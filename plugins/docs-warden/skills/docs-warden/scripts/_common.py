@@ -89,7 +89,9 @@ def load_config(repo: Path):
         return None
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    except yaml.YAMLError:
+    except (yaml.YAMLError, UnicodeDecodeError, OSError):
+        # None means "cannot be read as a manifest", which the audit reports.
+        # A traceback here would cost every check, not just this one.
         return None
     return data if isinstance(data, dict) else None
 

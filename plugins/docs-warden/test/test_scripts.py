@@ -154,6 +154,44 @@ def test_trace_matrix_reads_the_tree_when_the_repo_lives_under_a_skipped_directo
         assert "REQ-FIX-001" not in result.stderr, result.stderr
 
 
+def _full_card(repo, *extra):
+    """The whole scorecard, not one entry. These assert the run survived at all,
+    so they have to see that a scorecard exists and still carries every check."""
+    out = Path(repo) / "scorecard.json"
+    subprocess.run(
+        [sys.executable, str(SCRIPTS / "audit.py"), str(repo),
+         "--json-out", str(out), "--quiet", *extra],
+        capture_output=True, check=False)
+    assert out.is_file(), "the audit died before writing a scorecard"
+    return json.loads(out.read_text(encoding="utf-8"))
+
+
+def test_audit_survives_a_document_that_is_not_valid_utf8():
+    """One Latin-1 byte -- an accent out of a legacy Windows editor -- raised
+    UnicodeDecodeError from check_readme_shape and cost the whole scorecard,
+    phi-secrets included. Most documents this file reads already passed
+    errors="replace"; the README, the glossary and the run log did not."""
+    latin1_e = bytes([0xE9])
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "README.md").write_bytes(
+            b"# Thing\n\nCaf" + latin1_e + b" latte\n")
+        (repo / "docs").mkdir()
+        (repo / "docs" / "GLOSSARY.md").write_bytes(
+            b"| Term | Definition | Do not use | Source |\n"
+            b"|------|------------|------------|--------|\n"
+            b"| Caf" + latin1_e + b" | A place. | coffeeshop | here |\n")
+        (repo / "docs" / "notes.md").write_text(
+            "MRN: 12345678\n", encoding="utf-8")
+        card = _full_card(repo)
+        assert len(card["checks"]) >= 11, \
+            f"the run died partway: {[c['id'] for c in card['checks']]}"
+        assert _one_check(card, "phi-secrets")["state"] == "fail", \
+            "the planted MRN went unreported because an earlier check crashed"
+        assert _one_check(card, "readme-shape")["state"] in ("pass", "warn"), \
+            _one_check(card, "readme-shape")
+
+
 def _regulated_repo(tmp):
     """A class-A regulated repo with every required artifact present, and a
     requirements/ directory that is non-empty but declares no REQ heading --
