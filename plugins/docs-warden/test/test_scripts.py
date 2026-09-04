@@ -140,15 +140,13 @@ def _universal_repo(repo, archetype):
     archetype's contribution alone. Derived from UNIVERSAL_FILES rather than
     retyped, so a change to that set cannot quietly make these assert nothing.
     """
-    sys.path.insert(0, str(SCRIPTS))
-    try:
-        from _common import FORGES, FORGE_DEFAULT, UNIVERSAL_FILES
-    finally:
-        sys.path.pop(0)
+    common = _table("_common")
     # The default forge's paths too: they left the universal set when forge
     # became declarable, and a helper that stopped writing them would make
     # every caller assert against a required-files failure it did not mean.
-    for rel in list(UNIVERSAL_FILES) + list(FORGES[FORGE_DEFAULT]):
+    expected = (list(common.UNIVERSAL_FILES)
+                + list(common.FORGES[common.FORGE_DEFAULT]))
+    for rel in expected:
         rel = rel[0] if isinstance(rel, tuple) else rel
         target = repo / rel
         if rel.endswith("/"):
@@ -261,10 +259,11 @@ SKILL_ROOT = SCRIPTS.parent
 
 
 def _table(name):
+    """Import a script as a module. audit.py does `from _common import ...`,
+    so its own directory has to be importable, not just the file."""
     sys.path.insert(0, str(SCRIPTS))
     try:
-        module = __import__(name)
-        return module
+        return __import__(name)
     finally:
         sys.path.pop(0)
 
@@ -1425,14 +1424,7 @@ def test_standards_fix_points_at_whichever_file_is_actually_wrong():
 
 
 def _import_audit():
-    """Import audit.py as a module. It does `from _common import ...`, so its
-    own directory has to be importable, not just the file."""
-    sys.path.insert(0, str(SCRIPTS))
-    try:
-        import audit
-        return audit
-    finally:
-        sys.path.pop(0)
+    return _table("audit")
 
 
 def test_lint_runner_resolves_npx_instead_of_returning_a_bare_name():
