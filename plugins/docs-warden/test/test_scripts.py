@@ -99,6 +99,41 @@ def _audit_check(repo, check_id, *extra):
     return _one_check(card, check_id)
 
 
+def test_audit_reports_an_unknown_archetype_instead_of_passing():
+    """Reproduced before it was fixed: copying repo-it-tooling and mistyping
+    it-tooling as it-toolng left the two scorecards identical -- 8 pass, 0 fail
+    both times -- differing only in "All 11" becoming "All 10" inside a reason
+    string. The typo removed docs/runbook.md from the required set, so a repo
+    that had actually lost its runbook would have passed."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-toolng" + chr(10) + "owner: t" + chr(10),
+            encoding="utf-8")
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "fail", entry
+        assert "it-toolng" in entry["reason"], entry["reason"]
+        assert "it-tooling" in entry["reason"], \
+            f"an unknown archetype should name the known ones: {entry['reason']}"
+        assert ".docs-warden.yml" in entry["fix"], entry["fix"]
+
+
+def test_a_known_archetype_still_demands_its_own_documents():
+    """The guard above must not be satisfiable by removing the archetype's
+    contribution to the required set -- that is the bug, not the fix."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + chr(10) + "owner: t" + chr(10),
+            encoding="utf-8")
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "fail", entry
+        assert "docs/runbook.md" in entry["reason"], \
+            f"it-tooling's own document should still be required: {entry['reason']}"
+
+
 def test_documents_are_found_when_the_repo_itself_lives_under_a_skipped_directory():
     """markdown_docs() matched its skip set against the absolute path, so a repo
     checked out beneath build/ or dist/ -- a CI workspace root, commonly --

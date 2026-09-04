@@ -76,9 +76,26 @@ def check(cid, state, reason, fix=""):
     return {"id": cid, "state": state, "reason": reason, "fix": fix}
 
 
+ARCHETYPE_FIX = ("Set archetype in .docs-warden.yml to one of the known values. "
+                 "See references/archetypes.md.")
+
+
 def check_required_files(repo, config):
-    expected = list(UNIVERSAL_FILES)
     archetype = (config or {}).get("archetype")
+    # An archetype the table does not know fell through .get(..., []) to the
+    # universal set alone and reported pass. A one-character typo therefore
+    # dropped that archetype's documents from the required set and answered
+    # "All 10 required files present" -- the whole scorecard identical to a
+    # correct run but for that count, and a repo genuinely missing its runbook
+    # passing. check_standards already refuses an unknown standard id this way;
+    # the other axis did not.
+    if config is not None and archetype not in ARCHETYPE_FILES:
+        problem = ("no archetype declared" if archetype is None
+                   else f"unknown archetype {archetype!r}")
+        return check("required-files", "fail",
+                     f"{problem}; known: {', '.join(sorted(ARCHETYPE_FILES))}.",
+                     ARCHETYPE_FIX)
+    expected = list(UNIVERSAL_FILES)
     for extra in ARCHETYPE_FILES.get(archetype, []):
         expected.append(extra)
     missing = [
