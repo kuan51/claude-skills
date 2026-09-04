@@ -10,9 +10,8 @@ Each entry has:
   files      paths required-files demands. Checked.
   unchecked  documents the archetype wants that no path test can verify -- a
              generated API reference is real work, but "there is a file at
-             docs/reference/" does not prove it happened. Named here so the
-             count is reported rather than implied, and so a reader comparing
-             references/archetypes.md against the audit finds the two agree.
+             docs/reference/" does not prove it happened. Named in the
+             scorecard, so the gap is stated rather than implied.
 
 See references/archetypes.md before adding one.
 """

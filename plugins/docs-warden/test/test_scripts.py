@@ -489,13 +489,14 @@ def test_waiving_the_standards_family_covers_each_declared_standard():
         assert "DEC-0009" in entry["reason"], entry["reason"]
 
 
-def test_required_files_says_how_much_the_archetype_declares_but_cannot_check():
+def test_required_files_names_what_the_archetype_declares_but_cannot_check():
     """references/archetypes.md promises a service repo docs/how-to/,
     docs/reference/ and a generated API reference; the audit demands only
     arc42.md. Nothing said so, and the standards overlays already had the
     convention -- an artifact named without a (not checked) marker is a promise
-    the check keeps. A pass that counts the gap keeps the two honest about each
-    other."""
+    the check keeps. A pass that names the gap keeps the two honest about each
+    other, and naming beats counting: a bare number sends the reader to another
+    file to learn what it stands for."""
     with tempfile.TemporaryDirectory() as tmp:
         repo = _universal_repo(Path(tmp), "service")
         (repo / "docs" / "architecture").mkdir(parents=True, exist_ok=True)
@@ -503,9 +504,11 @@ def test_required_files_says_how_much_the_archetype_declares_but_cannot_check():
             "x", encoding="utf-8")
         entry = _audit_check(repo, "required-files")
         assert entry["state"] == "pass", entry
-        assert "not checked" in entry["reason"], \
-            f"the unchecked documents should be counted: {entry['reason']}"
-        assert "archetypes.md" in entry["reason"], entry["reason"]
+        assert "not checked" in entry["reason"], entry["reason"]
+        declared = _table("archetypes").ARCHETYPES["service"]["unchecked"]
+        for document in declared:
+            assert document in entry["reason"], \
+                f"{document!r} is declared and unnamed: {entry['reason']}"
 
 
 def test_documents_are_found_when_the_repo_itself_lives_under_a_skipped_directory():

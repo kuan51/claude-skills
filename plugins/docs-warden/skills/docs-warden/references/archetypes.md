@@ -88,7 +88,7 @@ with it is how people learn to distrust the scorecard:
   belongs in `unchecked`, or nowhere.
 - **`unchecked` is the honest half.** Anything the archetype wants that a path
   test cannot verify goes here and gets a **(not checked)** row in the table
-  above. The count is reported in the scorecard, so the two cannot drift.
+  above. The scorecard names them, so the two cannot drift.
 - **Name the hints, and keep them observable.** An archetype is proposed from
   the file tree, and confirmed with the human before anything is written --
   unlike an IEC 62304 safety class, which is a hazard assignment made outside

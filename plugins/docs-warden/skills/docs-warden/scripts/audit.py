@@ -190,12 +190,12 @@ def check_required_files(repo, config):
     if not missing:
         # The archetype wants documents no path test can verify -- a generated
         # API reference is real work that an empty docs/reference/ would satisfy.
-        # Counted in the reason rather than left implied, so a reader comparing
-        # references/archetypes.md against the scorecard sees the same number in
-        # both places instead of reporting the overlay as broken.
+        # Named rather than counted: a number sends the reader to another file
+        # to find out what it stands for, and a stored list nothing prints is a
+        # second copy of references/archetypes.md that can drift from it.
         unchecked = spec.get("unchecked", ())
-        note = (f" {len(unchecked)} further document(s) declared but not checked; "
-                "see references/archetypes.md." if unchecked else "")
+        note = (" Declared but not checked: " + "; ".join(unchecked) + "."
+                if unchecked else "")
         return check("required-files", "pass",
                      f"All {len(expected)} required files present.{note}")
     return check(
