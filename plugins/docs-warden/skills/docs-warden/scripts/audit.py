@@ -85,6 +85,63 @@ FORGE_FIX = ("Set forge in .docs-warden.yml to one of the known values. "
              "See references/universal-set.md.")
 
 
+MANIFEST_FIX = ("Correct .docs-warden.yml. See references/audit-schema.md "
+                "for the keys and what each one accepts.")
+
+
+def _waivable(cid):
+    """Whether a waiver may name this check.
+
+    A family check fans out under its own prefix -- standards:eu-cra -- and
+    either the family or one member is a legitimate thing to waive. manifest is
+    not: it is the check that validates the waivers, so waiving it would let a
+    malformed manifest silence its own report.
+    """
+    if cid == "manifest":
+        return False
+    return cid in CHECK_IDS or cid.split(":", 1)[0] in CHECK_IDS
+
+
+def check_manifest(repo, config):
+    """The manifest is readable, and says only things this plugin understands.
+
+    Every other check reads config and works around what it finds. This one
+    reports the manifest itself, which is where a waiver's own errors have to
+    surface -- a waiver for a check id that does not exist would otherwise
+    waive nothing, silently, and read as a control that is in place.
+    """
+    if config is None:
+        return check("manifest", "fail", "No .docs-warden.yml; archetype unknown.",
+                     "Run init mode to propose one. Do not guess the archetype.")
+    problems = []
+    waivers = config.get("waivers") or {}
+    if not isinstance(waivers, dict):
+        problems.append("waivers must be a mapping of check id to reason, "
+                        f"got {type(waivers).__name__}")
+    else:
+        for cid, reason in waivers.items():
+            if not _waivable(str(cid)):
+                problems.append(
+                    f"waiver for {cid!r}, which is not a waivable check; "
+                    f"known: {', '.join(sorted(CHECK_IDS))}")
+            elif not isinstance(reason, str) or not reason.strip():
+                # A waiver with no reason is an unexplained hole in the
+                # standard. Requiring the sentence is the whole control.
+                problems.append(f"waiver for {cid} gives no reason")
+    extra = config.get("extra_files") or []
+    if not isinstance(extra, list) or not all(isinstance(e, str) for e in extra):
+        problems.append("extra_files must be a list of repository-relative paths")
+    if problems:
+        return check("manifest", "fail", "; ".join(problems), MANIFEST_FIX)
+    counts = []
+    if extra:
+        counts.append(f"{len(extra)} extra file(s)")
+    if waivers:
+        counts.append(f"{len(waivers)} waiver(s)")
+    detail = f" Declares {', '.join(counts)}." if counts else ""
+    return check("manifest", "pass", f"Manifest readable.{detail}")
+
+
 def check_required_files(repo, config):
     archetype = (config or {}).get("archetype")
     # An archetype the table does not know fell through .get(..., []) to the
@@ -107,8 +164,13 @@ def check_required_files(repo, config):
                      f"{', '.join(sorted(FORGES))}.",
                      FORGE_FIX)
     spec = ARCHETYPES.get(archetype, {})
+    # extra_files last: a repository's own additions, validated by
+    # check_manifest so a malformed list is reported there rather than
+    # silently requiring nothing here.
+    extra = (config or {}).get("extra_files") or []
     expected = (list(UNIVERSAL_FILES) + list(FORGES[forge])
-                + list(spec.get("files", ())))
+                + list(spec.get("files", ()))
+                + [e for e in extra if isinstance(e, str)])
     # _artifact_satisfied, not a second path test: this one accepted a bare
     # is_dir(), so firmware's docs/architecture/ was satisfied by an empty
     # directory while check_standards refused exactly that ("an empty
@@ -891,6 +953,7 @@ def check_readme_shape(repo):
 # is deliberate and guarded: audit() asserts the two agree, so the registry can
 # be the authority on what exists without either copy drifting.
 CHECKS = [
+    ("manifest", lambda c: check_manifest(c.repo, c.config)),
     ("required-files", lambda c: check_required_files(c.repo, c.config)),
     ("front-matter", lambda c: check_front_matter(c.repo)),
     ("adr-immutability", lambda c: check_adr_immutability(c.repo)),
@@ -908,13 +971,19 @@ CHECKS = [
 
 CHECK_IDS = frozenset(cid for cid, _ in CHECKS)
 
-STATES = ("pass", "warn", "fail", "skipped")
+# waived is its own state, never folded into pass: a repository that has
+# excused a check has not passed it, and a scorecard that says otherwise is
+# the false green this tool exists to prevent.
+STATES = ("pass", "warn", "fail", "skipped", "waived")
 
 
 def audit(repo: Path, script_dir: Path, run_generators=False):
     config = load_config(repo)
     context = SimpleNamespace(repo=repo, config=config, script_dir=script_dir,
                               run_generators=run_generators)
+    waivers = config.get("waivers") or {} if isinstance(config, dict) else {}
+    if not isinstance(waivers, dict):
+        waivers = {}  # check_manifest reports it; do not act on it here.
     checks = []
     for cid, run in CHECKS:
         result = run(context)
@@ -925,12 +994,7 @@ def audit(repo: Path, script_dir: Path, run_generators=False):
             # anything saying so.
             assert entry["id"] == cid or entry["id"].startswith(cid + ":"), \
                 f"the registry calls this {cid!r} and it reports {entry['id']!r}"
-            checks.append(entry)
-    if config is None:
-        checks.insert(0, check(
-            "manifest", "fail", "No .docs-warden.yml; archetype unknown.",
-            "Run init mode to propose one. Do not guess the archetype.",
-        ))
+            checks.append(_waive(entry, waivers))
     summary = {s: sum(1 for c in checks if c["state"] == s) for s in STATES}
     return {
         "schema": SCHEMA_VERSION,
@@ -943,7 +1007,33 @@ def audit(repo: Path, script_dir: Path, run_generators=False):
     }
 
 
-ICON = {"pass": "pass", "warn": "warn", "fail": "FAIL", "skipped": "skip"}
+ICON = {"pass": "pass", "warn": "warn", "fail": "FAIL", "skipped": "skip",
+        "waived": "waived"}
+
+
+def _waive(entry, waivers):
+    """Apply a waiver, keeping what was waived visible.
+
+    A waiver names the check by id, or by its family -- waiving "standards"
+    covers every standards:<id> row. The reason the check gave is kept in the
+    text, so the scorecard still says what would have been reported. A waived
+    check never counts as a failure and never counts as a pass.
+    """
+    if entry["state"] not in ("fail", "warn"):
+        return entry
+    # _waivable, not just a lookup: check_manifest reports an unwaivable id as
+    # a problem, and applying it anyway let "manifest: trust us" silence that
+    # very report. One predicate decides, so the report and the effect agree.
+    if not _waivable(entry["id"]):
+        return entry
+    reason = waivers.get(entry["id"]) or waivers.get(
+        entry["id"].split(":", 1)[0])
+    if not isinstance(reason, str) or not reason.strip():
+        return entry
+    return check(entry["id"], "waived",
+                 f"Waived: {reason.strip()} (would have been "
+                 f"{entry['state']}: {entry['reason']})",
+                 entry["fix"])
 
 
 def _standards_label(declared):
@@ -965,7 +1055,8 @@ def render_single(report):
     s = report["summary"]
     out.append(f"archetype `{report['archetype']}` | "
                f"standards `{_standards_label(report['standards'])}` | "
-               f"{s['pass']} pass, {s['warn']} warn, {s['fail']} fail, {s['skipped']} skipped")
+               f"{s['pass']} pass, {s['warn']} warn, {s['fail']} fail, "
+               f"{s['skipped']} skipped, {s['waived']} waived")
     out += ["", "| Check | State | Reason | Fix |", "|-------|-------|--------|-----|"]
     for c in report["checks"]:
         out.append(f"| `{c['id']}` | {ICON[c['state']]} | {c['reason']} | {c['fix'] or '-'} |")
@@ -974,13 +1065,16 @@ def render_single(report):
 
 def render_aggregate(reports):
     out = ["# Documentation scorecard: all repositories", "",
-           "| Repository | Archetype | Pass | Warn | Fail | Skipped | Failing checks |",
-           "|------------|-----------|------|------|------|---------|----------------|"]
+           "| Repository | Archetype | Pass | Warn | Fail | Skipped | Waived | "
+           "Failing checks |",
+           "|------------|-----------|------|------|------|---------|--------|"
+           "----------------|"]
     for r in reports:
         s = r["summary"]
         failing = ", ".join(f"`{c['id']}`" for c in r["checks"] if c["state"] == "fail") or "-"
         out.append(f"| {Path(r['repo']).name} | {r['archetype'] or '-'} | {s['pass']} | "
-                   f"{s['warn']} | {s['fail']} | {s['skipped']} | {failing} |")
+                   f"{s['warn']} | {s['fail']} | {s['skipped']} | {s['waived']} | "
+                   f"{failing} |")
     return "\n".join(out)
 
 

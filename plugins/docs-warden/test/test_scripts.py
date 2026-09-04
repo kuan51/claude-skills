@@ -219,6 +219,112 @@ def test_an_unknown_forge_fails_rather_than_requiring_nothing():
             entry["reason"]
 
 
+# Newline as a name, because a literal escape inside a manifest written
+# by these tests is a backslash this shell mangles on the way in.
+NL = chr(10)
+
+
+def test_a_repository_can_add_a_requirement_of_its_own():
+    """Every requirement was skill-owned, so a team with a document their
+    standard genuinely needs had nowhere to say so and no reason to trust a
+    scorecard that ignored it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / "docs" / "runbook.md").write_text("x", encoding="utf-8")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL
+            + "extra_files: [docs/oncall.md]" + NL, encoding="utf-8")
+        entry = _audit_check(repo, "required-files")
+        assert entry["state"] == "fail", entry
+        assert "docs/oncall.md" in entry["reason"], entry["reason"]
+        (repo / "docs" / "oncall.md").write_text("x", encoding="utf-8")
+        assert _audit_check(repo, "required-files")["state"] == "pass"
+
+
+def test_a_waiver_keeps_the_finding_visible_and_is_not_a_pass():
+    """The alternative to a waiver is a permanent red row people learn to
+    ignore, which costs more than the waiver does. It only works if waiving is
+    visible: waived is its own state, never pass, and the reason the check gave
+    is kept alongside the excuse."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL + "waivers:" + NL
+            + '  required-files: "runbook lives in the ops wiki"' + NL,
+            encoding="utf-8")
+        card = _full_card(repo)
+        entry = _one_check(card, "required-files")
+        assert entry["state"] == "waived", entry
+        assert "ops wiki" in entry["reason"], entry["reason"]
+        assert "docs/runbook.md" in entry["reason"], \
+            f"the waived finding should still be readable: {entry['reason']}"
+        assert card["summary"]["waived"] == 1, card["summary"]
+        # About this check, not the whole scorecard: the bare repo these tests
+        # build fails other checks for unrelated reasons, and asserting on the
+        # totals would pass for the wrong reason.
+        states = {c["id"]: c["state"] for c in card["checks"]}
+        assert states["required-files"] == "waived", states
+        assert states["required-files"] not in ("pass", "fail"), \
+            "a waived check is neither a pass nor a failure"
+
+
+def test_a_waiver_without_a_reason_is_rejected():
+    """Requiring the sentence is the entire control. Without it a waiver map is
+    just a way to turn checks off."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL + "waivers:" + NL
+            + "  required-files: true" + NL, encoding="utf-8")
+        entry = _audit_check(repo, "manifest")
+        assert entry["state"] == "fail", entry
+        assert "no reason" in entry["reason"], entry["reason"]
+        assert _audit_check(repo, "required-files")["state"] != "waived", \
+            "a reasonless waiver must not take effect"
+
+
+def test_a_waiver_for_a_check_that_does_not_exist_is_reported():
+    """Same class as the archetype typo: a waiver naming nothing waives
+    nothing, and silently reads as a control that is in place."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL + "waivers:" + NL
+            + '  requird-files: "typo"' + NL, encoding="utf-8")
+        entry = _audit_check(repo, "manifest")
+        assert entry["state"] == "fail", entry
+        assert "requird-files" in entry["reason"], entry["reason"]
+
+
+def test_the_manifest_check_cannot_waive_itself():
+    """It is the check that validates waivers. Waiving it would let a
+    malformed manifest silence its own report."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL + "waivers:" + NL
+            + '  manifest: "trust us"' + NL, encoding="utf-8")
+        entry = _audit_check(repo, "manifest")
+        assert entry["state"] == "fail", entry
+        assert "not a waivable check" in entry["reason"], entry["reason"]
+
+
+def test_waiving_the_standards_family_covers_each_declared_standard():
+    """Per-standard rows would otherwise need one waiver each, which is how a
+    newly declared standard quietly arrives already excused -- or, worse, how
+    people give up and waive nothing."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "service")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: service" + NL + "standards:" + NL
+            + "  eu-cra: true" + NL + "waivers:" + NL
+            + '  standards: "assessed out of scope, see DEC-0009"' + NL,
+            encoding="utf-8")
+        entry = _audit_check(repo, "standards:eu-cra")
+        assert entry["state"] == "waived", entry
+        assert "DEC-0009" in entry["reason"], entry["reason"]
+
+
 def test_required_files_says_how_much_the_archetype_declares_but_cannot_check():
     """references/archetypes.md promises a service repo docs/how-to/,
     docs/reference/ and a generated API reference; the audit demands only

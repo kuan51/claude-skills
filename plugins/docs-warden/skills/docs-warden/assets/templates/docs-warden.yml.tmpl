@@ -10,6 +10,16 @@ review_cadence_days: 180
 standards: {{STANDARDS}}
 #  iec-62304: C      # safety class A | B | C -- assigned outside the repo. Ask.
 
+# Documents this repository requires beyond the standard set.
+extra_files: []
+#  - docs/oncall.md
+
+# Checks this repository has excused, each with the reason why. A waiver shows
+# in the scorecard as `waived`, never as a pass, and one with no reason is
+# rejected. See references/audit-schema.md.
+waivers: {}
+#  required-files: "the runbook lives in the ops wiki, see DEC-0009"
+
 # CI regenerates each path with its command and fails on any diff.
 generated_docs: []
 #  - path: docs/reference/cli.md

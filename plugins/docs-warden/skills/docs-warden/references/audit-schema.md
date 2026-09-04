@@ -6,6 +6,36 @@ the cross-repo view — and still writes each repo its own scorecard, in the sin
 shape below. `--json-out PATH` overrides that: everything goes to `PATH` instead, as
 one object for a single repo and as an array of them for several.
 
+### Waivers
+
+A repository may excuse one check in `.docs-warden.yml`, with a reason:
+
+```yaml
+waivers:
+  required-files: "the runbook lives in the ops wiki, see DEC-0009"
+  standards: "assessed out of scope by the regulatory lead"
+```
+
+The alternative is a permanently red row that people learn to ignore, which
+costs more than the waiver does. Three things keep it honest:
+
+- **`waived` is its own state**, never `pass`. The scorecard reports what would
+  have been said, alongside the excuse.
+- **The reason is mandatory.** A waiver with no reason is rejected by the
+  `manifest` check and does not take effect. Requiring the sentence is the whole
+  control.
+- **A waiver for a check that does not exist is a `fail`**, not a silent no-op —
+  otherwise it reads as a control that is in place.
+
+Naming a family (`standards`) waives each of its rows (`standards:eu-cra`).
+`manifest` cannot be waived: it is the check that validates the waivers.
+
+### Extra files
+
+`extra_files:` is a list of repository-relative paths added to `required-files`.
+Everything else the audit demands is skill-owned; this is where a repository
+says what its own standard needs.
+
 Every check returns one of four states, and the distinction between the last two is
 the one that matters:
 
