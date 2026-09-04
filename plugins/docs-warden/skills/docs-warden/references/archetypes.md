@@ -90,18 +90,16 @@ with it is how people learn to distrust the scorecard:
   test cannot verify goes here and gets a **(not checked)** row in the table
   above. The count is reported in the scorecard, so the two cannot drift.
 - **Name the hints, and keep them observable.** An archetype is proposed from
-  the file tree, which is why every entry sets `infer: True`. Never invent a
-  hint that requires knowing something the repository does not show.
+  the file tree, and confirmed with the human before anything is written --
+  unlike an IEC 62304 safety class, which is a hazard assignment made outside
+  the repository and must never be proposed. Never invent a hint that requires
+  knowing something the repository does not show.
 - **Do not add an archetype speculatively.** Four cover the repos this has met.
   A fifth should arrive with a real repository that the existing four describe
   badly, not with a guess about one.
 - **Add a fixture or extend a test.** `required-files` is one check with two
   inputs, and the archetype half went untested until an unknown value was found
   passing.
-
-The `infer` field is read by the `init` step in `SKILL.md`, not by any script.
-It is there so a future archetype that must be *asked for* rather than proposed
-has somewhere to say so, the way an IEC 62304 safety class does.
 
 ## Standards are overlays, not archetypes
 

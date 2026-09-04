@@ -341,7 +341,7 @@ def test_the_shipped_archetype_table_is_well_formed():
     reference = (SKILL_ROOT / "references" / "archetypes.md").read_text(
         encoding="utf-8")
     for aid, spec in archetypes.items():
-        for field in ("name", "files", "unchecked", "infer"):
+        for field in ("files", "unchecked"):
             assert field in spec, f"{aid} has no {field}"
         assert spec["files"], f"{aid} requires nothing"
         assert f"## {aid}" in reference, \
