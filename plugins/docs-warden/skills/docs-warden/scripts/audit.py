@@ -378,6 +378,7 @@ def check_adr_index(repo, script_dir):
     result = subprocess.run(
         [sys.executable, str(script_dir / "adr_index.py"), str(repo), "--check"],
         capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
     )
     if result.returncode == 0:
         return check("adr-index", "pass", f"{DECISIONS} matches the records.")
@@ -660,7 +661,8 @@ def check_lint(repo):
             continue
         try:
             result = subprocess.run(argv, cwd=repo, capture_output=True,
-                                    text=True, check=False, timeout=300)
+                                    text=True, check=False, timeout=300,
+                                    encoding="utf-8", errors="replace")
         except subprocess.TimeoutExpired:
             findings.append(f"{name} (timed out)")
             continue
@@ -766,6 +768,7 @@ def _rule_trace_requirements(repo, script_dir):
     result = subprocess.run(
         [sys.executable, str(script_dir / "trace_matrix.py"), str(repo)],
         capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
     )
     untested = [line.split()[1] for line in result.stderr.splitlines()
                 if line.startswith("FAIL ")]

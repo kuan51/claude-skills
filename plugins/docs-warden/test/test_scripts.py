@@ -1257,6 +1257,39 @@ def test_lint_names_the_install_for_an_adopted_but_missing_tool():
             f"vale should be named as adopted but unrun: {entry['reason']} / {entry['fix']}"
 
 
+def test_lint_survives_a_tool_that_writes_non_utf8_output():
+    """A lint tool's stdout is decoded in text mode. Leaving `encoding`
+    unset falls back to the platform locale (cp1252 on Windows), and a byte
+    undefined there (0x8d, seen in real markdownlint-cli2 output containing
+    an em dash) raised UnicodeDecodeError out of subprocess.run and never
+    reached check_lint's own error handling. Pinning encoding="utf-8",
+    errors="replace" survives it everywhere, since a lone 0x8d is also
+    invalid as strict UTF-8."""
+    audit = _import_audit()
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "README.md").write_text("# R\n", encoding="utf-8")
+        (repo / ".vale.ini").write_text("StylesPath = styles\n", encoding="utf-8")
+
+        script = repo / "noisy_tool.py"
+        script.write_text(
+            "import sys\n"
+            "sys.stdout.buffer.write(b'em dash \\x8d here')\n"
+            "sys.exit(1)\n",
+            encoding="utf-8")
+
+        real_lint_runner = audit._lint_runner
+        audit._lint_runner = lambda tool: (
+            [sys.executable, str(script)] if tool["name"] == "vale" else None)
+        try:
+            entry = audit.check_lint(repo)
+        finally:
+            audit._lint_runner = real_lint_runner
+
+        assert entry["state"] == "warn", \
+            f"the crash was swallowed as something other than a reported finding: {entry}"
+
+
 # A table of pretend standards. The guards below are properties of the
 # mechanism, not of whichever standards happen to be registered today, so
 # pinning them to the real table would re-break them every time it grows.

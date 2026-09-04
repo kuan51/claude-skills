@@ -204,6 +204,8 @@ def git(repo: Path, *args):
             capture_output=True,
             text=True,
             check=False,
+            encoding="utf-8",
+            errors="replace",
         )
     except OSError:
         return None
