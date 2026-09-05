@@ -109,7 +109,8 @@ def main() -> int:
         if lines > RUNLOG_ROTATE_LINES:
             warnings.append(
                 f"{RUNLOG}: {lines} lines, past the {RUNLOG_ROTATE_LINES} line rotation point. "
-                f"Move entries older than 90 days into {RUNLOG_ARCHIVE_DIR}/YYYY-QN.md."
+                f"Move the oldest entries into {RUNLOG_ARCHIVE_DIR}/YYYY-QN.md, by the "
+                f"quarter each falls in, until it is back under the limit."
             )
 
     if cadence:

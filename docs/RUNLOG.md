@@ -14,7 +14,8 @@ entry names the exact command or check used, so anyone can re-run it later.
 A skipped check gets its own `SKIPPED` entry — a silent gap is worse than an
 admitted one.
 
-Past 500 lines, move entries older than 90 days into `docs/runlog/YYYY-QN.md` and
-leave a one-line pointer.
+Past 500 lines, move the oldest entries into `docs/runlog/YYYY-QN.md` -- the
+archive for the quarter each entry falls in -- until the log is back under the
+limit, and leave a one-line pointer. Whole entries only.
 
 ---
