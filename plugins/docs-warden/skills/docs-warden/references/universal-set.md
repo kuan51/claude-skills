@@ -88,8 +88,16 @@ command or check used — not just the outcome. An entry nobody can re-run later
 not evidence. A skipped check gets its own `SKIPPED` entry; a silent gap is worse
 than an admitted one.
 
-Rotation: `freshness.py` warns past 500 lines. Move entries older than 90 days into
-`docs/runlog/YYYY-QN.md` and leave a one-line pointer behind.
+Rotation: `freshness.py` warns past 500 lines. Move the oldest entries into
+`docs/runlog/YYYY-QN.md` -- the archive for the quarter each entry falls in -- until
+the log is back under the limit, and leave a one-line pointer behind. Whole entries
+only; never split one.
+
+The line count is the whole trigger, deliberately. This rule once also required an
+entry to be older than 90 days, and both halves had to hold: a repository that wrote
+674 lines in five days tripped the line count with nothing old enough to move, so the
+rule selected nothing and the warning stood forever. Recency is what the archive is
+for, not age.
 
 ## docs/GLOSSARY.md
 

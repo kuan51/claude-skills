@@ -6,7 +6,7 @@ Why this repository is the way it is. Newest first.
 
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
-| - | No decisions recorded yet | - | - | - | - |
+| [DEC-0001](decisions/DEC-0001-rotate-the-run-log-on-its-line-count-alone.md) | Rotate the run log on its line count alone | proposed | 2026-09-05 | - | - |
 
 To add a decision, run `adr_new.py <repo> "<title>"`, fill the sections with
 the deciders, then re-run `adr_index.py`. Accepted records are never edited --
