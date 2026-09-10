@@ -15,7 +15,8 @@ per-plugin history until entries are recorded here going forward.
   verification gate the lead must pass before accepting a worker's claim. It also ships
   this repository's first **active plugin hook**: a dependency-free Node `PreToolUse`
   guard that blocks package installs, commits and pushes on a default branch, destructive
-  shell commands, and reads or writes of credential files, plus a `SubagentStop` check
+  shell commands, reads or writes of credential files, and writes to live Claude Code
+  configuration or git hooks, plus a `SubagentStop` check
   that sends back a worker report missing its contract fields. The guard fails open by
   design, so a bug in it degrades to no guard rather than to a session that cannot run
   any command.

@@ -23,7 +23,7 @@ nothing in the transcript said so. The routing table had been wrong for as long 
 had existed.
 
 The second problem is the one that makes delegation dangerous rather than merely
-wasteful: a worker returns "done, tests pass", the lead believes it, and the run
+wasteful: a worker returns "done, tests pass," the lead believes it, and the run
 continues on a claim nobody checked. Reports from the field put the rate of subagent
 reports containing at least one claim that does not match the underlying tool output at
 roughly a fifth to a third.
@@ -93,7 +93,7 @@ Two mechanics were settled against the source research by checking shipped code:
   timeout allows the call.
 
 `model:` frontmatter is new to this repository -- no agent in `plugins/` carried it
-before -- so the test suite pins each agent's tier as well as its tool list.
+before -- which is why the test suite pins each agent's tier as well as its tool list.
 
 ## Consequences
 
@@ -129,7 +129,7 @@ before -- so the test suite pins each agent's tier as well as its tool list.
   call and says nothing. The alternative -- failing closed -- would block every shell call
   in every session of anyone who installed the plugin, which is a far worse default, but
   the cost is that the guard's own failures are invisible.
-- **Nothing runs the test suite.** There is no CI in this repository, no `package.json`,
+- **Nothing runs the test suite.** This repository has no CI, no `package.json`,
   and `pre-commit` is not installed. A security-adjacent code path is protected by the
   convention that someone remembers to run `node --test`.
 - **The `SubagentStop` check greps prose** for contract markers. It will be wrong in both

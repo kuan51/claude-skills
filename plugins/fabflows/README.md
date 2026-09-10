@@ -18,7 +18,7 @@ does not fail loudly -- the request quietly falls through to a general-purpose a
 running on the lead's own model. The routing that exists to save money spends it
 instead, and nothing in the transcript says so.
 
-The second failure is quieter still. A worker returns "done, tests pass", the lead
+The second failure is quieter still. A worker returns "done, tests pass," the lead
 believes it, and the run continues on a claim nobody checked.
 
 ## What it ships
@@ -70,7 +70,8 @@ A single `hooks/guard.js` -- Node, no dependencies, one file -- handles every ru
   keys, and private-key headers.
 - **Live configuration** -- `~/.claude/settings.json`, `~/.claude/hooks/`,
   `~/.claude/plugins/`, and any `.git/hooks/`. This is what stops a worker from
-  disarming the guard. Everything else under `~/.claude/` stays writable.
+  disarming the guard. Reading them is allowed; only writes and redirects are blocked.
+  Everything else under `~/.claude/` stays writable.
 
 A `SubagentStop` hook checks that a worker's final report actually carries its contract
 fields, and sends it back to be re-emitted if two or more are missing.
@@ -96,14 +97,14 @@ repository, a timeout -- all of those allow the call. That is deliberate: a guar
 failed closed would block every shell call in every session of anyone who installed this
 plugin, and the cost of the wrong default there is far higher than a missed tripwire.
 
-So a call that was not blocked is not a call that was approved. The real containment on
+A call that was not blocked is not a call that was approved. The real containment on
 a worker is its tool allowlist -- `fabflows:researcher`, the agent most exposed to
 untrusted web content, has no Bash and no Write at all, and no hook is needed to enforce
 that.
 
 ## Disabling it
 
-`/plugin disable fabflows`. There is no environment-variable escape hatch, on purpose:
+`/plugin disable fabflows`. No environment-variable escape hatch exists, on purpose:
 an off switch a model can set is not an off switch. Note that because the guard protects
 `~/.claude/plugins/`, upgrading or removing this plugin is a manual action you perform
 yourself.
