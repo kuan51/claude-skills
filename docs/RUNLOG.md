@@ -48,3 +48,14 @@ PASS, 0 FAIL (4 new checks). `node --test "test/*.test.js"` printed `# pass 4`,
 `# fail 0`. Re-ran the three-round scratch reproduction: no digest in
 `archive/`, "Chose option 1." still at the top level, `links` pass, and the
 digest line for DEC-0005 reads "superseded by DEC-0040".
+
+## 2026-09-10 — docs-warden 0.2.0: over-engineering review cuts on PR #22
+
+**PLANNED** — Apply the four cuts from the ponytail review: hook delegates to
+`adr_compact.py --check`, inline the one-caller helper, print the mapping only
+on dry run, drop the non-git rename fallback.
+
+**CONFIRMED** — `python3 plugins/docs-warden/test/test_scripts.py` printed 72
+PASS, 0 FAIL. `node --test "test/*.test.js"` printed `# fail 0`. The hook,
+fed `{"cwd": <50-record folder>}`, printed the compaction line via `--check`.
+Hook shrank from 36 to 17 lines.

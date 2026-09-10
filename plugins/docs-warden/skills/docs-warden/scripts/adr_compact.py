@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compact the oldest decision records into one digest.
 
-Usage: adr_compact.py <repo> [--dry-run]
+Usage: adr_compact.py <repo> [--dry-run | --check]
 
 Once docs/decisions/ holds COMPACT_AT eligible records -- accepted or rejected,
 and not themselves digests -- the COMPACT_BATCH oldest are moved unchanged
@@ -14,6 +14,8 @@ archive, bytes untouched, so the immutability rule holds. Digests are never
 archived, so what they carry stays at the top level.
 
 Below the threshold the script does nothing. Re-run adr_index.py afterwards.
+--check prints one line when compaction is due and nothing otherwise; the
+SessionStart hook runs it so "due" is defined in exactly one place.
 """
 import argparse
 import datetime as dt
@@ -25,17 +27,10 @@ from _common import DECISIONS_ARCHIVE_DIR, DECISIONS_DIR, git, is_git_repo, load
 from adr_new import next_id, slugify
 
 # ponytail: constants; make them .docs-warden.yml keys when a repo needs others.
-# hooks/decisions_check.py counts eligible records the same way; keep in step.
 COMPACT_AT = 50
 COMPACT_BATCH = 25
 DIGEST_TAG = "compaction"
 KEEP_SECTIONS = ("Decision outcome", "Gaps accepted")
-
-
-def eligible(records):
-    """Records that can be archived: decided, and not a digest."""
-    return [r for r in records
-            if r["status"] != "proposed" and DIGEST_TAG not in r["tags"]]
 
 
 def section(body: str, heading: str) -> str:
@@ -90,6 +85,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Archive the oldest decision records into a digest")
     parser.add_argument("repo", type=Path)
     parser.add_argument("--dry-run", action="store_true", help="show the plan, write nothing")
+    parser.add_argument("--check", action="store_true", help="say whether compaction is due")
     args = parser.parse_args()
 
     repo = args.repo.resolve()
@@ -97,9 +93,17 @@ def main() -> int:
         print(f"error: {repo} is not a directory", file=sys.stderr)
         return 1
 
-    candidates = eligible(load_adrs(repo))
+    # Archivable: decided, and not a digest.
+    candidates = [r for r in load_adrs(repo)
+                  if r["status"] != "proposed" and DIGEST_TAG not in r["tags"]]
     if len(candidates) < COMPACT_AT:
-        print(f"{len(candidates)} eligible record(s), below the compaction point of {COMPACT_AT}")
+        if not args.check:
+            print(f"{len(candidates)} eligible record(s), below the compaction point of {COMPACT_AT}")
+        return 0
+    if args.check:
+        print(f"docs-warden: {len(candidates)} decision records in {DECISIONS_DIR} are ready "
+              f"to archive (compaction point is {COMPACT_AT}). Run the docs-warden "
+              f"skill's compact mode to move the oldest {COMPACT_BATCH} into a digest.")
         return 0
     batch = candidates[:COMPACT_BATCH]
 
@@ -113,10 +117,10 @@ def main() -> int:
     digest_id = next_id(repo)
     slug = slugify(f"compaction of {batch[0]['id']} to {batch[-1]['id']}")
     digest_path = repo / DECISIONS_DIR / f"{digest_id}-{slug}.md"
-    for r in batch:
-        print(f"{r['path'].relative_to(repo)} -> archive/{r['path'].name}")
-    print(f"digest: {digest_path.relative_to(repo)}")
     if args.dry_run:
+        for r in batch:
+            print(f"{r['path'].relative_to(repo)} -> archive/{r['path'].name}")
+        print(f"digest: {digest_path.relative_to(repo)}")
         return 0
 
     content = render(digest_id, batch)  # read bodies before anything moves

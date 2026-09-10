@@ -1707,6 +1707,10 @@ def _grow(decisions: Path, n: int):
         (decisions / f"DEC-{k:04d}-c.md").write_text(
             f"---\nid: DEC-{k:04d}\ntitle: c\nstatus: accepted\ndate: 2026-02-01\n"
             f"supersedes: []\n---\n## Decision outcome\n\nChose {k}.\n", encoding="utf-8")
+    repo = decisions.parent.parent
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t",
+                    "commit", "-qm", "grow"], check=True)
 
 
 def test_adr_compact_never_archives_a_digest():
@@ -1718,8 +1722,8 @@ def test_adr_compact_never_archives_a_digest():
         repo = Path(tmp)
         decisions = _decisions_repo(repo, 50)
         for _ in range(3):
-            assert _compact(repo).returncode == 0
-            _grow(decisions, 25)
+            assert _compact(repo).returncode == 0, "untracked digest breaks the next git mv"
+            _grow(decisions, 25)  # commits, digest included
         assert not list((decisions / "archive").glob("*compaction*")), "digest archived"
         live = "".join(p.read_text(encoding="utf-8") for p in decisions.glob("DEC-*.md"))
         assert "Chose option 1." in live, "first digest's content left the top level"

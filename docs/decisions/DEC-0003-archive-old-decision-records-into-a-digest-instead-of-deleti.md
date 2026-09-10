@@ -74,9 +74,9 @@ tells the session to run the skill's `compact` mode, which runs
 
 ## Gaps accepted
 
-- The 50 and 25 are constants in `adr_compact.py` and repeated in the hook. A
-  repo wanting different numbers edits the script; a manifest key can come
-  later.
+- The 50 and 25 are constants in `adr_compact.py`; the hook runs the script's
+  `--check` so there is one definition of "due". A repo wanting different
+  numbers edits the script; a manifest key can come later.
 - The immutability check sees an archived record's history only from the move
   onward; an edit made between acceptance and archiving is not visible after.
 - Records are counted, not sized. A repo with 49 very long records gets no
