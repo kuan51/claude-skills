@@ -1712,6 +1712,27 @@ def test_audit_front_matter_ignores_the_decisions_archive():
         assert not [p for p in paths if "decisions/" in p], paths
 
 
+def test_decisions_check_hook_speaks_only_at_50():
+    hook = SCRIPTS.parent.parent.parent / "hooks" / "decisions_check.py"
+    for count, expect in ((49, False), (50, True)):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            decisions = repo / "docs" / "decisions"
+            decisions.mkdir(parents=True)
+            for n in range(1, count + 1):
+                (decisions / f"DEC-{n:04d}-x.md").write_text("---\nid: x\n---\n")
+            (decisions / "README.md").write_text("pointer\n")
+            result = subprocess.run(
+                [sys.executable, str(hook)], input=json.dumps({"cwd": str(repo)}),
+                capture_output=True, text=True, check=False)
+            assert result.returncode == 0, result.stderr
+            assert ("compact" in result.stdout) is expect, (count, result.stdout)
+    # Garbage stdin must not break session start.
+    result = subprocess.run([sys.executable, str(hook)], input="not json",
+                            capture_output=True, text=True, check=False)
+    assert result.returncode == 0 and result.stdout == ""
+
+
 def main():
     failures = []
     for name, fn in sorted(globals().items()):
