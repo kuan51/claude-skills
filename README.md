@@ -38,6 +38,14 @@ so it picks up the newly installed plugin.
   silently rewriting them. Includes a plain-English Vale style and compliance
   overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and
   NIST SSDF.
+- **[fabflows](plugins/fabflows/)** — orchestration for a session whose lead runs on an
+  expensive model: four worker agents pinned to cheaper tiers (`explorer` and
+  `researcher` on Haiku, `editor` and `test-runner` on Sonnet), each scoped to the
+  smallest tool list that does its job, plus a skill that makes the lead write a proper
+  delegation brief and re-verify what comes back instead of trusting it. Ships an
+  **active guard hook** that blocks package installs, default-branch commits,
+  destructive commands, and credential reads and writes — read that plugin's README
+  before installing, including its blind spots.
 
 ## Adding a new plugin
 

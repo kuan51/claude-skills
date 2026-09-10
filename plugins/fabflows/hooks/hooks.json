@@ -1,0 +1,29 @@
+{
+  "description": "fabflows guard -- blocks package installs, default-branch commits and pushes, destructive shell commands, and reads or writes of credential files; checks that a worker's final report carries the required contract fields.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|PowerShell|Read|Grep|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.js\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "(^|:)(explorer|researcher|editor|test-runner)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.js\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
