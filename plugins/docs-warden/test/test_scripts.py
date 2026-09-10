@@ -1613,6 +1613,105 @@ def test_lint_runner_prefers_npx_when_both_runners_are_installed():
         f"npx is first in the fallback order, but {argv[0]!r} was chosen"
 
 
+def _decisions_repo(repo: Path, count: int, proposed=()):
+    """A git repo with `count` accepted records (ids given in `proposed` start
+    proposed instead), each carrying a distinct outcome and gaps section."""
+    decisions = repo / "docs" / "decisions"
+    decisions.mkdir(parents=True)
+    for n in range(1, count + 1):
+        status = "proposed" if n in proposed else "accepted"
+        (decisions / f"DEC-{n:04d}-choice-{n}.md").write_text(
+            f"---\nid: DEC-{n:04d}\ntitle: Choice {n}\nstatus: {status}\n"
+            f"date: 2026-01-{(n % 28) + 1:02d}\nsupersedes: []\n---\n\n"
+            f"# DEC-{n:04d}: Choice {n}\n\n## Context and problem statement\n\n"
+            f"context {n}\n\n## Decision outcome\n\nChose option {n}.\n\n"
+            f"## Gaps accepted\n\ngap {n}\n\n## Links\n\n- none\n",
+            encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c",
+                    "user.email=t@t", "commit", "-q", "-m", "records"], check=True)
+    return decisions
+
+
+def _compact(repo: Path, *flags):
+    return subprocess.run(
+        [sys.executable, str(SCRIPTS / "adr_compact.py"), str(repo), *flags],
+        capture_output=True, text=True, check=False)
+
+
+def test_adr_compact_does_nothing_below_the_threshold():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 49)
+        result = _compact(repo)
+        assert result.returncode == 0, result.stderr
+        assert not (decisions / "archive").exists(), "archived below threshold"
+        assert len(list(decisions.glob("DEC-*.md"))) == 49
+
+
+def test_adr_compact_archives_the_oldest_25_into_a_digest():
+    """The digest has to let a reader follow the architectural history without
+    opening archive/: every archived record's outcome and gaps, verbatim.
+    The archived files keep their bytes -- that is what keeps the immutability
+    rule true -- and a proposed record is not history yet, so it stays."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 50, proposed={3})
+        before = (decisions / "DEC-0001-choice-1.md").read_bytes()
+        result = _compact(repo)
+        assert result.returncode == 0, result.stderr
+        archive = decisions / "archive"
+        archived = sorted(p.name for p in archive.glob("DEC-*.md"))
+        assert len(archived) == 25, archived
+        assert "DEC-0003-choice-3.md" not in archived, "proposed record moved"
+        assert "DEC-0026-choice-26.md" in archived, "batch did not skip past proposed"
+        assert (archive / "DEC-0001-choice-1.md").read_bytes() == before
+        assert not (decisions / "DEC-0001-choice-1.md").exists()
+        digest = next(decisions.glob("DEC-0051-*.md"))
+        body = digest.read_text(encoding="utf-8")
+        front = yaml.safe_load(body.split("---")[1])
+        assert front["id"] == "DEC-0051" and front["status"] == "accepted", front
+        assert "Chose option 1." in body and "gap 26" in body, body
+        assert "context 1" not in body, "digest copied more than outcome and gaps"
+        assert "(archive/DEC-0001-choice-1.md)" in body, body
+        # git sees a rename, not a delete plus an untracked file.
+        status = subprocess.run(["git", "-C", str(repo), "status", "--short"],
+                                capture_output=True, text=True, check=True).stdout
+        assert "R  docs/decisions/DEC-0001-choice-1.md -> " in status, status
+        # A second run stays put: 26 live records is below the threshold.
+        assert _compact(repo).returncode == 0
+        assert len(list(archive.glob("DEC-*.md"))) == 25
+
+
+def test_adr_compact_dry_run_writes_nothing():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 50)
+        result = _compact(repo, "--dry-run")
+        assert result.returncode == 0, result.stderr
+        assert "DEC-0051" in result.stdout and "archive/" in result.stdout, result.stdout
+        assert not (decisions / "archive").exists()
+        assert len(list(decisions.glob("DEC-*.md"))) == 50
+
+
+def test_audit_front_matter_ignores_the_decisions_archive():
+    """Archived records carry ADR front matter, not owner/review_by; the
+    front-matter check exempted docs/decisions/ by direct parent only, so the
+    archive subfolder would fail every moved record."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _decisions_repo(repo, 50)
+        assert _compact(repo).returncode == 0
+        sys.path.insert(0, str(SCRIPTS))
+        try:
+            import audit  # noqa: E402
+            paths = [p.relative_to(repo).as_posix() for p in audit.long_lived_docs(repo)]
+        finally:
+            sys.path.remove(str(SCRIPTS))
+        assert not [p for p in paths if "decisions/" in p], paths
+
+
 def main():
     failures = []
     for name, fn in sorted(globals().items()):

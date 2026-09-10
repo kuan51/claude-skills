@@ -227,7 +227,8 @@ def long_lived_docs(repo):
         # are immutable once accepted, so a review_by on one would be a promise
         # nobody is allowed to keep. Whether the front matter itself is even
         # parseable is checked separately, by check_adr_immutability.
-        if path.resolve().parent == decisions:
+        # The archive adr_compact.py moves them into is the same kind of file.
+        if path.resolve().parent == decisions or (decisions / "archive") in path.resolve().parents:
             continue
         yield path
 
