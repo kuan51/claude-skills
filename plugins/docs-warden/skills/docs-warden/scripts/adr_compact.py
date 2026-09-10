@@ -23,7 +23,7 @@ import re
 import sys
 from pathlib import Path
 
-from _common import DECISIONS_ARCHIVE_DIR, DECISIONS_DIR, git, is_git_repo, load_adrs
+from _common import DECISIONS_ARCHIVE_DIR, DECISIONS_DIR, git, load_adrs
 from adr_new import next_id, slugify
 
 # ponytail: constants; make them .docs-warden.yml keys when a repo needs others.
@@ -125,11 +125,11 @@ def main() -> int:
 
     content = render(digest_id, batch)  # read bodies before anything moves
     archive.mkdir(exist_ok=True)
-    tracked = is_git_repo(repo)
     for r in batch:
-        dest = archive / r["path"].name
-        if not tracked or git(repo, "mv", str(r["path"]), str(dest)) is None:
-            r["path"].rename(dest)  # untracked file, or no git at all
+        if git(repo, "mv", str(r["path"]), str(archive / r["path"].name)) is None:
+            print(f"error: git mv failed on {r['path'].name}; is the record committed?",
+                  file=sys.stderr)
+            return 1
     digest_path.write_text(content, encoding="utf-8")
     print(f"created {digest_path.relative_to(repo)}; now run adr_index.py")
     return 0
