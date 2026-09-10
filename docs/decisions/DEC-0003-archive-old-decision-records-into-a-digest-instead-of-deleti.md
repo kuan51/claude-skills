@@ -47,8 +47,9 @@ folder without touching a byte of an accepted record. The digest copies the two
 sections a later reader needs mechanically, so no summarising happens and the
 result is deterministic and testable.
 
-The trigger is a SessionStart hook that counts `DEC-*.md` in `docs/decisions/`
-and prints one line at 50 or more. A hook cannot run the compaction itself; it
+The trigger is a SessionStart hook that counts the archivable records in
+`docs/decisions/` (not proposed, not a digest) and prints one line at 50 or
+more, the same count the script uses. A hook cannot run the compaction itself; it
 tells the session to run the skill's `compact` mode, which runs
 `adr_compact.py --dry-run`, shows the mapping, and moves on a yes.
 
@@ -57,8 +58,12 @@ tells the session to run the skill's `compact` mode, which runs
 **Good:**
 
 - `docs/decisions/` stays under about 50 files with no loss of history.
-- `audit.py`'s immutability and index checks needed no change; only the
-  front-matter walk had to learn the archive folder.
+- `audit.py`'s immutability check reads the archive too, so an edit to an
+  archived record after the move is still caught. The links and front-matter
+  walks leave the archive alone: a moved record's `../` links break by
+  construction and the rule forbids fixing them in place.
+- Digests are never archived themselves, so what one carries stays at the top
+  level for as long as the folder exists.
 
 **Bad:**
 
@@ -72,6 +77,8 @@ tells the session to run the skill's `compact` mode, which runs
 - The 50 and 25 are constants in `adr_compact.py` and repeated in the hook. A
   repo wanting different numbers edits the script; a manifest key can come
   later.
+- The immutability check sees an archived record's history only from the move
+  onward; an edit made between acceptance and archiving is not visible after.
 - Records are counted, not sized. A repo with 49 very long records gets no
   nudge.
 - Only SessionStart triggers the nudge. A session that crosses 50 mid-way hears

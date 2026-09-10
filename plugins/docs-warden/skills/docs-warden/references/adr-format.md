@@ -90,22 +90,26 @@ CI relies on that to detect a hand edit.
 
 ## Compaction
 
-`docs/decisions/` only ever grows, so at 50 records `adr_compact.py` moves the 25
-oldest that are not `proposed` into `docs/decisions/archive/` with `git mv` and
+`docs/decisions/` only ever grows, so at 50 archivable records -- not `proposed`,
+not a digest -- `adr_compact.py` moves the 25 oldest into `docs/decisions/archive/` with `git mv` and
 writes one new digest record, `DEC-NNNN-compaction-of-dec-0001-to-dec-0026.md`,
 `status: accepted`, `tags: [compaction]`.
 
 Per archived record the digest carries id, title, status, date, what it
-supersedes, a link into `archive/`, and the **Decision outcome** and **Gaps
+supersedes and what superseded it, a link into `archive/`, and the **Decision outcome** and **Gaps
 accepted** sections verbatim. That is enough to read the project's history from
 `docs/decisions/` without opening the archive; context, drivers and rejected
 options stay in the archived file.
 
-Nothing is rewritten. Archived files keep their bytes, so the immutability rule
-still holds for them, and a `supersedes: [DEC-0003]` in a live record still names
-a real file. `adr_index.py` and `audit.py` read the top-level folder only, so
-`DECISIONS.md` lists the digest and not the archived records. The plugin's
-SessionStart hook prints a reminder once the folder reaches 50 files.
+Nothing is rewritten. Archived files keep their bytes, and `audit.py`'s
+immutability check reads the archive too, so an edit after the move is caught
+(history before the move is lost to the check, as with any rename). A
+`supersedes: [DEC-0003]` in a live record still names a real file. The index
+and the links check read the top-level folder only, so `DECISIONS.md` lists
+the digest and not the archived records, and a moved record's `../` links are
+not reported. Digests are never archived, so what they carry stays at the top
+level. The plugin's SessionStart hook prints a reminder once 50 archivable
+records exist.
 
 ## Migrating a monolithic decision log
 

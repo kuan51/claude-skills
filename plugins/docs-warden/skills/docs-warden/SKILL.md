@@ -129,7 +129,8 @@ offer to split it into one file per entry, preserving IDs and dates. Ask first.
 ### `compact` — archive the oldest decisions into a digest
 
 Triggered by the plugin's SessionStart hook (`hooks/decisions_check.py`), which
-prints a line once `docs/decisions/` holds 50 or more `DEC-*.md` files, or by
+prints a line once `docs/decisions/` holds 50 or more archivable records (not
+proposed, not a digest), or by
 "compact decisions", "too many decision records".
 
 1. `scripts/adr_compact.py <repo> --dry-run` and show the human the mapping: the
