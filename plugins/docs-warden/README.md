@@ -27,6 +27,9 @@ they rot.
   or off-standard. Never fixes silently.
 - **`maintain`** — find documents that drifted from changed code and propose edits.
 - **`decide`** — scaffold and index architecture decision records.
+- **`compact`** — once `docs/decisions/` holds fifty records, move the oldest 25
+  unchanged into `docs/decisions/archive/` and write one digest record carrying
+  their outcomes and accepted gaps. A SessionStart hook says when it is due.
 
 Repositories under a standard such as IEC 62304 take a further overlay, scaled by
 safety class. It describes document *structure* only — every regulated template

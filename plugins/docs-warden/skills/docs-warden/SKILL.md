@@ -18,8 +18,9 @@ Repositories fall into two worlds and both are in scope:
 ## Boundaries
 
 **This skill will:** propose and scaffold a document set, audit a repo against the
-standard, regenerate generated documents, scaffold and index decision records, and
-flag documents that have drifted from the code they describe.
+standard, regenerate generated documents, scaffold and index decision records,
+archive the oldest of them into a digest once there are fifty, and flag documents
+that have drifted from the code they describe.
 
 **This skill will not:** invent regulatory content, write clinical or legal claims,
 edit an accepted decision record, fix findings without asking, or govern visual
@@ -125,6 +126,24 @@ Triggered by "record a decision", "new ADR", "why did we choose".
 If the repo has a monolithic hand-written decision log with `DEC-NNN` entries,
 offer to split it into one file per entry, preserving IDs and dates. Ask first.
 
+### `compact` — archive the oldest decisions into a digest
+
+Triggered by the plugin's SessionStart hook (`hooks/decisions_check.py`), which
+prints a line once `docs/decisions/` holds 50 or more archivable records (not
+proposed, not a digest), or by
+"compact decisions", "too many decision records".
+
+1. `scripts/adr_compact.py <repo> --dry-run` and show the human the mapping: the
+   25 oldest non-proposed records that move to `docs/decisions/archive/`, and the
+   id of the digest that replaces them.
+2. On a yes, run it without `--dry-run`. Files move with `git mv`, bytes untouched;
+   the digest is a new accepted record carrying each archived record's outcome
+   and gaps verbatim, so the history still reads from `docs/decisions/` alone.
+3. Re-run `scripts/adr_index.py`, then `audit.py`.
+
+Below 50 records the script does nothing. Never edit the digest or the archived
+files; they are accepted records like any other.
+
 ## The universal set
 
 Every repo, both worlds, gets these. Full specification in
@@ -136,6 +155,7 @@ Every repo, both worlds, gets these. Full specification in
 | `docs/CONVENTIONS.md` | Current state. Edited in place. No history. |
 | `docs/decisions/DEC-NNNN-slug.md` | Why. One file per decision, immutable once accepted. |
 | `docs/decisions/README.md` | **Generated** signpost pointing at the index. No table, no counts. |
+| `docs/decisions/archive/` | The oldest records, moved here unchanged by `compact` mode; a digest record in the parent folder carries their outcomes. |
 | `docs/DECISIONS.md` | **Generated** index of those records. Never hand-edited. |
 | `docs/RUNLOG.md` | What happened outside git. Append-only, `PLANNED` then `CONFIRMED`. |
 | `docs/GLOSSARY.md` | One word, one meaning. |

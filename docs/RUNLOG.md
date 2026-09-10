@@ -19,3 +19,43 @@ archive for the quarter each entry falls in -- until the log is back under the
 limit, and leave a one-line pointer. Whole entries only.
 
 ---
+
+## 2026-09-10 — docs-warden 0.2.0: decision compaction
+
+**PLANNED** — Add `adr_compact.py`, a SessionStart hook, and tests; verify with
+`python3 plugins/docs-warden/test/test_scripts.py` and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — `python3 plugins/docs-warden/test/test_scripts.py` printed 68
+PASS, 0 FAIL (63 existing + 5 new). `node --test "test/*.test.js"` printed
+`# pass 4`, `# fail 0`. End-to-end in a scratch git repo with 50 records: the
+hook printed its line, `adr_compact.py` moved 25 files into `archive/` as git
+renames and wrote DEC-0051, `adr_index.py` reported 26 records, `audit.py`
+showed `adr-immutability` and `adr-index` pass.
+
+**SKIPPED** — The hook was not exercised through a real Claude Code session
+start; skills and hooks load at startup, so that needs the plugin installed from
+this branch and a new session (see CLAUDE.md, "Testing a plugin change").
+
+## 2026-09-10 — docs-warden 0.2.0: review fixes on PR #22
+
+**PLANNED** — Fix the seven `/code-review` findings (digest re-archived, archived
+`../` links failing the audit, `superseded_by` missing from the digest, archive
+overwrite on re-run, archived records outside the immutability check, hook and
+script counting differently, fenced headings ending a section) and re-verify.
+
+**CONFIRMED** — `python3 plugins/docs-warden/test/test_scripts.py` printed 72
+PASS, 0 FAIL (4 new checks). `node --test "test/*.test.js"` printed `# pass 4`,
+`# fail 0`. Re-ran the three-round scratch reproduction: no digest in
+`archive/`, "Chose option 1." still at the top level, `links` pass, and the
+digest line for DEC-0005 reads "superseded by DEC-0040".
+
+## 2026-09-10 — docs-warden 0.2.0: over-engineering review cuts on PR #22
+
+**PLANNED** — Apply the four cuts from the ponytail review: hook delegates to
+`adr_compact.py --check`, inline the one-caller helper, print the mapping only
+on dry run, drop the non-git rename fallback.
+
+**CONFIRMED** — `python3 plugins/docs-warden/test/test_scripts.py` printed 72
+PASS, 0 FAIL. `node --test "test/*.test.js"` printed `# fail 0`. The hook,
+fed `{"cwd": <50-record folder>}`, printed the compaction line via `--check`.
+Hook shrank from 36 to 17 lines.
