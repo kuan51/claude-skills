@@ -168,6 +168,8 @@ test('protects live config only, never the wider ~/.claude tree', () => {
   denies(shell('echo "{}" > ~/.claude/settings.json'), 'redirect into settings.json');
   denies(shell('rm ~/.claude/hooks/x.js'), 'rm of a user hook');
   denies(shell('Set-Content $env:USERPROFILE\\.claude\\settings.json "{}"', 'PowerShell'), 'Set-Content of settings.json');
+  denies(shell('cat other.json > ~/.claude/settings.json'), 'a reader with a redirect into settings.json');
+  denies(shell('python fix.py ~/.claude/settings.json'), 'an unlisted command naming settings.json');
   allows(shell('cat ~/.claude/settings.json'), 'reading settings.json');
   allows(shell('Get-Content $env:USERPROFILE\\.claude\\settings.json', 'PowerShell'), 'Get-Content of settings.json');
 });
