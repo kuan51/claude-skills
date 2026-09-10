@@ -51,7 +51,13 @@ Root-level manifest consistency: `node --test "test/*.test.js"`.
 Each plugin has its own test suite under `plugins/<name>/test/` — run before
 merging any change to that plugin. `docs-warden`'s Python scripts are checked
 with `python3 plugins/docs-warden/test/test_scripts.py` (assert-based, no
-framework).
+framework). `fabflows`'s suite covers its hook as well as its manifests:
+`node --test "plugins/fabflows/test/*.test.js"`.
+
+A plugin that ships a hook keeps that hook's allow and deny cases in a table its
+test suite drives directly. Nothing in this repository runs these suites
+automatically, so a security-adjacent code path is protected by convention alone —
+run the suite for any plugin you touch.
 
 ## Documentation
 

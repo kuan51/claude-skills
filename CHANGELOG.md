@@ -6,6 +6,21 @@ per-plugin history until entries are recorded here going forward.
 
 ## [Unreleased]
 
+### Added
+
+- **fabflows 0.1.0** -- a new plugin for sessions whose lead runs on an expensive model.
+  Ships four worker agents pinned to cheaper tiers, each scoped to the smallest tool set
+  that does its job and none able to spawn workers of its own, plus a skill carrying the
+  routing table, the four-part delegation brief, the worker report contract, and the
+  verification gate the lead must pass before accepting a worker's claim. It also ships
+  this repository's first **active plugin hook**: a dependency-free Node `PreToolUse`
+  guard that blocks package installs, commits and pushes on a default branch, destructive
+  shell commands, reads or writes of credential files, and writes to live Claude Code
+  configuration or git hooks, plus a `SubagentStop` check
+  that sends back a worker report missing its contract fields. The guard fails open by
+  design, so a bug in it degrades to no guard rather than to a session that cannot run
+  any command.
+
 ### Fixed
 
 - **docs-warden 0.1.1** -- the run log rotation rule required an entry to be both
