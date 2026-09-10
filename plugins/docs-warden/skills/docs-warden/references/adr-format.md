@@ -88,6 +88,25 @@ index or churn on every new decision.
 The script is idempotent. Running it twice must produce no diff on the second run;
 CI relies on that to detect a hand edit.
 
+## Compaction
+
+`docs/decisions/` only ever grows, so at 50 records `adr_compact.py` moves the 25
+oldest that are not `proposed` into `docs/decisions/archive/` with `git mv` and
+writes one new digest record, `DEC-NNNN-compaction-of-dec-0001-to-dec-0026.md`,
+`status: accepted`, `tags: [compaction]`.
+
+Per archived record the digest carries id, title, status, date, what it
+supersedes, a link into `archive/`, and the **Decision outcome** and **Gaps
+accepted** sections verbatim. That is enough to read the project's history from
+`docs/decisions/` without opening the archive; context, drivers and rejected
+options stay in the archived file.
+
+Nothing is rewritten. Archived files keep their bytes, so the immutability rule
+still holds for them, and a `supersedes: [DEC-0003]` in a live record still names
+a real file. `adr_index.py` and `audit.py` read the top-level folder only, so
+`DECISIONS.md` lists the digest and not the archived records. The plugin's
+SessionStart hook prints a reminder once the folder reaches 50 files.
+
 ## Migrating a monolithic decision log
 
 Some repos have one hand-written file with `DEC-NNN` entries in it. Offer to split
