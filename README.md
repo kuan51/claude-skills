@@ -34,8 +34,8 @@ so it picks up the newly installed plugin.
 - **[docs-warden](plugins/docs-warden/)** — repository documentation governance:
   scaffolds a document set scaled to what the repo actually is, audits it for what is
   missing, stale, or off-standard, keeps architecture decision records append-only
-  and indexed, and reports where the docs have drifted from the code instead of
-  silently rewriting them. Includes a plain-English Vale style and compliance
+  and indexed, compacts the oldest into a digest once fifty exist, and reports
+  where the docs have drifted from the code instead of silently rewriting them. Includes a plain-English Vale style and compliance
   overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and
   NIST SSDF.
 - **[fabflows](plugins/fabflows/)** — orchestration for a session whose lead runs on an
