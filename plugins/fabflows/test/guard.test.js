@@ -164,6 +164,12 @@ test('protects live config only, never the wider ~/.claude tree', () => {
   allows(write(path.join(PLUGIN_DIR, 'hooks', 'guard.js')), 'the plugin source in this worktree');
   allows(write(path.join(PLUGIN_DIR, 'agents', 'editor.md')), 'agent source in this worktree');
   allows(write(path.join(process.cwd(), 'CLAUDE.md')), 'a repository CLAUDE.md');
+  // Shell side: writes are blocked, reads are not. Disarming the guard needs a write.
+  denies(shell('echo "{}" > ~/.claude/settings.json'), 'redirect into settings.json');
+  denies(shell('rm ~/.claude/hooks/x.js'), 'rm of a user hook');
+  denies(shell('Set-Content $env:USERPROFILE\\.claude\\settings.json "{}"', 'PowerShell'), 'Set-Content of settings.json');
+  allows(shell('cat ~/.claude/settings.json'), 'reading settings.json');
+  allows(shell('Get-Content $env:USERPROFILE\\.claude\\settings.json', 'PowerShell'), 'Get-Content of settings.json');
 });
 
 test('git ops are blocked on a default branch and allowed elsewhere', () => {

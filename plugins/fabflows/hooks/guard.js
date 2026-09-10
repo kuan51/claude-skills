@@ -144,6 +144,10 @@ function isProtectedPath(p) {
 }
 
 // Shell-side equivalent: text matching, since there is no path argument to resolve.
+// Only writes are blocked -- a redirect, or a command that moves, copies, deletes or
+// writes a file. Reading live config is fine; disarming the guard needs a write.
+const WRITER =
+  /^(rm|mv|cp|tee|ln|sed|truncate|remove-item|move-item|copy-item|set-content|add-content|out-file|ri|mi|ci|sc|ac)\b|>/i;
 const PROTECTED_SHELL =
   /(^|[\s"'>])(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](settings\.json|settings\.local\.json|hooks[\\/]|plugins[\\/])|[\\/]\.git[\\/]hooks[\\/]/i;
 
@@ -223,7 +227,7 @@ function checkShell(command, cwd) {
       deny('fabflows: staging a credential-bearing file is blocked.');
     }
 
-    if (PROTECTED_SHELL.test(seg)) {
+    if (WRITER.test(seg) && PROTECTED_SHELL.test(seg)) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
     }
 
