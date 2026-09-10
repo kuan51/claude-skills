@@ -31,6 +31,7 @@ from _common import (
     DECISIONS,
     FORGES,
     FORGE_DEFAULT,
+    DECISIONS_ARCHIVE_DIR,
     DECISIONS_DIR,
     GENERATED_MARKER,
     GLOSSARY,
@@ -215,6 +216,7 @@ def long_lived_docs(repo):
     exempt = {(repo / RUNLOG).resolve()}
     archive = (repo / RUNLOG_ARCHIVE_DIR).resolve()
     decisions = (repo / DECISIONS_DIR).resolve()
+    adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
     for path in sorted(docs.rglob("*.md")):
         if path.name == "README.md":
             continue
@@ -228,7 +230,7 @@ def long_lived_docs(repo):
         # nobody is allowed to keep. Whether the front matter itself is even
         # parseable is checked separately, by check_adr_immutability.
         # The archive adr_compact.py moves them into is the same kind of file.
-        if path.resolve().parent == decisions or (decisions / "archive") in path.resolve().parents:
+        if path.resolve().parent == decisions or adr_archive in path.resolve().parents:
             continue
         yield path
 
@@ -300,7 +302,10 @@ def check_adr_immutability(repo):
         )
     if not is_git_repo(repo):
         return check("adr-immutability", "skipped", "Not a git repository.", "")
-    records = [r for r in load_adrs(repo) if r["status"] == "accepted"]
+    # Archived records are still accepted records; git mv'd, so their log
+    # starts at the move and post-move edits are what this can see.
+    records = [r for r in load_adrs(repo) + load_adrs(repo, archived=True)
+               if r["status"] == "accepted"]
     if not records:
         return check("adr-immutability", "skipped", "No accepted decision records.", "")
     violations, uncommitted, unaccepted = [], [], []
@@ -566,7 +571,12 @@ def check_links(repo):
     if not docs:
         return check("links", "skipped", "No documentation files to check.", "")
     broken, checked = [], 0
+    adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
     for path in docs:
+        # An archived record sits one folder deeper than it was written, so
+        # its ../ links break; it is immutable, so the fix cannot be to edit it.
+        if adr_archive in path.resolve().parents:
+            continue
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:

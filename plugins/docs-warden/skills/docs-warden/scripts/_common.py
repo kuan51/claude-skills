@@ -28,6 +28,7 @@ RUNLOG = "docs/RUNLOG.md"
 GLOSSARY = "docs/GLOSSARY.md"
 SECURITY = "docs/SECURITY.md"
 DECISIONS_DIR = "docs/decisions"
+DECISIONS_ARCHIVE_DIR = "docs/decisions/archive"
 RUNLOG_ARCHIVE_DIR = "docs/runlog"
 MANIFEST = ".docs-warden.yml"
 
@@ -158,20 +159,21 @@ def parse_glossary(path: Path):
     return entries
 
 
-def adr_files(repo: Path):
-    """Decision record files, sorted by id."""
-    decisions = repo / DECISIONS_DIR
+def adr_files(repo: Path, archived: bool = False):
+    """Decision record files, sorted by id. Live ones by default; archived=True
+    reads the folder adr_compact.py moves the oldest into instead."""
+    decisions = repo / (DECISIONS_ARCHIVE_DIR if archived else DECISIONS_DIR)
     if not decisions.is_dir():
         return []
     return sorted(p for p in decisions.glob("DEC-*.md") if p.is_file())
 
 
-def load_adrs(repo: Path):
+def load_adrs(repo: Path, archived: bool = False):
     """Every decision record as a dict, with superseded_by derived from the
     other records rather than stored -- that is what keeps accepted files
     immutable."""
     records = []
-    for path in adr_files(repo):
+    for path in adr_files(repo, archived):
         front, _ = read_front_matter(path)
         # Fall back to the filename prefix (DEC-0007-slug -> DEC-0007) so a
         # record with broken front matter still appears in the index instead of
@@ -185,6 +187,7 @@ def load_adrs(repo: Path):
                 "status": front.get("status", ""),
                 "date": str(front.get("date", "")),
                 "supersedes": front.get("supersedes") or [],
+                "tags": front.get("tags") or [],
                 "superseded_by": [],
             }
         )
