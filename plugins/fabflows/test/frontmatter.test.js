@@ -41,6 +41,16 @@ const EXPECTED_MODEL = {
   editor: 'sonnet',
   'test-runner': 'sonnet',
 };
+
+// Effort is pinned so a worker does not inherit the lead's session effort. Haiku 4.5 has no
+// effort levels, so the Haiku workers must not declare one. CLAUDE_CODE_EFFORT_LEVEL, when set,
+// still overrides these pins.
+const EXPECTED_EFFORT = {
+  explorer: undefined,
+  researcher: undefined,
+  editor: 'medium',
+  'test-runner': 'low',
+};
 const EXPECTED_NAMES = Object.keys(EXPECTED_TOOLS);
 
 const NAME_RE = /^[a-z0-9-]+$/;
@@ -65,6 +75,11 @@ test('every expected agent exists with its scoped tool set and pinned model tier
       EXPECTED_MODEL[name],
       `${name}.md must pin model: ${EXPECTED_MODEL[name]} -- found "${fields.model}". ` +
         'Without an explicit model the worker silently inherits the lead, which defeats the plugin.'
+    );
+    assert.equal(
+      fields.effort,
+      EXPECTED_EFFORT[name],
+      `${name}.md must declare effort: ${EXPECTED_EFFORT[name] ?? '(none)'} -- found "${fields.effort}"`
     );
     for (const forbidden of FORBIDDEN_TOOLS) {
       assert.ok(
