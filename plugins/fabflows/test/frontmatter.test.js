@@ -169,6 +169,16 @@ test('the skill routes to the namespaced agents that actually ship', () => {
   }
 });
 
+test('the skill fits the post-compaction re-injection cap', () => {
+  // Claude Code re-injects an invoked skill after compaction, capped at 5,000 tokens.
+  // 20,000 characters is a rough proxy (about four characters per token), not an exact count.
+  const skill = fs.readFileSync(path.join(SKILLS_DIR, 'fabflows', 'SKILL.md'), 'utf8');
+  assert.ok(
+    skill.length <= 20000,
+    `SKILL.md is ${skill.length} characters; keep it under 20,000 so it survives compaction whole`
+  );
+});
+
 test('the SubagentStop contract check matches every worker', () => {
   const hooks = JSON.parse(fs.readFileSync(path.join(PLUGIN_DIR, 'hooks', 'hooks.json'), 'utf8'));
   const matchers = hooks.hooks.SubagentStop.map((e) => new RegExp(e.matcher));
