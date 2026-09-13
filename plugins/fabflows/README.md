@@ -51,39 +51,19 @@ list, so the delegation tree stays one level deep and the cost stays bounded.
 
 ## The build loop
 
-`fabflows:build` takes one spec'd change through build and review without the lead
-steering each step:
-
-1. An Opus `editor` implements the spec on the checked-out feature branch, runs the
-   tests, and commits.
-2. A fresh `refuter` -- on Fable by default -- reads the diff against the spec, re-runs
-   the tests itself, and returns ACCEPT or REWORK with must-fix findings.
-3. On REWORK, a fresh builder gets the must-fix list and the branch diff. After two
-   rework rounds the loop stops and hands back to the lead.
-
-The lead writes the spec, checks that the working tree is clean and the right branch is
-checked out, and passes `spec`, `branch`, `baseRef` and `testCommand` (optionally
-`reviewerModel`). The script refuses `main` and `master`. It never
-merges, pushes or reverts: on ACCEPT the lead re-runs the suite itself before accepting,
-and merging to the default branch stays a pull request.
-
-Two limits are worth knowing. A workflow cannot resume an agent, so each rework round
-starts a fresh builder rather than the same one with its context. And for a small
-change, one model working alone at low effort measured cheaper than any build-and-review
-split, so the loop is for sizeable specs. [DEC-0004](../../docs/DECISIONS.md) records why.
+`fabflows:build` takes one spec'd change through build and review: an Opus `editor`
+implements the spec on the checked-out feature branch and commits, a fresh `refuter`
+(Fable by default) reviews the diff and re-runs the tests, and after two rework rounds
+the loop hands back to the lead. It never merges, pushes, or reverts. The
+[skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
+[DEC-0004](../../docs/DECISIONS.md) records why.
 
 ## Long sessions
 
-- Run the lead at low effort for routine turns and raise it for hard ones. On Fable 5.1
-  with an API key or a Claude subscription, changing effort keeps the prompt cache; on
-  other models it forces a full re-read, so pick effort at session start there.
-- Resume a worker with `SendMessage` for follow-ups in the same area instead of spawning
-  a fresh one. It keeps its context.
-- A Fable advisor re-reads the whole transcript, uncached, on every call, which gets
-  expensive once a session is long.
-- On an API key the prompt cache lives five minutes. If your sessions sit idle longer
-  than that between turns, `"promptCacheTtl": "1h"` in your settings keeps it warm, at a
-  higher cache-write rate.
+The [skill](skills/fabflows/SKILL.md) carries the long-session habits. One setting is
+yours to make: on an API key the prompt cache lives five minutes, so if your sessions sit
+idle longer than that between turns, `"promptCacheTtl": "1h"` in your settings keeps it
+warm, at a higher cache-write rate.
 
 ## Why not the built-in Explore agent
 

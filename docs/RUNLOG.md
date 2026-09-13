@@ -78,3 +78,18 @@ agents, the effort pins, and a live `fabflows:build` run need the plugin install
 from this branch and a new session (see CLAUDE.md, "Testing a plugin change"). That
 run should set `FABFLOWS_PROBE` to find out whether the guard fires inside workflow
 agents, which DEC-0004 leaves open.
+
+## 2026-09-13 — fabflows 0.2.0: over-engineering review cuts
+
+**PLANNED** — Apply the ten cuts from the ponytail review: drop the stringified-args
+parse, merge the two not-started exits, hard-code the rework cap, drop the schema
+fields the script never reads, the `next` gate string, the `phase()` calls, the meta
+test, and the explicit `undefined` effort entries, and shrink the README sections
+that repeat the skill. Verify with `node --test "plugins/fabflows/test/*.test.js"`
+and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"` printed `tests 27`,
+`pass 27`, `fail 0` (one fewer than before, because the meta test is gone). `node --test
+"test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. A search of `plugins/fabflows`
+for `maxRework`, `testOutput`, `deviations`, `GATE`, `phase(` and `result.next` found
+nothing.
