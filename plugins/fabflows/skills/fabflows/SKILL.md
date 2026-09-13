@@ -140,8 +140,8 @@ Before starting it:
 2. Confirm `git status --porcelain` prints nothing and `git rev-parse --abbrev-ref HEAD`
    prints the feature branch -- never the default branch.
 3. Pass `spec`, `branch`, `baseRef` (from `git rev-parse HEAD`) and `testCommand`.
-   Optional: `maxRework` (default 2) and `reviewerModel` (default `fable`; pass `opus`
-   where Fable is not available).
+   Optional: `reviewerModel` (default `fable`; pass `opus` where Fable is not
+   available).
 
 On `accepted`, run the gate yourself: re-run `testCommand`, read
 `git diff --stat <baseRef>..HEAD`, and check that one must-fix from an earlier round is

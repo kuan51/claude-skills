@@ -56,8 +56,6 @@ const EXPECTED_MODEL = {
 // effort levels, so the Haiku workers must not declare one. CLAUDE_CODE_EFFORT_LEVEL, when set,
 // still overrides these pins.
 const EXPECTED_EFFORT = {
-  explorer: undefined,
-  researcher: undefined,
   editor: 'medium',
   'test-runner': 'low',
   refuter: 'medium',

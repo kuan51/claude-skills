@@ -63,7 +63,7 @@ steering each step:
 
 The lead writes the spec, checks that the working tree is clean and the right branch is
 checked out, and passes `spec`, `branch`, `baseRef` and `testCommand` (optionally
-`maxRework` and `reviewerModel`). The script refuses `main` and `master`. It never
+`reviewerModel`). The script refuses `main` and `master`. It never
 merges, pushes or reverts: on ACCEPT the lead re-runs the suite itself before accepting,
 and merging to the default branch stays a pull request.
 
