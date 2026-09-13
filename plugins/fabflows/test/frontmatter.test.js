@@ -11,7 +11,7 @@ const SKILLS_DIR = path.join(PLUGIN_DIR, 'skills');
 
 // Unlike ciso's roster, Write and Edit are NOT forbidden here: `editor` exists to change
 // code and `test-runner` exists to create test files, so both legitimately need them.
-// `Agent` is forbidden for all four, which is what keeps the delegation tree one level
+// `Agent` is forbidden for every worker, which is what keeps the delegation tree one level
 // deep -- a worker that can spawn workers makes cost and blast radius unbounded.
 const FORBIDDEN_TOOLS = ['Agent'];
 
@@ -28,18 +28,28 @@ const FORBIDDEN_TOOLS = ['Agent'];
 //                  build it is asked to prove.
 //   - test-runner: Sonnet for coverage judgement. Write is for creating test files only;
 //                  the agent body forbids editing production code.
+//   - refuter:     Opus, because review is judgement with little output -- the cheap place
+//                  for a stronger model -- and Opus 5 review stays accurate at medium effort.
+//                  Bash runs the diff and the tests; no Edit or Write, so it cannot fix what
+//                  it is judging.
+//   - investigator: Opus at high effort for hypothesis-driven narrowing. Same tools as the
+//                  refuter for the same reason: it gathers evidence, the lead decides.
 // Keep this in sync with plugins/fabflows/agents/*.md whenever one is added or changed.
 const EXPECTED_TOOLS = {
   explorer: 'Read, Grep, Glob',
   researcher: 'Read, Grep, Glob, WebFetch, WebSearch',
   editor: 'Read, Edit, Write, Grep, Glob, Bash',
   'test-runner': 'Read, Grep, Glob, Bash, Write',
+  refuter: 'Read, Grep, Glob, Bash',
+  investigator: 'Read, Grep, Glob, Bash',
 };
 const EXPECTED_MODEL = {
   explorer: 'haiku',
   researcher: 'haiku',
   editor: 'sonnet',
   'test-runner': 'sonnet',
+  refuter: 'opus',
+  investigator: 'opus',
 };
 
 // Effort is pinned so a worker does not inherit the lead's session effort. Haiku 4.5 has no
@@ -50,6 +60,8 @@ const EXPECTED_EFFORT = {
   researcher: undefined,
   editor: 'medium',
   'test-runner': 'low',
+  refuter: 'medium',
+  investigator: 'high',
 };
 const EXPECTED_NAMES = Object.keys(EXPECTED_TOOLS);
 
@@ -153,6 +165,17 @@ test('the skill routes to the namespaced agents that actually ship', () => {
       skill.includes(`fabflows:${name}`),
       `SKILL.md must route to fabflows:${name} -- a bare "${name}" will not resolve, ` +
         'because plugin agents are namespaced'
+    );
+  }
+});
+
+test('the SubagentStop contract check matches every worker', () => {
+  const hooks = JSON.parse(fs.readFileSync(path.join(PLUGIN_DIR, 'hooks', 'hooks.json'), 'utf8'));
+  const matchers = hooks.hooks.SubagentStop.map((e) => new RegExp(e.matcher));
+  for (const name of EXPECTED_NAMES) {
+    assert.ok(
+      matchers.some((re) => re.test(`fabflows:${name}`)),
+      `hooks.json SubagentStop must match fabflows:${name}, or that worker's report goes unchecked`
     );
   }
 });

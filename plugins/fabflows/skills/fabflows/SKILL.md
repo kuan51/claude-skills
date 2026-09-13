@@ -19,10 +19,10 @@ makes delegation work, reject a report that arrives without its contract fields,
 re-verify a worker's claims before accepting them, and say plainly when a task should
 not be delegated at all.
 
-**This skill will not:** delegate deep debugging, architecture decisions, or
-cross-file refactors; accept a worker's word as evidence; write a delegation log file;
-or edit code itself. The lead integrates and verifies -- it does not become a fifth
-worker.
+**This skill will not:** delegate the root-cause decision on a bug, architecture
+decisions, or cross-file refactors; accept a worker's word as evidence; write a
+delegation log file; or edit code itself. The lead integrates and verifies -- it does
+not become another worker.
 
 ## Non-negotiables
 
@@ -49,14 +49,16 @@ worker.
 | research web or docs, distil a source | `fabflows:researcher` | Haiku, read-only |
 | edit, implement, multi-file change | `fabflows:editor` | Sonnet |
 | write or run tests | `fabflows:test-runner` | Sonnet |
-| deep debug, architecture, cross-file refactor | the lead does it, or escalates a tier | -- |
+| review a finished change against its spec, re-running its tests | `fabflows:refuter` | Opus, read-only + Bash |
+| reproduce and narrow a self-contained failure | `fabflows:investigator` | Opus, read-only + Bash |
+| root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | -- |
 
 The built-in `Explore` agent is not a cheap substitute for `fabflows:explorer`. It
 inherits the main conversation's model, capped at Opus, so under an expensive lead it
 costs roughly what doing the search yourself would. A plugin cannot override a built-in
 agent, so the namespaced worker is the way to get the cheap tier.
 
-None of the four workers can spawn a worker of its own -- `Agent` is absent from every
+None of the workers can spawn a worker of its own -- `Agent` is absent from every
 tool list. The delegation tree is one level deep on purpose.
 
 ## The delegation brief
@@ -103,6 +105,8 @@ this pattern fails.
 | `fabflows:researcher` | Fetch one cited URL and confirm it supports the claim attached to it. |
 | `fabflows:editor` | Re-read every changed file. Run the build or tests yourself and read the output. |
 | `fabflows:test-runner` | Re-run the command yourself. A pasted pass you did not reproduce is not a pass. |
+| `fabflows:refuter` | Re-run the test command yourself and open one cited finding at its `path:line`. |
+| `fabflows:investigator` | Run the reproduction command yourself and confirm the failure it reports. |
 
 Cross-check each claim against real tool output. Treat anything you cannot confirm as
 `UNVERIFIABLE` and say so -- do not quietly promote it to done.
