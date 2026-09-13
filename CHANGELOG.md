@@ -20,6 +20,17 @@ per-plugin history until entries are recorded here going forward.
   that sends back a worker report missing its contract fields. The guard fails open by
   design, so a bug in it degrades to no guard rather than to a session that cannot run
   any command.
+- **fabflows 0.2.0** -- two Opus agents and a build loop. `refuter` reviews a finished
+  change by trying to show it is not done: it reads the diff against the spec, re-runs
+  the tests itself, and returns ACCEPT or REWORK with must-fix findings. `investigator`
+  reproduces a self-contained failure and narrows it to `file:line` with ranked
+  hypotheses, leaving the root-cause call to the lead. `fabflows:build` is a Workflow
+  script that takes one spec'd change through a feature branch: an Opus builder
+  implements and commits, a fresh Fable reviewer judges, and after two rework rounds it
+  hands back to the lead. The editor and test-runner now pin their effort (medium and
+  low) instead of inheriting the lead's, and the skill gains guidance on who leads, lead
+  effort, and long sessions. DEC-0004 records why Fable stays the lead rather than the
+  coder.
 
 ### Fixed
 

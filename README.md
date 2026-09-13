@@ -39,10 +39,12 @@ so it picks up the newly installed plugin.
   overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and
   NIST SSDF.
 - **[fabflows](plugins/fabflows/)** — orchestration for a session whose lead runs on an
-  expensive model: four worker agents pinned to cheaper tiers (`explorer` and
-  `researcher` on Haiku, `editor` and `test-runner` on Sonnet), each scoped to the
-  smallest tool list that does its job, plus a skill that makes the lead write a proper
-  delegation brief and re-verify what comes back instead of trusting it. Ships an
+  expensive model: six worker agents, each pinned to a tier (`explorer` and
+  `researcher` on Haiku, `editor` and `test-runner` on Sonnet, `refuter` and
+  `investigator` on Opus) and scoped to the smallest tool list that does its job; a
+  skill that makes the lead write a proper delegation brief and re-verify what comes
+  back instead of trusting it; and `fabflows:build`, a deterministic build-and-review
+  loop for a spec'd change. Ships an
   **active guard hook** that blocks package installs, default-branch commits,
   destructive commands, and credential reads and writes — read that plugin's README
   before installing, including its blind spots.

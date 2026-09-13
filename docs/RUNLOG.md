@@ -59,3 +59,22 @@ on dry run, drop the non-git rename fallback.
 PASS, 0 FAIL. `node --test "test/*.test.js"` printed `# fail 0`. The hook,
 fed `{"cwd": <50-record folder>}`, printed the compaction line via `--check`.
 Hook shrank from 36 to 17 lines.
+
+## 2026-09-13 — fabflows 0.2.0: Fable lead, Opus build loop
+
+**PLANNED** — Pin worker effort, add the `refuter` and `investigator` agents and the
+`fabflows:build` workflow, update the skill and docs, and bump to 0.2.0. Verify
+each commit with `node --test "plugins/fabflows/test/*.test.js"` and
+`node --test "test/*.test.js"`.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"` printed `tests 28`,
+`pass 28`, `fail 0`: the 18 existing tests plus 10 new (the `SubagentStop` matcher
+check, the skill size check, and eight in `build.test.js`). `node --test
+"test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. `adr_index.py` reported 4
+records. Each commit was tested before it was made: 18, 19, 27 and 28 passing.
+
+**SKIPPED** — Nothing was exercised in a real Claude Code session: the two new
+agents, the effort pins, and a live `fabflows:build` run need the plugin installed
+from this branch and a new session (see CLAUDE.md, "Testing a plugin change"). That
+run should set `FABFLOWS_PROBE` to find out whether the guard fires inside workflow
+agents, which DEC-0004 leaves open.
