@@ -80,9 +80,9 @@ those packages:
 
 These packages default to their own thresholds, and we keep them, because one set
 of numbers maintained upstream beats two sets drifting apart here. The default
-config sets both `proselint` and `ai-tells` to `warning` as a whole, and this
-repository promotes a short list of `ai-tells` punctuation and filler rules to
-`error` in `.vale.ini`, with the reason written beside it.
+config sets both `proselint` and `ai-tells` to `warning` as a whole. Promote a
+rule to `error` in your own `.vale.ini` once your docs pass it, and write the
+reason beside it.
 
 ## Quoted prose is linted too
 

@@ -47,9 +47,11 @@ deliberately dropped.
 **In anything touching patient safety, the condition comes before the
 instruction.**
 
+<!-- vale off -->
 | Wrong | Right |
 |-------|-------|
 | Stop the procedure if the sensor is disconnected. | If the sensor is disconnected, stop the procedure. |
+<!-- vale on -->
 
 A reader following a procedure under pressure acts on the first clause they read.
 Putting the instruction first means they can act before they learn it does not
