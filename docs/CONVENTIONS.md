@@ -16,20 +16,20 @@ components, had a real alternative), in a record under [DECISIONS.md](DECISIONS.
 
 Node.js (built-in `node --test` runner, no test framework dependency) for
 JavaScript checks. Python 3 for the `docs-warden` plugin's scripts, using only
-the standard library except `_common.py`'s `import yaml` (PyYAML — not
+the standard library except `_common.py`'s `import yaml` (PyYAML, not
 currently declared in a `requirements.txt` anywhere in the repo; install it
 yourself before running docs-warden's scripts locally).
 
 ## Repository layout
 
-- `plugins/<name>/` — one self-contained plugin per directory, each with its
+- `plugins/<name>/`: one self-contained plugin per directory, each with its
   own `.claude-plugin/plugin.json`, `skills/`, and `test/`.
-- `.claude-plugin/marketplace.json` — the marketplace manifest; must agree
+- `.claude-plugin/marketplace.json`: the marketplace manifest; must agree
   with each plugin's `plugin.json` on `name` and `version` (see
   [CLAUDE.md](../CLAUDE.md)).
-- `test/` — root-level tests, currently just marketplace/plugin manifest
+- `test/`: root-level tests, currently just marketplace/plugin manifest
   consistency checks.
-- `docs/` — this document set, plus `docs/superpowers/` (implementation plans
+- `docs/`: this document set, plus `docs/superpowers/` (implementation plans
   and specs from past feature work, kept for historical reference).
 
 ## Branches and commits
@@ -49,16 +49,16 @@ plugin entries all use the same lowercase-hyphenated name.
 
 Root-level manifest consistency: `node --test "test/*.test.js"`.
 
-Each plugin has its own test suite under `plugins/<name>/test/` — run before
+Each plugin has its own test suite under `plugins/<name>/test/`: run before
 merging any change to that plugin. `docs-warden`'s Python scripts are checked
 with `python3 plugins/docs-warden/test/test_scripts.py` (assert-based, no
 framework). `fabflows`'s suite covers its hook as well as its manifests:
 `node --test "plugins/fabflows/test/*.test.js"`.
 
-A plugin that ships a hook keeps that hook's allow and deny cases in a table its
+A plugin that includes a hook keeps that hook's allow and deny cases in a table its
 test suite drives directly. Nothing in this repository runs these suites
-automatically, so a security-adjacent code path is protected by convention alone —
-run the suite for any plugin you touch.
+automatically, so a security-adjacent code path is protected by convention alone.
+Run the suite for any plugin you touch.
 
 ## Documentation
 
