@@ -97,7 +97,9 @@ A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
 - **Live configuration**: `~/.claude/settings.json`, `~/.claude/hooks/`,
   `~/.claude/plugins/`, and any `.git/hooks/`. This is what stops a worker from
   disarming the guard. Reading them is allowed, and so is running a script that lives
-  there (`node ~/.claude/plugins/cache/.../x.js`). Only writes and redirects are blocked.
+  there (`node ~/.claude/plugins/cache/.../x.js`) and `git -C` against a marketplace
+  clone under `~/.claude/plugins/marketplaces/`. Only writes and redirects are blocked,
+  including copying files into the plugin cache.
   Everything else under `~/.claude/` stays writable.
 
 A `SubagentStop` hook checks that a worker's final report actually includes its contract

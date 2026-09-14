@@ -179,6 +179,24 @@ test('protects live config only, never the wider ~/.claude tree', () => {
   allows(shell('node $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.js', 'PowerShell'), 'running a plugin script from PowerShell');
   denies(shell('node ~/.claude/plugins/cache/x/y/1.0.0/s.js > ~/.claude/settings.json'), 'running a plugin script with a redirect into settings.json');
   denies(shell('node ~/.claude/settings.json'), 'an interpreter naming settings.json');
+  // Windows executable suffixes and runner subcommands.
+  allows(shell('node.exe C:/Users/me/.claude/plugins/cache/x/y/1.0.0/s.js'), 'node.exe');
+  allows(shell('python.exe $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.py', 'PowerShell'), 'python.exe');
+  for (const cmd of ['npx ~/.claude/plugins/cache/x/y/1.0.0/s.js', 'deno run ~/.claude/plugins/cache/x/y/1.0.0/s.ts', 'uv run ~/.claude/plugins/cache/x/y/1.0.0/s.py']) {
+    allows(shell(cmd), cmd);
+  }
+  // Read-only commands that merely name a protected path.
+  for (const cmd of ['cd ~/.claude/plugins/cache/x', 'rg guard ~/.claude/plugins/cache', 'test -f ~/.claude/settings.json', '[ -f ~/.claude/settings.json ]', 'echo ~/.claude/plugins/cache', 'sha256sum ~/.claude/hooks/x.js']) {
+    allows(shell(cmd), cmd);
+  }
+  allows(shell('Get-Item $env:USERPROFILE\\.claude\\plugins\\cache', 'PowerShell'), 'Get-Item');
+  allows(shell('Set-Location $env:USERPROFILE\\.claude\\plugins\\cache', 'PowerShell'), 'Set-Location');
+  denies(shell('echo "{}" > ~/.claude/hooks/x.js'), 'echo with a redirect into a hook');
+  // The marketplace clone may be fetched and checked out; the copy into the cache may not.
+  allows(shell('git -C ~/.claude/plugins/marketplaces/claude-skills fetch origin'), 'git fetch in the marketplace clone');
+  allows(shell('git -C ~/.claude/plugins/marketplaces/claude-skills checkout feature'), 'git checkout in the marketplace clone');
+  denies(shell('git -C ~/.claude/plugins/cache/x/y/1.0.0 checkout feature'), 'git checkout in the plugin cache');
+  denies(shell('cp -r ~/.claude/plugins/marketplaces/claude-skills/plugins/x/. ~/.claude/plugins/cache/claude-skills/x/1.0.0/'), 'copying into the plugin cache');
 });
 
 test('git ops are blocked on a default branch and allowed elsewhere', () => {

@@ -66,7 +66,10 @@ cp -r ~/.claude/plugins/marketplaces/claude-skills/plugins/<name>/. \
       ~/.claude/plugins/cache/claude-skills/<name>/<version>/
 ```
 
-then add a matching entry to `~/.claude/plugins/installed_plugins.json`. **Skills are loaded into the
+then add a matching entry to `~/.claude/plugins/installed_plugins.json`. With the fabflows guard
+active, Claude can run the two `git -C` lines but not the `cp` or the `installed_plugins.json`
+edit: those write into the live plugin cache, which the guard protects on purpose, so the user runs
+them. **Skills are loaded into the
 session at startup**, so a newly installed skill is not invocable until a new session begins. Plan
 for a restart rather than assuming a mid-session rescan. Revert by deleting the version directory,
 dropping its `installed_plugins.json` entry, and checking the marketplace clone back to `master`.
