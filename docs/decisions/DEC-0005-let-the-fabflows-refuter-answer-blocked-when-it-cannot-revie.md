@@ -29,14 +29,14 @@ raised it.
 
 ## Considered options
 
-1. **`BLOCKED` in any round, escalating** — add `BLOCKED` and an optional `blocker` to the
+1. **`BLOCKED` in any round, escalating** -- add `BLOCKED` and an optional `blocker` to the
    verdict; the loop escalates it with reason `reviewer-blocked`.
-2. **`BLOCKED` in round 1 only** — treat a later-round block as `REWORK`, on the theory
+2. **`BLOCKED` in round 1 only** -- treat a later-round block as `REWORK`, on the theory
    that the builder broke the runner.
-3. **A pre-flight test run** — the lead runs the test command on the clean tree before
+3. **A pre-flight test run** -- the lead runs the test command on the clean tree before
    starting the loop, and the schema stays as it is.
-4. **Keep two verdicts** — the reviewer files "could not test" as a must-fix.
-5. **Retry the review** — on a block, spawn a fresh reviewer once before escalating.
+4. **Keep two verdicts** -- the reviewer files "could not test" as a must-fix.
+5. **Retry the review** -- on a block, spawn a fresh reviewer once before escalating.
 
 ## Decision outcome
 
