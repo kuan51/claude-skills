@@ -57,11 +57,12 @@ function block(reason) {
 
 const INSTALL = [
   /^npm\s+(i|install|ci|add)\b/i,
-  /^(pnpm|yarn|bun)\s+(i|install|add|a)\b/i,
+  /^(pnpm|yarn|bun)\s+(global\s+)?(i|install|add|a)\b/i,
   /^pip3?\s+install\b/i,
+  /^python3?\s+-m\s+pip\s+install\b/i,
   /^uv\s+(pip\s+install|add)\b/i,
   /^dotnet\s+(add\s+package|tool\s+install)\b/i,
-  /^(cargo|go|gem)\s+install\b/i,
+  /^(cargo|go|gem)\s+(install|add|get)\b/i,
   /^apt(-get)?\s+install\b/i,
   /^(brew|winget|choco|scoop)\s+install\b/i,
   /^install-(module|package|script)\b/i,
@@ -138,7 +139,7 @@ const PROTECTED_ROOTS = ['settings.json', 'settings.local.json', 'hooks', 'plugi
 
 function isProtectedPath(p) {
   if (!p) return false;
-  const n = norm(p);
+  const n = norm(p.replace(/^~(?=[\\/])/, os.homedir()));
   if (/(^|\/)\.git\/hooks(\/|$)/.test(n)) return true;
   return PROTECTED_ROOTS.some((root) => under(n, root));
 }
@@ -149,9 +150,23 @@ function isProtectedPath(p) {
 // everything else that names a protected path is denied. A redirect anywhere in the
 // segment denies regardless, since `cat x > settings.json` starts with a reader.
 const READ_ONLY =
-  /^(cat|less|more|head|tail|grep|jq|stat|file|wc|diff|ls|get-content|gc|type|select-string|get-childitem|gci|dir|test-path)\b/i;
-const PROTECTED_SHELL =
-  /(^|[\s"'>])(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](settings\.json|settings\.local\.json|hooks[\\/]|plugins[\\/])|[\\/]\.git[\\/]hooks[\\/]/i;
+  /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|ls|echo|printf|test|\[|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash)(\.exe)?(\s|$)/i;
+// `~/.claude/` in every spelling a shell string can carry it.
+const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;
+const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)`, 'i');
+// Running a script that ships in the plugin cache or a user hook is a read of it, not a
+// write. Only a path directly after the interpreter (past its flags) qualifies, so
+// `python fix.py ~/.claude/settings.json` stays denied. Redirects still deny below.
+const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^(node|deno|bun|npx|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?\s+(run\s+)?(-\S+\s+)*["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
+// The marketplace clone is source, not live config: nothing under it runs until it is
+// copied into the cache, and that copy stays denied. So git may fetch and check it out.
+// Only these subcommands, and checkout/switch take one bare branch: `worktree add`,
+// `clone`, and `-c core.hooksPath=` can all write outside the clone.
+const MARKETPLACE_GIT = new RegExp(String.raw`^git\s+-C\s+["']?${CLAUDE_HOME}plugins[\\/]marketplaces[\\/](?:(?!\.\.)[^\s"'])*["']?\s+(fetch|pull|status|log|show|diff|rev-parse|ls-remote|(checkout|switch)\s+[^\s-]\S*\s*$)`, 'i');
+// Flags that make an otherwise read-only command execute or delete: find -exec/-delete,
+// rg --pre, fd -x, git --upload-pack. A segment carrying one is never read-only.
+const EXEC_FLAGS =
+  /\s(-delete|-exec(dir)?|-ok(dir)?|-fprint\w*|--pre(-glob)?|--search-zip|--exec(-batch)?|--upload-pack|--receive-pack)(\s|=|$)|^fd(\.exe)?\s+(.*\s)?-[xX](\s|$)/;
 
 // ---------------------------------------------------------------- git state
 function git(args, cwd) {
@@ -194,10 +209,11 @@ function checkShell(command, cwd) {
 
   // Split on shell separators, then anchor every pattern at segment start. That is what
   // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
-  // to parse quoting.
+  // to parse quoting. Newlines and `&` separate too, a leading `(` is dropped, and a
+  // `VAR=value` prefix is stripped, so none of them hides a command from the anchor.
   const segments = command
-    .split(/&&|\|\||[;|]/)
-    .map((s) => s.trim())
+    .split(/&&|\|\||[;|&\r\n]/)
+    .map((s) => s.replace(/^[\s(]+/, '').replace(/^(\w+=\S*\s+)+/, '').trim())
     .filter(Boolean);
 
   for (const seg of segments) {
@@ -229,7 +245,9 @@ function checkShell(command, cwd) {
       deny('fabflows: staging a credential-bearing file is blocked.');
     }
 
-    if (PROTECTED_SHELL.test(seg) && (!READ_ONLY.test(seg) || seg.includes('>'))) {
+    const readOnly =
+      RUNS_PROTECTED_SCRIPT.test(seg) || (!EXEC_FLAGS.test(seg) && (READ_ONLY.test(seg) || MARKETPLACE_GIT.test(seg)));
+    if (PROTECTED_SHELL.test(seg) && (seg.includes('>') || !readOnly)) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
     }
 
@@ -272,8 +290,8 @@ function preToolUse(input) {
     return;
   }
 
-  if (tool === 'Edit' || tool === 'Write') {
-    const target = ti.file_path;
+  if (tool === 'Edit' || tool === 'Write' || tool === 'NotebookEdit') {
+    const target = ti.file_path || ti.notebook_path;
     if (isProtectedPath(target)) {
       deny('fabflows: writing to live Claude Code configuration or a git hook is blocked. That is what stops a worker from disarming this guard.');
     }
@@ -292,9 +310,11 @@ function subagentStop(input) {
   // A missing or unreadable transcript throws, and main() fails open.
   const tail = fs.readFileSync(input.agent_transcript_path, 'utf8').slice(-40000);
 
+  // The tail is raw JSONL, where `"command"` and `"output"` appear as keys in every tool
+  // call. A word followed by a quote is a key, not prose, and does not count.
   const groups = [
     [/files?\s+(touched|changed)|modified files/i, 'files touched'],
-    [/\bcommand\b|\boutput\b|exit code/i, 'commands and their real output'],
+    [/\b(command|output)\b(?!")|exit code/i, 'commands and their real output'],
     [/\bconfirmed\b|\binferred\b|\bguessed\b/i, 'confidence labels'],
   ];
   const missing = groups.filter(([re]) => !re.test(tail)).map(([, label]) => label);

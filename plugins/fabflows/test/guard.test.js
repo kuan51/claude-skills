@@ -57,6 +57,17 @@ test('blocks package installs across ecosystems, and only installs', () => {
     'choco install jq',
     'scoop install jq',
     'Install-Module Pester',
+    'python -m pip install requests',
+    'yarn global add vite',
+    'cargo add serde',
+    'go get golang.org/x/text',
+    // Separators and prefixes that must not hide a command from the anchor.
+    'cd plugins\nnpm install -g evil',
+    'echo start\r\nrm -rf ~',
+    'echo x & npm install evil',
+    '( npm install evil )',
+    'CI=1 npm ci',
+    'FOO=1 BAR=2 pip install x',
   ]) {
     denies(shell(cmd), cmd);
   }
@@ -164,14 +175,69 @@ test('protects live config only, never the wider ~/.claude tree', () => {
   allows(write(path.join(PLUGIN_DIR, 'hooks', 'guard.js')), 'the plugin source in this worktree');
   allows(write(path.join(PLUGIN_DIR, 'agents', 'editor.md')), 'agent source in this worktree');
   allows(write(path.join(process.cwd(), 'CLAUDE.md')), 'a repository CLAUDE.md');
-  // Shell side: writes are blocked, reads are not. Disarming the guard needs a write.
-  denies(shell('echo "{}" > ~/.claude/settings.json'), 'redirect into settings.json');
-  denies(shell('rm ~/.claude/hooks/x.js'), 'rm of a user hook');
-  denies(shell('Set-Content $env:USERPROFILE\\.claude\\settings.json "{}"', 'PowerShell'), 'Set-Content of settings.json');
-  denies(shell('cat other.json > ~/.claude/settings.json'), 'a reader with a redirect into settings.json');
-  denies(shell('python fix.py ~/.claude/settings.json'), 'an unlisted command naming settings.json');
-  allows(shell('cat ~/.claude/settings.json'), 'reading settings.json');
-  allows(shell('Get-Content $env:USERPROFILE\\.claude\\settings.json', 'PowerShell'), 'Get-Content of settings.json');
+  // Shell side: writes and redirects are blocked; reads, running a shipped script, and
+  // git against the marketplace clone are not. [command, tool, expected].
+  const B = 'Bash';
+  const P = 'PowerShell';
+  const cases = [
+    ['echo "{}" > ~/.claude/settings.json', B, 'deny'],
+    ['rm ~/.claude/hooks/x.js', B, 'deny'],
+    ['Set-Content $env:USERPROFILE\\.claude\\settings.json "{}"', P, 'deny'],
+    ['cat other.json > ~/.claude/settings.json', B, 'deny'],
+    ['python fix.py ~/.claude/settings.json', B, 'deny'],
+    ['cat ~/.claude/settings.json', B, 'allow'],
+    ['Get-Content $env:USERPROFILE\\.claude\\settings.json', P, 'allow'],
+    // Running a script that lives in the plugin cache or hooks dir is a read of it.
+    ['node ~/.claude/plugins/cache/claude-skills/design/1.0.0/scripts/server.js --port 3000', B, 'allow'],
+    ['node --inspect $HOME/.claude/plugins/cache/x/y/1.0.0/s.js', B, 'allow'],
+    ['bash ~/.claude/hooks/notify.sh', B, 'allow'],
+    ['node $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.js', P, 'allow'],
+    ['node.exe C:/Users/me/.claude/plugins/cache/x/y/1.0.0/s.js', B, 'allow'],
+    ['python.exe $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.py', P, 'allow'],
+    ['npx ~/.claude/plugins/cache/x/y/1.0.0/s.js', B, 'allow'],
+    ['deno run ~/.claude/plugins/cache/x/y/1.0.0/s.ts', B, 'allow'],
+    ['uv run ~/.claude/plugins/cache/x/y/1.0.0/s.py', B, 'allow'],
+    ['node ~/.claude/plugins/cache/x/y/1.0.0/s.js > ~/.claude/settings.json', B, 'deny'],
+    ['node ~/.claude/settings.json', B, 'deny'],
+    // Read-only commands that merely name a protected path. Only fd's -x executes.
+    ['cd ~/.claude/plugins/cache/x', B, 'allow'],
+    ['rg guard ~/.claude/plugins/cache', B, 'allow'],
+    ['test -f ~/.claude/settings.json', B, 'allow'],
+    ['[ -f ~/.claude/settings.json ]', B, 'allow'],
+    ['echo ~/.claude/plugins/cache', B, 'allow'],
+    ['sha256sum ~/.claude/hooks/x.js', B, 'allow'],
+    ['ls -x ~/.claude/plugins', B, 'allow'],
+    ['head -c 100 ~/.claude/plugins/x/README.md', B, 'allow'],
+    ['Get-Item $env:USERPROFILE\\.claude\\plugins\\cache', P, 'allow'],
+    ['Set-Location $env:USERPROFILE\\.claude\\plugins\\cache', P, 'allow'],
+    ['echo "{}" > ~/.claude/hooks/x.js', B, 'deny'],
+    ['find ~/.claude/hooks -name "*.js" -delete', B, 'deny'],
+    ['find ~/.claude/plugins/cache -exec rm {} \\;', B, 'deny'],
+    ['rg --pre /tmp/evil guard ~/.claude/plugins/cache', B, 'deny'],
+    ['fd -x rm . ~/.claude/hooks', B, 'deny'],
+    ['rm -r ~/.claude/plugins', B, 'deny'],
+    ['echo hi\ncp evil.sh ~/.claude/hooks/pre.sh', B, 'deny'],
+    // The marketplace clone may be fetched and checked out; the copy into the cache may not.
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills fetch origin', B, 'allow'],
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills checkout feature', B, 'allow'],
+    ['git -C ~/.claude/plugins/cache/x/y/1.0.0 checkout feature', B, 'deny'],
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills worktree add ~/.claude/plugins/cache/x/y/1.0.0', B, 'deny'],
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills clone . ~/.claude/plugins/cache/x/y/1.0.0', B, 'deny'],
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills -c core.hooksPath=/tmp/h checkout feature', B, 'deny'],
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills checkout HEAD -- plugins/x', B, 'deny'],
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills checkout --orphan x', B, 'deny'],
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills fetch --upload-pack=/tmp/evil origin', B, 'deny'],
+    ['git -C ~/.claude/plugins/marketplaces/x/../../cache/y fetch origin', B, 'deny'],
+    ['git -C ~/.claude/plugins/marketplaces/claude-skills branch -f master evil', B, 'deny'],
+    ['cp -r ~/.claude/plugins/marketplaces/claude-skills/plugins/x/. ~/.claude/plugins/cache/claude-skills/x/1.0.0/', B, 'deny'],
+  ];
+  for (const [cmd, tool, expected] of cases) assert.equal(shell(cmd, tool).decision, expected, cmd);
+  // Tool-side: a ~ path is the same file as the absolute one, and notebooks are files.
+  denies(write('~/.claude/settings.json'), 'Write with a ~ path');
+  denies(
+    run({ hook_event_name: 'PreToolUse', tool_name: 'NotebookEdit', tool_input: { notebook_path: path.join(claude, 'hooks', 'x.ipynb'), new_source: 'x' }, cwd: '.' }),
+    'NotebookEdit into hooks'
+  );
 });
 
 test('git ops are blocked on a default branch and allowed elsewhere', () => {
@@ -233,6 +299,14 @@ test('SubagentStop blocks a report missing its contract fields', () => {
     fs.writeFileSync(transcript, 'Files changed: src/a.js:12. Ran the command, output was 4 passing.');
     allows(stop(), 'a report missing only confidence labels');
 
+    // A real transcript is JSONL: "command" and "output" appear as keys in every tool
+    // call, and must not count as the prose contract field.
+    fs.writeFileSync(
+      transcript,
+      '{"type":"tool_use","input":{"command":"ls"}}\n{"type":"tool_result","output":"a"}\n{"type":"text","text":"It seems fine."}'
+    );
+    assert.equal(stop().decision, 'block', 'JSON keys must not satisfy the contract');
+
     fs.writeFileSync(transcript, 'I looked around and it seems fine.');
     allows(stop({ stop_hook_active: true }), 'the loop guard must stop a re-block');
 
@@ -245,8 +319,8 @@ test('SubagentStop blocks a report missing its contract fields', () => {
 
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
-  // One anchored matcher: an unanchored Edit also matches NotebookEdit.
-  assert.deepEqual(cfg.hooks.PreToolUse.map((e) => e.matcher), ['^(Bash|PowerShell|Read|Grep|Edit|Write)$']);
+  // One anchored matcher, so every guarded tool is named explicitly.
+  assert.deepEqual(cfg.hooks.PreToolUse.map((e) => e.matcher), ['^(Bash|PowerShell|Read|Grep|Edit|Write|NotebookEdit)$']);
   assert.ok(cfg.hooks.SubagentStop, 'the worker report contract check must be wired');
 
   const commands = [...cfg.hooks.PreToolUse, ...cfg.hooks.SubagentStop].flatMap((e) =>
