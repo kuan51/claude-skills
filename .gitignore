@@ -16,6 +16,9 @@ styles/Clarity/GlossaryTerms.yml
 # line. Regenerated on demand -- do not vendor them.
 styles/Microsoft/
 styles/write-good/
+styles/proselint/
+styles/ai-tells/
+styles/config/templates/
 
 # Secrets - never commit these
 *.env

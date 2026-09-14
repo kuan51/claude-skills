@@ -59,3 +59,21 @@ on dry run, drop the non-git rename fallback.
 PASS, 0 FAIL. `node --test "test/*.test.js"` printed `# fail 0`. The hook,
 fed `{"cwd": <50-record folder>}`, printed the compaction line via `--check`.
 Hook shrank from 36 to 17 lines.
+
+## 2026-09-13 — docs-warden 0.3.0: proselint and ai-tells trial run
+
+**PLANNED** — Add proselint (pinned v0.3.4) and ai-tells (pinned v1.35.0) to the
+root `.vale.ini`, run `vale sync`, then lint this repo's Markdown to see which
+rules fire. Rules wrong for technical docs or duplicating a loaded rule get
+turned off; the result is copied into the two shipped `.vale.ini` files.
+ai-tells stays at `error` by the user's choice.
+
+**CONFIRMED** — `vale sync` printed "Synced 4 package(s)". `vale
+--output=JSON --minAlertLevel=suggestion` over `git ls-files '*.md'` (137
+files, `styles/`, `.claude/` and `before-after.md` left out) reported 7119
+alerts. ai-tells: 2435 errors in 127 files, led by `EmDashUsage` (622),
+`DoubleHyphen` (438), `ColonUsage` (243) and `SemicolonUsage` (144). proselint:
+26 errors (`Typography` 17, `Very` 7). Existing config already reports 757
+Microsoft errors, 586 of them `Microsoft.Dashes`. 27 of proselint's 28 rules
+with a level set are `error`. Result went to the user before any rule was
+turned off.
