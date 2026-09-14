@@ -166,10 +166,39 @@ test('escalates a done reply that still names a blocker, and tells the builder a
   assert.equal(blank.result.status, 'accepted', 'a blank blocker is not a blocker');
 });
 
+// The stubs skip schema validation, so the loop itself must catch an empty report.
+test('escalates a builder reply the lead cannot act on, and a denial on the report\'s first line', async () => {
+  for (const report of ['', '   ']) {
+    const { result, calls } = await run(ARGS, [{ ...built, report }, accept]);
+    assert.equal(result.reason, 'unexplained', `report=${JSON.stringify(report)}`);
+    assert.equal(calls.length, 1, 'no review may run on an empty report');
+  }
+
+  const denied = await run(ARGS, [{ ...built, report: 'Permission denied: npm test\nFiles touched: none' }, accept]);
+  assert.equal(denied.result.reason, 'blocked');
+  assert.equal(denied.calls.length, 1, 'no review may run on a denied build');
+
+  for (const report of ['No permission denials.\nFiles touched: src/cli.js:10', 'Blocked: none\nFiles touched: src/cli.js:10']) {
+    const { result } = await run(ARGS, [{ ...built, report }, accept]);
+    assert.equal(result.status, 'accepted', `a first line saying there is no denial must not escalate: ${report}`);
+  }
+
+  const silent = await run(ARGS, [{ status: 'blocked', report: 'r' }]);
+  assert.equal(silent.result.reason, 'unexplained', 'blocked with no blocker gives the lead no reason');
+  const quoted = await run(ARGS, [{ status: 'blocked', report: '\nPermission to use Bash has been denied.\nr' }]);
+  assert.equal(quoted.result.reason, 'blocked', 'a denial on the first non-blank line is the reason');
+
+  assert.match(silent.calls[0].prompt, /quote it in blocker and as the first line of report/);
+});
+
 test('every escalation carries status, baseRef, and the last verdict', async () => {
   const cases = [
     [[blocked], 'blocked', null],
     [[{ ...built, blocker: 'could not run tests' }], 'blocked', null],
+    [[{ ...built, report: 'Permission denied: npm test' }], 'blocked', null],
+    [[{ ...built, report: '' }], 'unexplained', null],
+    [[{ status: 'blocked', report: 'r' }], 'unexplained', null],
+    [[built, rework, { ...built, report: ' ' }], 'unexplained', 'REWORK'],
     [[null], 'builder-failed', null],
     [[built, null], 'reviewer-failed', null],
     [[built, { ...rework, mustFix: [] }], 'rework-without-must-fix', 'REWORK'],

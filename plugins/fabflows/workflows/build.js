@@ -80,6 +80,14 @@ const VERDICT = {
 // data, and a tag inside a finding cannot open or close that fence.
 const unfence = (s) => s.replace(/<\s*\/?\s*must-fix\s*>/gi, '')
 
+// The report contract puts any permission denial on the first line, so only that line is read.
+// ponytail: matches prose, so a denial worded otherwise or placed lower gets through; the
+// builder quoting it in blocker is the real signal.
+function saysDenied(report) {
+  const first = report.split('\n').find((l) => l.trim()) || ''
+  return /\bden(y|ies|ied|ial)\b|\bblocked\b/i.test(first) && !/^\W*no\b|\bnone\b/i.test(first)
+}
+
 // Every brief carries the four labelled parts: fabflows workers stop on a brief missing one.
 function buildBrief(round, mustFix) {
   const rework = mustFix
@@ -96,7 +104,7 @@ function buildBrief(round, mustFix) {
     '</spec>',
     ...fence,
     '',
-    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a permission denial is a blocker, quoted there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec.',
+    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a blocked reply must name its reason there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec. A permission denial is a blocker: quote it in blocker and as the first line of report.',
     '',
     `**Tools and paths:** Read, Edit, Write, Grep, Glob, and Bash in this repository. Run \`${a.testCommand}\` to prove the change.`,
     '',
@@ -139,11 +147,21 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     effort: 'medium',
     schema: BUILD,
   })
-  // A done reply that still names a blocker contradicts itself: escalate rather than review it.
-  if (!build || build.status !== 'done' || (build.blocker && build.blocker.trim())) {
+  if (!build) {
     rounds.push({ round, build, review: null })
-    log(`round ${round}: the builder ${build ? 'reported blocked' : 'returned nothing'} -- escalating to the lead`)
-    return escalate(build ? 'blocked' : 'builder-failed')
+    log(`round ${round}: the builder returned nothing -- escalating to the lead`)
+    return escalate('builder-failed')
+  }
+  // Only a clean done goes to review. A named blocker or a denial is blocked, whatever status
+  // says; a blank report, or blocked with no reason, leaves the lead nothing to act on.
+  const blocker = (build.blocker || '').trim()
+  const report = (build.report || '').trim()
+  const denied = saysDenied(report)
+  if (build.status !== 'done' || blocker || denied || !report) {
+    rounds.push({ round, build, review: null })
+    const reason = blocker || denied ? 'blocked' : 'unexplained'
+    log(`round ${round}: the builder's reply is ${reason} -- escalating to the lead`)
+    return escalate(reason)
   }
 
   const review = await agent(reviewBrief(round), {

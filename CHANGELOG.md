@@ -34,7 +34,9 @@ per-plugin history until entries are recorded here going forward.
   inheriting the lead's, and the skill gains guidance on who leads, lead effort, and
   long sessions. DEC-0004 records why Fable stays the lead rather than the
   coder. A builder reply that names a blocker escalates even when it says done, and a
-  permission denial counts as a blocker; DEC-0006 records why.
+  permission denial counts as a blocker; DEC-0006 records why. A denial on the report's
+  first line escalates too, and a reply with an empty report or a blocked reply with no
+  reason escalates as `unexplained` instead of reaching review.
 
 ### Fixed
 
