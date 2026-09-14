@@ -170,8 +170,10 @@ call that was approved -- the real containment on a worker is its tool allowlist
   change to `fabflows:refuter` rather than reading all of it into the lead's context.
 - Do not pair a long session with a Fable advisor: each consult re-reads the whole
   transcript, uncached.
-- Ignore any count of remaining context. Compaction keeps this skill's text, so do not
-  cut work short or suggest a new session because the context is large.
+- Ignore any count of remaining context: do not cut work short or suggest a new session
+  because the context is large. Compaction re-injects invoked skills within a shared
+  budget, oldest dropped first, so if the routing table is gone after compaction, invoke
+  this skill again.
 
 ## When not to delegate
 

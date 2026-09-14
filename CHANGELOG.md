@@ -26,8 +26,8 @@ per-plugin history until entries are recorded here going forward.
   reproduces a self-contained failure and narrows it to `file:line` with ranked
   hypotheses, leaving the root-cause call to the lead. `fabflows:build` is a Workflow
   script that takes one spec'd change through a feature branch: an Opus builder
-  implements and commits, a fresh Fable reviewer judges, and after two rework rounds it
-  hands back to the lead. The editor and test-runner now pin their effort (medium and
+  implements and commits, a fresh reviewer (Fable by default) judges, and after two
+  rework rounds it hands back to the lead. The editor and test-runner now pin their effort (medium and
   low) instead of inheriting the lead's, and the skill gains guidance on who leads, lead
   effort, and long sessions. DEC-0004 records why Fable stays the lead rather than the
   coder.

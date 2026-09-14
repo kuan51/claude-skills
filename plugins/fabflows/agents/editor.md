@@ -1,6 +1,6 @@
 ---
 name: editor
-description: Implements a single scoped code change for a lead session -- edits, new files, multi-file changes -- making the smallest correct change, never installing dependencies, never committing, and reporting exact file:line ranges and real command output.
+description: Implements a single scoped code change for a lead session -- edits, new files, multi-file changes -- making the smallest correct change, never installing dependencies, committing only when its brief says so, and reporting exact file:line ranges and real command output.
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: sonnet
 effort: medium

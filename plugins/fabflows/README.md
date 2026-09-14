@@ -56,14 +56,16 @@ implements the spec on the checked-out feature branch and commits, a fresh `refu
 (Fable by default) reviews the diff and re-runs the tests, and after two rework rounds
 the loop hands back to the lead. It never merges, pushes, or reverts. The
 [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
-[DEC-0004](../../docs/DECISIONS.md) records why.
+[DEC-0004](../../docs/decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md)
+records why.
 
 ## Long sessions
 
-The [skill](skills/fabflows/SKILL.md) carries the long-session habits. One setting is
+The [skill](skills/fabflows/SKILL.md) carries the long-session habits. Two settings are
 yours to make: on an API key the prompt cache lives five minutes, so if your sessions sit
-idle longer than that between turns, `"promptCacheTtl": "1h"` in your settings keeps it
-warm, at a higher cache-write rate.
+idle longer than that between turns, `"promptCacheTtl": "1h"` keeps the main conversation
+warm and `"subagentPromptCacheTtl": "1h"` does the same for the workers and the build
+loop, both at a higher cache-write rate (Claude Code v2.1.242 or later).
 
 ## Why not the built-in Explore agent
 

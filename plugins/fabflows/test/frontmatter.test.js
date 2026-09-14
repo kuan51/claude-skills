@@ -21,8 +21,9 @@ const FORBIDDEN_TOOLS = ['Agent'];
 //                  "where is X", it does not run anything.
 //   - researcher:  read-only, plus the two web tools. Haiku for the same reason. No Bash
 //                  and no Write -- this is the main prompt-injection surface, and the
-//                  narrow tool list is a stronger control than any hook, because hooks
-//                  are reported not to fire reliably inside subagents.
+//                  narrow tool list is a stronger control than any hook: plugin hooks
+//                  do run inside subagents, but the guard only matches patterns and
+//                  can be walked around.
 //   - editor:      Sonnet, because multi-file edits and refactors degrade on Haiku, and
 //                  a botched edit costs more than the tier saved. Needs Bash to run the
 //                  build it is asked to prove.

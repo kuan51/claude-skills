@@ -93,3 +93,23 @@ and `node --test "test/*.test.js"`.
 "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. A search of `plugins/fabflows`
 for `maxRework`, `testOutput`, `deviations`, `GATE`, `phase(` and `result.next` found
 nothing.
+
+## 2026-09-13 — fabflows 0.2.0: branch review fixes
+
+**PLANNED** — Fix what the three-agent branch review confirmed: `build.js` accepting an
+ACCEPT that still lists must-fix items, escalate exits without the last verdict, the first
+rework numbered round 2, the untrimmed branch name in the briefs, and six doc claims (the
+editor description, a test comment on hooks in subagents, the README cache-TTL tip and
+DEC-0004 link, the skill's compaction line, the CHANGELOG reviewer wording). Add a test
+that fails without each fix. Verify with `node --test "plugins/fabflows/test/*.test.js"`,
+`node --test "test/*.test.js"`, and a throwaway mutation probe re-run against the fixed
+script.
+
+**CONFIRMED** — The new accept-with-must-fix test failed first against the old script
+(`actual: 'accepted'`, `expected: 'escalate'`), then passed after the fix. After all three
+commits, `node --test "plugins/fabflows/test/*.test.js"` printed `tests 30`, `pass 30`,
+`fail 0`, and `node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. The
+mutation probe (a scratchpad script that breaks one piece of `build.js` at a time and runs
+`build.test.js` against it) reported all 14 mutants killed with the baseline green;
+before these tests the suite killed 2 of 10. The five design gaps the review raised were
+not fixed here; each went to its own brainstorming session.
