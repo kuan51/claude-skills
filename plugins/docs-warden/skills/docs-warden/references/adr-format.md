@@ -1,8 +1,27 @@
 # Decision records: format and the immutability rule
 
-A decision record answers **why**. `CONVENTIONS.md` answers **what we do now**. If
-you find yourself writing a date into `CONVENTIONS.md`, you wanted a decision
-record.
+A decision record answers **why**. `CONVENTIONS.md` answers **what we do now**. A
+date in `CONVENTIONS.md` means history leaked into the wrong file; it does not by
+itself mean a record is owed.
+
+## What earns a record
+
+The ledger is a log of architecture decisions, not of development history. Git and
+pull requests already hold the history.
+
+A change earns a record when all three hold:
+
+1. Reversing it would cost more than a single pull request.
+2. It constrains work outside the file or component just touched.
+3. A rejected alternative exists that someone could reasonably re-propose later.
+
+That covers a choice of technology, protocol, or storage; a boundary between
+components; a rule every future change must obey; a gap knowingly accepted for the
+life of the project.
+
+It does not cover bug fixes, refactors, renames, wording, dependency bumps, test
+changes, hook or config tweaks, or anything the pull request description already
+explains in full. Those are notes, and the pull request is where they live.
 
 ## Filename
 
