@@ -145,7 +145,8 @@ Before starting it:
 
 On `accepted`, run the gate yourself: re-run `testCommand`, read
 `git diff --stat <baseRef>..HEAD`, and check that one must-fix from an earlier round is
-really fixed. On `escalate`, read the last verdict and take the work over. The loop never
+really fixed. On `escalate`, read `reason` and `verdict` -- the last review, or null if
+none ran -- and take the work over. The loop never
 merges, pushes, or reverts -- those stay with you and the user.
 
 ## What the guard hook blocks

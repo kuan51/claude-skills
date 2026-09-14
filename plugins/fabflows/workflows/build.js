@@ -9,7 +9,8 @@ export const meta = {
 }
 
 // No filesystem or shell here: the lead gathers baseRef and checks the tree before starting.
-const a = args || {}
+// A copy, so trimming below never touches the caller's args.
+const a = { ...args }
 
 const REQUIRED = ['spec', 'branch', 'baseRef', 'testCommand']
 const missing = REQUIRED.filter((k) => typeof a[k] !== 'string' || !a[k].trim())
@@ -22,10 +23,11 @@ if (missing.length) {
     next: 'Ask the fabflows lead to prepare the build: it writes the spec, checks the working tree is clean and the feature branch is checked out, and passes spec, branch, baseRef and testCommand.',
   }
 }
+for (const k of REQUIRED) a[k] = a[k].trim()
 
 // A backstop, not the main control: whether the guard hook fires inside workflow agents is
 // unverified, and a builder handed the default branch would commit to it.
-if (/^(main|master)$/i.test(a.branch.trim())) {
+if (/^(main|master)$/i.test(a.branch)) {
   log(`refusing to build on ${a.branch}`)
   return {
     status: 'not-started',
@@ -75,7 +77,7 @@ const VERDICT = {
 // Every brief carries the four labelled parts: fabflows workers stop on a brief missing one.
 function buildBrief(round, mustFix) {
   const rework = mustFix
-    ? `\n\nThis is rework round ${round}. A reviewer rejected the previous round. Your earlier commits are already on the branch -- start by running \`git diff ${a.baseRef}..HEAD\` to see them. Fix every must-fix item below and nothing else:\n` +
+    ? `\n\nThis is rework round ${round - 1}. A reviewer rejected the previous round. Your earlier commits are already on the branch -- start by running \`git diff ${a.baseRef}..HEAD\` to see them. Fix every must-fix item below and nothing else:\n` +
       mustFix.map((f, i) => `${i + 1}. ${f.location} -- ${f.problem} (evidence: ${f.evidence})`).join('\n')
     : ''
   return [
@@ -112,6 +114,12 @@ function reviewBrief(round) {
 const rounds = []
 let mustFix = null
 
+// Every escalation carries the last review the loop saw, or null when none ran.
+function escalate(reason) {
+  const verdict = rounds.map((r) => r.review).filter(Boolean).pop() || null
+  return { status: 'escalate', reason, baseRef: a.baseRef, rounds, verdict }
+}
+
 for (let round = 1; round <= MAX_REWORK + 1; round++) {
   const build = await agent(buildBrief(round, mustFix), {
     label: `build:${round}`,
@@ -124,7 +132,7 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
   if (!build || build.status !== 'done') {
     rounds.push({ round, build, review: null })
     log(`round ${round}: the builder ${build ? 'reported blocked' : 'returned nothing'} -- escalating to the lead`)
-    return { status: 'escalate', reason: build ? 'blocked' : 'builder-failed', baseRef: a.baseRef, rounds }
+    return escalate(build ? 'blocked' : 'builder-failed')
   }
 
   const review = await agent(reviewBrief(round), {
@@ -138,11 +146,11 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
   rounds.push({ round, build, review })
   if (!review) {
     log(`round ${round}: the reviewer returned nothing -- escalating to the lead`)
-    return { status: 'escalate', reason: 'reviewer-failed', baseRef: a.baseRef, rounds }
+    return escalate('reviewer-failed')
   }
   if (review.verdict === 'ACCEPT' && review.mustFix.length) {
     log(`round ${round}: ACCEPT with ${review.mustFix.length} must-fix item(s) -- escalating rather than guessing`)
-    return { status: 'escalate', reason: 'accept-with-must-fix', baseRef: a.baseRef, rounds }
+    return escalate('accept-with-must-fix')
   }
   if (review.verdict === 'ACCEPT') {
     log(`round ${round}: ACCEPT`)
@@ -150,11 +158,11 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
   }
   if (!review.mustFix.length) {
     log(`round ${round}: REWORK with no must-fix items -- escalating rather than guessing`)
-    return { status: 'escalate', reason: 'rework-without-must-fix', baseRef: a.baseRef, rounds }
+    return escalate('rework-without-must-fix')
   }
   mustFix = review.mustFix
   log(`round ${round}: REWORK with ${mustFix.length} must-fix item(s)`)
 }
 
 log(`rework cap of ${MAX_REWORK} reached -- escalating to the lead`)
-return { status: 'escalate', reason: 'rework-cap', baseRef: a.baseRef, rounds, verdict: rounds[rounds.length - 1].review }
+return escalate('rework-cap')

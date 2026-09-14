@@ -43,7 +43,9 @@ test('starts nothing without settings, with partial settings, or on a default br
   const partial = await run({ spec: 'x', branch: 'feat/x' });
   assert.deepEqual(partial.result.missing, ['baseRef', 'testCommand']);
   assert.equal(partial.calls.length, 0);
-  for (const branch of ['master', 'main', 'Main']) {
+  const blank = await run({ ...ARGS, spec: '   ' });
+  assert.deepEqual(blank.result.missing, ['spec']);
+  for (const branch of ['master', 'main', 'Main', ' main ']) {
     const { result, calls } = await run({ ...ARGS, branch });
     assert.equal(result.reason, 'default-branch', branch);
     assert.equal(calls.length, 0, `${branch} must spawn no agent`);
@@ -53,11 +55,19 @@ test('starts nothing without settings, with partial settings, or on a default br
 test('accepts on the first round: Opus editor builds, Fable refuter reviews', async () => {
   const { result, calls } = await run(ARGS, [built, accept]);
   assert.equal(result.status, 'accepted');
+  assert.equal(result.baseRef, 'abc1234');
   assert.equal(calls.length, 2);
   assert.equal(calls[0].opts.agentType, 'fabflows:editor');
   assert.equal(calls[0].opts.model, 'opus');
+  assert.match(calls[0].prompt, /git rev-parse --abbrev-ref HEAD`; if it does not print `feat\/dry-run`/);
   assert.equal(calls[1].opts.agentType, 'fabflows:refuter');
   assert.equal(calls[1].opts.model, 'fable');
+  assert.match(calls[1].prompt, /git diff abc1234\.\.HEAD/);
+});
+
+test('trims the settings before they reach a brief', async () => {
+  const { calls } = await run({ ...ARGS, branch: ' feat/dry-run ', baseRef: 'abc1234\n' }, [built, accept]);
+  assert.match(calls[0].prompt, /does not print `feat\/dry-run`,/);
   assert.match(calls[1].prompt, /git diff abc1234\.\.HEAD/);
 });
 
@@ -66,16 +76,22 @@ test('reworks with the must-fix list, then accepts', async () => {
   assert.equal(result.status, 'accepted');
   assert.equal(result.rounds.length, 2);
   assert.equal(calls.length, 4);
+  assert.match(calls[2].prompt, /This is rework round 1\./);
   assert.match(calls[2].prompt, /src\/cli\.js:10 -- flag is parsed but ignored/);
   assert.match(calls[2].prompt, /git diff abc1234\.\.HEAD/);
   assert.doesNotMatch(calls[0].prompt, /rework round/);
 });
 
 test('escalates at the rework cap instead of looping', async () => {
-  const { result, calls } = await run(ARGS, [built, rework, built, rework, built, rework]);
+  const rework2 = { ...rework, mustFix: [{ ...rework.mustFix[0], location: 'src/cli.js:20' }] };
+  const { result, calls } = await run(ARGS, [built, rework, built, rework2, built, rework]);
   assert.equal(result.status, 'escalate');
   assert.equal(result.reason, 'rework-cap');
   assert.equal(calls.length, 6);
+  assert.match(calls[4].prompt, /This is rework round 2\./);
+  assert.match(calls[4].prompt, /src\/cli\.js:20/);
+  assert.doesNotMatch(calls[4].prompt, /src\/cli\.js:10/);
+  assert.equal(result.verdict, result.rounds[2].review);
 });
 
 test('escalates when a review accepts but still lists must-fix items', async () => {
@@ -88,6 +104,7 @@ test('escalates when a review accepts but still lists must-fix items', async () 
 test('stops when the builder is blocked or an agent returns nothing', async () => {
   const b = await run(ARGS, [blocked]);
   assert.equal(b.result.reason, 'blocked');
+  assert.equal(b.result.rounds[0].build.blocker, 'spec contradicts itself');
   assert.equal(b.calls.length, 1);
 
   const dead = await run(ARGS, [null]);
@@ -95,10 +112,31 @@ test('stops when the builder is blocked or an agent returns nothing', async () =
 
   const noReview = await run(ARGS, [built, null]);
   assert.equal(noReview.result.reason, 'reviewer-failed');
+  assert.equal(noReview.result.rounds.length, 1);
 
   const empty = await run(ARGS, [built, { ...rework, mustFix: [] }]);
   assert.equal(empty.result.reason, 'rework-without-must-fix');
   assert.equal(empty.calls.length, 2);
+});
+
+test('every escalation carries status, baseRef, and the last verdict', async () => {
+  const cases = [
+    [[blocked], 'blocked', null],
+    [[null], 'builder-failed', null],
+    [[built, null], 'reviewer-failed', null],
+    [[built, { ...rework, mustFix: [] }], 'rework-without-must-fix', 'REWORK'],
+    [[built, { ...accept, mustFix: rework.mustFix }], 'accept-with-must-fix', 'ACCEPT'],
+    [[built, rework, null], 'builder-failed', 'REWORK'],
+    [[built, rework, built, null], 'reviewer-failed', 'REWORK'],
+  ];
+  for (const [replies, reason, last] of cases) {
+    const { result } = await run(ARGS, replies);
+    assert.equal(result.status, 'escalate', reason);
+    assert.equal(result.reason, reason);
+    assert.equal(result.baseRef, 'abc1234', `${reason} must carry baseRef`);
+    assert.ok('verdict' in result, `${reason} must carry verdict`);
+    assert.equal(result.verdict ? result.verdict.verdict : null, last, `${reason} last verdict`);
+  }
 });
 
 test('reviewerModel overrides the Fable default', async () => {
@@ -106,11 +144,12 @@ test('reviewerModel overrides the Fable default', async () => {
   assert.equal(calls[1].opts.model, 'opus');
 });
 
-test('every call pins effort, requires a prose report, and carries all four brief parts', async () => {
+test('every call pins effort, requires a prose report, and carries the spec and all four brief parts', async () => {
   const { calls } = await run(ARGS, [built, rework, built, accept]);
   for (const { prompt, opts } of calls) {
     assert.ok(opts.effort, `${opts.label} must pass effort`);
     assert.ok(opts.schema.required.includes('report'), `${opts.label} schema must require report`);
+    assert.ok(prompt.includes(`<spec>\n${ARGS.spec}\n</spec>`), `${opts.label} brief is missing the spec`);
     for (const part of ['Objective', 'Output', 'Tools and paths', 'Boundaries']) {
       assert.match(prompt, new RegExp(`\\*\\*${part}:\\*\\*`), `${opts.label} brief is missing ${part}`);
     }
