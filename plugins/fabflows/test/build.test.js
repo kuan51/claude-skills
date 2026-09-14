@@ -174,13 +174,31 @@ test('escalates a builder reply the lead cannot act on, and a denial on the repo
     assert.equal(calls.length, 1, 'no review may run on an empty report');
   }
 
-  const denied = await run(ARGS, [{ ...built, report: 'Permission denied: npm test\nFiles touched: none' }, accept]);
-  assert.equal(denied.result.reason, 'blocked');
-  assert.equal(denied.calls.length, 1, 'no review may run on a denied build');
+  const deniedLines = [
+    'Permission denied: npm test',
+    'Permission denied: none of the tests could run',
+    'Denied: Bash(npm test); none of the checks ran',
+    'Permission to use Bash has been denied.',
+    'fabflows: package installs are blocked (npm install).',
+  ];
+  for (const line of deniedLines) {
+    const { result, calls } = await run(ARGS, [{ ...built, report: `${line}\nFiles touched: none` }, accept]);
+    assert.equal(result.reason, 'blocked', line);
+    assert.equal(calls.length, 1, `no review may run on a denied build: ${line}`);
+  }
 
-  for (const report of ['No permission denials.\nFiles touched: src/cli.js:10', 'Blocked: none\nFiles touched: src/cli.js:10']) {
-    const { result } = await run(ARGS, [{ ...built, report }, accept]);
-    assert.equal(result.status, 'accepted', `a first line saying there is no denial must not escalate: ${report}`);
+  // Only a line that starts with a denial counts, so paths and feature names do not.
+  const cleanLines = [
+    'No permission denials.',
+    'Blocked: none',
+    'Permission denials: none',
+    'Files touched: src/auth/deny.js:4',
+    'Files touched: src/blocked-users.ts:12',
+    'Implemented the --blocked flag',
+  ];
+  for (const line of cleanLines) {
+    const { result } = await run(ARGS, [{ ...built, report: `${line}\nFiles touched: src/cli.js:10` }, accept]);
+    assert.equal(result.status, 'accepted', `must not escalate: ${line}`);
   }
 
   const silent = await run(ARGS, [{ status: 'blocked', report: 'r' }]);
@@ -188,7 +206,7 @@ test('escalates a builder reply the lead cannot act on, and a denial on the repo
   const quoted = await run(ARGS, [{ status: 'blocked', report: '\nPermission to use Bash has been denied.\nr' }]);
   assert.equal(quoted.result.reason, 'blocked', 'a denial on the first non-blank line is the reason');
 
-  assert.match(silent.calls[0].prompt, /quote it in blocker and as the first line of report/);
+  assert.match(silent.calls[0].prompt, /start report with `Permission denied:`/);
 });
 
 test('every escalation carries status, baseRef, and the last verdict', async () => {

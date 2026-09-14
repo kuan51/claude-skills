@@ -149,10 +149,10 @@ test run left -- then re-run `testCommand`, read `git diff --stat <baseRef>..HEA
 and check that one must-fix from an earlier round is really fixed. On `escalate`,
 read `reason` and `verdict` -- the last review, or null if none ran -- and take the
 work over. On `blocked`, the builder's reason is in the last round's `build.blocker`,
-or on its `report`'s first line when the blocker is empty. `unexplained` means the builder
-left no reason -- an empty report, or blocked with no blocker -- so run
-`git status --porcelain` and `git log <baseRef>..HEAD` to see what it left, and take the
-work over. `reviewer-blocked` means the review never
+or at the start of its `report` when the blocker is empty. `unexplained` means the builder
+named no reason -- an empty report, or blocked with no blocker: read its `report` if it has
+one, since the reason may be further down, then run `git status --porcelain` and
+`git log <baseRef>..HEAD` to see what it left, and take the work over. `reviewer-blocked` means the review never
 ran: fix what `verdict.blocker` names (a missing dependency is the user's to install),
 then run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the
 loop -- the builder's commits are already on the branch. The loop never merges, pushes,

@@ -80,12 +80,16 @@ const VERDICT = {
 // data, and a tag inside a finding cannot open or close that fence.
 const unfence = (s) => s.replace(/<\s*\/?\s*must-fix\s*>/gi, '')
 
-// The report contract puts any permission denial on the first line, so only that line is read.
-// ponytail: matches prose, so a denial worded otherwise or placed lower gets through; the
+// The report contract puts any permission denial on the first line, and the brief has the
+// builder start it with `Permission denied:`. Only a first line that starts with a denial counts,
+// so a path or feature name mentioning one does not, and it is exempt only when it says none.
+// ponytail: still prose, so a denial worded otherwise or placed lower gets through; the
 // builder quoting it in blocker is the real signal.
 function saysDenied(report) {
-  const first = report.split('\n').find((l) => l.trim()) || ''
-  return /\bden(y|ies|ied|ial)\b|\bblocked\b/i.test(first) && !/^\W*no\b|\bnone\b/i.test(first)
+  const first = (report.split('\n').find((l) => l.trim()) || '').trim()
+  const starts = /^\W*(?:(?:permissions?|denied|denials?|blocked)\b|fabflows:)/i.test(first)
+  const saysNone = /^\W*no\b|:\s*(?:none|no|0)\W*$/i.test(first)
+  return starts && !saysNone
 }
 
 // Every brief carries the four labelled parts: fabflows workers stop on a brief missing one.
@@ -104,7 +108,7 @@ function buildBrief(round, mustFix) {
     '</spec>',
     ...fence,
     '',
-    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a blocked reply must name its reason there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec. A permission denial is a blocker: quote it in blocker and as the first line of report.',
+    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a blocked reply must name its reason there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec. A permission denial is a blocker: quote it in blocker, and start report with `Permission denied:` and the same quote.',
     '',
     `**Tools and paths:** Read, Edit, Write, Grep, Glob, and Bash in this repository. Run \`${a.testCommand}\` to prove the change.`,
     '',
@@ -153,7 +157,7 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     return escalate('builder-failed')
   }
   // Only a clean done goes to review. A named blocker or a denial is blocked, whatever status
-  // says; a blank report, or blocked with no reason, leaves the lead nothing to act on.
+  // says; a blank report, or blocked with no blocker, names no reason.
   const blocker = (build.blocker || '').trim()
   const report = (build.report || '').trim()
   const denied = saysDenied(report)
