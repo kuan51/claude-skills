@@ -139,9 +139,22 @@ test('stops when the builder is blocked or an agent returns nothing', async () =
   assert.equal(empty.calls.length, 2);
 });
 
+test('escalates a done reply that still names a blocker, and tells the builder a denial is one', async () => {
+  const { result, calls } = await run(ARGS, [{ ...built, blocker: 'could not run tests' }, accept]);
+  assert.equal(result.status, 'escalate');
+  assert.equal(result.reason, 'blocked');
+  assert.equal(result.rounds[0].build.blocker, 'could not run tests');
+  assert.equal(calls.length, 1, 'no review may run on a contradictory reply');
+  assert.match(calls[0].prompt, /permission denial/);
+
+  const blank = await run(ARGS, [{ ...built, blocker: ' ' }, accept]);
+  assert.equal(blank.result.status, 'accepted', 'a blank blocker is not a blocker');
+});
+
 test('every escalation carries status, baseRef, and the last verdict', async () => {
   const cases = [
     [[blocked], 'blocked', null],
+    [[{ ...built, blocker: 'could not run tests' }], 'blocked', null],
     [[null], 'builder-failed', null],
     [[built, null], 'reviewer-failed', null],
     [[built, { ...rework, mustFix: [] }], 'rework-without-must-fix', 'REWORK'],
@@ -171,6 +184,7 @@ test('every call pins effort, requires a prose report, and carries the spec and 
   for (const { prompt, opts } of calls) {
     assert.ok(opts.effort, `${opts.label} must pass effort`);
     assert.ok(opts.schema.required.includes('report'), `${opts.label} schema must require report`);
+    assert.equal(opts.schema.properties.report.minLength, 1, `${opts.label} report must not be empty`);
     assert.ok(prompt.includes(`<spec>\n${ARGS.spec}\n</spec>`), `${opts.label} brief is missing the spec`);
     for (const part of ['Objective', 'Output', 'Tools and paths', 'Boundaries']) {
       assert.match(prompt, new RegExp(`\\*\\*${part}:\\*\\*`), `${opts.label} brief is missing ${part}`);

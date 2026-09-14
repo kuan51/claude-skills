@@ -43,13 +43,14 @@ const reviewerModel = typeof a.reviewerModel === 'string' && a.reviewerModel.tri
 // it and the SubagentStop contract check still finds its markers.
 const REPORT = {
   type: 'string',
+  minLength: 1,
   description: 'The worker report contract in prose: any permission denial first, files touched as path:line, each command run and its real output, and confirmed / inferred / guessed on every claim.',
 }
 const BUILD = {
   type: 'object',
   properties: {
     status: { type: 'string', enum: ['done', 'blocked'] },
-    blocker: { type: 'string', description: 'when blocked: what stopped the work' },
+    blocker: { type: 'string', description: 'when blocked: what stopped the work, a permission denial included; omit when done' },
     report: REPORT,
   },
   required: ['status', 'report'],
@@ -88,7 +89,7 @@ function buildBrief(round, mustFix) {
     a.spec,
     '</spec>',
     '',
-    '**Output:** The structured result: status (done, or blocked with the blocker) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec.',
+    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a permission denial is a blocker, quoted there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec.',
     '',
     `**Tools and paths:** Read, Edit, Write, Grep, Glob, and Bash in this repository. Run \`${a.testCommand}\` to prove the change.`,
     '',
@@ -130,7 +131,8 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     effort: 'medium',
     schema: BUILD,
   })
-  if (!build || build.status !== 'done') {
+  // A done reply that still names a blocker contradicts itself: escalate rather than review it.
+  if (!build || build.status !== 'done' || (build.blocker && build.blocker.trim())) {
     rounds.push({ round, build, review: null })
     log(`round ${round}: the builder ${build ? 'reported blocked' : 'returned nothing'} -- escalating to the lead`)
     return escalate(build ? 'blocked' : 'builder-failed')
