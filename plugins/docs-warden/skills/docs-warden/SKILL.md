@@ -10,9 +10,9 @@ away from the code. Layout is the easy half. Drift is the real problem.
 
 Repositories fall into two worlds and both are in scope:
 
-- **Regulated product repos** — device firmware, edge services, web apps, anything
+- **Regulated product repos**: device firmware, edge services and web apps, plus anything
   carrying `REQ-<AREA>-NNN` traceability IDs under a standard such as IEC 62304.
-- **Internal IT and infrastructure repos** — PowerShell automation, IaC, MCP
+- **Internal IT and infrastructure repos**: PowerShell automation, IaC, MCP
   servers, tooling.
 
 ## Boundaries
@@ -38,62 +38,62 @@ brand or style guide, that owns them.
 4. **Accepted decision records are immutable.** See `references/adr-format.md`.
 5. **Do not write to the target repo's `docs/RUNLOG.md`.** Git already records
    document edits through the commit and the PR. The run log is for operational actions that
-   leave no commit behind. Duplicating doc edits there only makes it grow.
-6. **A decision record holds what the PR cannot.** If the pull request description
+   don't leave a commit behind. Duplicating doc edits there only makes it grow.
+6. **A decision record contains what the PR cannot.** If the pull request description
    already explains the change fully, the change is development history, not a
-   decision. Do not write a record for it. See "What earns a record" in
+   decision. Do not write a record for it. See "The admission test" in
    `references/adr-format.md`.
 
 ## Modes
 
 Pick the mode from what the human asked for. When it is ambiguous, ask.
 
-### `init` — scaffold documentation
+### `init` (scaffold documentation)
 
-Triggered by "scaffold docs", "set up documentation", "document this repo".
+Triggered by "scaffold docs," "set up documentation," "document this repo."
 
 1. Detect the archetype from the file tree (`references/archetypes.md`).
 2. **Show the proposal and wait for confirmation.** Archetype, forge, owner,
    which standards apply and at what level, and the exact file list you intend
    to create. Never write `.docs-warden.yml` from a guess.
-   The forge may be proposed from `git remote -v` — it is observable, like the
-   archetype — but say which one you read it from.
-   Some levels may be proposed and some must be asked for --
+   The forge may be proposed from `git remote -v`, since it is observable, like the
+   archetype, but say which one you read it from.
+   Some levels may be proposed and some must be asked for:
    `references/standards.md` says which. An IEC 62304 safety class is never
    proposed: it comes from a hazard analysis outside the repository.
 3. Write `.docs-warden.yml`.
 4. Create only the **missing** files from `assets/templates/`. Never overwrite an
-   existing document; list what you skipped and why.
+   existing document. List what you skipped and why.
    **For every standard confirmed in step 2, also create its missing artifacts**
    from `assets/standards/<id>/`. Without this the audit in step 6 reports every
    overlay artifact as missing. A path two standards share has one template, in
-   the directory of whichever introduced it -- `SUPPORT.md.tmpl` is under
+   the directory of whichever introduced it: `SUPPORT.md.tmpl` is under
    `osps-baseline/` and the EU CRA uses it too. The artifact table in each
    `references/standards/<id>.md` says which template covers which path, and
    which rows have no template because no repository file satisfies them.
    Copy `assets/lint/` into place, and `assets/ci/.pre-commit-config.yaml` to the
    repo root; `pre-commit install` then runs the three linters before each push.
    **Never copy `scripts/` into the target repo.** A copy buys nothing and forks
-   from the skill the moment anyone edits it — run them from the installed plugin
+   from the skill the moment anyone edits it. Run them from the installed plugin
    instead. See `references/anti-drift.md` for what this does and does not
    enforce in CI.
-   The `.vale.ini` sets `BasedOnStyles = Clarity, Microsoft, write-good`,
+   The `.vale.ini` sets `BasedOnStyles = Clarity, Microsoft, write-good, proselint, ai-tells`,
    so copy `../clarity/assets/vale/styles/Clarity/` into the
    repo's `styles/` directory **before** running
-   `scripts/glossary_to_vale.py <repo>` to generate the vocabulary — that
+   `scripts/glossary_to_vale.py <repo>` to generate the vocabulary: that
    script overwrites `styles/Clarity/GlossaryTerms.yml`, and the copied
-   one ships as an empty stub, so generating first would get silently
-   reverted by the copy. Then run `vale sync` to fetch the Microsoft and
-   write-good packages named in `Packages =`. Skip the copy or `vale sync`
+   one is an empty stub, so generating first would get silently
+   reverted by the copy. Then run `vale sync` to fetch the four packages
+   named in `Packages =`. Skip the copy or `vale sync`
    and `vale` cannot resolve `BasedOnStyles`; skip `glossary_to_vale.py` and
    `Vocab = Project` has no vocabulary directory to load.
-5. Seed `docs/GLOSSARY.md` — see **Glossary seeding** below.
+5. Seed `docs/GLOSSARY.md`: see **Glossary seeding** below.
 6. Run `scripts/audit.py` and show the scorecard.
 
-### `audit` — report what is wrong
+### `audit` (report what is wrong)
 
-Triggered by "audit docs", "check compliance", "what's missing", "is this repo
-ready for review".
+Triggered by "audit docs," "check compliance," "what's missing," "is this repo
+ready for review."
 
 Run `scripts/audit.py <repo>`. Present the Markdown table. For each `fail` and
 `warn`, offer the fix and wait. See `references/audit-schema.md` for what each
@@ -102,9 +102,9 @@ check means and what a fix looks like.
 Aggregate mode takes several repo paths and emits one row per repo. That is the
 cross-repo view.
 
-### `maintain` — docs drifted from code
+### `maintain` (docs drifted from code)
 
-Triggered by "docs are stale", "the README is wrong", or a code change that touched
+Triggered by "docs are stale," "the README is wrong," or a code change that touched
 documented behavior.
 
 1. Get the changed paths and identifiers (`git diff --name-only`, then grep the
@@ -117,46 +117,46 @@ documented behavior.
 5. Regenerate everything marked `generated: true`, plus `scripts/adr_index.py`.
 6. Re-run `audit.py`.
 
-### `decide` — record a decision
+### `decide` (record a decision)
 
-Triggered by an explicit ask ("record a decision", "new ADR", "why did we choose"),
+Triggered by an explicit ask ("record a decision," "new ADR," "why did we choose"),
 or by Claude answering the three questions below about a change just made and
 getting three yeses. In the second case, show the answers and ask the human to
 confirm them. Never scaffold without a yes.
 
 0. Run the admission test with the human before scaffolding anything:
-   1. Would reversing this cost more than a single pull request?
+   1. Would reversing this cost more than one pull request?
    2. Does it constrain work outside the file or component just touched?
    3. Is there a rejected alternative someone could reasonably re-propose later?
    Any "no" means the change is not an architecture decision. Put the reasoning in the
    pull request description and stop. No record.
 1. `scripts/adr_new.py <repo> "<title>"` scaffolds the next `DEC-NNNN`.
 2. Fill the sections **with the human**, not from assumption. Considered options,
-   consequences good and bad, and gaps accepted are the sections that carry the
-   value; a decision record without rejected alternatives is a note, not a record.
+   consequences good and bad, and gaps accepted are the sections that matter most.
+   A decision record without rejected alternatives is only a note.
 3. Leave `status: proposed` until they say it is accepted.
 4. Re-run `scripts/adr_index.py`.
 
 If the repo has a monolithic hand-written decision log with `DEC-NNN` entries,
 offer to split it into one file per entry, preserving IDs and dates. Ask first.
 
-### `compact` — archive the oldest decisions into a digest
+### `compact` (archive the oldest decisions into a digest)
 
 Triggered by the plugin's SessionStart hook (`hooks/decisions_check.py`), which
 prints a line once `docs/decisions/` holds 50 or more archivable records (not
 proposed, not a digest), or by
-"compact decisions", "too many decision records".
+"compact decisions," "too many decision records."
 
 1. `scripts/adr_compact.py <repo> --dry-run` and show the human the mapping: the
    25 oldest non-proposed records that move to `docs/decisions/archive/`, and the
    id of the digest that replaces them.
 2. On a yes, run it without `--dry-run`. Files move with `git mv`, bytes untouched;
    the digest is a new accepted record carrying each archived record's outcome
-   and gaps verbatim, so the history still reads from `docs/decisions/` alone.
+   and gaps verbatim. The history still reads from `docs/decisions/` alone.
 3. Re-run `scripts/adr_index.py`, then `audit.py`.
 
 Below 50 records the script does nothing. Never edit the digest or the archived
-files; they are accepted records like any other.
+files. They are accepted records like any other.
 
 ## The universal set
 
@@ -166,28 +166,28 @@ Every repo, both worlds, gets these. Full specification in
 | File | Job |
 |------|-----|
 | `README.md` | Front door. Purpose, quick start, links into `docs/`. Root, because GitHub renders it nowhere else. |
-| `docs/CONVENTIONS.md` | Current state. Edited in place. No history. |
+| `docs/CONVENTIONS.md` | Current state. Edited in place, with no history kept. |
 | `docs/decisions/DEC-NNNN-slug.md` | Why. One file per decision, immutable once accepted. |
-| `docs/decisions/README.md` | **Generated** signpost pointing at the index. No table, no counts. |
-| `docs/decisions/archive/` | The oldest records, moved here unchanged by `compact` mode; a digest record in the parent folder carries their outcomes. |
+| `docs/decisions/README.md` | **Generated** signpost pointing at the index, with only a link. |
+| `docs/decisions/archive/` | The oldest records, moved here unchanged by `compact` mode. A digest record in the parent folder records their outcomes. |
 | `docs/DECISIONS.md` | **Generated** index of those records. Never hand-edited. |
 | `docs/RUNLOG.md` | What happened outside git. Append-only, `PLANNED` then `CONFIRMED`. |
-| `docs/GLOSSARY.md` | One word, one meaning. |
+| `docs/GLOSSARY.md` | Each approved term has exactly one meaning. |
 | `docs/SECURITY.md` | Reporting route and posture. GitHub reads it from `docs/` as well as the root. |
 | a change template | Forces docs into the same PR. Path depends on `forge:`. |
 | a review gate | Ownership of `docs/`. Path depends on `forge:`. |
-| `.docs-warden.yml` | The manifest that drives all of the above. |
+| `.docs-warden.yml` | The manifest that all of the above depends on. |
 
-Archetype overlays add to this set; they never remove from it. See
+Archetype overlays add to this set. They never remove from it. See
 `references/archetypes.md`. A repository may also declare one or more
-standards, each adding its own artifacts -- see `references/standards.md`.
+standards, each adding its own artifacts: see `references/standards.md`.
 
 ### Migrating a repo scaffolded before the docs/ move
 
 An older scaffold put these files at the repository root, and generated a full
 second copy of the index at `docs/decisions/README.md` rather than a pointer.
-`audit.py` reports `required-files` as failing until the repo is moved over. There
-is no automatic migration -- three commands, the last of which rewrites both
+`audit.py` reports `required-files` as failing until the repo is moved over. Migrate
+it by hand with three commands, the last of which rewrites both
 generated files:
 
 ```bash
@@ -197,7 +197,7 @@ python3 scripts/adr_index.py .
 ```
 
 Then fix the two files that name the old paths: the README's documentation table,
-and `.github/CODEOWNERS`, where the five per-file lines collapse into the `/docs/`
+and `.github/CODEOWNERS`, where the five per-file lines merge into the `/docs/`
 line already there.
 
 ## Scripts
@@ -209,7 +209,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/docs-warden/scripts/
 ```
 
 Every `scripts/...` path in this document is relative to that directory. They are
-not currently wired into CI — see the known gap in `references/anti-drift.md`.
+not currently wired into CI: see the known gap in `references/anti-drift.md`.
 
 Run with `python3`. Each takes a repo path. `audit.py --run-generators`
 EXECUTES commands from the audited repo's `.docs-warden.yml`. Show those
@@ -218,7 +218,7 @@ commands to the human before running them on a repository you did not write.
 | Script | Does | Writes |
 |--------|------|--------|
 | `scripts/audit.py <repo> [...]` | Scorecard to stdout and `docs-scorecard.json`. Multiple paths gives the aggregate view. | `docs-scorecard.json` (default `--json-out` path). With `--run-generators`, also EXECUTES repo-supplied commands. |
-| `scripts/adr_index.py <repo>` | Regenerates `docs/DECISIONS.md` (the full table) and `docs/decisions/README.md` (a short pointer to it). Idempotent — a second run must produce no diff. | `docs/DECISIONS.md`, `docs/decisions/README.md` |
+| `scripts/adr_index.py <repo>` | Regenerates `docs/DECISIONS.md` (the full table) and `docs/decisions/README.md` (a short pointer to it). Idempotent: a second run must produce an empty diff. | `docs/DECISIONS.md`, `docs/decisions/README.md` |
 | `scripts/adr_new.py <repo> "<title>"` | Scaffolds the next `DEC-NNNN` file. | A new `docs/decisions/DEC-NNNN-*.md` |
 | `scripts/freshness.py <repo>` | Documents past `review_by`, or older than the code they reference. | Nothing |
 
@@ -236,7 +236,7 @@ non-zero on a finding, so CI can gate on them. `adr_new.py` and
 ## Anti-drift
 
 The standard only holds if something enforces it. `references/anti-drift.md` covers
-the linters, the freshness rules, and what is not yet enforced in CI. The load-bearing idea: anything
+the linters, the freshness rules, and what is not yet enforced in CI. Anything
 that can be generated **is** generated, and CI regenerates it and fails on a
 non-empty diff. A generated document that someone can hand-edit will be hand-edited.
 
@@ -245,28 +245,28 @@ non-empty diff. A generated document that someone can hand-edit will be hand-edi
 If the `ontological-documentation` skill is installed, use it rather than inventing
 terms. Its `extract_concepts.py` takes one positional path and prints ontology JSON
 to stdout followed by a Mermaid diagram after a literal `--- Mermaid Diagram ---`
-separator; split on that separator and keep the JSON half. It has no `--output`
+separator. Split on that separator and keep the JSON half. It has no `--output`
 flag. Seed `docs/GLOSSARY.md` from **domain** entities only, not technical ones, and
-merge by term — never overwrite a definition a human has edited.
+merge by term: never overwrite a definition a human has edited.
 
 If the skill is not installed, create the empty `docs/GLOSSARY.md` template and
-skip the ontology step; nothing is recorded in the scorecard. Do not guess domain
+skip the ontology step. The scorecard doesn't record this step. Do not guess domain
 terms.
 
 ## References
 
-- `references/universal-set.md` — what each required file must contain.
-- `references/archetypes.md` — the four archetypes, their overlays, detection hints.
-- `references/adr-format.md` — decision record format and the immutability rule.
-- `references/audit-schema.md` — every check, its meaning, and its fix.
-- `references/anti-drift.md` — linters, freshness, ownership, and the CI gap.
-- `references/standards.md` — how overlays are declared, and how to add one.
-- `references/standards/iec-62304.md` — IEC 62304 artifacts by safety class.
-- `references/standards/osps-baseline.md` — OSPS Baseline artifacts by maturity
+- `references/universal-set.md`: what each required file must contain.
+- `references/archetypes.md`: the archetypes, plus their overlays and detection hints.
+- `references/adr-format.md`: decision record format and the immutability rule.
+- `references/audit-schema.md`: every check, with what it means and how to fix it.
+- `references/anti-drift.md`: linters, freshness, ownership, and the CI gap.
+- `references/standards.md`: how overlays are declared, and how to add one.
+- `references/standards/iec-62304.md`: IEC 62304 artifacts by safety class.
+- `references/standards/osps-baseline.md`: OSPS Baseline artifacts by maturity
   level, and the control families it leaves out.
-- `references/standards/eu-cra.md` — EU CRA Annex VII artifacts, the two dates,
+- `references/standards/eu-cra.md`: EU CRA Annex VII artifacts, the two dates,
   and what the overlay cannot check.
-- `references/standards/nist-ssdf.md` — SSDF practices that produce a document,
+- `references/standards/nist-ssdf.md`: SSDF practices that produce a document,
   and the ones that do not.
-- `../clarity/SKILL.md` — the plain-English writing standard, and the source of the
+- `../clarity/SKILL.md`: the plain-English writing standard, and the source of the
   `Clarity` Vale style this skill's `.vale.ini` depends on.

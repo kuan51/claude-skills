@@ -20,8 +20,8 @@ Always start here, every invocation:
 1. **Locate the tracking data.** Check the current working directory's `docs/ciso/state.json`
    first; if that's not obviously the right project, ask the user.
 2. **Read `<docs/ciso>/state.json`. If it doesn't exist, tell the user to run `ciso:init` first and
-   stop** -- do not scaffold it yourself.
-3. **Resolve the certification** from `state.certifications`: the one the user named, else the sole
+   stop.** Do not scaffold it yourself.
+3. **Resolve the certification** from `state.certifications`: the one the user named, else the only
    registered certification, else `AskUserQuestion` over the registered ones.
 4. **Read `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/invariants.md` and follow it.**
    Mandatory, before step 5.
@@ -29,12 +29,12 @@ Always start here, every invocation:
 
 ## Only HITRUST supports this verb today
 
-HITRUST is the only module that has shipped a second control-set version, so it is the only one with
+HITRUST is the only module that has released a second control-set version, so it is the only one with
 a written flow. SOC 2 and ISO 27001 gain one if and when they rev.
 
 If the resolved certification has no `references/upgrade.md`, first **check whether an upgrade is
 even pending**: compare the bundled `controls/<tier>.v*.structure.json`'s `controlSetVersion`
 against `state.certifications[certKey].tiers[tierKey].controlSetVersion`. If they match, tell the
-user their control set is current and stop -- that is the ordinary answer, not an error. If they
+user their control set is current and stop. That is the ordinary answer, not an error. If they
 differ, say plainly that this certification has no reconciliation flow written yet and do not
 improvise one against real assessment data.

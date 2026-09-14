@@ -13,10 +13,10 @@ standards:
 Omit the key, or leave it empty, when none apply. The `standards` check then
 reports `skipped`, and nothing below is enforced.
 
-## What an overlay is allowed to contain
+## Contents an overlay is allowed to declare
 
-**File paths, and nothing else.** No requirement text, no clause numbers, no
-paraphrase of what a standard says. Two reasons, and the second is the one that
+**Only file paths.** An overlay never states requirement text, clause numbers, or
+a paraphrase of what a standard says. Two reasons, and the second is the one that
 bites:
 
 1. Some of these standards are sold. IEC 62304 costs money; naming
@@ -28,9 +28,9 @@ bites:
 
 **A passing check is not a conformity claim.** It says the documents exist, not
 that they are right, and never that a certification body would agree. Every
-reference document here says so in its own words; keep that.
+reference document here says so in its own words. Keep that.
 
-## Two kinds of level axis
+## Kinds of level axis
 
 They look alike in the manifest and are not alike at all:
 
@@ -39,7 +39,7 @@ They look alike in the manifest and are not alike at all:
 | IEC 62304 safety class | A hazard analysis, outside the repo | **No.** Ask. |
 | OSPS Baseline maturity level | Maintainer and user count, observable | Yes, then confirm |
 
-`infer` in the standards table carries this. Getting it wrong in either
+`infer` in the standards table records this. Getting it wrong in either
 direction is expensive: proposing a safety class invents a regulatory decision,
 and demanding ceremony for a maturity level nobody disputes trains people to
 skip the question.
@@ -50,34 +50,34 @@ let a meaningless level through.
 
 ## One check per standard
 
-Each declared standard gets its own scorecard row, `standards:<id>`. A single
+Each declared standard gets its own scorecard row, `standards:<id>`. A
 combined row could not say which standard was failing, which is the question a
 fleet scorecard exists to answer.
 
 ## Overlapping artifacts
 
-Two standards wanting the same file is normal, not a conflict. One file
-satisfies both — shared paths are constants in `standards.py` so a move stays
-one edit — and **both rows name it**, each naming the other claimant.
+Standards sharing a file is expected and handled cleanly. One file
+satisfies both (shared paths are constants in `standards.py` so a move stays
+one edit), and **both rows name it**, each naming the other claimant.
 
-This is a deliberate reversal. A single combined check named a shared artifact
+This is a deliberate reversal. A combined check listed a shared artifact
 once, so a repo adopting three overlapping standards was not told the same
 thing three times. Under per-standard rows that would leave the standards it
 was not reported under passing while their artifact is absent, with the choice
-falling to manifest order. The work is deduplicated; the reporting is not.
+falling to manifest order. The work is deduplicated. The reporting is not.
 
-One genuine disagreement exists. IEC 62304 keeps its threat model at
+One real disagreement exists. IEC 62304 keeps its threat model at
 `docs/regulatory/threat-model.md`, with the rest of its design history; a
 standard that asks for one at `docs/threat-model.md` means the same document.
 **Do not maintain two.** Where both apply, the regulatory path is authoritative
 and the other may be a pointer to it. This is resolved here, in prose, rather
 than in code, because it is one file.
 
-## Where a shared artifact's template lives
+## Location of a shared artifact's template
 
 Templates sit under `assets/standards/<id>/`, grouped by the standard that
 introduced them. A path two standards want has one template, in the directory of
-whichever asked first -- `SUPPORT.md.tmpl` is under `osps-baseline/` and the CRA
+whichever asked first: `SUPPORT.md.tmpl` is under `osps-baseline/` and the CRA
 uses it too. Each artifact table says where. Copying it into a second directory
 would give one document two templates that drift.
 
@@ -88,13 +88,14 @@ Before writing the entry:
 
 - **Read the primary source.** Not a summary of it, and not a vendor's
   checklist. A published HTML summary of the OSPS Baseline collapses two
-  distinct controls into one malformed id; a table built from it would ship
+  distinct controls into one malformed id; a table built from it would include
   that error as a requirement.
 - **Record the version you read**, in `source_version` and in the reference
-  document's currency warning. Nothing here detects that a standard has moved.
+  document's currency warning. This check does not detect that a standard has
+  moved.
 - **Say what you left out.** A standard whose scope is wider than documentation
-  will have parts this plugin cannot check -- access-control settings, CI
-  configuration, activities that produce no file. Name them, or the first
+  will have parts this plugin cannot check: access-control settings, CI
+  configuration, activities that don't produce a file. Name them, or the first
   person to compare the two reports the overlay as broken.
 - **Mark what is declared but unchecked** with `(not checked)` in the artifact
   table, the way `standards/iec-62304.md` does. An artifact listed without the

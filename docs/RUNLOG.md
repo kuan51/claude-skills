@@ -298,3 +298,70 @@ first) and `node --test "test/*.test.js"`.
 `--blocked`, `No permission denials.`, `Blocked: none`, `Permission denials: 0` and an
 empty line. `markdownlint-cli2` on the touched Markdown files still reports only the older
 `docs/RUNLOG.md:197` MD018.
+
+## 2026-09-13 — docs-warden 0.3.0: proselint and ai-tells trial run
+
+**PLANNED** — Add proselint (pinned v0.3.4) and ai-tells (pinned v1.35.0) to the
+root `.vale.ini`, run `vale sync`, then lint this repo's Markdown to see which
+rules fire. Rules wrong for technical docs or duplicating a loaded rule get
+turned off; the result is copied into the two shipped `.vale.ini` files.
+ai-tells stays at `error` by the user's choice.
+
+**CONFIRMED** — `vale sync` printed "Synced 4 package(s)". `vale
+--output=JSON --minAlertLevel=suggestion` over `git ls-files '*.md'` (137
+files, `styles/`, `.claude/` and `before-after.md` left out) reported 7119
+alerts. ai-tells: 2435 errors in 127 files, led by `EmDashUsage` (622),
+`DoubleHyphen` (438), `ColonUsage` (243) and `SemicolonUsage` (144). proselint:
+26 errors (`Typography` 17, `Very` 7). Existing config already reports 757
+Microsoft errors, 586 of them `Microsoft.Dashes`. 27 of proselint's 28 rules
+with a level set are `error`. Result went to the user before any rule was
+turned off.
+
+## 2026-09-14 — docs-warden 0.3.0: Vale doc pass
+
+**PLANNED** — Reword every living document to zero error-level Vale alerts under
+the new config, without changing meaning. Historical documents (dated plans,
+decision records, run logs, changelogs) and test fixtures skip the two new
+packages and are not reworded. Verify with a full `vale --minAlertLevel=error`
+sweep over the living documents and every test suite.
+
+**CONFIRMED** — `vale --minAlertLevel=error --output=line` over every tracked
+Markdown file outside `docs/superpowers/`, `docs/decisions/`, `docs/RUNLOG.md`,
+`CHANGELOG.md` and the docs-warden test fixtures (87 files) printed nothing.
+`vale ls-config` parsed all three configs, the two shipped copies through scratch
+copies pointed at the synced styles, each with 13 rules at warning.
+`node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. Per-plugin
+`node --test` printed ciso 295/295, data-analysis-review 19/19 and fabflows 35/35.
+`python plugins/docs-warden/test/test_scripts.py` printed 72 PASS, 0 FAIL.
+
+**SKIPPED** — The plugins were not installed from this branch into a new session,
+so the reworded skills were not exercised through a real session start.
+
+## 2026-09-14 — docs-warden 0.3.0: default the new Vale packages to warning
+
+**PLANNED** — Change the three Vale configs (repo root, the docs-warden lint asset,
+the clarity asset) so `proselint` and `ai-tells` default to `warning` as a whole,
+with a short list of punctuation and filler `ai-tells` rules, plus
+`proselint.Uncomparables` and `proselint.CorporateSpeak`, promoted back to `error`
+in the repo root config only; the two shipped asset copies stay at warning
+throughout. Verify with `vale ls-config` on each config,
+`vale --minAlertLevel=error --output=line` over the living-doc list,
+`node --test "test/*.test.js"` and `python plugins/docs-warden/test/test_scripts.py`.
+
+**CONFIRMED** — A probe first showed that a `Style = level` or `Style.Rule = level`
+line in `[*.md]` turns that style or rule on in every section, whatever its
+`BasedOnStyles` says. Each exempt section therefore also sets `proselint = NO`,
+`ai-tells = NO` and a `NO` line per promoted rule. With that in place:
+`vale ls-config` parses all three configs (shipped copies via scratch copies
+pointed at the synced styles). `vale --minAlertLevel=error --output=line` over
+the 87 living documents printed nothing and exited 0. `vale
+--minAlertLevel=suggestion --output=JSON` on `docs/DECISIONS.md`, `docs/RUNLOG.md`,
+`CHANGELOG.md`, `before-after.md`, `evals/README.md` and two fixtures reported no
+`proselint` or `ai-tells` alert under any of the three configs. `node --test
+"test/*.test.js"`: 4 pass, 0 fail. `python plugins/docs-warden/test/test_scripts.py`:
+72 PASS, 0 FAIL.
+
+**CONFIRMED** — Correction to the plugin test counts above: `node --test` run inside
+`plugins/ciso`, `plugins/data-analysis-review` and `plugins/fabflows` prints 296, 20
+and 36, not 295, 19 and 35. The extra one in each is `test/helpers/frontmatter.js`,
+which the runner picks up as a test file. All pass.

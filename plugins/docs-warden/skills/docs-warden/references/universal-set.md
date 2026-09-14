@@ -15,13 +15,13 @@ generated: false
 ---
 ```
 
-- `owner` — a person or team, not "the team". Someone answers for it.
-- `review_by` — ISO date. `freshness.py` fails once it passes.
-- `generated` — `true` means a script owns this file and a human must not edit it.
+- `owner`: a person or team, not "the team." Someone answers for it.
+- `review_by`: ISO date. `freshness.py` fails once it passes.
+- `generated`: `true` means a script generates this file and a human must not edit it.
 
 `README.md` and `docs/RUNLOG.md` are exempt: a README with a YAML block at the top
-renders badly on GitHub, and the run log is append-only by nature. So are the
-rotated archives under `docs/runlog/`.
+renders badly on GitHub, and the run log is append-only by nature. The rotated
+archives under `docs/runlog/` are exempt too.
 
 ## README.md
 
@@ -34,22 +34,22 @@ a quick start that covers install and first usage, and links into `docs/`.
 - Over 100 lines, a table of contents is required.
 - Status and ownership badges: five maximum.
 
-A README that documents everything documents nothing. If a section is longer than a
-screen, it belongs in `docs/` with a link from here.
+A README that tries to cover everything doesn't explain anything useful. If a
+section is longer than a screen, it belongs in `docs/` with a link from here.
 
 ## docs/CONVENTIONS.md
 
 **Current state only.** Edited in place as the standard changes. It answers "how do
-we do things here today", never "how did we get here" — that is what decision
+we do things here today," never "how did we get here." That is what decision
 records are for. A dated entry in `docs/CONVENTIONS.md` is a bug.
 
-Sections: stack and versions, repository layout, branch and commit rules, naming,
+Sections: stack and versions plus repository layout, branch and commit rules, naming,
 testing expectations, documentation rules, and the list of generated files with the
 command that regenerates each.
 
 ## docs/decisions/DEC-NNNN-slug.md
 
-One decision, one file, immutable once accepted. Specified in `adr-format.md`.
+Each decision gets one file, immutable once accepted. Specified in `adr-format.md`.
 
 Alongside them, `adr_index.py` writes a generated `docs/decisions/README.md`: a
 heading, one sentence, and a link up to the index. It is a signpost for anyone
@@ -57,7 +57,7 @@ browsing the folder, not a second copy of the table.
 
 At 50 records, `adr_compact.py` moves the 25 oldest unchanged into
 `docs/decisions/archive/` and writes one digest record in their place; see
-`adr-format.md`, "Compaction".
+`adr-format.md`, "Compaction."
 
 ## docs/DECISIONS.md
 
@@ -68,9 +68,9 @@ regenerates it and fails on a non-empty diff, so a hand edit is always caught.
 
 Append-only. The narrowest scope of any file here, and the one most often abused.
 
-**In scope:** operational actions whose effect leaves no commit behind — deploys,
-data migrations, credential rotations, scripts run against live systems, manual
-verification steps, and checks that were skipped.
+**In scope:** operational actions whose effect doesn't leave a commit behind:
+deploys, data migrations, credential rotations, scripts run against live systems,
+manual verification steps, and checks that were skipped.
 
 **Out of scope:** code edits, documentation edits, refactors, dependency bumps.
 Git already records those, and the PR already explains them. Writing them here
@@ -87,15 +87,15 @@ Every action is **two entries**, not one:
   `curl -sf https://hub.internal/healthz` -> 200. Health check green at 15:00.
 ```
 
-The second entry is `CONFIRMED`, `FAILED`, or `SKIPPED`, and it names the exact
-command or check used — not just the outcome. An entry nobody can re-run later is
+The second entry is `CONFIRMED`, `FAILED`, or `SKIPPED`, and it specifies the exact
+command or check used, not just the outcome. An entry nobody can re-run later is
 not evidence. A skipped check gets its own `SKIPPED` entry; a silent gap is worse
 than an admitted one.
 
 Rotation: `freshness.py` warns past 500 lines. Move the oldest entries into
-`docs/runlog/YYYY-QN.md` -- the archive for the quarter each entry falls in -- until
+`docs/runlog/YYYY-QN.md` (the archive for the quarter each entry falls in) until
 the log is back under the limit, and leave a one-line pointer behind. Whole entries
-only; never split one.
+only. Never split one.
 
 The line count is the whole trigger, deliberately. This rule once also required an
 entry to be older than 90 days, and both halves had to hold: a repository that wrote
@@ -105,25 +105,27 @@ for, not age.
 
 ## docs/GLOSSARY.md
 
-One word, one meaning. A four-column table:
+Each glossary term has exactly one meaning. A four-column table:
 
 | Term | Definition | Do not use | Source |
 |------|------------|------------|--------|
 
-`Do not use` lists the rejected synonyms — this column is what makes the glossary
+`Do not use` lists the rejected synonyms: this column is what makes the glossary
 enforceable rather than decorative. It feeds the Vale vocabulary.
 
 Seed it from `ontological-documentation` where that skill is installed, using
-domain entities only. Merge by term; never overwrite a human-edited definition.
+domain entities only. Merge by term. Never overwrite a human-edited definition.
 
 ## docs/SECURITY.md
 
-Internal repos: a stub naming where to report a vulnerability and who owns triage.
+Internal repos: a stub naming where to report a vulnerability and who is
+responsible for triage.
 
-Regulated repos: the full document, covering supported versions, the reporting
-route and its response time, the threat model link, and the disclosure policy.
+Regulated repos: the full document. It covers supported versions and the reporting
+route with its response time. It also links the threat model and states the
+disclosure policy.
 
-## The forge overlay: a change template and a review gate
+## The forge overlay: A change template and a review gate
 
 Two controls, spelled differently by every hosting platform, so they are
 declared rather than assumed. `forge:` in `.docs-warden.yml` selects the
@@ -137,15 +139,15 @@ so far assumes.
 | `none` | nothing |
 
 These used to be required of every repository unconditionally, which failed a
-GitLab or Gitea repo forever for something that is not a documentation defect —
+GitLab or Gitea repo forever for something that is not a documentation defect:
 the same reasoning that keeps `LICENSE` out of the universal set, applied
 consistently.
 
-**`none` is a real loss, not a clean escape.** The gate still has to exist
+**Choosing `none` is a real loss.** The gate still has to exist
 somewhere; choosing `none` means nothing checks that it does. Prefer naming the
 paths with `extra_files` over selecting it.
 
-### What the change template is for
+### Purpose of the change template
 
 One checkbox:
 
@@ -156,15 +158,15 @@ One checkbox:
 Forcing the "why not" into the change request is what stops docs drifting. "N/A"
 alone is not an answer.
 
-### What the review gate is for
+### Purpose of the review gate
 
 `docs/` and the root documents are owned by the `owner` in `.docs-warden.yml`, so
 documentation changes get a reviewer who cares about them.
 
 ## A note on `docs/`
 
-Every path this plugin knows is rooted at `docs/`, and that is deliberate — an
-opinionated layout is the thing being enforced. Two consequences worth stating
+Every path this plugin knows is rooted at `docs/`, and that is deliberate: an
+opinionated layout is the thing being enforced. Consequences worth stating
 rather than discovering:
 
 - A repository that keeps documentation somewhere else (`documentation/`,
@@ -192,12 +194,12 @@ generated_docs:
 `command` and fails if the resulting `path` differs from what is committed.
 
 `command` is a list of arguments, executed without a shell. It runs only when
-`audit.py` is given `--run-generators`. This is executable repo content — review
+`audit.py` is given `--run-generators`. This is executable repo content. Review
 it as you would a script.
 
 Only `path` is snapshotted and restored around the run; the command is not
 sandboxed and runs with your own privileges. If it writes files other than
-`path`, those are left behind — containment restricts where `path` may
+`path`, those are left behind: containment restricts where `path` may
 resolve, not what the command itself can touch.
 
 Propose these values from the detection hints in `archetypes.md`, show them, and
@@ -209,7 +211,7 @@ which must be asked for.
 
 | File | Purpose | Rule |
 |------|---------|------|
-| `.gitignore` | Keeps generated and secret files out of git | Must ignore `docs-scorecard.json`, the two generated Vale paths (`styles/config/vocabularies/Project/` and `styles/Clarity/GlossaryTerms.yml`), and `*.env`. Never ignore `styles/` wholesale — that hides the hand-copied `Clarity` rule files `vale` needs. Verify with `git check-ignore -q .env` |
+| `.gitignore` | Keeps generated and secret files out of git | Must ignore `docs-scorecard.json`, the two generated Vale paths (`styles/config/vocabularies/Project/` and `styles/Clarity/GlossaryTerms.yml`), and `*.env`. Never ignore `styles/` wholesale: that hides the hand-copied `Clarity` rule files `vale` needs. Verify with `git check-ignore -q .env` |
 
 A missing or broken rule here is a HIPAA-severity defect if it lets a secret file
-slip past unnoticed — see `../assets/templates/gitignore.tmpl` for the seed content.
+leak without being caught. See `../assets/templates/gitignore.tmpl` for the seed content.

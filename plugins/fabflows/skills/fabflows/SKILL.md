@@ -9,7 +9,7 @@ A lead session doing mechanical work burns the expensive tier on typing. A lead 
 accepts a worker's report without re-checking it has bought a confident lie at a
 discount. Both halves are this skill: hand the work down, then prove the answer.
 
-The workers are real agents shipped with this plugin. They are namespaced, so the
+The workers are real agents included with this plugin. They are namespaced, so the
 address is `fabflows:explorer`, not `explorer`.
 
 ## Boundaries
@@ -21,25 +21,25 @@ not be delegated at all.
 
 **This skill will not:** delegate the root-cause decision on a bug, architecture
 decisions, or cross-file refactors; accept a worker's word as evidence; write a
-delegation log file; or edit code itself. The lead integrates and verifies -- it does
-not become another worker.
+delegation log file, or edit code itself. The lead integrates and verifies rather than
+becoming another worker.
 
 ## Non-negotiables
 
 1. **Never delegate without all four brief parts.** Objective, output format, tools and
-   paths, boundaries. Missing one, do not spawn -- a worker that has to guess the
+   paths, boundaries. Missing one, do not spawn: a worker that has to guess the
    boundary will guess it wider than you meant.
 2. **Never accept an unverified claim.** Re-read the changed files yourself. Re-run the
    build or the tests yourself and read the real output. A claim you have not confirmed
    is `UNVERIFIABLE`, not done.
 3. **Reject an incomplete report.** No permission-denial line, no `file:line`, or
-   paraphrased command output -- send it back or redo the step yourself. Do not
+   paraphrased command output: send it back or redo the step yourself. Do not
    reconstruct the missing half from what seems likely.
 4. **Narrate the delegation in-session.** Say what you are handing off and why before
-   you spawn; say what you verified and how afterwards. No log file -- git records the
+   you spawn. Say what you verified and how afterwards. No log file: git records the
    edits, and a second ledger only drifts from it.
 5. **Never do mechanical work while a worker fits.** Exploring, grepping, running a
-   known command, applying an already-decided edit -- hand it off.
+   known command, applying an already-decided edit: hand it off.
 
 ## Routing
 
@@ -51,14 +51,14 @@ not become another worker.
 | write or run tests | `fabflows:test-runner` | Sonnet |
 | review a finished change against its spec, re-running its tests | `fabflows:refuter` | Opus, read-only + Bash |
 | reproduce and narrow a self-contained failure | `fabflows:investigator` | Opus, read-only + Bash |
-| root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | -- |
+| root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | none |
 
 The built-in `Explore` agent is not a cheap substitute for `fabflows:explorer`. It
 inherits the main conversation's model, capped at Opus, so under an expensive lead it
 costs roughly what doing the search yourself would. A plugin cannot override a built-in
 agent, so the namespaced worker is the way to get the cheap tier.
 
-None of the workers can spawn a worker of its own -- `Agent` is absent from every
+None of the workers can spawn a worker of its own. `Agent` is absent from every
 tool list. The delegation tree is one level deep on purpose.
 
 ## Who leads
@@ -78,12 +78,12 @@ not on the typing.
 
 ## The delegation brief
 
-Every spawn carries all four. They are short; the discipline is that none is missing.
+Each spawn includes all four. They are short. The discipline is making sure none is missing.
 
-1. **Objective** -- the one question to answer or the one change to make.
-2. **Output format** -- what the report must contain, and in what shape.
-3. **Tools and paths** -- which directories to look in, which tools to use.
-4. **Boundaries** -- what not to touch, and what to do instead of guessing.
+1. **Objective:** the one question to answer or the one change to make.
+2. **Output format:** what the report must contain, and in what shape.
+3. **Tools and paths:** which directories to look in, which tools to use.
+4. **Boundaries:** what not to touch, and what to do instead of guessing.
 
 Worked example:
 
@@ -91,7 +91,7 @@ Worked example:
 > null token.
 > **Output:** paths with `file:line` for each caller, plus a five-line summary. No file
 > dumps.
-> **Tools and paths:** Read, Grep, Glob under `src/auth/` only.
+> **Tools and paths:** `Read`, `Grep`, `Glob` under `src/auth/` only.
 > **Boundaries:** do not edit anything. If a caller's null-handling depends on runtime
 > config you cannot see, say so under open questions rather than inferring it.
 
@@ -99,7 +99,7 @@ Worked example:
 
 Every worker returns these, in this order. A report missing any of them is incomplete.
 
-- **Any permission denial as the very first line.** A worker that hits a denial and
+- **Any permission denial as the first line.** A worker that hits a denial and
   reports success anyway is the failure mode this contract exists to catch.
 - Files touched, as `path:line`.
 - The exact commands run and their real output. Never a paraphrase of output the worker
@@ -111,8 +111,8 @@ Every worker returns these, in this order. A report missing any of them is incom
 
 ## The verification gate
 
-Do this before you accept anything. Trusting the report is the single most common way
-this pattern fails.
+Do this before you accept anything. Trusting the report is the most common way this
+pattern fails.
 
 | Worker | What the lead re-runs |
 | --- | --- |
@@ -124,7 +124,7 @@ this pattern fails.
 | `fabflows:investigator` | Run the reproduction command yourself and confirm the failure it reports. |
 
 Cross-check each claim against real tool output. Treat anything you cannot confirm as
-`UNVERIFIABLE` and say so -- do not quietly promote it to done.
+`UNVERIFIABLE` and say so: do not quietly promote it to done.
 
 ## The build loop
 
@@ -136,53 +136,53 @@ the user asks for it or agrees to it.
 
 Before starting it:
 
-1. Write the spec: the behaviour, how to check it, and what is out of scope.
-2. Confirm `git status --porcelain` prints nothing and `git rev-parse --abbrev-ref HEAD`
-   prints the feature branch -- never the default branch.
+1. Write the spec, covering the behaviour, how to check it, and what is out of scope.
+2. Confirm `git status --porcelain` doesn't print anything and `git rev-parse --abbrev-ref HEAD`
+   prints the feature branch, never the default branch.
 3. Pass `spec`, `branch`, `baseRef` (from `git rev-parse HEAD`) and `testCommand`.
    Optional: `reviewerModel` (default `fable`; pass `opus` where Fable is not
    available).
 
-On `accepted`, run the gate yourself: confirm `git status --porcelain` still prints
-nothing -- anything it lists is work the review never saw, or a file the review's
-test run left -- then re-run `testCommand`, read `git diff --stat <baseRef>..HEAD`,
+On `accepted`, run the gate yourself: confirm `git status --porcelain` still doesn't
+print anything (anything it lists is work the review never saw, or a file the review's
+test run left), then re-run `testCommand`, read `git diff --stat <baseRef>..HEAD`,
 and check that one must-fix from an earlier round is really fixed. On `escalate`,
-read `reason` and `verdict` -- the last review, or null if none ran -- and take the
+read `reason` and `verdict` (the last review, or null if none ran), and take the
 work over. On `blocked`, the builder's reason is in the last round's `build.blocker`,
-or at the start of its `report` when the blocker is empty. `unexplained` means the builder
-named no reason -- an empty report, or blocked with no blocker: read its `report` if it has
-one, since the reason may be further down, then run `git status --porcelain` and
+or at the start of its `report` when the blocker is empty. `unexplained` means the reason
+is missing: an empty report, or blocked with no blocker. Read its `report` if it
+has one, since the reason may be further down, then run `git status --porcelain` and
 `git log <baseRef>..HEAD` to see what it left, and take the work over. `reviewer-blocked` means the review never
 ran: fix what `verdict.blocker` names (a missing dependency is the user's to install),
 then run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the
-loop -- the builder's commits are already on the branch. The loop never merges, pushes,
-or reverts -- those stay with you and the user.
+loop. The builder's commits are already on the branch. The loop never merges, pushes,
+or reverts: those stay with you and the user.
 
-If the run ends in a workflow error instead of a result -- say a `+Nk` token budget ran
-out, which makes the next `agent()` call throw -- the builder may already have committed.
-Read `git log <baseRef>..HEAD` to see what landed. To carry on, relaunch it in a new turn
-of the same session with the `scriptPath` and run ID its launch returned -- the run ID as
-`resumeFromRunId` -- and the same args; finished rounds replay from cache. Never restart with a fresh `baseRef` -- the new reviewer would miss the earlier
+If the run ends in a workflow error instead of a result (say a `+Nk` token budget ran
+out, which makes the next `agent()` call throw), the builder may already have committed.
+Read `git log <baseRef>..HEAD` to see what it committed. To carry on, relaunch it in a new turn
+of the same session with the `scriptPath` and run ID its launch returned, passing the run ID
+as `resumeFromRunId`, and the same args. Finished rounds replay from cache. Never restart with a fresh `baseRef`: the new reviewer would miss the earlier
 commits.
 
-## What the guard hook blocks
+## Guard hook rules
 
-This plugin ships an active `PreToolUse` hook. It blocks package installs, commits and
+This plugin includes an active `PreToolUse` hook. It blocks package installs, commits and
 pushes on a default branch, destructive shell commands, reads and writes of
 credential-bearing files, and writes to live Claude Code configuration or git hooks.
 
-It is a tripwire, not a sandbox. Pattern matching on shell strings is bypassable by
-base64, variable expansion, heredocs, `python -c`, and full binary paths, and it cannot
-see a command run against a different repository via `git -C`. The guard also fails
-open: if it errors, the call proceeds. Do not treat a call that was not blocked as a
-call that was approved -- the real containment on a worker is its tool allowlist.
+It behaves like a tripwire. It doesn't sandbox anything. Pattern matching on shell strings is
+bypassable by base64, variable expansion, heredocs, `python -c`, and full binary paths, and
+it cannot see a command run against a different repository via `git -C`. The guard also
+fails open: if it errors, the call proceeds. Do not treat a call that was not blocked as a
+call that was approved: the real containment on a worker is its tool allowlist.
 
 ## Long sessions
 
 - Follow up with a worker you already briefed by resuming it with `SendMessage`. It keeps
   its context, so it does not re-read what it already knows.
 - Run workers in the background and keep working while they run.
-- Verify a small edit by reading its diff, not the whole file. Hand a large or multi-file
+- Verify a small edit by reading only its diff. Hand a large or multi-file
   change to `fabflows:refuter` rather than reading all of it into the lead's context.
 - Do not pair a long session with a Fable advisor: each consult re-reads the whole
   transcript, uncached.
@@ -196,15 +196,16 @@ call that was approved -- the real containment on a worker is its tool allowlist
 - The brief would take longer to write than the task takes to do.
 - The task needs judgement about *why* the code is the way it is.
 - The task spans files whose relationship to each other is the actual problem. Coupled
-  edits do not split across workers; that is where multi-agent work degrades fastest.
+  edits do not split across workers. That is where multi-agent work degrades fastest.
 - A worker already failed verification twice on this task.
-- The work is one short, dependent chain. Measured, a single model at low effort beats
-  any split of it: the brief, the report, and the check cost more than they save.
+- The work is one short, dependent chain. Measured, one model at low effort beats
+  any split of it, because the brief, the report, and the check together cost more than
+  they save.
 
 ## Escalation
 
-- Two failed verifications on the same brief -- the lead does it, or bumps a tier.
+- After two failed verifications on the same brief, the lead does it, or bumps a tier.
   Re-spawning the same worker a third time buys another confident wrong answer.
-- A worker reports a permission denial -- surface it to the user. Never route around a
+- A worker reports a permission denial: surface it to the user. Never bypass a
   denial, and never re-issue the same call from the lead to dodge it.
-- A worker reports scope creep -- decide it yourself; do not delegate the decision.
+- A worker reports on scope creep: decide it yourself. Do not delegate the decision.
