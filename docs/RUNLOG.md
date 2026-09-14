@@ -360,3 +360,8 @@ the 87 living documents printed nothing and exited 0. `vale
 `proselint` or `ai-tells` alert under any of the three configs. `node --test
 "test/*.test.js"`: 4 pass, 0 fail. `python plugins/docs-warden/test/test_scripts.py`:
 72 PASS, 0 FAIL.
+
+**CONFIRMED** — Correction to the plugin test counts above: `node --test` run inside
+`plugins/ciso`, `plugins/data-analysis-review` and `plugins/fabflows` prints 296, 20
+and 36, not 295, 19 and 35. The extra one in each is `test/helpers/frontmatter.js`,
+which the runner picks up as a test file. All pass.

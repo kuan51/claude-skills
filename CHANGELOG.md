@@ -41,9 +41,11 @@ per-plugin history until entries are recorded here going forward.
   `proselint` (misused words, hedging, jargon, typography) and `ai-tells` (patterns of
   machine-written prose), both pinned by release URL. The shipped configs default both
   packages to warning level. The configs skip YAML front matter titles and
-  descriptions, which decide when a skill triggers, and this repository promotes the
-  `ai-tells` punctuation and filler rules to error. Decision records, run logs and
-  changelogs skip the two new packages because they are append-only.
+  descriptions, which decide when a skill triggers. This repository's own config
+  promotes 17 rules to error: 15 `ai-tells` punctuation and filler rules plus
+  `proselint.Uncomparables` and `proselint.CorporateSpeak`. Decision records, run
+  logs, changelogs, dated plans, test fixtures and eval prompts skip the two new
+  packages.
 
 ### Changed
 

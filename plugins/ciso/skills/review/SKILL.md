@@ -54,7 +54,7 @@ would be a second source of truth to drift. You are reasoning from what the diff
 controls say, using each control's `topicLabel`, `topicSummary`, `domain` and current
 `assessment.status`.
 
-Present candidates for the user to confirm rather than asserting a mapping, and tell them plainly that
+Propose, never assert. Present candidates for the user to confirm, and tell them plainly that
 the mapping is your reading of the change rather than a lookup.
 
 What sharpens it materially:
