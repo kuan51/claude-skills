@@ -41,7 +41,7 @@ per-plugin history until entries are recorded here going forward.
   `proselint` (misused words, hedging, jargon, typography) and `ai-tells` (patterns of
   machine-written prose), both pinned by release URL. `ai-tells` stays at error level on
   purpose, so prose is fixed before it is committed. The configs skip YAML front matter
-  titles and descriptions, which decide when a skill triggers, and eleven rules that
+  titles and descriptions, which decide when a skill triggers, and thirteen rules that
   flagged accurate wording are set to warning. Decision records, run logs and
   changelogs skip the two new packages because they are append-only.
 
