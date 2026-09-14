@@ -1,6 +1,6 @@
 ---
 name: fabflows
-description: Route mechanical work to cheaper worker agents and verify what they report back. Use when planning a multi-step change, exploring an unfamiliar codebase, researching external documentation, running or writing tests, making a multi-file edit, or deciding whether to do a task yourself or hand it off. Triggers on "delegate", "spawn an agent", "who should do this", "hand this off", "use a subagent", "explore the codebase", "find where", "trace the callers", "run the tests", "implement this", "cheaper model", "save tokens", "reduce cost", "verify the subagent", "did the worker actually do it", and on any task a Haiku or Sonnet worker could do while the lead is running on an expensive model.
+description: Route mechanical work to cheaper worker agents and verify what they report back. Use when planning a multi-step change, exploring an unfamiliar codebase, researching external documentation, running or writing tests, making a multi-file edit, or deciding whether to do a task yourself or hand it off. Triggers on "delegate", "spawn an agent", "who should do this", "hand this off", "use a subagent", "explore the codebase", "find where", "trace the callers", "run the tests", "implement this", "cheaper model", "save tokens", "reduce cost", "verify the subagent", "did the worker actually do it", "review this change", "reproduce the bug", "build loop", and on any task a Haiku or Sonnet worker could do while the lead is running on an expensive model.
 ---
 
 # Fabflows
@@ -19,10 +19,10 @@ makes delegation work, reject a report that arrives without its contract fields,
 re-verify a worker's claims before accepting them, and say plainly when a task should
 not be delegated at all.
 
-**This skill will not:** delegate deep debugging, architecture decisions, or
-cross-file refactors; accept a worker's word as evidence; write a delegation log file;
-or edit code itself. The lead integrates and verifies -- it does not become a fifth
-worker.
+**This skill will not:** delegate the root-cause decision on a bug, architecture
+decisions, or cross-file refactors; accept a worker's word as evidence; write a
+delegation log file; or edit code itself. The lead integrates and verifies -- it does
+not become another worker.
 
 ## Non-negotiables
 
@@ -49,15 +49,32 @@ worker.
 | research web or docs, distil a source | `fabflows:researcher` | Haiku, read-only |
 | edit, implement, multi-file change | `fabflows:editor` | Sonnet |
 | write or run tests | `fabflows:test-runner` | Sonnet |
-| deep debug, architecture, cross-file refactor | the lead does it, or escalates a tier | -- |
+| review a finished change against its spec, re-running its tests | `fabflows:refuter` | Opus, read-only + Bash |
+| reproduce and narrow a self-contained failure | `fabflows:investigator` | Opus, read-only + Bash |
+| root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | -- |
 
 The built-in `Explore` agent is not a cheap substitute for `fabflows:explorer`. It
 inherits the main conversation's model, capped at Opus, so under an expensive lead it
 costs roughly what doing the search yourself would. A plugin cannot override a built-in
 agent, so the namespaced worker is the way to get the cheap tier.
 
-None of the four workers can spawn a worker of its own -- `Agent` is absent from every
+None of the workers can spawn a worker of its own -- `Agent` is absent from every
 tool list. The delegation tree is one level deep on purpose.
+
+## Who leads
+
+The lead plans, writes specs and briefs, verifies, and takes every escalation; workers do
+the typing. The split pays because the two jobs cost differently. A lead re-reads a large
+context every turn, and cached reads are cheap. A builder writes a lot of output from a
+fresh context, and output is the expensive part. Put the most expensive model on the lead,
+not on the typing.
+
+- **Lead on Fable.** Run it at `low` effort for routine turns and raise it for
+  architecture or deep debugging. On Fable 5.1 with an API key or a Claude subscription,
+  changing effort keeps the prompt cache, so move it as the work changes.
+- **Lead on Opus 5.** It reaches for subagents readily, so delegate only independent,
+  sizeable work, and skip `fabflows:refuter` for routine edits. Changing effort
+  mid-session re-reads the whole context uncached, so pick a level at session start.
 
 ## The delegation brief
 
@@ -103,9 +120,50 @@ this pattern fails.
 | `fabflows:researcher` | Fetch one cited URL and confirm it supports the claim attached to it. |
 | `fabflows:editor` | Re-read every changed file. Run the build or tests yourself and read the output. |
 | `fabflows:test-runner` | Re-run the command yourself. A pasted pass you did not reproduce is not a pass. |
+| `fabflows:refuter` | Re-run the test command yourself and open one cited finding at its `path:line`. |
+| `fabflows:investigator` | Run the reproduction command yourself and confirm the failure it reports. |
 
 Cross-check each claim against real tool output. Treat anything you cannot confirm as
 `UNVERIFIABLE` and say so -- do not quietly promote it to done.
+
+## The build loop
+
+For a spec'd, sizeable change, offer `fabflows:build`. An Opus `editor` implements the
+spec on the current feature branch and commits; a fresh `refuter` reads the diff against
+the spec and re-runs the tests; a REWORK verdict sends the must-fix list to a fresh
+builder, up to the rework cap. It runs through the Workflow tool, so start it only when
+the user asks for it or agrees to it.
+
+Before starting it:
+
+1. Write the spec: the behaviour, how to check it, and what is out of scope.
+2. Confirm `git status --porcelain` prints nothing and `git rev-parse --abbrev-ref HEAD`
+   prints the feature branch -- never the default branch.
+3. Pass `spec`, `branch`, `baseRef` (from `git rev-parse HEAD`) and `testCommand`.
+   Optional: `reviewerModel` (default `fable`; pass `opus` where Fable is not
+   available).
+
+On `accepted`, run the gate yourself: confirm `git status --porcelain` still prints
+nothing -- anything it lists is work the review never saw, or a file the review's
+test run left -- then re-run `testCommand`, read `git diff --stat <baseRef>..HEAD`,
+and check that one must-fix from an earlier round is really fixed. On `escalate`,
+read `reason` and `verdict` -- the last review, or null if none ran -- and take the
+work over. On `blocked`, the builder's reason is in the last round's `build.blocker`,
+or at the start of its `report` when the blocker is empty. `unexplained` means the builder
+named no reason -- an empty report, or blocked with no blocker: read its `report` if it has
+one, since the reason may be further down, then run `git status --porcelain` and
+`git log <baseRef>..HEAD` to see what it left, and take the work over. `reviewer-blocked` means the review never
+ran: fix what `verdict.blocker` names (a missing dependency is the user's to install),
+then run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the
+loop -- the builder's commits are already on the branch. The loop never merges, pushes,
+or reverts -- those stay with you and the user.
+
+If the run ends in a workflow error instead of a result -- say a `+Nk` token budget ran
+out, which makes the next `agent()` call throw -- the builder may already have committed.
+Read `git log <baseRef>..HEAD` to see what landed. To carry on, relaunch it in a new turn
+of the same session with the `scriptPath` and run ID its launch returned -- the run ID as
+`resumeFromRunId` -- and the same args; finished rounds replay from cache. Never restart with a fresh `baseRef` -- the new reviewer would miss the earlier
+commits.
 
 ## What the guard hook blocks
 
@@ -119,6 +177,20 @@ see a command run against a different repository via `git -C`. The guard also fa
 open: if it errors, the call proceeds. Do not treat a call that was not blocked as a
 call that was approved -- the real containment on a worker is its tool allowlist.
 
+## Long sessions
+
+- Follow up with a worker you already briefed by resuming it with `SendMessage`. It keeps
+  its context, so it does not re-read what it already knows.
+- Run workers in the background and keep working while they run.
+- Verify a small edit by reading its diff, not the whole file. Hand a large or multi-file
+  change to `fabflows:refuter` rather than reading all of it into the lead's context.
+- Do not pair a long session with a Fable advisor: each consult re-reads the whole
+  transcript, uncached.
+- Ignore any count of remaining context: do not cut work short or suggest a new session
+  because the context is large. Compaction re-injects invoked skills within a shared
+  budget, oldest dropped first, so if the routing table is gone after compaction, invoke
+  this skill again.
+
 ## When not to delegate
 
 - The brief would take longer to write than the task takes to do.
@@ -126,6 +198,8 @@ call that was approved -- the real containment on a worker is its tool allowlist
 - The task spans files whose relationship to each other is the actual problem. Coupled
   edits do not split across workers; that is where multi-agent work degrades fastest.
 - A worker already failed verification twice on this task.
+- The work is one short, dependent chain. Measured, a single model at low effort beats
+  any split of it: the brief, the report, and the check cost more than they save.
 
 ## Escalation
 

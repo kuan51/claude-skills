@@ -23,24 +23,49 @@ believes it, and the run continues on a claim nobody checked.
 
 ## What it ships
 
-Four workers, each pinned to a model tier and scoped to the smallest tool list that
+Six workers, each pinned to a model tier and scoped to the smallest tool list that
 does its job:
 
-| Agent | Model | Tools | For |
-| --- | --- | --- | --- |
-| `fabflows:explorer` | Haiku | Read, Grep, Glob | locating files, tracing symbols, mapping structure |
-| `fabflows:researcher` | Haiku | Read, Grep, Glob, WebFetch, WebSearch | external docs and APIs, distilled with sources |
-| `fabflows:editor` | Sonnet | Read, Edit, Write, Grep, Glob, Bash | scoped code changes |
-| `fabflows:test-runner` | Sonnet | Read, Grep, Glob, Bash, Write | writing and running tests, reporting real output |
+| Agent | Model | Effort | Tools | For |
+| --- | --- | --- | --- | --- |
+| `fabflows:explorer` | Haiku | -- | Read, Grep, Glob | locating files, tracing symbols, mapping structure |
+| `fabflows:researcher` | Haiku | -- | Read, Grep, Glob, WebFetch, WebSearch | external docs and APIs, distilled with sources |
+| `fabflows:editor` | Sonnet | medium | Read, Edit, Write, Grep, Glob, Bash | scoped code changes |
+| `fabflows:test-runner` | Sonnet | low | Read, Grep, Glob, Bash, Write | writing and running tests, reporting real output |
+| `fabflows:refuter` | Opus | medium | Read, Grep, Glob, Bash | reviewing a finished change against its spec, re-running its tests |
+| `fabflows:investigator` | Opus | high | Read, Grep, Glob, Bash | reproducing and narrowing a self-contained failure |
+
+Effort is pinned so a worker does not inherit the lead's session effort. Haiku 4.5 has
+no effort levels, so the Haiku workers carry none. `CLAUDE_CODE_EFFORT_LEVEL`, if you
+set it, overrides every pin.
 
 Plus the `fabflows` skill, which carries the routing table, the four-part delegation
 brief, the worker report contract, and the verification gate the lead has to pass before
-accepting anything.
+accepting anything; and the `fabflows:build` workflow, described in
+[The build loop](#the-build-loop).
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 
-None of the four can spawn a worker of its own -- `Agent` is absent from every tool
+None of the workers can spawn a worker of its own -- `Agent` is absent from every tool
 list, so the delegation tree stays one level deep and the cost stays bounded.
+
+## The build loop
+
+`fabflows:build` takes one spec'd change through build and review: an Opus `editor`
+implements the spec on the checked-out feature branch and commits, a fresh `refuter`
+(Fable by default) reviews the diff and re-runs the tests, and after two rework rounds
+the loop hands back to the lead. It never merges, pushes, or reverts. The
+[skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
+[DEC-0004](../../docs/decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md)
+records why.
+
+## Long sessions
+
+The [skill](skills/fabflows/SKILL.md) carries the long-session habits. Two settings are
+yours to make: on an API key the prompt cache lives five minutes, so if your sessions sit
+idle longer than that between turns, `"promptCacheTtl": "1h"` keeps the main conversation
+warm and `"subagentPromptCacheTtl": "1h"` does the same for the workers and the build
+loop, both at a higher cache-write rate (Claude Code v2.1.242 or later).
 
 ## Why not the built-in Explore agent
 
@@ -121,7 +146,8 @@ enforcement, so it cannot be used to disarm the guard.
 node --test "plugins/fabflows/test/*.test.js"
 ```
 
-`frontmatter.test.js` pins the agent roster, each agent's tool list and model tier, and
-the skill's frontmatter. `guard.test.js` drives `guard.js` over a table of allow and deny
+`frontmatter.test.js` pins the agent roster, each agent's tool list, model tier and
+effort, and the skill's frontmatter. `build.test.js` runs the build workflow's loop
+against stub agents. `guard.test.js` drives `guard.js` over a table of allow and deny
 cases, including real git fixtures for the branch rules and the path traps that a naive
 substring match would get wrong.
