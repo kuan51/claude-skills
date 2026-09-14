@@ -152,8 +152,8 @@ merges, pushes, or reverts -- those stay with you and the user.
 If the run ends in a workflow error instead of a result -- say a `+Nk` token budget ran
 out, which makes the next `agent()` call throw -- the builder may already have committed.
 Read `git log <baseRef>..HEAD` to see what landed. To carry on, relaunch it in a new turn
-of the same session with `resumeFromRunId` and the same args; finished rounds replay from
-cache. Never restart with a fresh `baseRef` -- the new reviewer would miss the earlier
+of the same session with the `scriptPath` and run ID its launch returned -- the run ID as
+`resumeFromRunId` -- and the same args; finished rounds replay from cache. Never restart with a fresh `baseRef` -- the new reviewer would miss the earlier
 commits.
 
 ## What the guard hook blocks
