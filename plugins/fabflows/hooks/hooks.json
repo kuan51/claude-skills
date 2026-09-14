@@ -15,7 +15,7 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "(^|:)(explorer|researcher|editor|test-runner)$",
+        "matcher": "(^|:)(explorer|researcher|editor|test-runner|refuter|investigator)$",
         "hooks": [
           {
             "type": "command",
