@@ -3,11 +3,11 @@
 Every rule here is advisory unless marked otherwise. Two things only are `error`:
 glossary rejected terms, and PHI or secret patterns. Everything else is a
 suggestion or a warning, because a linter that blocks a merge over sentence length
-gets switched off, and then it checks nothing at all.
+gets switched off, and then it doesn't check anything at all.
 
 ## Enforced by `Clarity`
 
-### SafetyConditionFirst — `warning`
+### SafetyConditionFirst (`warning`)
 
 In anything touching patient safety, the condition precedes the instruction.
 
@@ -25,27 +25,28 @@ one rule here that is about safety rather than readability.
 The check looks for a small set of imperative verbs followed later in the same
 sentence by `if`, `when`, or `unless`. It is heuristic: it will miss unusual
 phrasings, and it does not know which documents are safety-relevant. Treat a clean
-run as "nothing obvious", not as a clearance.
+run as "nothing obvious," not as a clearance.
 
-### GlossaryTerms — `error`
+### GlossaryTerms (`error`)
 
-One word, one meaning. Generated per repository by `glossary_to_vale.py` from the
+Each approved term has one meaning. Generated per repository by `glossary_to_vale.py` from the
 `Do not use` column of that repository's `docs/GLOSSARY.md`.
 
 `error` because inconsistent vocabulary in a regulated document is a real finding,
-and because the repository's own maintainers chose the list — it is not a style
+and because the repository's own maintainers chose the list, not a style
 opinion imposed from outside.
 
-### ProtectedHealthInformation — `error`
+### ProtectedHealthInformation (`error`)
 
 Social security numbers, medical record numbers, dates of birth, private key
 blocks, and hardcoded credentials.
 
-Deliberately broad. A false positive costs a minute. A miss puts patient data into
-a git history that cannot be rewritten once it is merged and pulled. If a synthetic
-example trips it, change the example rather than adding an exception.
+Deliberately broad. A false positive costs a minute, while a miss puts patient
+data into a git history that cannot be rewritten once it is merged and pulled.
+If a synthetic example matches it, change the example rather than adding an
+exception.
 
-### RequirementStatement — `suggestion`
+### RequirementStatement (`suggestion`)
 
 Marks any text carrying a `REQ-` ID.
 
@@ -53,14 +54,14 @@ This rule exists to **stop** an edit, not to prompt one. Requirement wording is
 traceable and may be under change control; rewriting it for readability can change
 what was verified. Raise the concern with the requirement's owner instead.
 
-### OneInstructionPerStep — `suggestion`
+### OneInstructionPerStep (`suggestion`)
 
 Flags `, then` and `and then`. A step that contains two actions is two steps, and a
 reader who is interrupted between them cannot tell where they stopped.
 
-## Delegated to Microsoft and write-good
+## Delegated to other Vale packages
 
-Loaded by the shipped `.vale.ini`; not reimplemented here. Confirmed present in
+Loaded by the included `.vale.ini`. Not reimplemented here. Confirmed present in
 those packages:
 
 | Concern | Rule that covers it |
@@ -70,17 +71,23 @@ those packages:
 | Acronyms on first use | `Microsoft.Acronyms`, `Microsoft.HeadingAcronyms` |
 | Wordiness | `Microsoft.Wordiness`, `write-good.TooWordy` |
 | Weasel words | `write-good.Weasel` |
-| Clichés | `write-good.Cliches` |
+| Clichés | `write-good.Cliches`, `proselint.Cliches` |
 | Vague openers | `write-good.ThereIs`, `write-good.So` |
 | Headings, dates, units, plurals | `Microsoft.Headings` and siblings |
+| Misused and invented words | `proselint.Malapropisms`, `proselint.Skunked`, `proselint.Nonwords` |
+| Hedging and jargon | `proselint.Hedging`, `proselint.Jargon` |
+| Patterns of machine-written prose | the whole `ai-tells` package |
 
-Those two packages default to their own thresholds. We do not override them: one
-set of numbers, maintained upstream, beats two sets drifting apart here.
+These packages default to their own thresholds, and we keep them, because one set
+of numbers maintained upstream beats two sets drifting apart here. The exception
+is a short list of `ai-tells`, `Microsoft` and `proselint` rules set to `warning`
+in `.vale.ini`. Each one flagged wording that was already accurate, and the reason
+is written beside it.
 
 ## Quoted prose is linted too
 
 Vale scans blockquote content in Markdown: prose inside `>` is checked like any
-other line. So quoting a bad example to illustrate a rule trips that rule, and
+other line. Quoting a bad example to illustrate a rule matches that rule, and
 quoted regulatory text is flagged like your own wording.
 
 Wrap those passages in `<!-- vale off -->` and `<!-- vale on -->` rather than
@@ -91,7 +98,7 @@ written against that behaviour will start reporting findings on the bump.
 
 ## Applied by hand, not by the linter
 
-These are worth doing and not worth automating. Vale checks text, not intent.
+These are best applied by hand. Vale checks text. A person checks intent.
 
 - **Read the whole passage before editing.** Rules applied sentence by sentence
   without the surrounding meaning produce fluent nonsense.
@@ -112,7 +119,7 @@ These are worth doing and not worth automating. Vale checks text, not intent.
   findings nobody can act on.
 - **Noun-cluster limits.** The part-of-speech matching needed is unreliable on
   technical prose, where `hub certificate rotation script` is correct and clear.
-  The rule would produce more false positives than findings.
+  False positives from the rule would outnumber its real findings.
 - **Simple-tense enforcement.** Low value once sentence length and passive voice
   are already checked.
 - **Article and subject presence checks.** Not reliably detectable, and headings

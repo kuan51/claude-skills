@@ -4,7 +4,7 @@ An overlay on any archetype, declared under `standards:` in `.docs-warden.yml`
 as `nist-ssdf: true`. See `../standards.md` for the mechanism.
 
 NIST SP 800-218 v1.1, *Secure Software Development Framework*. A US Government
-work, so it carries no copyright and is free from
+work, so it has no copyright and is free from
 <https://csrc.nist.gov/projects/ssdf>. Practice and task ids below are NIST's;
 the file paths are this plugin's.
 
@@ -21,13 +21,13 @@ authority to make it.
 ## No level axis
 
 SSDF has no tiers. Its 19 practices decompose into 42 tasks, all of which apply;
-what varies is how an organisation implements them. So this standard takes `true`
+what varies is how an organisation handles them. This standard takes `true`
 and nothing else.
 
 ## Artifacts
 
 Only tasks that produce a document **in the repository** are checked. Most of the
-42 do not — they are activities, tracker work, or pipeline configuration.
+42 do not: they are activities, or tracker and pipeline configuration work.
 
 | Artifact | Practice | Also wanted by |
 |----------|----------|----------------|
@@ -44,24 +44,24 @@ Only tasks that produce a document **in the repository** are checked. Most of th
 `docs/SECURITY.md` carries the intake side of RV.1 and is already in the
 universal set, so `required-files` checks it.
 
-## What this overlay does not check
+## This overlay does not check
 
-Whole practices produce no repository document, and are **not represented above**:
+Whole practices don't produce a repository document, and are **not represented above**:
 
-- **PS.1** protecting code from tampering — access control on the repository.
-- **PW.2, PW.4 – PW.9** — secure coding, code review, testing, compiler
+- **PS.1** protecting code from tampering: access control on the repository.
+- **PW.2, PW.4 to PW.9**: secure coding, code review, testing, compiler
   hardening, secure defaults. These are how the code is written and built. A
   document claiming they happen is not evidence that they did.
-- **RV.2, RV.3** — analysing and remediating each vulnerability, and root-cause
+- **RV.2, RV.3**: analysing and remediating each vulnerability, and root-cause
   analysis. NIST's own examples point at the issue tracker for these, and
   copying a tracker into the repository leaves two records, one of them wrong.
 
-Everything above is also an existence test. None of it reads what a document
+Everything above is also an existence test. It never reads what a document
 says.
 
 ## Overlap with the OSPS Baseline
 
-The Baseline is crosswalked to SSDF and covers more ground, most of it
+The Baseline is crosswalked to SSDF and covers a broader set of controls, most of it
 configuration this plugin does not inspect. Declaring both is reasonable and the
 artifacts merge: the Baseline is the broader posture checklist, SSDF the
-attestation-shaped subset. Nothing needs to be maintained twice.
+subset relevant to the attestation. It does not need to be maintained twice.
