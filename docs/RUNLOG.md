@@ -134,3 +134,33 @@ reported all 16 killed with the baseline green. `adr_new.py` created DEC-0005 an
 **SKIPPED** — No live run: whether a real refuter answers BLOCKED when its test command
 is missing needs the plugin installed from this branch and a new session, as the earlier
 SKIPPED entry for 0.2.0 already notes.
+
+## 2026-09-13 — fabflows 0.2.0: a contradictory builder reply escalates
+
+**PLANNED** — A stub run of `build.js` showed a builder reply of `done` with a `blocker`,
+`done` with an empty report, and `done` with a permission denial only in its report all
+ending `accepted`. Make the loop escalate any reply that names a blocker, add `minLength: 1`
+to the shared report schema, tell the builder a permission denial is a blocker, and tell the
+lead where the builder's blocker lives on escalation. Record it as DEC-0006. Verify with
+`node --test "plugins/fabflows/test/*.test.js"` (the new tests failing first) and
+`node --test "test/*.test.js"`.
+
+**CONFIRMED** — Against the old loop the new assertions failed (`actual: 'accepted'`,
+`expected: 'escalate'`; `actual: 'reviewer-failed'`, `expected: 'blocked'`; `minLength`
+`actual: undefined`, `expected: 1`), then passed after the change.
+`node --test "plugins/fabflows/test/*.test.js"` printed `tests 31`, `pass 31`, `fail 0`;
+`node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. Re-running the
+scratchpad stub script on the new `build.js`: `done` with a blocker now escalates after one
+call; `done` with an empty report and `done` with a denial only in the report still end
+`accepted` there, because stubs skip schema validation and the loop reads no prose -- both
+recorded as gaps in DEC-0006. `adr_new.py` numbered the record DEC-0005, since this branch
+lacks the sibling's DEC-0005; it was renamed to DEC-0006 and `adr_index.py` rebuilt the index.
+After rebasing onto `claude/fabflows-reviewer-blocked` (PR #23) and resolving the SKILL.md,
+run-log and index conflicts, `node --test "plugins/fabflows/test/*.test.js"` printed
+`tests 32`, `pass 32`, `fail 0` and `node --test "test/*.test.js"` printed `tests 4`,
+`pass 4`, `fail 0`; `python3 plugins/docs-warden/skills/docs-warden/scripts/audit.py .`
+passed `adr-index` and `links` (96 relative links).
+
+**SKIPPED** — No live run: whether the runtime enforces `minLength`, and whether a real
+builder puts a permission denial in `blocker`, needs the plugin installed from this branch
+and a new session.

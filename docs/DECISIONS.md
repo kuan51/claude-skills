@@ -6,6 +6,7 @@ Why this repository is the way it is. Newest first.
 
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
+| [DEC-0006](decisions/DEC-0006-escalate-a-fabflows-builder-reply-that-names-a-blocker.md) | Escalate a fabflows builder reply that names a blocker | proposed | 2026-09-13 | - | - |
 | [DEC-0005](decisions/DEC-0005-let-the-fabflows-refuter-answer-blocked-when-it-cannot-revie.md) | Let the fabflows refuter answer BLOCKED when it cannot review | proposed | 2026-09-13 | - | - |
 | [DEC-0004](decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md) | Fable leads fabflows; Opus builds and reviews in a deterministic build loop | proposed | 2026-09-13 | - | - |
 | [DEC-0003](decisions/DEC-0003-archive-old-decision-records-into-a-digest-instead-of-deleti.md) | Archive old decision records into a digest instead of deleting them | proposed | 2026-09-10 | - | - |
