@@ -32,6 +32,7 @@ const rework = {
   mustFix: [{ location: 'src/cli.js:10', problem: 'flag is parsed but ignored', evidence: 'no branch reads it', severity: 'high' }],
   report: 'r',
 };
+const reviewBlocked = { verdict: 'BLOCKED', blocker: 'npm is not installed', mustFix: [], report: 'r' };
 
 test('starts nothing without settings, with partial settings, or on a default branch', async () => {
   for (const args of [undefined, {}, '']) {
@@ -101,6 +102,25 @@ test('escalates when a review accepts but still lists must-fix items', async () 
   assert.equal(calls.length, 2);
 });
 
+test('escalates when the reviewer could not review, in any round', async () => {
+  const first = await run(ARGS, [built, reviewBlocked]);
+  assert.equal(first.result.reason, 'reviewer-blocked');
+  assert.equal(first.result.verdict.blocker, 'npm is not installed');
+  assert.equal(first.calls.length, 2);
+
+  const later = await run(ARGS, [built, rework, built, reviewBlocked]);
+  assert.equal(later.result.reason, 'reviewer-blocked');
+  assert.equal(later.result.rounds.length, 2);
+  assert.equal(later.calls.length, 4);
+
+  // Must-fix items sent with BLOCKED are not rework: the review never ran.
+  const withItems = await run(ARGS, [built, { ...reviewBlocked, mustFix: rework.mustFix }]);
+  assert.equal(withItems.result.reason, 'reviewer-blocked');
+  assert.equal(withItems.calls.length, 2);
+
+  assert.match(first.calls[1].prompt, /BLOCKED when you could not run/);
+});
+
 test('stops when the builder is blocked or an agent returns nothing', async () => {
   const b = await run(ARGS, [blocked]);
   assert.equal(b.result.reason, 'blocked');
@@ -126,6 +146,8 @@ test('every escalation carries status, baseRef, and the last verdict', async () 
     [[built, null], 'reviewer-failed', null],
     [[built, { ...rework, mustFix: [] }], 'rework-without-must-fix', 'REWORK'],
     [[built, { ...accept, mustFix: rework.mustFix }], 'accept-with-must-fix', 'ACCEPT'],
+    [[built, reviewBlocked], 'reviewer-blocked', 'BLOCKED'],
+    [[built, rework, built, reviewBlocked], 'reviewer-blocked', 'BLOCKED'],
     [[built, rework, null], 'builder-failed', 'REWORK'],
     [[built, rework, built, null], 'reviewer-failed', 'REWORK'],
   ];

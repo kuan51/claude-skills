@@ -67,7 +67,8 @@ const FINDING = {
 const VERDICT = {
   type: 'object',
   properties: {
-    verdict: { type: 'string', enum: ['ACCEPT', 'REWORK'] },
+    verdict: { type: 'string', enum: ['ACCEPT', 'REWORK', 'BLOCKED'] },
+    blocker: { type: 'string', description: 'when BLOCKED: what stopped the review' },
     mustFix: { type: 'array', items: FINDING },
     report: REPORT,
   },
@@ -103,7 +104,7 @@ function reviewBrief(round) {
     a.spec,
     '</spec>',
     '',
-    '**Output:** The structured result: verdict (ACCEPT when there are no must-fix findings, otherwise REWORK), mustFix as findings with path:line, problem, evidence and severity, and report -- your usual report contract in prose, including your notes and the test output.',
+    '**Output:** The structured result: verdict (ACCEPT when there are no must-fix findings, REWORK when there is at least one, BLOCKED when you could not run the diff or the test command -- say what stopped you in blocker), mustFix as findings with path:line, problem, evidence and severity, and report -- your usual report contract in prose, including your notes and the test output.',
     '',
     `**Tools and paths:** Read, Grep, Glob, and Bash for exactly these commands: \`git diff ${a.baseRef}..HEAD\`, \`git log\`, \`git show\`, \`git status --porcelain\`, and \`${a.testCommand}\`.`,
     '',
@@ -148,6 +149,11 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
   if (!review) {
     log(`round ${round}: the reviewer returned nothing -- escalating to the lead`)
     return escalate('reviewer-failed')
+  }
+  // The review never ran, so any must-fix items with it are not rework the builder can do.
+  if (review.verdict === 'BLOCKED') {
+    log(`round ${round}: the reviewer could not review -- escalating to the lead`)
+    return escalate('reviewer-blocked')
   }
   if (review.verdict === 'ACCEPT' && review.mustFix.length) {
     log(`round ${round}: ACCEPT with ${review.mustFix.length} must-fix item(s) -- escalating rather than guessing`)

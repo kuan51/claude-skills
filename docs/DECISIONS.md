@@ -7,6 +7,8 @@ Why this repository is the way it is. Newest first.
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
 | [DEC-0009](decisions/DEC-0009-uncommitted-work-fails-the-build-loop-s-review-and-gate.md) | Uncommitted work fails the build loop's review and gate | proposed | 2026-09-13 | - | - |
+| [DEC-0007](decisions/DEC-0007-recover-a-thrown-fabflows-build-by-resuming-it-not-catching.md) | Recover a thrown fabflows build by resuming it, not catching the throw | proposed | 2026-09-13 | - | - |
+| [DEC-0005](decisions/DEC-0005-let-the-fabflows-refuter-answer-blocked-when-it-cannot-revie.md) | Let the fabflows refuter answer BLOCKED when it cannot review | proposed | 2026-09-13 | - | - |
 | [DEC-0004](decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md) | Fable leads fabflows; Opus builds and reviews in a deterministic build loop | proposed | 2026-09-13 | - | - |
 | [DEC-0003](decisions/DEC-0003-archive-old-decision-records-into-a-digest-instead-of-deleti.md) | Archive old decision records into a digest instead of deleting them | proposed | 2026-09-10 | - | - |
 | [DEC-0002](decisions/DEC-0002-ship-fabflows-as-a-plugin-with-worker-agents-and-an-active-g.md) | Ship fabflows as a plugin with worker agents and an active guard hook | proposed | 2026-09-09 | - | - |

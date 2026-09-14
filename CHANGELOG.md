@@ -22,7 +22,8 @@ per-plugin history until entries are recorded here going forward.
   any command.
 - **fabflows 0.2.0** -- two Opus agents and a build loop. `refuter` reviews a finished
   change by trying to show it is not done: it reads the diff against the spec, re-runs
-  the tests itself, and returns ACCEPT or REWORK with must-fix findings. `investigator`
+  the tests itself, and returns ACCEPT or REWORK with must-fix findings, or BLOCKED when
+  it cannot run them. `investigator`
   reproduces a self-contained failure and narrows it to `file:line` with ranked
   hypotheses, leaving the root-cause call to the lead. `fabflows:build` is a Workflow
   script that takes one spec'd change through a feature branch: an Opus builder
