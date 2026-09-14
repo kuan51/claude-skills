@@ -316,3 +316,23 @@ alerts. ai-tells: 2435 errors in 127 files, led by `EmDashUsage` (622),
 Microsoft errors, 586 of them `Microsoft.Dashes`. 27 of proselint's 28 rules
 with a level set are `error`. Result went to the user before any rule was
 turned off.
+
+## 2026-09-14 — docs-warden 0.3.0: Vale doc pass
+
+**PLANNED** — Reword every living document to zero error-level Vale alerts under
+the new config, without changing meaning. Historical documents (dated plans,
+decision records, run logs, changelogs) and test fixtures skip the two new
+packages and are not reworded. Verify with a full `vale --minAlertLevel=error`
+sweep over the living documents and every test suite.
+
+**CONFIRMED** — `vale --minAlertLevel=error --output=line` over every tracked
+Markdown file outside `docs/superpowers/`, `docs/decisions/`, `docs/RUNLOG.md`,
+`CHANGELOG.md` and the docs-warden test fixtures (87 files) printed nothing.
+`vale ls-config` parsed all three configs, the two shipped copies through scratch
+copies pointed at the synced styles, each with 13 rules at warning.
+`node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. Per-plugin
+`node --test` printed ciso 295/295, data-analysis-review 19/19 and fabflows 35/35.
+`python plugins/docs-warden/test/test_scripts.py` printed 72 PASS, 0 FAIL.
+
+**SKIPPED** — The plugins were not installed from this branch into a new session,
+so the reworded skills were not exercised through a real session start.
