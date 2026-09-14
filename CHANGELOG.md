@@ -37,6 +37,19 @@ per-plugin history until entries are recorded here going forward.
   permission denial counts as a blocker; DEC-0006 records why. A report whose first line
   starts with a denial escalates too, and a reply with an empty report or a blocked reply with no
   reason escalates as `unexplained` instead of reaching review.
+- **docs-warden 0.3.0** -- two more Vale packages beside `Microsoft` and `write-good`:
+  `proselint` (misused words, hedging, jargon, typography) and `ai-tells` (patterns of
+  machine-written prose), both pinned by release URL. `ai-tells` stays at error level on
+  purpose, so prose is fixed before it is committed. The configs skip YAML front matter
+  titles and descriptions, which decide when a skill triggers, and eleven rules that
+  flagged accurate wording are set to warning. Decision records, run logs and
+  changelogs skip the two new packages because they are append-only.
+
+### Changed
+
+- **ciso 1.1.3, data-analysis-review 0.1.1, fabflows 0.2.1** -- wording only. Every
+  living document is reworded to pass the new Vale rules without changing what it
+  says. Front matter descriptions are untouched, so skill routing does not change.
 
 ### Fixed
 
