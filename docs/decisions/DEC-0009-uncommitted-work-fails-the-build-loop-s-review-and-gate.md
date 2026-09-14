@@ -1,5 +1,5 @@
 ---
-id: DEC-0005
+id: DEC-0009
 title: Uncommitted work fails the build loop's review and gate
 status: proposed
 date: 2026-09-13
@@ -8,7 +8,7 @@ supersedes: []
 tags: []
 ---
 
-# DEC-0005: Uncommitted work fails the build loop's review and gate
+# DEC-0009: Uncommitted work fails the build loop's review and gate
 
 ## Context and problem statement
 
