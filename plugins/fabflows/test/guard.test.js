@@ -196,6 +196,22 @@ test('protects live config only, never the wider ~/.claude tree', () => {
   allows(shell('git -C ~/.claude/plugins/marketplaces/claude-skills fetch origin'), 'git fetch in the marketplace clone');
   allows(shell('git -C ~/.claude/plugins/marketplaces/claude-skills checkout feature'), 'git checkout in the marketplace clone');
   denies(shell('git -C ~/.claude/plugins/cache/x/y/1.0.0 checkout feature'), 'git checkout in the plugin cache');
+  for (const cmd of [
+    'git -C ~/.claude/plugins/marketplaces/claude-skills worktree add ~/.claude/plugins/cache/x/y/1.0.0',
+    'git -C ~/.claude/plugins/marketplaces/claude-skills clone . ~/.claude/plugins/cache/x/y/1.0.0',
+    'git -C ~/.claude/plugins/marketplaces/claude-skills -c core.hooksPath=/tmp/h checkout feature',
+    'git -C ~/.claude/plugins/marketplaces/claude-skills checkout HEAD -- plugins/x',
+    'git -C ~/.claude/plugins/marketplaces/claude-skills checkout --orphan x',
+    'git -C ~/.claude/plugins/marketplaces/claude-skills fetch --upload-pack=/tmp/evil origin',
+    // Read-only commands turned into executors or deleters by a flag.
+    'find ~/.claude/hooks -name "*.js" -delete',
+    'find ~/.claude/plugins/cache -exec rm {} \\;',
+    'rg --pre /tmp/evil guard ~/.claude/plugins/cache',
+    'fd -x rm . ~/.claude/hooks',
+    'rm -r ~/.claude/plugins',
+  ]) {
+    denies(shell(cmd), cmd);
+  }
   denies(shell('cp -r ~/.claude/plugins/marketplaces/claude-skills/plugins/x/. ~/.claude/plugins/cache/claude-skills/x/1.0.0/'), 'copying into the plugin cache');
 });
 

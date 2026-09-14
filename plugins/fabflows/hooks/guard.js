@@ -151,7 +151,7 @@ function isProtectedPath(p) {
 const READ_ONLY =
   /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|ls|echo|printf|test|\[|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash)(\.exe)?(\s|$)/i;
 const PROTECTED_SHELL =
-  /(^|[\s"'>])(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](settings\.json|settings\.local\.json|hooks[\\/]|plugins[\\/])|[\\/]\.git[\\/]hooks[\\/]/i;
+  /(^|[\s"'>])(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)/i;
 // Running a script that ships in the plugin cache or a user hook is a read of it, not a
 // write. Only a path directly after the interpreter (past its flags) qualifies, so
 // `python fix.py ~/.claude/settings.json` stays denied. Redirects still deny below.
@@ -159,8 +159,14 @@ const RUNS_PROTECTED_SCRIPT =
   /^(node|deno|bun|npx|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?\s+(run\s+)?(-\S+\s+)*["']?(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](plugins|hooks)[\\/]/i;
 // The marketplace clone is source, not live config: nothing under it runs until it is
 // copied into the cache, and that copy stays denied. So git may fetch and check it out.
+// Only these subcommands, and checkout/switch take one bare branch: `worktree add`,
+// `clone`, and `-c core.hooksPath=` can all write outside the clone.
 const MARKETPLACE_GIT =
-  /^git\s+-C\s+["']?(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]plugins[\\/]marketplaces[\\/]/i;
+  /^git\s+-C\s+["']?(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]plugins[\\/]marketplaces[\\/][^\s"']*["']?\s+(fetch|pull|status|log|show|diff|rev-parse|ls-remote|branch|(checkout|switch)\s+[^\s-]\S*\s*$)/i;
+// Flags that make an otherwise read-only command execute or delete: find -exec/-delete,
+// rg --pre, fd -x, git --upload-pack. A segment carrying one is never read-only.
+const EXEC_FLAGS =
+  /\s(-delete|-exec(dir)?|-ok(dir)?|-fprint\w*|--pre(-glob)?|--search-zip|-x|-X|--exec(-batch)?|--upload-pack|--receive-pack|-c)(\s|=|$)/;
 
 // ---------------------------------------------------------------- git state
 function git(args, cwd) {
@@ -240,7 +246,8 @@ function checkShell(command, cwd) {
 
     if (
       PROTECTED_SHELL.test(seg) &&
-      (seg.includes('>') || !(READ_ONLY.test(seg) || RUNS_PROTECTED_SCRIPT.test(seg) || MARKETPLACE_GIT.test(seg)))
+      (seg.includes('>') ||
+        !(RUNS_PROTECTED_SCRIPT.test(seg) || (!EXEC_FLAGS.test(seg) && (READ_ONLY.test(seg) || MARKETPLACE_GIT.test(seg)))))
     ) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
     }
