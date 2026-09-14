@@ -87,12 +87,11 @@ Three, each doing one job:
 existing repos produces hundreds of findings, and the team's rational response is to
 disable it. Warn first, fix the backlog, then promote to error.
 
-**The exception is `ai-tells`.** Its rules default to error level, and the config keeps
-them there on purpose. It flags the patterns of machine-written prose so they get fixed
-before a commit is made.
-The Vale pre-commit hook lints only staged files, so an older document is checked only
-when someone edits it. A rule that flags accurate wording is set to `warning` in
-`.vale.ini`, with the reason written beside it.
+The default configs set `proselint` and `ai-tells` to `warning` as a whole, so they
+follow the warn-first rule too. This repository promotes the punctuation and filler
+rules of `ai-tells` to `error`, because fixing one of those cannot change what a
+sentence says. The Vale pre-commit hook lints only staged files, so an older document
+is checked only when someone edits it.
 
 Pin every tool version, and verify the pinned version actually exists before writing
 it down. `proselint` and `ai-tells` are pinned by release URL in `Packages`.

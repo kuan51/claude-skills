@@ -79,10 +79,10 @@ those packages:
 | Patterns of machine-written prose | the whole `ai-tells` package |
 
 These packages default to their own thresholds, and we keep them, because one set
-of numbers maintained upstream beats two sets drifting apart here. The exception
-is a short list of `ai-tells`, `Microsoft` and `proselint` rules set to `warning`
-in `.vale.ini`. Each one flagged wording that was already accurate, and the reason
-is written beside it.
+of numbers maintained upstream beats two sets drifting apart here. The default
+config sets both `proselint` and `ai-tells` to `warning` as a whole, and this
+repository promotes a short list of `ai-tells` punctuation and filler rules to
+`error` in `.vale.ini`, with the reason written beside it.
 
 ## Quoted prose is linted too
 

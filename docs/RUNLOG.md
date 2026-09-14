@@ -336,3 +336,27 @@ copies pointed at the synced styles, each with 13 rules at warning.
 
 **SKIPPED** — The plugins were not installed from this branch into a new session,
 so the reworded skills were not exercised through a real session start.
+
+## 2026-09-14 — docs-warden 0.3.0: default the new Vale packages to warning
+
+**PLANNED** — Change the three Vale configs (repo root, the docs-warden lint asset,
+the clarity asset) so `proselint` and `ai-tells` default to `warning` as a whole,
+with a short list of punctuation and filler `ai-tells` rules, plus
+`proselint.Uncomparables` and `proselint.CorporateSpeak`, promoted back to `error`
+in the repo root config only; the two shipped asset copies stay at warning
+throughout. Verify with `vale ls-config` on each config,
+`vale --minAlertLevel=error --output=line` over the living-doc list,
+`node --test "test/*.test.js"` and `python plugins/docs-warden/test/test_scripts.py`.
+
+**CONFIRMED** — A probe first showed that a `Style = level` or `Style.Rule = level`
+line in `[*.md]` turns that style or rule on in every section, whatever its
+`BasedOnStyles` says. Each exempt section therefore also sets `proselint = NO`,
+`ai-tells = NO` and a `NO` line per promoted rule. With that in place:
+`vale ls-config` parses all three configs (shipped copies via scratch copies
+pointed at the synced styles). `vale --minAlertLevel=error --output=line` over
+the 87 living documents printed nothing and exited 0. `vale
+--minAlertLevel=suggestion --output=JSON` on `docs/DECISIONS.md`, `docs/RUNLOG.md`,
+`CHANGELOG.md`, `before-after.md`, `evals/README.md` and two fixtures reported no
+`proselint` or `ai-tells` alert under any of the three configs. `node --test
+"test/*.test.js"`: 4 pass, 0 fail. `python plugins/docs-warden/test/test_scripts.py`:
+72 PASS, 0 FAIL.
