@@ -113,3 +113,24 @@ mutation probe (a scratchpad script that breaks one piece of `build.js` at a tim
 `build.test.js` against it) reported all 14 mutants killed with the baseline green;
 before these tests the suite killed 2 of 10. The five design gaps the review raised were
 not fixed here; each went to its own brainstorming session.
+
+## 2026-09-13 — fabflows 0.2.0: the refuter can answer BLOCKED
+
+**PLANNED** — Add `BLOCKED` to the build loop's review verdict so a reviewer that cannot
+run the diff or the test command escalates with reason `reviewer-blocked` instead of
+accepting untested work or asking for rework the builder cannot do. Update `refuter.md`,
+the skill's build-loop section, the changelog, and record the choice as DEC-0005. Verify
+with `node --test "plugins/fabflows/test/*.test.js"`, `node --test "test/*.test.js"`, and
+the scratchpad mutation probe.
+
+**CONFIRMED** — The new BLOCKED tests failed first against the old loop (`actual:
+'rework-without-must-fix'`, `expected: 'reviewer-blocked'`), then passed after the change.
+`node --test "plugins/fabflows/test/*.test.js"` printed `tests 31`, `pass 31`, `fail 0`;
+`node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. The mutation probe,
+with two new mutants (the BLOCKED check removed, BLOCKED dropped from the review brief),
+reported all 16 killed with the baseline green. `adr_new.py` created DEC-0005 and
+`adr_index.py` rebuilt the index.
+
+**SKIPPED** — No live run: whether a real refuter answers BLOCKED when its test command
+is missing needs the plugin installed from this branch and a new session, as the earlier
+SKIPPED entry for 0.2.0 already notes.
