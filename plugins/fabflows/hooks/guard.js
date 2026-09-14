@@ -57,15 +57,12 @@ function block(reason) {
 
 const INSTALL = [
   /^npm\s+(i|install|ci|add)\b/i,
-  /^(pnpm|yarn|bun)\s+(i|install|add|a)\b/i,
+  /^(pnpm|yarn|bun)\s+(global\s+)?(i|install|add|a)\b/i,
   /^pip3?\s+install\b/i,
   /^python3?\s+-m\s+pip\s+install\b/i,
-  /^yarn\s+global\s+add\b/i,
-  /^cargo\s+add\b/i,
-  /^go\s+get\b/i,
   /^uv\s+(pip\s+install|add)\b/i,
   /^dotnet\s+(add\s+package|tool\s+install)\b/i,
-  /^(cargo|go|gem)\s+install\b/i,
+  /^(cargo|go|gem)\s+(install|add|get)\b/i,
   /^apt(-get)?\s+install\b/i,
   /^(brew|winget|choco|scoop)\s+install\b/i,
   /^install-(module|package|script)\b/i,
@@ -154,19 +151,18 @@ function isProtectedPath(p) {
 // segment denies regardless, since `cat x > settings.json` starts with a reader.
 const READ_ONLY =
   /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|ls|echo|printf|test|\[|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash)(\.exe)?(\s|$)/i;
-const PROTECTED_SHELL =
-  /(^|[\s"'>])(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)/i;
+// `~/.claude/` in every spelling a shell string can carry it.
+const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;
+const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)`, 'i');
 // Running a script that ships in the plugin cache or a user hook is a read of it, not a
 // write. Only a path directly after the interpreter (past its flags) qualifies, so
 // `python fix.py ~/.claude/settings.json` stays denied. Redirects still deny below.
-const RUNS_PROTECTED_SCRIPT =
-  /^(node|deno|bun|npx|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?\s+(run\s+)?(-\S+\s+)*["']?(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](plugins|hooks)[\\/]/i;
+const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^(node|deno|bun|npx|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?\s+(run\s+)?(-\S+\s+)*["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
 // The marketplace clone is source, not live config: nothing under it runs until it is
 // copied into the cache, and that copy stays denied. So git may fetch and check it out.
 // Only these subcommands, and checkout/switch take one bare branch: `worktree add`,
 // `clone`, and `-c core.hooksPath=` can all write outside the clone.
-const MARKETPLACE_GIT =
-  /^git\s+-C\s+["']?(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]plugins[\\/]marketplaces[\\/](?:(?!\.\.)[^\s"'])*["']?\s+(fetch|pull|status|log|show|diff|rev-parse|ls-remote|(checkout|switch)\s+[^\s-]\S*\s*$)/i;
+const MARKETPLACE_GIT = new RegExp(String.raw`^git\s+-C\s+["']?${CLAUDE_HOME}plugins[\\/]marketplaces[\\/](?:(?!\.\.)[^\s"'])*["']?\s+(fetch|pull|status|log|show|diff|rev-parse|ls-remote|(checkout|switch)\s+[^\s-]\S*\s*$)`, 'i');
 // Flags that make an otherwise read-only command execute or delete: find -exec/-delete,
 // rg --pre, fd -x, git --upload-pack. A segment carrying one is never read-only.
 const EXEC_FLAGS =
@@ -249,11 +245,9 @@ function checkShell(command, cwd) {
       deny('fabflows: staging a credential-bearing file is blocked.');
     }
 
-    if (
-      PROTECTED_SHELL.test(seg) &&
-      (seg.includes('>') ||
-        !(RUNS_PROTECTED_SCRIPT.test(seg) || (!EXEC_FLAGS.test(seg) && (READ_ONLY.test(seg) || MARKETPLACE_GIT.test(seg)))))
-    ) {
+    const readOnly =
+      RUNS_PROTECTED_SCRIPT.test(seg) || (!EXEC_FLAGS.test(seg) && (READ_ONLY.test(seg) || MARKETPLACE_GIT.test(seg)));
+    if (PROTECTED_SHELL.test(seg) && (seg.includes('>') || !readOnly)) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
     }
 
