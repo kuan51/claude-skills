@@ -59,6 +59,10 @@ const INSTALL = [
   /^npm\s+(i|install|ci|add)\b/i,
   /^(pnpm|yarn|bun)\s+(i|install|add|a)\b/i,
   /^pip3?\s+install\b/i,
+  /^python3?\s+-m\s+pip\s+install\b/i,
+  /^yarn\s+global\s+add\b/i,
+  /^cargo\s+add\b/i,
+  /^go\s+get\b/i,
   /^uv\s+(pip\s+install|add)\b/i,
   /^dotnet\s+(add\s+package|tool\s+install)\b/i,
   /^(cargo|go|gem)\s+install\b/i,
@@ -138,7 +142,7 @@ const PROTECTED_ROOTS = ['settings.json', 'settings.local.json', 'hooks', 'plugi
 
 function isProtectedPath(p) {
   if (!p) return false;
-  const n = norm(p);
+  const n = norm(p.replace(/^~(?=[\\/])/, os.homedir()));
   if (/(^|\/)\.git\/hooks(\/|$)/.test(n)) return true;
   return PROTECTED_ROOTS.some((root) => under(n, root));
 }
@@ -162,11 +166,11 @@ const RUNS_PROTECTED_SCRIPT =
 // Only these subcommands, and checkout/switch take one bare branch: `worktree add`,
 // `clone`, and `-c core.hooksPath=` can all write outside the clone.
 const MARKETPLACE_GIT =
-  /^git\s+-C\s+["']?(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]plugins[\\/]marketplaces[\\/][^\s"']*["']?\s+(fetch|pull|status|log|show|diff|rev-parse|ls-remote|branch|(checkout|switch)\s+[^\s-]\S*\s*$)/i;
+  /^git\s+-C\s+["']?(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]plugins[\\/]marketplaces[\\/](?:(?!\.\.)[^\s"'])*["']?\s+(fetch|pull|status|log|show|diff|rev-parse|ls-remote|(checkout|switch)\s+[^\s-]\S*\s*$)/i;
 // Flags that make an otherwise read-only command execute or delete: find -exec/-delete,
 // rg --pre, fd -x, git --upload-pack. A segment carrying one is never read-only.
 const EXEC_FLAGS =
-  /\s(-delete|-exec(dir)?|-ok(dir)?|-fprint\w*|--pre(-glob)?|--search-zip|-x|-X|--exec(-batch)?|--upload-pack|--receive-pack|-c)(\s|=|$)/;
+  /\s(-delete|-exec(dir)?|-ok(dir)?|-fprint\w*|--pre(-glob)?|--search-zip|--exec(-batch)?|--upload-pack|--receive-pack)(\s|=|$)|^fd(\.exe)?\s+(.*\s)?-[xX](\s|$)/;
 
 // ---------------------------------------------------------------- git state
 function git(args, cwd) {
@@ -209,10 +213,11 @@ function checkShell(command, cwd) {
 
   // Split on shell separators, then anchor every pattern at segment start. That is what
   // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
-  // to parse quoting.
+  // to parse quoting. Newlines and `&` separate too, a leading `(` is dropped, and a
+  // `VAR=value` prefix is stripped, so none of them hides a command from the anchor.
   const segments = command
-    .split(/&&|\|\||[;|]/)
-    .map((s) => s.trim())
+    .split(/&&|\|\||[;|&\r\n]/)
+    .map((s) => s.replace(/^[\s(]+/, '').replace(/^(\w+=\S*\s+)+/, '').trim())
     .filter(Boolean);
 
   for (const seg of segments) {
@@ -291,8 +296,8 @@ function preToolUse(input) {
     return;
   }
 
-  if (tool === 'Edit' || tool === 'Write') {
-    const target = ti.file_path;
+  if (tool === 'Edit' || tool === 'Write' || tool === 'NotebookEdit') {
+    const target = ti.file_path || ti.notebook_path;
     if (isProtectedPath(target)) {
       deny('fabflows: writing to live Claude Code configuration or a git hook is blocked. That is what stops a worker from disarming this guard.');
     }
@@ -311,9 +316,11 @@ function subagentStop(input) {
   // A missing or unreadable transcript throws, and main() fails open.
   const tail = fs.readFileSync(input.agent_transcript_path, 'utf8').slice(-40000);
 
+  // The tail is raw JSONL, where `"command"` and `"output"` appear as keys in every tool
+  // call. A word followed by a quote is a key, not prose, and does not count.
   const groups = [
     [/files?\s+(touched|changed)|modified files/i, 'files touched'],
-    [/\bcommand\b|\boutput\b|exit code/i, 'commands and their real output'],
+    [/\b(command|output)\b(?!")|exit code/i, 'commands and their real output'],
     [/\bconfirmed\b|\binferred\b|\bguessed\b/i, 'confidence labels'],
   ];
   const missing = groups.filter(([re]) => !re.test(tail)).map(([, label]) => label);

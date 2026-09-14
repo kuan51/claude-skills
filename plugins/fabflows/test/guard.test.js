@@ -57,6 +57,17 @@ test('blocks package installs across ecosystems, and only installs', () => {
     'choco install jq',
     'scoop install jq',
     'Install-Module Pester',
+    'python -m pip install requests',
+    'yarn global add vite',
+    'cargo add serde',
+    'go get golang.org/x/text',
+    // Separators and prefixes that must not hide a command from the anchor.
+    'cd plugins\nnpm install -g evil',
+    'echo start\r\nrm -rf ~',
+    'echo x & npm install evil',
+    '( npm install evil )',
+    'CI=1 npm ci',
+    'FOO=1 BAR=2 pip install x',
   ]) {
     denies(shell(cmd), cmd);
   }
@@ -209,9 +220,21 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     'rg --pre /tmp/evil guard ~/.claude/plugins/cache',
     'fd -x rm . ~/.claude/hooks',
     'rm -r ~/.claude/plugins',
+    'echo hi\ncp evil.sh ~/.claude/hooks/pre.sh',
+    'git -C ~/.claude/plugins/marketplaces/x/../../cache/y fetch origin',
+    'git -C ~/.claude/plugins/marketplaces/claude-skills branch -f master evil',
   ]) {
     denies(shell(cmd), cmd);
   }
+  // Only fd's -x executes; ls -x and head -c are plain flags.
+  allows(shell('ls -x ~/.claude/plugins'), 'ls -x');
+  allows(shell('head -c 100 ~/.claude/plugins/x/README.md'), 'head -c');
+  // Tool-side: a ~ path is the same file as the absolute one, and notebooks are files.
+  denies(write('~/.claude/settings.json'), 'Write with a ~ path');
+  denies(
+    run({ hook_event_name: 'PreToolUse', tool_name: 'NotebookEdit', tool_input: { notebook_path: path.join(claude, 'hooks', 'x.ipynb'), new_source: 'x' }, cwd: '.' }),
+    'NotebookEdit into hooks'
+  );
   denies(shell('cp -r ~/.claude/plugins/marketplaces/claude-skills/plugins/x/. ~/.claude/plugins/cache/claude-skills/x/1.0.0/'), 'copying into the plugin cache');
 });
 
@@ -274,6 +297,14 @@ test('SubagentStop blocks a report missing its contract fields', () => {
     fs.writeFileSync(transcript, 'Files changed: src/a.js:12. Ran the command, output was 4 passing.');
     allows(stop(), 'a report missing only confidence labels');
 
+    // A real transcript is JSONL: "command" and "output" appear as keys in every tool
+    // call, and must not count as the prose contract field.
+    fs.writeFileSync(
+      transcript,
+      '{"type":"tool_use","input":{"command":"ls"}}\n{"type":"tool_result","output":"a"}\n{"type":"text","text":"It seems fine."}'
+    );
+    assert.equal(stop().decision, 'block', 'JSON keys must not satisfy the contract');
+
     fs.writeFileSync(transcript, 'I looked around and it seems fine.');
     allows(stop({ stop_hook_active: true }), 'the loop guard must stop a re-block');
 
@@ -286,8 +317,8 @@ test('SubagentStop blocks a report missing its contract fields', () => {
 
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
-  // One anchored matcher: an unanchored Edit also matches NotebookEdit.
-  assert.deepEqual(cfg.hooks.PreToolUse.map((e) => e.matcher), ['^(Bash|PowerShell|Read|Grep|Edit|Write)$']);
+  // One anchored matcher, so every guarded tool is named explicitly.
+  assert.deepEqual(cfg.hooks.PreToolUse.map((e) => e.matcher), ['^(Bash|PowerShell|Read|Grep|Edit|Write|NotebookEdit)$']);
   assert.ok(cfg.hooks.SubagentStop, 'the worker report contract check must be wired');
 
   const commands = [...cfg.hooks.PreToolUse, ...cfg.hooks.SubagentStop].flatMap((e) =>

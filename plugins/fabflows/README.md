@@ -110,8 +110,9 @@ fields, and sends it back to be re-emitted if two or more are missing.
 The guard matches patterns on shell strings. It does not understand shells, and it can
 be walked around:
 
-- Base64, variable expansion (`X=rm; $X -rf ~`), heredocs, `python -c`, and full binary
-  paths all evade it.
+- Base64, variable expansion (`X=rm; $X -rf ~`), command substitution, `xargs`,
+  heredocs, `python -c`, and full binary paths all evade it. Newlines, `&`, a leading
+  `(`, and a `VAR=value` prefix do not: each segment is anchored separately.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
   repository the command targets.
 - `git push origin HEAD:master` from a feature branch is not caught.
