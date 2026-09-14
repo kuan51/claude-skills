@@ -113,3 +113,26 @@ mutation probe (a scratchpad script that breaks one piece of `build.js` at a tim
 `build.test.js` against it) reported all 14 mutants killed with the baseline green;
 before these tests the suite killed 2 of 10. The five design gaps the review raised were
 not fixed here; each went to its own brainstorming session.
+
+## 2026-09-13 — fabflows 0.2.0: a build run that throws
+
+**PLANNED** — Close the review gap where an `agent()` throw in `fabflows:build` (a spent
+`+Nk` budget) ends the run in a workflow error instead of an `escalate` result. No code
+change: add one paragraph to the skill's build-loop section telling the lead to read
+`git log <baseRef>..HEAD`, resume with `resumeFromRunId`, and never restart with a fresh
+`baseRef`, and record why in DEC-0007 (numbered by hand -- DEC-0005 and DEC-0006 are taken
+on sibling branches). Verify with `node --test "plugins/fabflows/test/*.test.js"`,
+`node --test "test/*.test.js"`, and
+`python plugins/docs-warden/skills/docs-warden/scripts/adr_index.py .` leaving no diff
+beyond the new row.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"` printed `tests 30`,
+`pass 30`, `fail 0`, and `node --test "test/*.test.js"` printed `tests 4`, `pass 4`,
+`fail 0`. `python plugins/docs-warden/skills/docs-warden/scripts/adr_index.py .` printed
+`5 record(s)`; `git diff docs/DECISIONS.md` showed only the new DEC-0007 row, and
+`docs/decisions/README.md` was unchanged. `adr_new.py` has no option for the number, so it
+scaffolded DEC-0005 and the record was rewritten as DEC-0007 by hand.
+
+**SKIPPED** — No live run. Nothing here made `fabflows:build` throw and then resumed it
+with `resumeFromRunId`, so DEC-0007's claim that finished rounds replay from cache after a
+throw is inferred from the Workflow reference, not observed.
