@@ -276,3 +276,25 @@ report that went to review). After it, the same command printed `tests 35`, `pas
 **SKIPPED** — No live run: whether the runtime enforces `minLength`, and whether a real
 builder puts a denial on its report's first line, needs the plugin installed from this
 branch and a new session. Vale not run: it stops on the missing `Project` vocabulary.
+
+## 2026-09-13 — fabflows 0.2.0: anchor the builder denial check
+
+**PLANNED** — A review of PR #30 probed `saysDenied` and found it misfires both ways: a
+first line such as `Permission denied: none of the tests could run` was exempted by the word
+"none", and ordinary first lines such as `Files touched: src/auth/deny.js:4` or
+`Implemented the --blocked flag` escalated a clean build. The skill also stopped telling the
+lead to read the builder's report on escalation. Count a denial only when the first line
+starts with one, exempt a line only when it says there is none, have the brief tell the
+builder to start the report with `Permission denied:`, and restore "read the report" in the
+skill. Verify with `node --test "plugins/fabflows/test/*.test.js"` (the new cases failing
+first) and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — Before the fix, `node --test "plugins/fabflows/test/*.test.js"` printed
+`pass 34`, `fail 1`: `Permission denied: none of the tests could run` gave `actual: undefined`,
+`expected: 'blocked'`. After it, the same command printed `tests 35`, `pass 35`, `fail 0`, and
+`node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. A scratchpad probe of
+`saysDenied` returned true for the two "none" denials, `**Permission denied:** …` and
+`- Permission denied: no network`, and false for `deny.js`, `blocked-users.ts`,
+`--blocked`, `No permission denials.`, `Blocked: none`, `Permission denials: 0` and an
+empty line. `markdownlint-cli2` on the touched Markdown files still reports only the older
+`docs/RUNLOG.md:197` MD018.
