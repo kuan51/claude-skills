@@ -152,6 +152,11 @@ const READ_ONLY =
   /^(cat|less|more|head|tail|grep|jq|stat|file|wc|diff|ls|get-content|gc|type|select-string|get-childitem|gci|dir|test-path)\b/i;
 const PROTECTED_SHELL =
   /(^|[\s"'>])(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](settings\.json|settings\.local\.json|hooks[\\/]|plugins[\\/])|[\\/]\.git[\\/]hooks[\\/]/i;
+// Running a script that ships in the plugin cache or a user hook is a read of it, not a
+// write. Only a path directly after the interpreter (past its flags) qualifies, so
+// `python fix.py ~/.claude/settings.json` stays denied. Redirects still deny below.
+const RUNS_PROTECTED_SCRIPT =
+  /^(node|deno|bun|python3?|bash|sh|pwsh|powershell|&)\s+(-\S+\s+)*["']?(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/](plugins|hooks)[\\/]/i;
 
 // ---------------------------------------------------------------- git state
 function git(args, cwd) {
@@ -229,7 +234,7 @@ function checkShell(command, cwd) {
       deny('fabflows: staging a credential-bearing file is blocked.');
     }
 
-    if (PROTECTED_SHELL.test(seg) && (!READ_ONLY.test(seg) || seg.includes('>'))) {
+    if (PROTECTED_SHELL.test(seg) && (seg.includes('>') || !(READ_ONLY.test(seg) || RUNS_PROTECTED_SCRIPT.test(seg)))) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
     }
 

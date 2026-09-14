@@ -172,6 +172,13 @@ test('protects live config only, never the wider ~/.claude tree', () => {
   denies(shell('python fix.py ~/.claude/settings.json'), 'an unlisted command naming settings.json');
   allows(shell('cat ~/.claude/settings.json'), 'reading settings.json');
   allows(shell('Get-Content $env:USERPROFILE\\.claude\\settings.json', 'PowerShell'), 'Get-Content of settings.json');
+  // Running a script that lives in the plugin cache or hooks dir is a read of it.
+  allows(shell('node ~/.claude/plugins/cache/claude-skills/design/1.0.0/scripts/server.js --port 3000'), 'running a plugin script');
+  allows(shell('node --inspect $HOME/.claude/plugins/cache/x/y/1.0.0/s.js'), 'running a plugin script with a flag');
+  allows(shell('bash ~/.claude/hooks/notify.sh'), 'running a user hook script');
+  allows(shell('node $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.js', 'PowerShell'), 'running a plugin script from PowerShell');
+  denies(shell('node ~/.claude/plugins/cache/x/y/1.0.0/s.js > ~/.claude/settings.json'), 'running a plugin script with a redirect into settings.json');
+  denies(shell('node ~/.claude/settings.json'), 'an interpreter naming settings.json');
 });
 
 test('git ops are blocked on a default branch and allowed elsewhere', () => {
