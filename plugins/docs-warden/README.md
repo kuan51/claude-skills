@@ -26,8 +26,9 @@ they rot.
 - **`audit`** — score a repo against the standard and report what is missing, stale,
   or off-standard. Never fixes silently.
 - **`maintain`** — find documents that drifted from changed code and propose edits.
-- **`decide`** — scaffold and index architecture decision records, only on an
-  explicit ask and only after a three-question admission test; development
+- **`decide`** — scaffold and index architecture decision records. Runs on an
+  explicit ask, or offers one when its own answers to a three-question
+  admission test are all yes; never writes without the human's yes. Development
   history stays in the pull request.
 - **`compact`** — once `docs/decisions/` holds fifty records, move the oldest 25
   unchanged into `docs/decisions/archive/` and write one digest record carrying

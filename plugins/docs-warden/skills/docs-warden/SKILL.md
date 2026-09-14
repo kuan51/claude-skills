@@ -1,6 +1,6 @@
 ---
 name: docs-warden
-description: Maintain repository documentation consistently across a repo or a fleet of them. Use when scaffolding docs for a repo, auditing documentation, checking what docs are missing or stale, updating docs after a code change, or when the human explicitly asks to record an architecture decision. Triggers on README, docs folder, CONVENTIONS, RUNLOG, GLOSSARY, SECURITY.md, CODEOWNERS, "document this repo", "set up documentation", "scaffold docs", "audit our docs", "what's missing from our docs", "is this repo compliant", "docs are out of date", "the README is wrong", and on the explicit requests "record a decision", "new ADR", "why did we choose". Does not trigger merely because a change involved a decision; a decision record is written only when asked for. Also triggers on any request to create, review, or fix repository documentation even when the word documentation is not used.
+description: Maintain repository documentation consistently across a repo or a fleet of them. Use when scaffolding docs for a repo, auditing documentation, checking what docs are missing or stale, updating docs after a code change, or when the human explicitly asks to record an architecture decision. Triggers on README, docs folder, CONVENTIONS, RUNLOG, GLOSSARY, SECURITY.md, CODEOWNERS, "document this repo", "set up documentation", "scaffold docs", "audit our docs", "what's missing from our docs", "is this repo compliant", "docs are out of date", "the README is wrong", and on the explicit requests "record a decision", "new ADR", "why did we choose". Also offer a record, without writing one, when Claude's own answers to the three admission questions in decide mode are all yes. Also triggers on any request to create, review, or fix repository documentation even when the word documentation is not used.
 ---
 
 # Docs Warden
@@ -23,10 +23,10 @@ archive the oldest of them into a digest once there are fifty, and flag document
 that have drifted from the code they describe.
 
 **This skill will not:** invent regulatory content, write clinical or legal claims,
-edit an accepted decision record, write a decision record nobody asked for, fix
-findings without asking, or govern visual design. Colors, logos, Mermaid theming,
-badges, and product-name casing are out of scope; if your project has a brand or
-style guide, that owns them.
+edit an accepted decision record, write a decision record without a yes from the
+human, fix findings without asking, or govern visual design. Colors, logos, Mermaid
+theming, badges, and product-name casing are out of scope; if your project has a
+brand or style guide, that owns them.
 
 ## Non-negotiables
 
@@ -119,8 +119,10 @@ documented behavior.
 
 ### `decide` — record a decision
 
-Triggered only by an explicit ask: "record a decision", "new ADR", "why did we
-choose". Never by noticing that a change involved a choice.
+Triggered by an explicit ask ("record a decision", "new ADR", "why did we choose"),
+or by Claude answering the three questions below about a change just made and
+getting three yeses. In the second case, show the answers and ask the human to
+confirm them. Never scaffold without a yes.
 
 0. Run the admission test with the human before anything is scaffolded:
    1. Would reversing this cost more than a single pull request?
