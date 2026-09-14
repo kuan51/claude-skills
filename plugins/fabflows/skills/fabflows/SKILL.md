@@ -146,7 +146,10 @@ Before starting it:
 On `accepted`, run the gate yourself: re-run `testCommand`, read
 `git diff --stat <baseRef>..HEAD`, and check that one must-fix from an earlier round is
 really fixed. On `escalate`, read `reason` and `verdict` -- the last review, or null if
-none ran -- and take the work over. The loop never
+none ran -- and take the work over. `reviewer-blocked` means the review never ran: fix
+what `verdict.blocker` names (a missing dependency is the user's to install), then run
+`fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the loop -- the
+builder's commits are already on the branch. The loop never
 merges, pushes, or reverts -- those stay with you and the user.
 
 ## What the guard hook blocks
