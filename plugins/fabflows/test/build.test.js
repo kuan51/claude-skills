@@ -78,6 +78,13 @@ test('escalates at the rework cap instead of looping', async () => {
   assert.equal(calls.length, 6);
 });
 
+test('escalates when a review accepts but still lists must-fix items', async () => {
+  const { result, calls } = await run(ARGS, [built, { ...accept, mustFix: rework.mustFix }]);
+  assert.equal(result.status, 'escalate');
+  assert.equal(result.reason, 'accept-with-must-fix');
+  assert.equal(calls.length, 2);
+});
+
 test('stops when the builder is blocked or an agent returns nothing', async () => {
   const b = await run(ARGS, [blocked]);
   assert.equal(b.result.reason, 'blocked');

@@ -140,6 +140,10 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     log(`round ${round}: the reviewer returned nothing -- escalating to the lead`)
     return { status: 'escalate', reason: 'reviewer-failed', baseRef: a.baseRef, rounds }
   }
+  if (review.verdict === 'ACCEPT' && review.mustFix.length) {
+    log(`round ${round}: ACCEPT with ${review.mustFix.length} must-fix item(s) -- escalating rather than guessing`)
+    return { status: 'escalate', reason: 'accept-with-must-fix', baseRef: a.baseRef, rounds }
+  }
   if (review.verdict === 'ACCEPT') {
     log(`round ${round}: ACCEPT`)
     return { status: 'accepted', baseRef: a.baseRef, rounds, verdict: review }
