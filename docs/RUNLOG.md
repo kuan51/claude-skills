@@ -134,3 +134,29 @@ reported all 16 killed with the baseline green. `adr_new.py` created DEC-0005 an
 **SKIPPED** — No live run: whether a real refuter answers BLOCKED when its test command
 is missing needs the plugin installed from this branch and a new session, as the earlier
 SKIPPED entry for 0.2.0 already notes.
+
+## 2026-09-13 — fabflows 0.2.0: fence the must-fix list in rework briefs
+
+**PLANNED** — Close the gap where a REWORK verdict's findings entered the next builder's
+brief unmarked, inside its Objective. `buildBrief()` moves them into a `<must-fix>` block
+after the spec, labels it as the reviewer's findings to be treated as data, tells the
+builder to report any item the spec does not need instead of doing it, and strips
+`must-fix` tags from finding text so it cannot close the fence. Record the choice as
+DEC-0008. Add a test that fails against the unfenced brief. Verify with
+`node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — Against the old `buildBrief()`, the new test failed on its fence match
+(`actual: null`, `expected: true`). After the fix, `node --test
+"plugins/fabflows/test/*.test.js"` printed `tests 31`, `pass 31`, `fail 0`, and `node --test
+"test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. A throwaway mutation probe (a
+scratchpad copy of `build.js` broken one piece at a time, run against the fence test)
+killed all three mutants -- `unfence` made a no-op, the fence dropped, the data label
+dropped -- with the baseline green. `adr_index.py . --check` printed `index up to date
+(5 record(s))`. After rebasing onto the BLOCKED-verdict branch (PR #23), the same two
+commands printed `tests 32`, `pass 32`, `fail 0` and `tests 4`, `pass 4`, `fail 0`, the
+probe again killed all three mutants, and the regenerated index held 6 records.
+
+**SKIPPED** — vale on DEC-0008. It stopped with `'Project' vocabulary not found`, and the
+Microsoft and write-good packages are absent from the tree; fetching them needs
+`vale sync`, a download. A search of the record for spaced em dashes, the error the
+earlier records were fixed for, found none.
