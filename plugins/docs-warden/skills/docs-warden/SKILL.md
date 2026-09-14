@@ -40,8 +40,8 @@ brand or style guide, that owns them.
    document edits through the commit and the PR. The run log is for operational actions that
    leave no commit behind. Duplicating doc edits there only makes it grow.
 6. **A decision record holds what the PR cannot.** If the pull request description
-   already explains the change fully, it is development history, not a decision.
-   Do not write a record for it. See "What earns a record" in
+   already explains the change fully, the change is development history, not a
+   decision. Do not write a record for it. See "What earns a record" in
    `references/adr-format.md`.
 
 ## Modes
@@ -124,11 +124,11 @@ or by Claude answering the three questions below about a change just made and
 getting three yeses. In the second case, show the answers and ask the human to
 confirm them. Never scaffold without a yes.
 
-0. Run the admission test with the human before anything is scaffolded:
+0. Run the admission test with the human before scaffolding anything:
    1. Would reversing this cost more than a single pull request?
    2. Does it constrain work outside the file or component just touched?
    3. Is there a rejected alternative someone could reasonably re-propose later?
-   Any "no" means it is not an architecture decision. Put the reasoning in the
+   Any "no" means the change is not an architecture decision. Put the reasoning in the
    pull request description and stop. No record.
 1. `scripts/adr_new.py <repo> "<title>"` scaffolds the next `DEC-NNNN`.
 2. Fill the sections **with the human**, not from assumption. Considered options,

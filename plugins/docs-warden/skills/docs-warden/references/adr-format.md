@@ -2,7 +2,7 @@
 
 A decision record answers **why**. `CONVENTIONS.md` answers **what we do now**. A
 date in `CONVENTIONS.md` means history leaked into the wrong file; it does not by
-itself mean a record is owed.
+itself earn a record.
 
 ## What earns a record
 
@@ -16,7 +16,7 @@ A change earns a record when all three hold:
 3. A rejected alternative exists that someone could reasonably re-propose later.
 
 That covers a choice of technology, protocol, or storage; a boundary between
-components; a rule every future change must obey; a gap knowingly accepted for the
+components; a rule every future change must obey; a gap accepted on purpose for the
 life of the project.
 
 It does not cover bug fixes, refactors, renames, wording, dependency bumps, test

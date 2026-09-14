@@ -9,7 +9,7 @@ generated: false
 How we work in this repository **today**. Edited in place as the standard changes.
 
 No history here. A dated entry in this file belongs in git, in a pull request, or,
-only if it is an architecture decision (hard to reverse, constrains other
+only for an architecture decision (hard to reverse, constrains other
 components, had a real alternative), in a record under [DECISIONS.md](DECISIONS.md).
 
 ## Stack
