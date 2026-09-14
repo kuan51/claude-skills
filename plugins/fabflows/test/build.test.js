@@ -139,6 +139,19 @@ test('every escalation carries status, baseRef, and the last verdict', async () 
   }
 });
 
+// The tests run against the working tree but the review reads the commits, so work left
+// uncommitted would pass both unless each brief checks the tree.
+test('every brief checks the working tree for uncommitted work', async () => {
+  const { calls } = await run(ARGS, [built, rework, built, accept]);
+  for (const { prompt, opts } of calls) {
+    assert.match(prompt, /git status --porcelain/, `${opts.label} brief must check the tree`);
+  }
+  assert.match(calls[0].prompt, /Before you report done, `git status --porcelain` must print nothing/);
+  assert.match(calls[1].prompt, /Run `git status --porcelain` before `npm test`; every path it prints is must-fix/);
+  assert.match(calls[2].prompt, /start with `git status --porcelain` and `git diff abc1234\.\.HEAD`/);
+  assert.doesNotMatch(calls[2].prompt, /earlier commits are already on the branch/);
+});
+
 test('reviewerModel overrides the Fable default', async () => {
   const { calls } = await run({ ...ARGS, reviewerModel: 'opus' }, [built, accept]);
   assert.equal(calls[1].opts.model, 'opus');

@@ -113,3 +113,21 @@ mutation probe (a scratchpad script that breaks one piece of `build.js` at a tim
 `build.test.js` against it) reported all 14 mutants killed with the baseline green;
 before these tests the suite killed 2 of 10. The five design gaps the review raised were
 not fixed here; each went to its own brainstorming session.
+
+## 2026-09-13 — fabflows 0.2.0: uncommitted work can pass review
+
+**PLANNED** — Close the dirty-tree gap: the refuter reviews `git diff <baseRef>..HEAD`
+but runs the tests against the working tree, so work the builder left uncommitted passes
+both. Tell the builder to leave `git status --porcelain` empty before reporting done,
+make every path it prints a must-fix in the review brief (checked before the tests run),
+stop the rework brief claiming earlier commits exist, and add the same check to the
+lead's gate in the skill. Record the design as DEC-0005. Write the brief assertions in
+`build.test.js` first and watch them fail. Verify with `node --test
+"plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — The new test failed first against the old script (`build:1 brief must
+check the tree`, `expected: /git status --porcelain/`), then passed after the brief
+edits. `node --test "plugins/fabflows/test/*.test.js"` printed `tests 31`, `pass 31`,
+`fail 0`, and `node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`.
+`adr_new.py` scaffolded DEC-0005 and `adr_index.py` reported 5 records. No version bump:
+master is on fabflows 0.1.0 and 0.2.0 is unreleased.
