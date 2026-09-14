@@ -251,3 +251,28 @@ passed `adr-index` and `links` (96 relative links).
 **SKIPPED** — No live run: whether the runtime enforces `minLength`, and whether a real
 builder puts a permission denial in `blocker`, needs the plugin installed from this branch
 and a new session.
+
+## 2026-09-13 — fabflows 0.2.0: close DEC-0006's three builder-reply gaps
+
+**PLANNED** — DEC-0006 left three builder replies the loop could not act on: `done` with an
+empty report ends `accepted` against the stubs, `done` with a permission denial only in the
+report ends `accepted`, and `blocked` with no blocker escalates with no reason. Make the loop
+escalate an empty or blank report and a reason-less `blocked` as `unexplained`, and treat a
+denial on the report's first non-blank line -- where the report contract puts it -- as
+`blocked`. Tell the builder to quote a denial there too, and tell the lead what `unexplained`
+means. No decision record: reversing it is one pull request, so the admission test says no.
+Verify with `node --test "plugins/fabflows/test/*.test.js"` (the new tests failing first),
+`node --test "test/*.test.js"`, and `python3 plugins/docs-warden/skills/docs-warden/scripts/audit.py .`.
+
+**CONFIRMED** — Before the change, `node --test "plugins/fabflows/test/*.test.js"` failed on
+the new assertions (`actual: undefined`, `expected: 'unexplained'` for an empty report that
+ended `accepted`; `actual: 'reviewer-failed'`, `expected: 'blocked'` for a denial in the
+report that went to review). After it, the same command printed `tests 35`, `pass 35`,
+`fail 0`, and `node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`.
+`audit.py .` passed `adr-index` and `links` (87 relative links). Its `lint` check failed;
+`markdownlint-cli2` on the three touched Markdown files reports only
+`docs/RUNLOG.md:197` MD018, which predates this entry.
+
+**SKIPPED** — No live run: whether the runtime enforces `minLength`, and whether a real
+builder puts a denial on its report's first line, needs the plugin installed from this
+branch and a new session. Vale not run: it stops on the missing `Project` vocabulary.
