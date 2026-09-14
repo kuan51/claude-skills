@@ -135,6 +135,93 @@ reported all 16 killed with the baseline green. `adr_new.py` created DEC-0005 an
 is missing needs the plugin installed from this branch and a new session, as the earlier
 SKIPPED entry for 0.2.0 already notes.
 
+## 2026-09-13 — fabflows 0.2.0: a build run that throws
+
+**PLANNED** — Close the review gap where an `agent()` throw in `fabflows:build` (a spent
+`+Nk` budget) ends the run in a workflow error instead of an `escalate` result. No code
+change: add one paragraph to the skill's build-loop section telling the lead to read
+`git log <baseRef>..HEAD`, resume with `resumeFromRunId`, and never restart with a fresh
+`baseRef`, and record why in DEC-0007 (numbered by hand -- DEC-0005 and DEC-0006 are taken
+on sibling branches). Verify with `node --test "plugins/fabflows/test/*.test.js"`,
+`node --test "test/*.test.js"`, and
+`python plugins/docs-warden/skills/docs-warden/scripts/adr_index.py .` leaving no diff
+beyond the new row.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"` printed `tests 30`,
+`pass 30`, `fail 0`, and `node --test "test/*.test.js"` printed `tests 4`, `pass 4`,
+`fail 0`. `python plugins/docs-warden/skills/docs-warden/scripts/adr_index.py .` printed
+`5 record(s)`; `git diff docs/DECISIONS.md` showed only the new DEC-0007 row, and
+`docs/decisions/README.md` was unchanged. `adr_new.py` has no option for the number, so it
+scaffolded DEC-0005 and the record was rewritten as DEC-0007 by hand.
+
+**SKIPPED** — No live run. Nothing here made `fabflows:build` throw and then resumed it
+with `resumeFromRunId`, so DEC-0007's claim that finished rounds replay from cache after a
+throw is inferred from the Workflow reference, not observed.
+
+## 2026-09-13 — fabflows 0.2.0: uncommitted work can pass review
+
+**PLANNED** — Close the dirty-tree gap: the refuter reviews `git diff <baseRef>..HEAD`
+but runs the tests against the working tree, so work the builder left uncommitted passes
+both. Tell the builder to leave `git status --porcelain` empty before reporting done,
+make every path it prints a must-fix in the review brief (checked before the tests run),
+stop the rework brief claiming earlier commits exist, and add the same check to the
+lead's gate in the skill. Record the design as DEC-0005. Write the brief assertions in
+`build.test.js` first and watch them fail. Verify with `node --test
+"plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — The new test failed first against the old script (`build:1 brief must
+check the tree`, `expected: /git status --porcelain/`), then passed after the brief
+edits. `node --test "plugins/fabflows/test/*.test.js"` printed `tests 31`, `pass 31`,
+`fail 0`, and `node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`.
+`adr_new.py` scaffolded DEC-0005 and `adr_index.py` reported 5 records. No version bump:
+master is on fabflows 0.1.0 and 0.2.0 is unreleased.
+
+## 2026-09-13 — fabflows: renumber the dirty-tree decision record
+
+**PLANNED** — PR #23 (fabflows 0.2.0 plus the refuter's BLOCKED verdict) already adds a
+DEC-0005, and sibling PRs #27, #24 and #26 took DEC-0006 to DEC-0008, so this branch's
+record moves to DEC-0009. Rename the file with `git mv`, change its `id` and heading,
+regenerate `docs/DECISIONS.md` with `adr_index.py`, and retarget PR #25 onto #23's
+branch, `claude/fabflows-reviewer-blocked`. The entry above that names DEC-0005 stays as
+written: it was true when logged. Verify with `adr_index.py` and `node --test
+"plugins/fabflows/test/*.test.js"`.
+
+**CONFIRMED** — `adr_index.py` reported 5 records, and `docs/DECISIONS.md` lists
+DEC-0009 with no DEC-0005 row. `node --test "plugins/fabflows/test/*.test.js"` printed
+`tests 31`, `pass 31`, `fail 0`, and `node --test "test/*.test.js"` printed `tests 4`,
+`pass 4`, `fail 0`. `gh pr view 25` printed `base=claude/fabflows-reviewer-blocked
+commits=1` after the retarget. The merge base with #23's branch is `ea72d41`: a local
+`git fetch` of that branch failed with a connection reset, but #23's commit list on
+GitHub contains `ea72d41` and none of this branch's commits. The branch this PR first
+targeted, `claude/fabflows-plugin-design-5bb9a2`, was pushed by mistake (it duplicates
+#23's commits) and was deleted from origin; `git ls-remote` no longer finds it.
+
+## 2026-09-13 — fabflows 0.2.0: fence the must-fix list in rework briefs
+
+**PLANNED** — Close the gap where a REWORK verdict's findings entered the next builder's
+brief unmarked, inside its Objective. `buildBrief()` moves them into a `<must-fix>` block
+after the spec, labels it as the reviewer's findings to be treated as data, tells the
+builder to report any item the spec does not need instead of doing it, and strips
+`must-fix` tags from finding text so it cannot close the fence. Record the choice as
+DEC-0008. Add a test that fails against the unfenced brief. Verify with
+`node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — Against the old `buildBrief()`, the new test failed on its fence match
+(`actual: null`, `expected: true`). After the fix, `node --test
+"plugins/fabflows/test/*.test.js"` printed `tests 31`, `pass 31`, `fail 0`, and `node --test
+"test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. A throwaway mutation probe (a
+scratchpad copy of `build.js` broken one piece at a time, run against the fence test)
+killed all three mutants -- `unfence` made a no-op, the fence dropped, the data label
+dropped -- with the baseline green. `adr_index.py . --check` printed `index up to date
+(5 record(s))`. After rebasing onto the BLOCKED-verdict branch (PR #23), the same two
+commands printed `tests 32`, `pass 32`, `fail 0` and `tests 4`, `pass 4`, `fail 0`, the
+probe again killed all three mutants, and the regenerated index held 6 records.
+
+**SKIPPED** — vale on DEC-0008. It stopped with `'Project' vocabulary not found`, and the
+Microsoft and write-good packages are absent from the tree; fetching them needs
+`vale sync`, a download. A search of the record for spaced em dashes, the error the
+earlier records were fixed for, found none.
+
 ## 2026-09-13 — fabflows 0.2.0: a contradictory builder reply escalates
 
 **PLANNED** — A stub run of `build.js` showed a builder reply of `done` with a `blocker`,
