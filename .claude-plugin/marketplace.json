@@ -26,7 +26,7 @@
     {
       "name": "docs-warden",
       "description": "Keeps repository documentation consistent and honest. Scaffolds a universal document set scaled by repo archetype, audits existing repos for missing, stale, or off-standard docs, enforces append-only architecture decision records, compacts the oldest of them into a digest once fifty exist, and regenerates the generated ones so drift from the code is reported rather than discovered. Ships a plain-English Vale style alongside it, plus optional compliance overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and NIST SSDF, each describing document structure only and never inventing regulatory content.",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "source": "./plugins/docs-warden",
       "author": {
         "name": "claude-skills"
@@ -34,8 +34,8 @@
     },
     {
       "name": "fabflows",
-      "description": "Routes mechanical work from an expensive lead model to cheaper, tool-scoped worker agents -- explorer and researcher on Haiku, editor and test-runner on Sonnet -- and makes the lead re-verify what they report instead of trusting it. Ships an ACTIVE guard hook that blocks package installs, commits and pushes to a default branch, destructive shell commands, and reads or writes of credential files; the guard fails open, so a bug degrades to no guard rather than a blocked session.",
-      "version": "0.1.0",
+      "description": "Routes work from an expensive lead model to tool-scoped worker agents -- explorer and researcher on Haiku, editor and test-runner on Sonnet, refuter and investigator on Opus -- and makes the lead re-verify what they report instead of trusting it. Adds fabflows:build, a deterministic loop in which an Opus builder implements a spec and a fresh reviewer returns ACCEPT or REWORK. Ships an ACTIVE guard hook that blocks package installs, commits and pushes to a default branch, destructive shell commands, and reads or writes of credential files; the guard fails open, so a bug degrades to no guard rather than a blocked session.",
+      "version": "0.2.0",
       "source": "./plugins/fabflows",
       "author": {
         "name": "claude-skills"
