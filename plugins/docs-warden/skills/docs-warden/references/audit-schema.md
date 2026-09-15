@@ -6,7 +6,7 @@ audits and prints a Markdown table. With several paths, it prints one row per re
 shape below. `--json-out PATH` overrides that: everything goes to `PATH` instead, as
 one object for a repo and as an array of them for several.
 
-### Waivers
+## Waivers
 
 A repository may excuse one check in `.docs-warden.yml`, with a reason:
 
