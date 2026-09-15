@@ -204,7 +204,7 @@ line already there.
 
 They live in the installed plugin, never in the target repo:
 
-```
+```text
 ${CLAUDE_PLUGIN_ROOT}/skills/docs-warden/scripts/
 ```
 
