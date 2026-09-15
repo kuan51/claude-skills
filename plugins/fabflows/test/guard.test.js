@@ -222,6 +222,18 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     ['sha256sum ~/.claude/hooks/x.js', B, 'allow'],
     ['ls -x ~/.claude/plugins', B, 'allow'],
     ['head -c 100 ~/.claude/plugins/x/README.md', B, 'allow'],
+    ['sort ~/.claude/plugins/config.json', B, 'allow'],
+    ['basename ~/.claude/plugins/cache/x', B, 'allow'],
+    ['diff ~/.claude/plugins/cache/x/1.0.0/p.json ~/.claude/plugins/cache/x/2.0.0/p.json', B, 'allow'],
+    // A read-only loop over the plugin cache: the `for` header and the `do` prefix must
+    // not read as unknown commands naming a protected path.
+    ['for d in ~/.claude/plugins/cache/x/*/; do cat "$d/p.json"; done', B, 'allow'],
+    ['if grep -q hooks ~/.claude/settings.json; then echo yes; fi', B, 'allow'],
+    // A keyword prefix does not smuggle a real command past the other rules.
+    ['while read l; do rm -rf ~/.claude/plugins; done', B, 'deny'],
+    ['for d in x; do echo "{}" > ~/.claude/settings.json; done', B, 'deny'],
+    // A `for` header carrying a command substitution is not read-only.
+    ['for f in $(ls ~/.claude/plugins/ ); do echo $f; done', B, 'deny'],
     ['Get-Item $env:USERPROFILE\\.claude\\plugins\\cache', P, 'allow'],
     ['Set-Location $env:USERPROFILE\\.claude\\plugins\\cache', P, 'allow'],
     ['echo "{}" > ~/.claude/hooks/x.js', B, 'deny'],

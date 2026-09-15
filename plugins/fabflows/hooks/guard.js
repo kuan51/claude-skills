@@ -150,7 +150,14 @@ function isProtectedPath(p) {
 // everything else that names a protected path is denied. A redirect anywhere in the
 // segment denies regardless, since `cat x > settings.json` starts with a reader.
 const READ_ONLY =
-  /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|ls|echo|printf|test|\[|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash)(\.exe)?(\s|$)/i;
+  /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|cmp|comm|sort|uniq|cut|tr|nl|tac|rev|column|basename|dirname|du|ls|echo|printf|test|\[|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash|compare-object|sort-object|measure-object|select-object|convertfrom-json)(\.exe)?(\s|$)/i;
+// Shell keywords are not commands. `for d in ...; do cat "$d/x"; done` splits into a loop
+// header and `do cat ...`; without this both look like an unknown command naming a
+// protected path and a plain read-only loop is denied. The keyword is stripped so the
+// real command is what gets checked, and the `for` header runs nothing by itself --
+// unless it carries a command substitution, which this does not try to parse.
+const SHELL_KEYWORD = /^(do|done|then|else|elif|fi|if|while|until)\s+/i;
+const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
 const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;
 const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)`, 'i');
@@ -219,7 +226,7 @@ function checkShell(command, cwd) {
   const segments = command
     .replace(HARMLESS_REDIRECT, '')
     .split(/&&|\|\||[;|&\r\n]/)
-    .map((s) => s.replace(/^[\s(]+/, '').replace(/^(\w+=\S*\s+)+/, '').trim())
+    .map((s) => s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(/^(\w+=\S*\s+)+/, '').trim())
     .filter(Boolean);
 
   for (const seg of segments) {
@@ -252,7 +259,8 @@ function checkShell(command, cwd) {
     }
 
     const readOnly =
-      RUNS_PROTECTED_SCRIPT.test(seg) || (!EXEC_FLAGS.test(seg) && (READ_ONLY.test(seg) || MARKETPLACE_GIT.test(seg)));
+      RUNS_PROTECTED_SCRIPT.test(seg) ||
+      (!EXEC_FLAGS.test(seg) && (READ_ONLY.test(seg) || FOR_HEADER.test(seg) || MARKETPLACE_GIT.test(seg)));
     if (PROTECTED_SHELL.test(seg) && (seg.includes('>') || !readOnly)) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
     }

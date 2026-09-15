@@ -365,3 +365,26 @@ the 87 living documents printed nothing and exited 0. `vale
 `plugins/ciso`, `plugins/data-analysis-review` and `plugins/fabflows` prints 296, 20
 and 36, not 295, 19 and 35. The extra one in each is `test/helpers/frontmatter.js`,
 which the runner picks up as a test file. All pass.
+
+---
+
+## 2026-09-15 — fabflows 0.2.4: guard blocked read-only `~/.claude` access
+
+**PLANNED** — Reproduce the denial of a read-only inspection of the plugin cache,
+widen the guard's read-only shell allowlist, and re-run
+`node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — Piping
+`{"tool_name":"Bash","tool_input":{"command":"for d in ~/.claude/plugins/cache/claude-skills/docs-warden/*/; do cat \"$d/.claude-plugin/plugin.json\"; done"}}`
+into `node plugins/fabflows/hooks/guard.js` printed the deny about modifying live
+configuration; `sort ~/.claude/plugins/config.json` and `awk ... ~/.claude/plugins/x`
+denied the same way. After the change the loop, `sort` and `basename` print nothing
+(allow), while `while read l; do rm -rf ~/.claude/plugins; done`,
+`for d in x; do echo "{}" > ~/.claude/settings.json; done` and
+`for f in $(ls ~/.claude/plugins/ ); do echo $f; done` still deny.
+`node --test "plugins/fabflows/test/*.test.js"`: 35 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail.
+
+**SKIPPED** — `awk` and `sed` were left off the allowlist, so they still deny when
+they name a protected path. Both can write (`sed -i`, `print > file`), and the
+readers already on the list cover the same inspection.
