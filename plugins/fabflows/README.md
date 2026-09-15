@@ -97,7 +97,8 @@ A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
 - **Live configuration**: `~/.claude/settings.json`, `~/.claude/hooks/`,
   `~/.claude/plugins/`, and any `.git/hooks/`. This is what stops a worker from
   disarming the guard. Reading them and running a script that lives there is allowed.
-  Only writes and redirects are blocked, including copying files into the plugin cache.
+  Only writes and redirects to a file are blocked, including copying files into the plugin
+  cache; merging or discarding a stream (`2>&1`, `2>/dev/null`) does not count.
   Everything else under `~/.claude/` stays writable.
 
 A `SubagentStop` hook checks that a worker's final report actually includes its contract
@@ -111,6 +112,8 @@ be walked around:
 - Base64, variable expansion (`X=rm; $X -rf ~`), command substitution, `xargs`,
   heredocs, `python -c`, and full binary paths all evade it. Newlines, `&`, a leading
   `(`, and a `VAR=value` prefix do not: each segment is anchored separately.
+- Any binary whose basename is an interpreter name (`./x/python.exe`) is trusted to run a
+  script from the plugin cache.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
   repository the command targets.
 - `git push origin HEAD:master` from a feature branch is not caught.

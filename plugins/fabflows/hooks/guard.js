@@ -154,10 +154,15 @@ const READ_ONLY =
 // `~/.claude/` in every spelling a shell string can carry it.
 const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;
 const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)`, 'i');
+// Discarding or merging a stream (`2>/dev/null`, `2>&1`) is not a write. Stripped from the
+// raw command before the split, because `2>&1` would otherwise be cut on its `&`. A digit
+// is required after `>&`, so `cat x >& file` still counts as a redirect.
+const HARMLESS_REDIRECT = /\d*>&\d+|\d*>>?\s*(\/dev\/null|\$null)\b/gi;
 // Running a script that ships in the plugin cache or a user hook is a read of it, not a
 // write. Only a path directly after the interpreter (past its flags) qualifies, so
-// `python fix.py ~/.claude/settings.json` stays denied. Redirects still deny below.
-const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^(node|deno|bun|npx|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?\s+(run\s+)?(-\S+\s+)*["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
+// `python fix.py ~/.claude/settings.json` stays denied. The interpreter may sit at a path
+// (`./.venv/Scripts/python.exe`); only its basename is checked. Redirects still deny below.
+const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^["']?(\S*[\\/])?(node|deno|bun|npx|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?["']?\s+(run\s+)?(-\S+\s+)*["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
 // The marketplace clone is source, not live config: nothing under it runs until it is
 // copied into the cache, and that copy stays denied. So git may fetch and check it out.
 // Only these subcommands, and checkout/switch take one bare branch: `worktree add`,
@@ -212,6 +217,7 @@ function checkShell(command, cwd) {
   // to parse quoting. Newlines and `&` separate too, a leading `(` is dropped, and a
   // `VAR=value` prefix is stripped, so none of them hides a command from the anchor.
   const segments = command
+    .replace(HARMLESS_REDIRECT, '')
     .split(/&&|\|\||[;|&\r\n]/)
     .map((s) => s.replace(/^[\s(]+/, '').replace(/^(\w+=\S*\s+)+/, '').trim())
     .filter(Boolean);

@@ -197,8 +197,22 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     ['npx ~/.claude/plugins/cache/x/y/1.0.0/s.js', B, 'allow'],
     ['deno run ~/.claude/plugins/cache/x/y/1.0.0/s.ts', B, 'allow'],
     ['uv run ~/.claude/plugins/cache/x/y/1.0.0/s.py', B, 'allow'],
+    // The exact shape Claude Security uses for its helpers.
+    ['python3 "C:/Users/me/.claude/plugins/cache/claude-plugins-official/claude-security/0.11.0/scripts/write_scan_meta.py" F:/repo/CLAUDE-SECURITY-x/.claude-security-run F:/repo --mode changes --effort medium --base origin/fix/x --merge-base 84b688995ab7cf2c612d95f582cf8f07f8a687f7', B, 'allow'],
     ['node ~/.claude/plugins/cache/x/y/1.0.0/s.js > ~/.claude/settings.json', B, 'deny'],
     ['node ~/.claude/settings.json', B, 'deny'],
+    // Merging or discarding a stream is not a write; a redirect to a file still is.
+    ['cat ~/.claude/settings.json 2>/dev/null', B, 'allow'],
+    ['node ~/.claude/plugins/cache/x/y/1.0.0/s.js 2>&1', B, 'allow'],
+    ['Get-Content $env:USERPROFILE\\.claude\\settings.json 2>$null', P, 'allow'],
+    ['cat ~/.claude/settings.json > /tmp/x', B, 'deny'],
+    ['node ~/.claude/plugins/cache/x/y/1.0.0/s.js 2>&1 > ~/.claude/settings.json', B, 'deny'],
+    ['python3 fix.py ~/.claude/settings.json 2>&1', B, 'deny'],
+    ['cat x >& ~/.claude/settings.json', B, 'deny'],
+    // An interpreter may live in a venv; an arbitrary binary is still not one.
+    ['"./.venv/Scripts/python.exe" ~/.claude/plugins/cache/x/y/1.0.0/s.py . 2>&1', B, 'allow'],
+    ['.venv\\Scripts\\python.exe $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.py', P, 'allow'],
+    ['./evil ~/.claude/hooks/x.js', B, 'deny'],
     // Read-only commands that merely name a protected path. Only fd's -x executes.
     ['cd ~/.claude/plugins/cache/x', B, 'allow'],
     ['rg guard ~/.claude/plugins/cache', B, 'allow'],
