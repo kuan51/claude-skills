@@ -83,8 +83,6 @@ Terraform `module` is always domain.
 - **Never hand-edit `docs/architecture/domain-model.md`.** It carries the generated
   marker. Fix a wrong row by renaming the thing in code, or with
   `ontology.overrides:` in `.docs-warden.yml` (`{ConceptName: domain|technical|ignore}`).
-- **Never widen the scope on a guess.** `ontology.source_paths:` in the manifest is
-  the only way to narrow the walk, and it is optional.
 
 ## Standalone use
 

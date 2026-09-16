@@ -46,17 +46,15 @@ CATEGORY_SUFFIXES = (
     "Stub", "Base", "Abstract",
 )
 
-# Kinds that are technical whatever they are called: a function is a behaviour
-# and a Terraform resource is an implementation detail of one.
-TECHNICAL_KINDS = ("function", "resource")
-
 # A constructor parameter names the collaborator's role as often as its type:
 # payment_gateway is PaymentGateway, order_repo is Order behind a repository.
 PARAM_ROLE_SUFFIXES = ("_repo", "_service", "_client")
 
 
 def categorise(name: str, kind: str) -> str:
-    if kind in TECHNICAL_KINDS:
+    # A function is a behaviour and a Terraform resource an implementation
+    # detail: technical whatever they are called.
+    if kind in ("function", "resource"):
         return "technical"
     if name.endswith(CATEGORY_SUFFIXES):
         return "technical"
@@ -70,7 +68,7 @@ def _first_line(text) -> str:
 
 
 def _snake_to_pascal(name: str) -> str:
-    return "".join(word[:1].upper() + word[1:] for word in name.split("_") if word)
+    return "".join(word.capitalize() for word in name.split("_"))
 
 
 def _param_candidates(param: str):
@@ -91,6 +89,7 @@ class Ontology:
         self.concepts = {}
         self._edges = {rel: set() for rel in RELATIONSHIPS}
         self.sources = {lang: 0 for lang in LANGUAGES}
+        self.tf_blocks = []  # (name, body, rel); edges need every block first
 
     def add(self, name, kind, language, defined_in, summary="", category=None):
         if not name or name in self.concepts:
@@ -259,7 +258,8 @@ def _tf_body(text, brace_index):
     return text[brace_index + 1:]
 
 
-def _terraform(rel, text, out, blocks):
+def _terraform(rel, text, out):
+    blocks = out.tf_blocks
     for match in TF_MODULE_RE.finditer(text):
         name = match.group(1)
         body = _tf_body(text, match.end() - 1)
@@ -278,8 +278,8 @@ def _terraform(rel, text, out, blocks):
         blocks.append((name, body, rel))
 
 
-def _terraform_edges(out, blocks):
-    for name, body, rel in blocks:
+def _terraform_edges(out):
+    for name, body, rel in out.tf_blocks:
         for referenced in TF_MODULE_REF_RE.findall(body):
             out.edge("depends_on", name, referenced)
         for kind, local in TF_RESOURCE_REF_RE.findall(body):
@@ -292,47 +292,32 @@ def _terraform_edges(out, blocks):
                 out.edge("part_of", name, parts[index + 1])
 
 
-def source_files(root: Path, source_paths=None):
+HANDLERS = {"python": _python, "javascript": _js,
+            "powershell": _powershell, "terraform": _terraform}
+
+
+def source_files(root: Path):
     """(language, path, repo-relative posix path) for every readable source."""
-    roots = [root / p for p in source_paths] if source_paths else [root]
-    found = {}
-    for base in roots:
-        if not base.is_dir():
-            continue
-        for path in base.rglob("*"):
-            if not path.is_file():
-                continue
-            try:
-                rel = path.relative_to(root)
-            except ValueError:
-                continue
-            if any(part in SKIP_DIRS for part in rel.parts):
-                continue
-            language = LANGUAGE_BY_SUFFIX.get(path.suffix.lower())
-            if language:
-                found[rel.as_posix()] = (language, path)
-    return [(lang, path, rel) for rel, (lang, path) in sorted(found.items())]
+    found = []
+    for path in root.rglob("*"):
+        rel = path.relative_to(root)
+        language = LANGUAGE_BY_SUFFIX.get(path.suffix.lower())
+        if language and path.is_file() and not any(p in SKIP_DIRS for p in rel.parts):
+            found.append((language, path, rel.as_posix()))
+    return sorted(found, key=lambda item: item[2])
 
 
-def extract(root: Path, source_paths=None):
+def extract(root: Path):
     """The whole ontology for a tree, as the JSON shape this script prints."""
     out = Ontology()
-    tf_blocks = []
-    for language, path, rel in source_files(root, source_paths):
+    for language, path, rel in source_files(root):
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
         out.sources[language] += 1
-        if language == "python":
-            _python(rel, text, out)
-        elif language == "javascript":
-            _js(rel, text, out)
-        elif language == "powershell":
-            _powershell(rel, text, out)
-        elif language == "terraform":
-            _terraform(rel, text, out, tf_blocks)
-    _terraform_edges(out, tf_blocks)
+        HANDLERS[language](rel, text, out)
+    _terraform_edges(out)
     return out.result()
 
 

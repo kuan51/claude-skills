@@ -45,6 +45,7 @@ from _common import (
     is_git_repo,
     load_adrs,
     load_config,
+    long_lived_docs,
     markdown_docs,
     parse_domain_model,
     parse_front_matter,
@@ -228,34 +229,6 @@ def check_required_files(repo, config):
     )
 
 
-def long_lived_docs(repo):
-    """Everything under docs/ that requires owner/review_by front matter. A stale
-    architecture note is exactly as misleading as a stale CONVENTIONS, so this
-    walks the whole tree rather than a fixed list of names."""
-    docs = repo / "docs"
-    if not docs.is_dir():
-        return
-    exempt = {(repo / RUNLOG).resolve()}
-    archive = (repo / RUNLOG_ARCHIVE_DIR).resolve()
-    decisions = (repo / DECISIONS_DIR).resolve()
-    adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
-    for path in sorted(docs.rglob("*.md")):
-        if path.name == "README.md":
-            continue
-        # The run log is append-only and has no owner in the review sense: a
-        # review_by on it would be a promise about entries nobody may edit.
-        # Same for the rotated quarterly archives it spills into.
-        if path.resolve() in exempt or archive in path.resolve().parents:
-            continue
-        # Decision records carry their own front matter (id, status, date) and
-        # are immutable once accepted, so a review_by on one would be a promise
-        # nobody is allowed to keep. Whether the front matter itself is even
-        # parseable is checked separately, by check_adr_immutability.
-        # The archive adr_compact.py moves them into is the same kind of file.
-        if path.resolve().parent == decisions or adr_archive in path.resolve().parents:
-            continue
-        yield path
-
 
 def check_front_matter(repo):
     today = dt.date.today()
@@ -417,9 +390,6 @@ def check_adr_index(repo, script_dir):
     )
 
 
-ONTOLOGY_LANGUAGES = "Python, JS/TS, PowerShell, Terraform"
-
-
 def check_ontology(repo, script_dir):
     """The generated domain model is current, and the documentation is tagged
     against it.
@@ -442,7 +412,8 @@ def check_ontology(repo, script_dir):
     )
     if result.returncode == 2:
         return check("ontology", "skipped",
-                     f"No source files the extractor reads ({ONTOLOGY_LANGUAGES}).",
+                     "No source files the extractor reads "
+                     "(Python, JS/TS, PowerShell, Terraform).",
                      "")
     if result.returncode != 0:
         return check(
@@ -466,9 +437,9 @@ def check_ontology(repo, script_dir):
     untagged = sorted(domain - tagged)
     problems = []
     if untagged:
-        problems.append("no document names " + _first_ten(untagged))
+        problems.append("no document names " + _shown(untagged))
     if unknown:
-        problems.append("tagged but not in the model: " + _first_ten(sorted(unknown)))
+        problems.append("tagged but not in the model: " + _shown(sorted(unknown)))
     if problems:
         return check(
             "ontology", "warn", "; ".join(problems),
@@ -480,9 +451,10 @@ def check_ontology(repo, script_dir):
                  f"{len(domain)} domain concept(s) documented.")
 
 
-def _first_ten(names):
-    head = ", ".join(names[:10])
-    return head if len(names) <= 10 else f"{head} (+{len(names) - 10} more)"
+def _shown(names):
+    """Up to ten, then a count: the form check_links already reports in."""
+    shown = ", ".join(names[:10])
+    return shown if len(names) <= 10 else f"{shown}; and {len(names) - 10} more"
 
 
 # A manifest defect, not a generator defect, so it names the file to edit.

@@ -204,7 +204,6 @@ review_cadence_days: 180
 standards:                   # omit when none apply; see standards.md
   iec-62304: C
 ontology:                    # omit for the defaults; see ontological-documentation
-  source_paths: [src]        # repo-relative dirs to read; omitted means the tree
   overrides:                 # correct the naming heuristic, one concept at a time
     Order: domain            # domain | technical | ignore
 generated_docs:

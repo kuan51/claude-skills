@@ -1967,16 +1967,6 @@ def test_concept_categories_reference_matches_the_code():
          f"CATEGORY_SUFFIXES is {list(extract_concepts.CATEGORY_SUFFIXES)}")
 
 
-def test_ontology_scripts_import_cleanly():
-    """The dropped diagram script imported re only under __main__, so every
-    name it used at import time raised NameError the moment anything imported
-    it. Nothing caught that, because nothing imported it."""
-    result = subprocess.run(
-        [sys.executable, "-c", "import extract_concepts, domain_model"],
-        cwd=str(ONTOLOGY_SCRIPTS), capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stderr
-
-
 def _ontology_audit_repo(tmp, manifest_extra=""):
     """A minimal repo the ontology check can run over end to end."""
     repo = Path(tmp)

@@ -192,6 +192,35 @@ def parse_domain_model(path: Path):
     return entries
 
 
+def long_lived_docs(repo):
+    """Everything under docs/ that requires owner/review_by front matter. A stale
+    architecture note is exactly as misleading as a stale CONVENTIONS, so this
+    walks the whole tree rather than a fixed list of names."""
+    docs = repo / "docs"
+    if not docs.is_dir():
+        return
+    exempt = {(repo / RUNLOG).resolve()}
+    archive = (repo / RUNLOG_ARCHIVE_DIR).resolve()
+    decisions = (repo / DECISIONS_DIR).resolve()
+    adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
+    for path in sorted(docs.rglob("*.md")):
+        if path.name == "README.md":
+            continue
+        # The run log is append-only and has no owner in the review sense: a
+        # review_by on it would be a promise about entries nobody may edit.
+        # Same for the rotated quarterly archives it spills into.
+        if path.resolve() in exempt or archive in path.resolve().parents:
+            continue
+        # Decision records carry their own front matter (id, status, date) and
+        # are immutable once accepted, so a review_by on one would be a promise
+        # nobody is allowed to keep. Whether the front matter itself is even
+        # parseable is checked separately, by check_adr_immutability.
+        # The archive adr_compact.py moves them into is the same kind of file.
+        if path.resolve().parent == decisions or adr_archive in path.resolve().parents:
+            continue
+        yield path
+
+
 def adr_files(repo: Path, archived: bool = False):
     """Decision record files, sorted by id. Live ones by default; archived=True
     reads the folder adr_compact.py moves the oldest into instead."""
