@@ -2033,6 +2033,16 @@ def test_ontology_overrides_drop_a_concept_and_a_bad_value_fails_the_manifest():
         assert entry["state"] == "fail", entry
         assert "maybe" in entry["reason"], entry
 
+    # A present falsy value of the wrong type was coerced to the default by
+    # `.get(key) or {}` before the type check ran, so "ontology: []" and
+    # "waivers: []" both read as a manifest the audit believed.
+    for key, extra in (("ontology", "ontology: []\n"), ("waivers", "waivers: []\n")):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _ontology_audit_repo(tmp, extra)
+            entry = _audit_check(repo, "manifest")
+            assert entry["state"] == "fail", (key, entry)
+            assert key in entry["reason"], (key, entry["reason"])
+
 
 def main():
     failures = []

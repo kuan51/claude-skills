@@ -130,7 +130,10 @@ def check_manifest(repo, config):
         return check("manifest", "fail", "No .docs-warden.yml; archetype unknown.",
                      "Run init mode to propose one. Do not guess the archetype.")
     problems = []
-    waivers = config.get("waivers") or {}
+    # .get(key, default), never `or default`: a present falsy value of the
+    # wrong type ("waivers: []") was coerced to the default before the type
+    # check below could report it, and read as a manifest the audit believed.
+    waivers = config.get("waivers", {})
     if not isinstance(waivers, dict):
         problems.append("waivers must be a mapping of check id to reason, "
                         f"got {type(waivers).__name__}")
@@ -144,15 +147,15 @@ def check_manifest(repo, config):
                 # A waiver with no reason is an unexplained hole in the
                 # standard. Requiring the sentence is the whole control.
                 problems.append(f"waiver for {cid} gives no reason")
-    extra = config.get("extra_files") or []
+    extra = config.get("extra_files", [])
     if not isinstance(extra, list) or not all(isinstance(e, str) for e in extra):
         problems.append("extra_files must be a list of repository-relative paths")
-    ontology = config.get("ontology") or {}
+    ontology = config.get("ontology", {})
     if not isinstance(ontology, dict):
         problems.append("ontology must be a mapping, "
                         f"got {type(ontology).__name__}")
     else:
-        overrides = ontology.get("overrides") or {}
+        overrides = ontology.get("overrides", {})
         if not isinstance(overrides, dict):
             problems.append("ontology.overrides must be a mapping of concept "
                             f"name to {'|'.join(ONTOLOGY_VERDICTS)}")

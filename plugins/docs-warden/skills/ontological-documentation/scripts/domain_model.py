@@ -62,7 +62,7 @@ def documented_in(repo: Path):
 def overrides_from(config):
     """ontology.overrides in the manifest, or {} for anything malformed; the
     audit's manifest check reports the malformed case."""
-    section = (config or {}).get("ontology") or {}
+    section = (config or {}).get("ontology", {})
     overrides = section.get("overrides") if isinstance(section, dict) else None
     if not isinstance(overrides, dict):
         return {}
