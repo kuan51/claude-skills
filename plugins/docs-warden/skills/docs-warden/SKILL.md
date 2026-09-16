@@ -93,6 +93,15 @@ Triggered by "scaffold docs," "set up documentation," "document this repo."
      keeping its `Assumption (verify):` lines verbatim. It is read-only and reports
      what is configured, not what the README claims.
 5. Seed `docs/GLOSSARY.md`: see **Glossary seeding** below.
+5b. Run `scripts/domain_model.py <repo> --write` and list the result under
+   "Generated files" in the scaffolded `docs/CONVENTIONS.md`
+   (`docs/architecture/domain-model.md` | `domain_model.py . --write`). When the
+   extractor found no source it can read, say so in one line and skip the step:
+   the document is optional and the `ontology` check reports `skipped`.
+5c. **`service` archetype only, and only when this run created
+   `docs/architecture/arc42.md`:** replace the `{{...}}` Mermaid block in §5 with
+   the relationship graph from the generated domain model, and link
+   `domain-model.md` beneath it. **Never edit an arc42 that already existed.**
 6. Run `scripts/audit.py` and show the scorecard.
 
 ### `audit` (report what is wrong)
@@ -122,7 +131,8 @@ documented behavior.
    Terraform, Kubernetes or CI configuration and an architecture document
    describes it, dispatch the `infra-inventory` agent and propose the edit from
    its tables, keeping its `Assumption (verify):` lines verbatim.
-5. Regenerate everything marked `generated: true`, plus `scripts/adr_index.py`.
+5. Regenerate everything marked `generated: true`, plus `scripts/adr_index.py`
+   and `scripts/domain_model.py <repo> --write`.
 6. Re-run `audit.py`.
 
 ### `decide` (record a decision)
@@ -230,6 +240,14 @@ commands to the human before running them on a repository you did not write.
 | `scripts/adr_new.py <repo> "<title>"` | Scaffolds the next `DEC-NNNN` file. | A new `docs/decisions/DEC-NNNN-*.md` |
 | `scripts/freshness.py <repo>` | Documents past `review_by`, or older than the code they reference. | Nothing |
 
+Two more live with the `ontological-documentation` skill, under
+`${CLAUDE_PLUGIN_ROOT}/skills/ontological-documentation/scripts/`:
+
+| Script | Does | Writes |
+|--------|------|--------|
+| `domain_model.py <repo> [--write\|--check]` | Renders the domain model: which concepts exist, how they relate, and which document describes each. `--check` exits 1 on a stale document, 2 when the extractor can read nothing. | Nothing by default; with `--write`, `docs/architecture/domain-model.md` |
+| `extract_concepts.py <path>` | Prints the concept and relationship JSON the model is built from. Reads Python, JS/TS, PowerShell and Terraform. | Nothing |
+
 Two more scripts live in `scripts/` but aren't part of the day-to-day set above:
 
 | Script | Does | Writes |
@@ -250,16 +268,18 @@ non-empty diff. A generated document that someone can hand-edit will be hand-edi
 
 ## Glossary seeding
 
-If the `ontological-documentation` skill is installed, use it rather than inventing
-terms. Its `extract_concepts.py` takes one positional path and prints ontology JSON
-to stdout followed by a Mermaid diagram after a literal `--- Mermaid Diagram ---`
-separator. Split on that separator and keep the JSON half. It has no `--output`
-flag. Seed `docs/GLOSSARY.md` from **domain** entities only, not technical ones, and
-merge by term: never overwrite a definition a human has edited.
+Run `extract_concepts.py <repo>` from the `ontological-documentation` skill, which
+ships with this plugin. It prints JSON to stdout and nothing else.
 
-If the skill is not installed, create the empty `docs/GLOSSARY.md` template and
-skip the ontology step. The scorecard doesn't record this step. Do not guess domain
-terms.
+Keep the concepts whose `category` is `"domain"`. For each one `docs/GLOSSARY.md`
+does not already have, add a row: Term is the concept name; Definition is its
+`summary`, or the template's placeholder when the code gave none; `Do not use` is
+empty; Source is its `defined_in`. **Never touch an existing row**, and never
+invent a definition.
+
+When the extractor finds nothing it can read, create the empty `docs/GLOSSARY.md`
+template and say so in one line. The scorecard does not record this step. Do not
+guess domain terms.
 
 ## References
 
@@ -276,5 +296,9 @@ terms.
   and what the overlay cannot check.
 - `references/standards/nist-ssdf.md`: SSDF practices that produce a document,
   and the ones that do not.
+- `../ontological-documentation/SKILL.md`: the domain model and the concept
+  extractor, and the source of the glossary seeding above.
+- `../ontological-documentation/references/concept-categories.md`: the suffix
+  table that decides domain from technical, and what the extractor cannot see.
 - `../clarity/SKILL.md`: the plain-English writing standard, and the source of the
   `Clarity` Vale style this skill's `.vale.ini` depends on.
