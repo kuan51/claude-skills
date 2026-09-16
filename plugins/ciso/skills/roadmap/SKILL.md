@@ -40,12 +40,6 @@ mechanically. Do not bypass it.
 
 ## After the research
 
-Re-render the dashboard once the findings are merged:
-
-```
-node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso>
-```
-
-Then present a **brief, non-blocking** summary, call out any `confidence: "low"` or empty-vendor
-results as needing manual follow-up rather than silently accepted, and offer `ciso:sync-tasks` to
-push the remaining gaps into a tracker.
+Re-render the dashboard once the findings are merged, then present a **brief, non-blocking**
+summary, call out any `confidence: "low"` or empty-vendor results as needing manual follow-up rather
+than silently accepted, and offer `ciso:sync-tasks` to push the remaining gaps into a tracker.

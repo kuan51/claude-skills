@@ -42,11 +42,4 @@ give the user that reason and send them to `ciso:interview`.
 
 ## After recording scope
 
-Re-render the dashboard:
-
-```
-node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso>
-```
-
-Then send the user to `ciso:interview`. The recorded categories are what decide which criteria the
-interview asks about at all, so it is the natural next step.
+Re-render the dashboard, then send the user to `ciso:interview`.

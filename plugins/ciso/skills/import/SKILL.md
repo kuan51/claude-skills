@@ -42,11 +42,5 @@ is what there is. Point the user at `ciso:interview`.
 
 ## After importing
 
-Import replaces the tier's whole `controls` map, so the dashboard pages are stale until re-rendered:
-
-```
-node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso>
-```
-
-Then report the `{ imported, archived, warnings }` summary in plain language and send the user to
-`ciso:interview`, which now asks against the real requirement wording.
+Re-render the dashboard, then report the `{ imported, archived, warnings }` summary in plain language
+and send the user to `ciso:interview`.

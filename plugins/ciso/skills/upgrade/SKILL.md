@@ -41,11 +41,5 @@ improvise one against real assessment data.
 
 ## After reconciling
 
-Re-render the dashboard:
-
-```
-node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso>
-```
-
-Then present the counts (carried forward / needing review / new / archived) and send the user to
-`ciso:interview` for the controls flagged `needsReview: true`.
+Re-render the dashboard, then present the counts (carried forward / needing review / new / archived)
+and send the user to `ciso:interview` for the controls flagged `needsReview: true`.
