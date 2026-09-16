@@ -370,3 +370,18 @@ test('hooks.json wires every matcher to the guard', () => {
   }
   assert.equal(new Set(commands).size, 1, 'all entries must use one identical command string, so they cannot drift');
 });
+
+test('VAR_PREFIX strips leading assignments and nothing else', () => {
+  const { VAR_PREFIX } = require(GUARD);
+  const strip = (s) => s.replace(VAR_PREFIX, '');
+  assert.equal(strip('CI=1 npm ci'), 'npm ci');
+  assert.equal(strip('FOO=1 BAR=2 pip install x'), 'pip install x');
+  assert.equal(strip('S="C:/Users/me/.claude/plugins/cache/x/scripts"'), '');
+  assert.equal(strip('S=~/.claude/hooks'), '');
+  // A substitution or redirect in the value survives, so the rest of the guard sees it.
+  assert.equal(strip('S=$(cat x > ~/.claude/settings.json)'), 'x > ~/.claude/settings.json)');
+  assert.equal(strip('S=x > ~/.claude/hooks/y'), '> ~/.claude/hooks/y');
+  // Not an assignment: a comparison or a command that merely contains `=`.
+  assert.equal(strip('test a=b'), 'test a=b');
+  assert.equal(strip('=x'), '=x');
+});
