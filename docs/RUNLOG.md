@@ -420,3 +420,12 @@ manifests, and record DEC-0010. Verify with
 `node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`, then
 exercise the skill from a session started with the plugin installed from this branch,
 since skills load at session start and the unit tests only read the file.
+
+**CONFIRMED** — The change was built by `fabflows:build` (one round, ACCEPT) and gated
+by the lead: `git status --porcelain` printed nothing; `git diff --stat 9ed4312..HEAD`
+listed eleven files, all named in the spec.
+`node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail.
+
+**SKIPPED** — The skill was not invoked from a live session: skills load at session
+start, so that needs the plugin installed from this branch and a restart.
