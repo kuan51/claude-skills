@@ -411,3 +411,12 @@ branch. After the fix all four deny, while the loop from the original report,
 `cut -d: -f1 ~/.claude/plugins/config.json` allow.
 `node --test "plugins/fabflows/test/*.test.js"`: 35 pass, 0 fail.
 `node --test "test/*.test.js"`: 4 pass, 0 fail.
+
+## 2026-09-16 — fabflows 0.3.0: using-fabflows entrypoint
+
+**PLANNED** — Add the `using-fabflows` entrypoint skill, point the `fabflows` skill at it
+as the session's standing opt-in to `fabflows:build`, bump the plugin to 0.3.0 in both
+manifests, and record DEC-0010. Verify with
+`node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`, then
+exercise the skill from a session started with the plugin installed from this branch,
+since skills load at session start and the unit tests only read the file.

@@ -6,6 +6,7 @@ Why this repository is the way it is. Newest first.
 
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
+| [DEC-0010](decisions/DEC-0010-invoking-using-fabflows-is-the-session-s-opt-in-to-the-build.md) | Invoking using-fabflows is the session's opt-in to the build loop | proposed | 2026-09-16 | - | - |
 | [DEC-0009](decisions/DEC-0009-uncommitted-work-fails-the-build-loop-s-review-and-gate.md) | Uncommitted work fails the build loop's review and gate | proposed | 2026-09-13 | - | - |
 | [DEC-0008](decisions/DEC-0008-fence-reviewer-findings-as-data-in-the-fabflows-rework-brief.md) | Fence reviewer findings as data in the fabflows rework brief | proposed | 2026-09-13 | - | - |
 | [DEC-0007](decisions/DEC-0007-recover-a-thrown-fabflows-build-by-resuming-it-not-catching.md) | Recover a thrown fabflows build by resuming it, not catching the throw | proposed | 2026-09-13 | - | - |
