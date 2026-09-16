@@ -45,6 +45,8 @@ brief, the worker report contract, and the verification gate the lead has to pas
 accepting anything; the `fabflows:build` workflow, described in
 [The build loop](#the-build-loop); and the `using-fabflows` entrypoint skill, which you
 invoke at the start of a conversation to run the whole session on that discipline.
+Invoking it authorizes the lead to launch the build loop, which commits to your feature
+branch, without asking again per task.
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 

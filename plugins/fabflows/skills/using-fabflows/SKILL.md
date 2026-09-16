@@ -16,18 +16,7 @@ verification gate. They are not duplicated here; read them there.
 ## Standing rule
 
 Invoking this skill is the user's opt-in to the Workflow tool and to `fabflows:build` for
-the rest of the session. Do not ask for permission again per task. When a task is
-spec-able, prepare the loop and launch it.
+the rest of the session. Do not ask for permission again per task. Route every task per
+the fabflows routing table; a spec'd, sizeable change goes to `fabflows:build`, prepared
+and launched per that skill's build-loop section.
 
-## Task triage
-
-| Task | Where it goes |
-| --- | --- |
-| implement a feature, a component, or another spec-able change | the build loop below |
-| explore, research, run tests, a small scoped edit | route per the fabflows routing table |
-| a question, or one short dependent chain | the lead answers it or does it |
-
-## The build loop
-
-Prepare and launch it per "The build loop" in the fabflows skill, gate and escalation
-included.

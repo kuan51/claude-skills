@@ -176,16 +176,20 @@ test('the entrypoint skill points at the fabflows skill and the build loop', () 
       `using-fabflows/SKILL.md must name ${ref} -- it is the entrypoint's whole job`
     );
   }
+  const main = fs.readFileSync(path.join(SKILLS_DIR, 'fabflows', 'SKILL.md'), 'utf8');
+  assert.ok(main.includes('using-fabflows'), 'fabflows/SKILL.md must name using-fabflows as a way the build loop starts');
 });
 
-test('the skill fits the post-compaction re-injection cap', () => {
+test('every skill fits the post-compaction re-injection cap', () => {
   // Claude Code re-injects an invoked skill after compaction, capped at 5,000 tokens.
   // 20,000 characters is a rough proxy (about four characters per token), not an exact count.
-  const skill = fs.readFileSync(path.join(SKILLS_DIR, 'fabflows', 'SKILL.md'), 'utf8');
-  assert.ok(
-    skill.length <= 20000,
-    `SKILL.md is ${skill.length} characters; keep it under 20,000 so it survives compaction whole`
-  );
+  for (const dir of fs.readdirSync(SKILLS_DIR, { withFileTypes: true }).filter((d) => d.isDirectory())) {
+    const skill = fs.readFileSync(path.join(SKILLS_DIR, dir.name, 'SKILL.md'), 'utf8');
+    assert.ok(
+      skill.length <= 20000,
+      `${dir.name}/SKILL.md is ${skill.length} characters; keep it under 20,000 so it survives compaction whole`
+    );
+  }
 });
 
 test('the SubagentStop contract check matches every worker', () => {

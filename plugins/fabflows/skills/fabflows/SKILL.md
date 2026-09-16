@@ -12,9 +12,6 @@ discount. Both halves are this skill: hand the work down, then prove the answer.
 The workers are real agents included with this plugin. They are namespaced, so the
 address is `fabflows:explorer`, not `explorer`.
 
-`using-fabflows` is the session entrypoint: a user who invokes it at the start of a
-conversation has already opted into this discipline and into the build loop below.
-
 ## Boundaries
 
 **This skill will:** pick a worker tier for a task, write the four-part brief that
@@ -55,6 +52,7 @@ becoming another worker.
 | review a finished change against its spec, re-running its tests | `fabflows:refuter` | Opus, read-only + Bash |
 | reproduce and narrow a self-contained failure | `fabflows:investigator` | Opus, read-only + Bash |
 | root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | none |
+| a spec'd, sizeable change | `fabflows:build` | Opus builder, Fable reviewer |
 
 The built-in `Explore` agent is not a cheap substitute for `fabflows:explorer`. It
 inherits the main conversation's model, capped at Opus, so under an expensive lead it
@@ -131,7 +129,8 @@ Cross-check each claim against real tool output. Treat anything you cannot confi
 
 ## The build loop
 
-For a spec'd, sizeable change, offer `fabflows:build`. An Opus `editor` implements the
+For a spec'd, sizeable change, offer `fabflows:build`, or launch it when the session
+opened with `using-fabflows`. An Opus `editor` implements the
 spec on the current feature branch and commits; a fresh `refuter` reads the diff against
 the spec and re-runs the tests; a REWORK verdict sends the must-fix list to a fresh
 builder, up to the rework cap. It runs through the Workflow tool, so start it when
