@@ -151,12 +151,9 @@ function isProtectedPath(p) {
 // segment denies regardless, since `cat x > settings.json` starts with a reader.
 const READ_ONLY =
   /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|cmp|comm|sort|uniq|cut|tr|nl|tac|rev|column|basename|dirname|du|ls|echo|printf|test|\[|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash|compare-object|sort-object|measure-object|select-object|convertfrom-json)(\.exe)?(\s|$)/i;
-// Shell keywords are not commands. `for d in ...; do cat "$d/x"; done` splits into a loop
-// header and `do cat ...`; without this both look like an unknown command naming a
-// protected path and a plain read-only loop is denied. The keyword is stripped so the
-// real command is what gets checked, and the `for` header runs nothing by itself --
-// unless it carries a command substitution, which this does not try to parse.
-const SHELL_KEYWORD = /^(do|done|then|else|elif|fi|if|while|until)\s+/i;
+// `for d in ...; do cat x; done` splits into a header and `do cat x`; both read as unknown
+// commands. The header runs nothing unless it carries a substitution.
+const SHELL_KEYWORD = /^(do|then|else|while|if)\s+/i;
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
 const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;

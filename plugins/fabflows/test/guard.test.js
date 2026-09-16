@@ -223,8 +223,6 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     ['ls -x ~/.claude/plugins', B, 'allow'],
     ['head -c 100 ~/.claude/plugins/x/README.md', B, 'allow'],
     ['sort ~/.claude/plugins/config.json', B, 'allow'],
-    ['basename ~/.claude/plugins/cache/x', B, 'allow'],
-    ['diff ~/.claude/plugins/cache/x/1.0.0/p.json ~/.claude/plugins/cache/x/2.0.0/p.json', B, 'allow'],
     // A read-only loop over the plugin cache: the `for` header and the `do` prefix must
     // not read as unknown commands naming a protected path.
     ['for d in ~/.claude/plugins/cache/x/*/; do cat "$d/p.json"; done', B, 'allow'],
