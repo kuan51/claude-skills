@@ -157,6 +157,9 @@ const READ_ONLY =
 const SHELL_KEYWORD = /^((do|then|else|elif|fi|done|esac|while|until|if)\s+)+/i;
 // What is left when a segment is only a keyword. Neither runs anything.
 const INERT = /^(done|fi|esac)$/i;
+// One or more `VAR=value` prefixes, including a segment that is nothing but assignments.
+// A substitution or redirect in the value is not swallowed, so it is still judged.
+const VAR_PREFIX = /^(\w+=\S*(\s+|$))+/;
 // The header runs nothing unless it carries a substitution -- but it hides the path in a
 // variable the rules below cannot follow, so it is read-only only when the body is too.
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
@@ -229,7 +232,7 @@ function checkShell(command, cwd) {
   const segments = command
     .replace(HARMLESS_REDIRECT, '')
     .split(/&&|\|\||[;|&\r\n]/)
-    .map((s) => s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(/^(\w+=\S*(\s+|$))+/, '').trim())
+    .map((s) => s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(VAR_PREFIX, '').trim())
     .filter(Boolean);
 
   // `for d in ~/.claude/plugins; do rm -rf "$d"; done` must not pass on its header alone.
@@ -370,9 +373,13 @@ function main() {
   else preToolUse(input);
 }
 
-try {
-  main();
-} catch {
-  // Fail open. See the header.
+if (require.main === module) {
+  try {
+    main();
+  } catch {
+    // Fail open. See the header.
+  }
+  process.exit(0);
 }
-process.exit(0);
+
+module.exports = { VAR_PREFIX };
