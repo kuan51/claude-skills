@@ -455,9 +455,8 @@ to also match at end of segment, add three table rows to `test/guard.test.js`, b
 both manifests to 0.3.1, and verify with `node --test "plugins/fabflows/test/*.test.js"`
 and `node --test "test/*.test.js"`.
 
-**CONFIRMED** — Before the fix the scratch script reported the reported command and a
-bare quoted assignment both DENY. After the fix both allow, while an assignment whose
-value carries a substitution or a redirect into live config still denies.
+**CONFIRMED** — Repro script: reported command and bare quoted assignment DENY before,
+allow after; assignment with substitution or redirect still DENY.
 `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
 `node --test "test/*.test.js"`: 4 pass, 0 fail.
 
