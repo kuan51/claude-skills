@@ -46,8 +46,9 @@ so it picks up the newly installed plugin.
   `researcher` on Haiku, `editor` and `test-runner` on Sonnet, `refuter` and
   `investigator` on Opus) and scoped to the smallest tool list that does its job; a
   skill that makes the lead write a proper delegation brief and re-verify what comes
-  back instead of trusting it; and `fabflows:build`, a deterministic build-and-review
-  loop for a spec'd change. Includes an
+  back instead of trusting it; `fabflows:build`, a deterministic build-and-review
+  loop for a spec'd change; and `using-fabflows`, the entrypoint skill you invoke at the
+  start of a conversation to put the whole session on that discipline. Includes an
   **active guard hook** that blocks package installs, default-branch commits,
   destructive commands, and credential reads and writes. Read that plugin's README
   before installing, including its "Known gaps" section.

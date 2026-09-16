@@ -52,6 +52,7 @@ becoming another worker.
 | review a finished change against its spec, re-running its tests | `fabflows:refuter` | Opus, read-only + Bash |
 | reproduce and narrow a self-contained failure | `fabflows:investigator` | Opus, read-only + Bash |
 | root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | none |
+| a spec'd, sizeable change | `fabflows:build` | Opus builder, Fable reviewer |
 
 The built-in `Explore` agent is not a cheap substitute for `fabflows:explorer`. It
 inherits the main conversation's model, capped at Opus, so under an expensive lead it
@@ -128,11 +129,12 @@ Cross-check each claim against real tool output. Treat anything you cannot confi
 
 ## The build loop
 
-For a spec'd, sizeable change, offer `fabflows:build`. An Opus `editor` implements the
+For a spec'd, sizeable change, offer `fabflows:build`, or launch it when the session
+opened with `using-fabflows`. An Opus `editor` implements the
 spec on the current feature branch and commits; a fresh `refuter` reads the diff against
 the spec and re-runs the tests; a REWORK verdict sends the must-fix list to a fresh
-builder, up to the rework cap. It runs through the Workflow tool, so start it only when
-the user asks for it or agrees to it.
+builder, up to the rework cap. It runs through the Workflow tool, so start it when
+the user asks for it, agrees to it, or opened the session with `using-fabflows`.
 
 Before starting it:
 
