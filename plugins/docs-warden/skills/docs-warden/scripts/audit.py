@@ -33,6 +33,7 @@ from _common import (
     FORGE_DEFAULT,
     DECISIONS_ARCHIVE_DIR,
     DECISIONS_DIR,
+    DOMAIN_MODEL,
     GENERATED_MARKER,
     GLOSSARY,
     README,
@@ -45,6 +46,7 @@ from _common import (
     load_adrs,
     load_config,
     markdown_docs,
+    parse_domain_model,
     parse_front_matter,
     parse_glossary,
     read_front_matter,
@@ -112,6 +114,9 @@ def _waivable(cid):
     return family == "standards" and member in STANDARDS
 
 
+ONTOLOGY_VERDICTS = ("domain", "technical", "ignore")
+
+
 def check_manifest(repo, config):
     """The manifest is readable, and says only things this plugin understands.
 
@@ -141,6 +146,23 @@ def check_manifest(repo, config):
     extra = config.get("extra_files") or []
     if not isinstance(extra, list) or not all(isinstance(e, str) for e in extra):
         problems.append("extra_files must be a list of repository-relative paths")
+    ontology = config.get("ontology") or {}
+    if not isinstance(ontology, dict):
+        problems.append("ontology must be a mapping, "
+                        f"got {type(ontology).__name__}")
+    else:
+        overrides = ontology.get("overrides") or {}
+        if not isinstance(overrides, dict):
+            problems.append("ontology.overrides must be a mapping of concept "
+                            f"name to {'|'.join(ONTOLOGY_VERDICTS)}")
+        else:
+            # An override the generator does not understand is silently
+            # ignored there, which reads as a correction that was applied.
+            for name, verdict in sorted(overrides.items()):
+                if verdict not in ONTOLOGY_VERDICTS:
+                    problems.append(
+                        f"ontology.overrides[{name}] is {verdict!r}; "
+                        f"expected one of {', '.join(ONTOLOGY_VERDICTS)}")
     if problems:
         return check("manifest", "fail", "; ".join(problems), MANIFEST_FIX)
     counts = []
@@ -393,6 +415,74 @@ def check_adr_index(repo, script_dir):
         (result.stderr.strip().splitlines() or ["index out of date"])[0],
         "Run adr_index.py and commit the result.",
     )
+
+
+ONTOLOGY_LANGUAGES = "Python, JS/TS, PowerShell, Terraform"
+
+
+def check_ontology(repo, script_dir):
+    """The generated domain model is current, and the documentation is tagged
+    against it.
+
+    Coverage is never a fail. Which document describes which concept is
+    organisation, and organisation is advice; a stale generated file is a
+    defect. The two states say different things on purpose.
+    """
+    model_path = repo / DOMAIN_MODEL
+    if not model_path.is_file():
+        return check("ontology", "skipped", f"No {DOMAIN_MODEL}.",
+                     "Run domain_model.py --write, or leave it: the document "
+                     "is optional.")
+    generator = (script_dir.parent.parent / "ontological-documentation"
+                 / "scripts" / "domain_model.py")
+    result = subprocess.run(
+        [sys.executable, str(generator), str(repo), "--check"],
+        capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
+    )
+    if result.returncode == 2:
+        return check("ontology", "skipped",
+                     f"No source files the extractor reads ({ONTOLOGY_LANGUAGES}).",
+                     "")
+    if result.returncode != 0:
+        return check(
+            "ontology", "fail",
+            (result.stderr.strip().splitlines() or [f"{DOMAIN_MODEL} is stale"])[0],
+            "Run domain_model.py --write and commit.",
+        )
+
+    concepts = parse_domain_model(model_path)
+    known = {name for name, _ in concepts}
+    domain = {name for name, category in concepts if category == "domain"}
+    tagged, unknown = set(), set()
+    for path in long_lived_docs(repo):
+        front, _ = read_front_matter(path)
+        names = front.get("concepts")
+        if not isinstance(names, list):
+            continue
+        for name in names:
+            name = str(name)
+            (tagged if name in known else unknown).add(name)
+    untagged = sorted(domain - tagged)
+    problems = []
+    if untagged:
+        problems.append("no document names " + _first_ten(untagged))
+    if unknown:
+        problems.append("tagged but not in the model: " + _first_ten(sorted(unknown)))
+    if problems:
+        return check(
+            "ontology", "warn", "; ".join(problems),
+            "Tag the document that describes it with `concepts: [Name]`, "
+            "or fix the tag.",
+        )
+    return check("ontology", "pass",
+                 f"{DOMAIN_MODEL} is current; "
+                 f"{len(domain)} domain concept(s) documented.")
+
+
+def _first_ten(names):
+    head = ", ".join(names[:10])
+    return head if len(names) <= 10 else f"{head} (+{len(names) - 10} more)"
 
 
 # A manifest defect, not a generator defect, so it names the file to edit.
@@ -1005,6 +1095,7 @@ CHECKS = [
     # Returns several: one per declared standard, each id-prefixed "standards:".
     ("standards", lambda c: check_standards(c.repo, c.config, c.script_dir)),
     ("readme-shape", lambda c: check_readme_shape(c.repo)),
+    ("ontology", lambda c: check_ontology(c.repo, c.script_dir)),
 ]
 
 CHECK_IDS = frozenset(cid for cid, _ in CHECKS)

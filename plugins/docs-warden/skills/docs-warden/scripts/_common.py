@@ -160,6 +160,38 @@ def parse_glossary(path: Path):
     return entries
 
 
+# The two tables domain_model.py renders, by their headings. The generator and
+# the audit both read this, so they cannot drift into two answers for "what
+# does a concept row look like".
+DOMAIN_MODEL_SECTIONS = {
+    "## Domain concepts": "domain",
+    "## Technical concepts": "technical",
+}
+
+
+def parse_domain_model(path: Path):
+    """Return [(concept, category)] from the generated domain model tables."""
+    entries = []
+    category = None
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return entries
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            category = DOMAIN_MODEL_SECTIONS.get(stripped)
+            continue
+        if category is None or not stripped.startswith("|"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        name = cells[0] if cells else ""
+        if not name or name.lower() == "concept" or set(name) <= {"-", ":", " "}:
+            continue
+        entries.append((name, category))
+    return entries
+
+
 def adr_files(repo: Path, archived: bool = False):
     """Decision record files, sorted by id. Live ones by default; archived=True
     reads the folder adr_compact.py moves the oldest into instead."""

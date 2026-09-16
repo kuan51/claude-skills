@@ -758,10 +758,11 @@ def test_the_fixtures_still_report_what_they_were_built_to_report():
     """
     expectations = {
         "repo-it-tooling": ["required-files=pass", "adr-index=pass", "links=pass",
-                            "phi-secrets=pass", "standards:osps-baseline=pass"],
+                            "phi-secrets=pass", "standards:osps-baseline=pass",
+                            "ontology=pass"],
         "repo-regulated": ["required-files=pass", "adr-index=pass", "links=pass",
                            "phi-secrets=pass", "front-matter=warn",
-                           "standards:iec-62304=fail"],
+                           "standards:iec-62304=fail", "ontology=skipped"],
     }
     for name, expected in expectations.items():
         with tempfile.TemporaryDirectory() as tmp:
@@ -1974,6 +1975,73 @@ def test_ontology_scripts_import_cleanly():
         [sys.executable, "-c", "import extract_concepts, domain_model"],
         cwd=str(ONTOLOGY_SCRIPTS), capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+def _ontology_audit_repo(tmp, manifest_extra=""):
+    """A minimal repo the ontology check can run over end to end."""
+    repo = Path(tmp)
+    (repo / "docs").mkdir()
+    (repo / "src").mkdir()
+    (repo / "src" / "a.py").write_text(
+        'class Order:\n    """An order."""\n', encoding="utf-8")
+    (repo / ".docs-warden.yml").write_text(
+        "archetype: it-tooling\nowner: t\nreview_cadence_days: 180\n" + manifest_extra,
+        encoding="utf-8")
+    return repo
+
+
+def test_ontology_check_reports_missing_stale_untagged_and_current():
+    """All four states of check 13 in one repo, in the order a repository
+    actually meets them. The fail and the warn must stay different states:
+    a stale generated file is a defect, and an undocumented concept is advice."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _ontology_audit_repo(tmp)
+
+        entry = _audit_check(repo, "ontology")
+        assert entry["state"] == "skipped", entry
+        assert "domain-model.md" in entry["reason"], entry
+
+        assert _domain_model(repo, "--write").returncode == 0
+        model_path = repo / "docs" / "architecture" / "domain-model.md"
+        model_path.write_text(model_path.read_text(encoding="utf-8") + "edited\n",
+                              encoding="utf-8")
+        entry = _audit_check(repo, "ontology")
+        assert entry["state"] == "fail", entry
+
+        assert _domain_model(repo, "--write").returncode == 0
+        (repo / "docs" / "x.md").write_text(
+            "---\nowner: t\nreview_by: 2099-01-01\nconcepts: [Nope]\n---\n\n# X\n",
+            encoding="utf-8")
+        entry = _audit_check(repo, "ontology")
+        assert entry["state"] == "warn", entry
+        assert "Order" in entry["reason"], entry
+        assert "Nope" in entry["reason"], entry
+
+        (repo / "docs" / "x.md").write_text(
+            "---\nowner: t\nreview_by: 2099-01-01\nconcepts: [Order]\n---\n\n# X\n",
+            encoding="utf-8")
+        assert _domain_model(repo, "--write").returncode == 0
+        entry = _audit_check(repo, "ontology")
+        assert entry["state"] == "pass", entry
+
+
+def test_ontology_overrides_drop_a_concept_and_a_bad_value_fails_the_manifest():
+    """An override the generator ignores reads as a correction that was
+    applied, which is why the manifest check has to refuse the value rather
+    than the generator swallowing it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _ontology_audit_repo(tmp, "ontology:\n  overrides:\n    Order: ignore\n")
+        assert _domain_model(repo, "--write").returncode == 0
+        text = (repo / "docs" / "architecture" / "domain-model.md").read_text(
+            encoding="utf-8")
+        assert "| Order |" not in text, f"ignore did not drop the row:\n{text}"
+        assert _audit_check(repo, "manifest")["state"] == "pass"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _ontology_audit_repo(tmp, "ontology:\n  overrides:\n    Order: maybe\n")
+        entry = _audit_check(repo, "manifest")
+        assert entry["state"] == "fail", entry
+        assert "maybe" in entry["reason"], entry
 
 
 def main():
