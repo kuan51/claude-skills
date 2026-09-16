@@ -30,7 +30,7 @@ Always start here, every invocation:
 ## Only HITRUST supports this verb today
 
 HITRUST is the only module that has released a second control-set version, so it is the only one with
-a written flow. SOC 2 and ISO 27001 gain one if and when they rev.
+a written flow. SOC 2, ISO 27001 and CMMC gain one if and when they rev.
 
 If the resolved certification has no `references/upgrade.md`, first **check whether an upgrade is
 even pending**: compare the bundled `controls/<tier>.v*.structure.json`'s `controlSetVersion`
@@ -38,3 +38,14 @@ against `state.certifications[certKey].tiers[tierKey].controlSetVersion`. If the
 user their control set is current and stop. That is the ordinary answer, not an error. If they
 differ, say plainly that this certification has no reconciliation flow written yet and do not
 improvise one against real assessment data.
+
+## After reconciling
+
+Re-render the dashboard:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso>
+```
+
+Then present the counts (carried forward / needing review / new / archived) and send the user to
+`ciso:interview` for the controls flagged `needsReview: true`.

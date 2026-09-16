@@ -39,3 +39,14 @@ If the resolved certification is not SOC 2, there is no `references/scope.md` to
 plainly and stop.** Do not improvise a scoping conversation, and do not write anything to
 `state.json`. The invariants file you just read explains why that certification has no scope step;
 give the user that reason and send them to `ciso:interview`.
+
+## After recording scope
+
+Re-render the dashboard:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso>
+```
+
+Then send the user to `ciso:interview`. The recorded categories are what decide which criteria the
+interview asks about at all, so it is the natural next step.
