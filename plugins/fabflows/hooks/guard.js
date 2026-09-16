@@ -150,10 +150,15 @@ function isProtectedPath(p) {
 // everything else that names a protected path is denied. A redirect anywhere in the
 // segment denies regardless, since `cat x > settings.json` starts with a reader.
 const READ_ONLY =
-  /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|cmp|comm|sort|uniq|cut|tr|nl|tac|rev|column|basename|dirname|du|ls|echo|printf|test|\[|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash|compare-object|sort-object|measure-object|select-object|convertfrom-json)(\.exe)?(\s|$)/i;
+  /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|cmp|comm|cut|tr|nl|tac|rev|column|basename|dirname|du|ls|echo|printf|test|\[|<|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash|compare-object|sort-object|measure-object|select-object|convertfrom-json)(\.exe)?(\s|$)/i;
 // `for d in ...; do cat x; done` splits into a header and `do cat x`; both read as unknown
-// commands. The header runs nothing unless it carries a substitution.
-const SHELL_KEYWORD = /^(do|then|else|while|if)\s+/i;
+// commands. Repeated, because `else if cmd` stacks two keywords and stripping one would
+// leave `if cmd` to slip past every rule anchored at segment start.
+const SHELL_KEYWORD = /^((do|then|else|elif|fi|done|esac|while|until|if)\s+)+/i;
+// What is left when a segment is only a keyword. Neither runs anything.
+const INERT = /^(done|fi|esac)$/i;
+// The header runs nothing unless it carries a substitution -- but it hides the path in a
+// variable the rules below cannot follow, so it is read-only only when the body is too.
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
 const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;
@@ -226,6 +231,11 @@ function checkShell(command, cwd) {
     .map((s) => s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(/^(\w+=\S*\s+)+/, '').trim())
     .filter(Boolean);
 
+  // `for d in ~/.claude/plugins; do rm -rf "$d"; done` must not pass on its header alone.
+  const loopReadOnly = segments.every(
+    (s) => INERT.test(s) || FOR_HEADER.test(s) || (!s.includes('>') && !EXEC_FLAGS.test(s) && READ_ONLY.test(s))
+  );
+
   for (const seg of segments) {
     for (const re of INSTALL) {
       if (re.test(seg)) {
@@ -257,7 +267,8 @@ function checkShell(command, cwd) {
 
     const readOnly =
       RUNS_PROTECTED_SCRIPT.test(seg) ||
-      (!EXEC_FLAGS.test(seg) && (READ_ONLY.test(seg) || FOR_HEADER.test(seg) || MARKETPLACE_GIT.test(seg)));
+      (!EXEC_FLAGS.test(seg) &&
+        (READ_ONLY.test(seg) || (FOR_HEADER.test(seg) && loopReadOnly) || MARKETPLACE_GIT.test(seg)));
     if (PROTECTED_SHELL.test(seg) && (seg.includes('>') || !readOnly)) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
     }

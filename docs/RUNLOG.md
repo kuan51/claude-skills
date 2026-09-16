@@ -397,3 +397,17 @@ hit (line 197, MD018) predates it, as do the other 282 errors repo-wide.
 container and installing it is blocked. `.pre-commit-config.yaml` calls them "the same
 three linters as CI", but no workflow is tracked under `.github/`, so nothing runs them
 on a pull request either.
+
+**CONFIRMED** — Two code reviews found the first cut of the allowlist opened three holes.
+Piping payloads into `guard.js` at `5e28b48` versus the pre-branch copy
+(`git show d68ef6b:plugins/fabflows/hooks/guard.js`) reproduced all of them:
+`sort -o ~/.claude/hooks/guard.js /dev/null` and `uniq evil.json ~/.claude/settings.json`
+allowed at HEAD, denied before; `for d in ~/.claude/plugins; do rm -rf "$d"; done`
+likewise, since the loop variable hides the path from `RM_DANGER`.
+`elif npm install evil; then echo x; fi` allowed at both, so that one is older than the
+branch. After the fix all four deny, while the loop from the original report,
+`until grep -q x ~/.claude/settings.json; do echo w; done`,
+`while read l; do echo $l; done < ~/.claude/settings.json` and
+`cut -d: -f1 ~/.claude/plugins/config.json` allow.
+`node --test "plugins/fabflows/test/*.test.js"`: 35 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail.
