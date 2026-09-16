@@ -56,15 +56,18 @@ released.
      Reusing one is exactly how a previous compile's summary ended up silently derived from a licensed
      export instead of this skill's own public research.
 
-   Each run does four phases: research (one `hitrust-topic-researcher` agent per domain, full
-   coverage for that tier) → Reconcile (one `hitrust-controls-reconciler` agent dedupes and flags
-   coverage gaps, and separately lists domains that returned zero candidates) → Verify-Refute and
-   Verify-Confirm (two independent `hitrust-controls-verifier` passes, dual-pass because everything
-   here is released publicly with no severity gate), and returns
-   `{ tier, hitrustVersion, domains, shipped, excluded, droppedDuplicates, coverageGaps, zeroCandidateDomains }`.
-   Every candidate may optionally carry a `controlReference` (such as `"09.g"`), populated only when a
-   fetched public citation actually verifies that specific code for that topic, never invented; most
-   candidates will legitimately have none.
+   Each run does four phases:
+   - research (one `hitrust-topic-researcher` agent per domain, full
+     coverage for that tier) →
+   - Reconcile (one `hitrust-controls-reconciler` agent dedupes and flags
+     coverage gaps, and separately lists domains that returned zero candidates) →
+   - Verify-Refute and
+     Verify-Confirm (two independent `hitrust-controls-verifier` passes, dual-pass because everything
+     here is released publicly with no severity gate), and returns
+   - `{ tier, hitrustVersion, domains, shipped, excluded, droppedDuplicates, coverageGaps, zeroCandidateDomains }`.
+   - Every candidate may optionally carry a `controlReference` (such as `"09.g"`), populated only when a
+     fetched public citation actually verifies that specific code for that topic, never invented; most
+     candidates will legitimately have none.
 
    r2 stays out of scope: leave `compileR2Illustrative` unset/false on both runs unless a future
    r2-focused pass explicitly needs the illustrative side-collection.
