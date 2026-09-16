@@ -35,7 +35,10 @@ so it picks up the newly installed plugin.
   scaffolds a document set scaled to what the repo actually is, audits it for what is
   missing, stale, or off-standard, keeps architecture decision records append-only
   and indexed, compacts the oldest into a digest once fifty exist, and reports
-  where the docs have drifted from the code instead of silently rewriting them. Includes a plain-English Vale style and compliance
+  where the docs have drifted from the code instead of silently rewriting them.
+  Includes a domain-model skill that maps a repo's concepts, their relationships,
+  and which document describes each, in Python, JS/TS, PowerShell and Terraform;
+  a plain-English Vale style; and compliance
   overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and
   NIST SSDF.
 - **[fabflows](plugins/fabflows/)**: orchestration for a session whose lead runs on an

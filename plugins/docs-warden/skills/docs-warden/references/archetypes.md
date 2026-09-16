@@ -76,6 +76,13 @@ Code that runs on the device.
 **Hints:** embedded toolchain files, `*.c` / `*.h` / `*.rs` with board
 configuration, linker scripts, a partition table.
 
+## docs/architecture/domain-model.md
+
+Every archetype may carry it and none requires it: it is generated from the code
+by `domain_model.py`, so a repository written in a language the extractor does not
+read has none, and that is not a defect. The `ontology` check reports `skipped`
+there rather than a miss.
+
 ## Adding an archetype
 
 One entry in `scripts/archetypes.py`. The same discipline `standards.md` asks

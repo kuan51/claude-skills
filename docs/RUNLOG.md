@@ -416,7 +416,7 @@ branch. After the fix all four deny, while the loop from the original report,
 
 **PLANNED** — Add the `using-fabflows` entrypoint skill, point the `fabflows` skill at it
 as the session's standing opt-in to `fabflows:build`, bump the plugin to 0.3.0 in both
-manifests, and record DEC-0010. Verify with
+manifests, and record DEC-0011. Verify with
 `node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`, then
 exercise the skill from a session started with the plugin installed from this branch,
 since skills load at session start and the unit tests only read the file.
@@ -429,3 +429,19 @@ listed eleven files, all named in the spec.
 
 **SKIPPED** — The skill was not invoked from a live session: skills load at session
 start, so that needs the plugin installed from this branch and a restart.
+
+## 2026-09-16 — fabflows: renumber the entrypoint decision record
+
+**PLANNED** — PR #37 (docs-warden 0.4.0) merged to master with its own DEC-0010, so this
+branch's using-fabflows record moves to DEC-0011. Merge `origin/master` into
+`claude/jolly-ride-bk44f7`, rename the file with `git mv`, change its `id` and heading,
+update the CHANGELOG and RUNLOG references, and regenerate `docs/DECISIONS.md` with
+`adr_index.py`. The PLANNED entry above that names DEC-0010 is corrected in place since
+it was never true on master. Verify with `adr_index.py`, `node --test
+"test/*.test.js"`, `node --test "plugins/fabflows/test/*.test.js"` and
+`python3 plugins/docs-warden/test/test_scripts.py`.
+
+**CONFIRMED** — `adr_index.py` reported 11 records; `docs/DECISIONS.md` lists DEC-0011
+above master's DEC-0010 with no duplicate ID. `node --test "test/*.test.js"`: 4 pass,
+0 fail. `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+`python3 plugins/docs-warden/test/test_scripts.py`: 78 PASS, 0 FAIL, exit 0.

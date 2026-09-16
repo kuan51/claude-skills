@@ -18,6 +18,13 @@ they rot.
 |-------|-----|
 | `docs-warden` | Scaffold, audit, and maintain a consistent document set per repo archetype. Keeps decision records append-only and indexed. |
 | `clarity` | A plain-English writing standard for technical prose, plus the `Clarity` Vale style that enforces the machine-checkable part. |
+| `ontological-documentation` | Map the repo's domain: which concepts exist, how they relate, and which document describes each. Generates `docs/architecture/domain-model.md` and seeds glossary rows. |
+
+## Agents
+
+| Agent | Model | Job |
+|-------|-------|-----|
+| `infra-inventory` | Haiku | Reads Terraform, Kubernetes/Helm and CI config and returns an inventory of how the infrastructure is wired, with `file:line` evidence, for filling an architecture document's deployment and context views. Read-only: `Read`, `Grep`, `Glob`, and nothing else. |
 
 ## Workflows
 
@@ -38,6 +45,18 @@ Repositories under a standard such as IEC 62304 take a further overlay, scaled b
 safety class. It describes document *structure* only: every regulated template
 marks where a qualified human has to supply the substance, and the skill will not
 invent it.
+
+## Domain model
+
+`domain_model.py <repo> --write` generates `docs/architecture/domain-model.md`: a
+table of domain concepts, a table of technical ones, and a Mermaid graph of how
+they relate. Its `Documented in` column comes from a `concepts:` list in a
+document's front matter, which is what turns the file into a map of the
+documentation rather than only of the code. Concepts are read from Python,
+JavaScript/TypeScript, PowerShell and Terraform; the domain/technical split is a
+naming heuristic, corrected with `ontology.overrides:` in `.docs-warden.yml` and
+never by editing the generated file. The document is optional, and the `ontology`
+audit check reports it stale, untagged, or absent.
 
 ## Out of scope
 
@@ -73,6 +92,8 @@ skills/docs-warden/scripts/adr_new.py     <repo> "<title>"
 skills/docs-warden/scripts/freshness.py   <repo>
 skills/docs-warden/scripts/trace_matrix.py <repo> [--write]
 skills/docs-warden/scripts/glossary_to_vale.py <repo>
+skills/ontological-documentation/scripts/domain_model.py <repo> [--write|--check]
+skills/ontological-documentation/scripts/extract_concepts.py <path>
 ```
 
 Each exits non-zero on failure, so CI can gate on it, though nothing wires them

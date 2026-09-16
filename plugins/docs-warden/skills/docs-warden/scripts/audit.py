@@ -33,6 +33,7 @@ from _common import (
     FORGE_DEFAULT,
     DECISIONS_ARCHIVE_DIR,
     DECISIONS_DIR,
+    DOMAIN_MODEL,
     GENERATED_MARKER,
     GLOSSARY,
     README,
@@ -44,7 +45,9 @@ from _common import (
     is_git_repo,
     load_adrs,
     load_config,
+    long_lived_docs,
     markdown_docs,
+    parse_domain_model,
     parse_front_matter,
     parse_glossary,
     read_front_matter,
@@ -112,6 +115,9 @@ def _waivable(cid):
     return family == "standards" and member in STANDARDS
 
 
+ONTOLOGY_VERDICTS = ("domain", "technical", "ignore")
+
+
 def check_manifest(repo, config):
     """The manifest is readable, and says only things this plugin understands.
 
@@ -124,7 +130,10 @@ def check_manifest(repo, config):
         return check("manifest", "fail", "No .docs-warden.yml; archetype unknown.",
                      "Run init mode to propose one. Do not guess the archetype.")
     problems = []
-    waivers = config.get("waivers") or {}
+    # .get(key, default), never `or default`: a present falsy value of the
+    # wrong type ("waivers: []") was coerced to the default before the type
+    # check below could report it, and read as a manifest the audit believed.
+    waivers = config.get("waivers", {})
     if not isinstance(waivers, dict):
         problems.append("waivers must be a mapping of check id to reason, "
                         f"got {type(waivers).__name__}")
@@ -138,9 +147,26 @@ def check_manifest(repo, config):
                 # A waiver with no reason is an unexplained hole in the
                 # standard. Requiring the sentence is the whole control.
                 problems.append(f"waiver for {cid} gives no reason")
-    extra = config.get("extra_files") or []
+    extra = config.get("extra_files", [])
     if not isinstance(extra, list) or not all(isinstance(e, str) for e in extra):
         problems.append("extra_files must be a list of repository-relative paths")
+    ontology = config.get("ontology", {})
+    if not isinstance(ontology, dict):
+        problems.append("ontology must be a mapping, "
+                        f"got {type(ontology).__name__}")
+    else:
+        overrides = ontology.get("overrides", {})
+        if not isinstance(overrides, dict):
+            problems.append("ontology.overrides must be a mapping of concept "
+                            f"name to {'|'.join(ONTOLOGY_VERDICTS)}")
+        else:
+            # An override the generator does not understand is silently
+            # ignored there, which reads as a correction that was applied.
+            for name, verdict in sorted(overrides.items()):
+                if verdict not in ONTOLOGY_VERDICTS:
+                    problems.append(
+                        f"ontology.overrides[{name}] is {verdict!r}; "
+                        f"expected one of {', '.join(ONTOLOGY_VERDICTS)}")
     if problems:
         return check("manifest", "fail", "; ".join(problems), MANIFEST_FIX)
     counts = []
@@ -205,34 +231,6 @@ def check_required_files(repo, config):
         "Run init mode; it creates only what is missing.",
     )
 
-
-def long_lived_docs(repo):
-    """Everything under docs/ that requires owner/review_by front matter. A stale
-    architecture note is exactly as misleading as a stale CONVENTIONS, so this
-    walks the whole tree rather than a fixed list of names."""
-    docs = repo / "docs"
-    if not docs.is_dir():
-        return
-    exempt = {(repo / RUNLOG).resolve()}
-    archive = (repo / RUNLOG_ARCHIVE_DIR).resolve()
-    decisions = (repo / DECISIONS_DIR).resolve()
-    adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
-    for path in sorted(docs.rglob("*.md")):
-        if path.name == "README.md":
-            continue
-        # The run log is append-only and has no owner in the review sense: a
-        # review_by on it would be a promise about entries nobody may edit.
-        # Same for the rotated quarterly archives it spills into.
-        if path.resolve() in exempt or archive in path.resolve().parents:
-            continue
-        # Decision records carry their own front matter (id, status, date) and
-        # are immutable once accepted, so a review_by on one would be a promise
-        # nobody is allowed to keep. Whether the front matter itself is even
-        # parseable is checked separately, by check_adr_immutability.
-        # The archive adr_compact.py moves them into is the same kind of file.
-        if path.resolve().parent == decisions or adr_archive in path.resolve().parents:
-            continue
-        yield path
 
 
 def check_front_matter(repo):
@@ -393,6 +391,73 @@ def check_adr_index(repo, script_dir):
         (result.stderr.strip().splitlines() or ["index out of date"])[0],
         "Run adr_index.py and commit the result.",
     )
+
+
+def check_ontology(repo, script_dir):
+    """The generated domain model is current, and the documentation is tagged
+    against it.
+
+    Coverage is never a fail. Which document describes which concept is
+    organisation, and organisation is advice; a stale generated file is a
+    defect. The two states say different things on purpose.
+    """
+    model_path = repo / DOMAIN_MODEL
+    if not model_path.is_file():
+        return check("ontology", "skipped", f"No {DOMAIN_MODEL}.",
+                     "Run domain_model.py --write, or leave it: the document "
+                     "is optional.")
+    generator = (script_dir.parent.parent / "ontological-documentation"
+                 / "scripts" / "domain_model.py")
+    result = subprocess.run(
+        [sys.executable, str(generator), str(repo), "--check"],
+        capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
+    )
+    if result.returncode == 2:
+        return check("ontology", "skipped",
+                     "No source files the extractor reads "
+                     "(Python, JS/TS, PowerShell, Terraform).",
+                     "")
+    if result.returncode != 0:
+        return check(
+            "ontology", "fail",
+            (result.stderr.strip().splitlines() or [f"{DOMAIN_MODEL} is stale"])[0],
+            "Run domain_model.py --write and commit.",
+        )
+
+    concepts = parse_domain_model(model_path)
+    known = {name for name, _ in concepts}
+    domain = {name for name, category in concepts if category == "domain"}
+    tagged, unknown = set(), set()
+    for path in long_lived_docs(repo):
+        front, _ = read_front_matter(path)
+        names = front.get("concepts")
+        if not isinstance(names, list):
+            continue
+        for name in names:
+            name = str(name)
+            (tagged if name in known else unknown).add(name)
+    untagged = sorted(domain - tagged)
+    problems = []
+    if untagged:
+        problems.append("no document names " + _shown(untagged))
+    if unknown:
+        problems.append("tagged but not in the model: " + _shown(sorted(unknown)))
+    if problems:
+        return check(
+            "ontology", "warn", "; ".join(problems),
+            "Tag the document that describes it with `concepts: [Name]`, "
+            "or fix the tag.",
+        )
+    return check("ontology", "pass",
+                 f"{DOMAIN_MODEL} is current; "
+                 f"{len(domain)} domain concept(s) documented.")
+
+
+def _shown(names):
+    """Up to ten, then a count: the form check_links already reports in."""
+    shown = ", ".join(names[:10])
+    return shown if len(names) <= 10 else f"{shown}; and {len(names) - 10} more"
 
 
 # A manifest defect, not a generator defect, so it names the file to edit.
@@ -1005,6 +1070,7 @@ CHECKS = [
     # Returns several: one per declared standard, each id-prefixed "standards:".
     ("standards", lambda c: check_standards(c.repo, c.config, c.script_dir)),
     ("readme-shape", lambda c: check_readme_shape(c.repo)),
+    ("ontology", lambda c: check_ontology(c.repo, c.script_dir)),
 ]
 
 CHECK_IDS = frozenset(cid for cid, _ in CHECKS)

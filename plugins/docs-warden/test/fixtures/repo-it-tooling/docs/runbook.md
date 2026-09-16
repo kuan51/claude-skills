@@ -2,6 +2,7 @@
 owner: it-team
 review_by: 2027-06-01
 generated: false
+concepts: [CertRotation]
 ---
 
 # Certificate rotation runbook

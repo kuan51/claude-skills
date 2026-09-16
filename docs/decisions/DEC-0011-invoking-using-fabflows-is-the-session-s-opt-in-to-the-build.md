@@ -1,5 +1,5 @@
 ---
-id: DEC-0010
+id: DEC-0011
 title: Invoking using-fabflows is the session's opt-in to the build loop
 status: proposed
 date: 2026-09-16
@@ -8,7 +8,7 @@ supersedes: []
 tags: []
 ---
 
-# DEC-0010: Invoking using-fabflows is the session's opt-in to the build loop
+# DEC-0011: Invoking using-fabflows is the session's opt-in to the build loop
 
 ## Context and problem statement
 

@@ -246,3 +246,27 @@ Scope, and what it deliberately does not do:
 
 `fail` lists up to ten `file -> target` pairs and counts the rest.
 **Fix:** correct the path, or delete the link if its target is not coming.
+
+### 13. `ontology`
+
+`docs/architecture/domain-model.md` is current, and the documentation is tagged
+against it. Runs `domain_model.py <repo> --check` from the
+`ontological-documentation` skill, the way `adr-index` runs `adr_index.py`.
+
+| State | When |
+|-------|------|
+| `skipped` | There is no `docs/architecture/domain-model.md`. The document is optional. |
+| `skipped` | `--check` exited 2: no source file the extractor reads (Python, JS/TS, PowerShell, Terraform). |
+| `fail` | `--check` exited 1: the committed document is stale or hand-edited. |
+| `warn` | The document is current, but a domain concept is named by no document's `concepts:` front matter, or a `concepts:` entry names something the model does not contain. Up to ten of each are listed. |
+| `pass` | Current, every domain concept documented, every tag resolves. |
+
+Coverage never fails. Which document describes which concept is organisation, and
+organisation is advice; a stale generated file is a defect. A document with no
+`concepts:` key is fine, and only ever shows up through the untagged-concept warn.
+
+Concepts in the wrong table are corrected with `ontology.overrides:` in
+`.docs-warden.yml` (`{ConceptName: domain|technical|ignore}`), validated by
+`manifest`, never by editing the generated document.
+**Fix:** run `domain_model.py --write` and commit; or tag the document that
+describes the concept with `concepts: [Name]`, or correct the tag.
