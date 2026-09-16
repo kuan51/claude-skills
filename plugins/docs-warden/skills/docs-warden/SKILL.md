@@ -87,6 +87,11 @@ Triggered by "scaffold docs," "set up documentation," "document this repo."
      named in `Packages =`. Skip the copy or `vale sync`
      and `vale` cannot resolve `BasedOnStyles`; skip `glossary_to_vale.py` and
      `Vocab = Project` has no vocabulary directory to load.
+   - **`service` and `firmware` archetypes:** when the repo has Terraform,
+     Kubernetes or CI configuration and an architecture document is being filled,
+     dispatch the `infra-inventory` agent and paste its tables under arc42 §7,
+     keeping its `Assumption (verify):` lines verbatim. It is read-only and reports
+     what is configured, not what the README claims.
 5. Seed `docs/GLOSSARY.md`: see **Glossary seeding** below.
 6. Run `scripts/audit.py` and show the scorecard.
 
@@ -113,7 +118,10 @@ documented behavior.
    identifiers. Those are your candidates.
 3. Run `scripts/freshness.py` for documents past `review_by` or older than the code
    they describe.
-4. Propose specific edits. Do not rewrite wholesale.
+4. Propose specific edits. Do not rewrite wholesale. When the change touched
+   Terraform, Kubernetes or CI configuration and an architecture document
+   describes it, dispatch the `infra-inventory` agent and propose the edit from
+   its tables, keeping its `Assumption (verify):` lines verbatim.
 5. Regenerate everything marked `generated: true`, plus `scripts/adr_index.py`.
 6. Re-run `audit.py`.
 
