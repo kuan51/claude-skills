@@ -264,6 +264,9 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     ['git -C ~/.claude/plugins/marketplaces/x/../../cache/y fetch origin', B, 'deny'],
     ['git -C ~/.claude/plugins/marketplaces/claude-skills branch -f master evil', B, 'deny'],
     ['cp -r ~/.claude/plugins/marketplaces/claude-skills/plugins/x/. ~/.claude/plugins/cache/claude-skills/x/1.0.0/', B, 'deny'],
+    // A segment that is only an assignment runs nothing; a redirect or substitution in it still counts.
+    ['S="C:/Users/me/.claude/plugins/cache/x/y/1.0.0/scripts"\nls "$S"\npython3 "$S/new.py" .', B, 'allow'],
+    ['S=$(cat x > ~/.claude/settings.json)', B, 'deny'],
   ];
   for (const [cmd, tool, expected] of cases) assert.equal(shell(cmd, tool).decision, expected, cmd);
   // Tool-side: a ~ path is the same file as the absolute one, and notebooks are files.

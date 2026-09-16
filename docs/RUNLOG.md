@@ -445,3 +445,20 @@ it was never true on master. Verify with `adr_index.py`, `node --test
 above master's DEC-0010 with no duplicate ID. `node --test "test/*.test.js"`: 4 pass,
 0 fail. `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
 `python3 plugins/docs-warden/test/test_scripts.py`: 78 PASS, 0 FAIL, exit 0.
+
+## 2026-09-16 — fabflows 0.3.1: bare assignment naming the plugin cache
+
+**PLANNED** — The guard denied a docs-warden scaffold command whose first line only
+assigned the plugin-cache scripts path to a shell variable. Reproduce with a scratch
+script that pipes that command into `hooks/guard.js`, widen the `VAR=value` prefix strip
+to also match at end of segment, add three table rows to `test/guard.test.js`, bump
+both manifests to 0.3.1, and verify with `node --test "plugins/fabflows/test/*.test.js"`
+and `node --test "test/*.test.js"`.
+
+**CONFIRMED** — Repro script: reported command and bare quoted assignment DENY before,
+allow after; assignment with substitution or redirect still DENY.
+`node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail.
+
+**SKIPPED** — Not exercised from a live session with 0.3.1 installed: the hook loads at
+session start, so that needs the cache copy and a restart.

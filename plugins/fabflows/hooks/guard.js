@@ -224,11 +224,12 @@ function checkShell(command, cwd) {
   // Split on shell separators, then anchor every pattern at segment start. That is what
   // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
   // to parse quoting. Newlines and `&` separate too, a leading `(` is dropped, and a
-  // `VAR=value` prefix is stripped, so none of them hides a command from the anchor.
+  // `VAR=value` prefix is stripped, even when it is the whole segment, so none of them
+  // hides a command from the anchor.
   const segments = command
     .replace(HARMLESS_REDIRECT, '')
     .split(/&&|\|\||[;|&\r\n]/)
-    .map((s) => s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(/^(\w+=\S*\s+)+/, '').trim())
+    .map((s) => s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(/^(\w+=\S*(\s+|$))+/, '').trim())
     .filter(Boolean);
 
   // `for d in ~/.claude/plugins; do rm -rf "$d"; done` must not pass on its header alone.
