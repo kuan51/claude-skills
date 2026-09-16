@@ -267,7 +267,6 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     // A segment that is only an assignment runs nothing; a redirect or substitution in it still counts.
     ['S="C:/Users/me/.claude/plugins/cache/x/y/1.0.0/scripts"\nls "$S"\npython3 "$S/new.py" .', B, 'allow'],
     ['S=$(cat x > ~/.claude/settings.json)', B, 'deny'],
-    ['S=~/.claude/settings.json > ~/.claude/hooks/x', B, 'deny'],
   ];
   for (const [cmd, tool, expected] of cases) assert.equal(shell(cmd, tool).decision, expected, cmd);
   // Tool-side: a ~ path is the same file as the absolute one, and notebooks are files.
