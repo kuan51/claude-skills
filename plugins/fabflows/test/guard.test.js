@@ -222,6 +222,26 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     ['sha256sum ~/.claude/hooks/x.js', B, 'allow'],
     ['ls -x ~/.claude/plugins', B, 'allow'],
     ['head -c 100 ~/.claude/plugins/x/README.md', B, 'allow'],
+    ['cut -d: -f1 ~/.claude/plugins/config.json', B, 'allow'],
+    ['until grep -q x ~/.claude/settings.json; do echo w; done', B, 'allow'],
+    ['while read l; do echo $l; done < ~/.claude/settings.json', B, 'allow'],
+    // sort and uniq write without a redirect, so neither is read-only.
+    ['sort -o ~/.claude/hooks/guard.js /dev/null', B, 'deny'],
+    ['uniq evil.json ~/.claude/settings.json', B, 'deny'],
+    // The loop variable hides the path, so the header is read-only only if the body is.
+    ['for d in ~/.claude/plugins; do rm -rf "$d"; done', B, 'deny'],
+    // Stacked keywords must not carry a command past the start-anchored rules.
+    ['elif npm install evil; then echo x; fi', B, 'deny'],
+    ['else if npm install evil; then echo x; fi', B, 'deny'],
+    // A read-only loop over the plugin cache: the `for` header and the `do` prefix must
+    // not read as unknown commands naming a protected path.
+    ['for d in ~/.claude/plugins/cache/x/*/; do cat "$d/p.json"; done', B, 'allow'],
+    ['if grep -q hooks ~/.claude/settings.json; then echo yes; fi', B, 'allow'],
+    // A keyword prefix does not smuggle a real command past the other rules.
+    ['while read l; do rm -rf ~/.claude/plugins; done', B, 'deny'],
+    ['for d in x; do echo "{}" > ~/.claude/settings.json; done', B, 'deny'],
+    // A `for` header carrying a command substitution is not read-only.
+    ['for f in $(ls ~/.claude/plugins/ ); do echo $f; done', B, 'deny'],
     ['Get-Item $env:USERPROFILE\\.claude\\plugins\\cache', P, 'allow'],
     ['Set-Location $env:USERPROFILE\\.claude\\plugins\\cache', P, 'allow'],
     ['echo "{}" > ~/.claude/hooks/x.js', B, 'deny'],

@@ -60,3 +60,13 @@ per-plugin history until entries are recorded here going forward.
   repository tripped the line count with nothing old enough to move: the rule
   selected nothing and the warning stood with advice nobody could follow. The age
   filter is gone; the oldest entries now move until the log is back under the limit.
+
+- **fabflows 0.2.4** -- the guard denied read-only inspection of `~/.claude`. Its
+  shell-side allowlist held only a handful of command names, so a plain `cut`,
+  `basename` or a `for d in ~/.claude/plugins/...; do cat "$d/x"; done` loop over the
+  plugin cache read as an unknown command naming a protected path and was blocked, with
+  a message about disarming the guard. Shell keywords are now stripped before a segment
+  is matched, a `for` header counts as read-only when the loop body is read-only too,
+  and the allowlist covers the common read-only text tools. `sort` and `uniq` are not
+  among them: both write a file without a redirect, via `sort -o` and `uniq`'s second
+  positional argument. Writes to live configuration stay denied.
