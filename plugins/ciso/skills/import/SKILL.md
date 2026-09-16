@@ -36,6 +36,11 @@ Always start here, every invocation:
 ## Only HITRUST supports this verb (e1 only)
 
 If the resolved certification is not HITRUST, there is no `references/import.md` to read. **Say so
-plainly and stop.** The reason is the same either way: SOC 2 and ISO 27001 are published as
+plainly and stop.** The reason is the same either way: SOC 2, ISO 27001 and CMMC are published as
 documents, not as per-org machine-readable exports. The user has nothing to import. The bundled set
 is what there is. Point the user at `ciso:interview`.
+
+## After importing
+
+Re-render the dashboard, then report the `{ imported, archived, warnings }` summary in plain language
+and send the user to `ciso:interview`.

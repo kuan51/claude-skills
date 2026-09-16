@@ -88,7 +88,7 @@ flagging in procedures, where the reader needs to know who acts.
 ```bash
 # Generate the vocabulary from the repository's own glossary
 
-python3 ../docs-warden/scripts/glossary_to_vale.py <repo>
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/docs-warden/scripts/glossary_to_vale.py" <repo>
 vale sync    # fetch the four packages (proselint and ai-tells are pinned)
 vale .
 ```

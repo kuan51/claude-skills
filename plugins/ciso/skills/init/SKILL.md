@@ -41,4 +41,4 @@ Scaffolds the local, gitignored data store (`state.json`) and dashboard pages (`
 5. **Report to the user:**
    - The absolute path to `dashboard.html`, that it's the index across every certification, and that they can open it directly in a browser without running a server.
    - Whether `.gitignore` was updated (or already covered the target directory).
-   - That the natural next step is `ciso:register`, to add a certification (HITRUST CSF, SOC 2, or ISO/IEC 27001) and load its control set.
+   - That the natural next step is `ciso:register`, to add a certification (HITRUST CSF, SOC 2, ISO/IEC 27001, or CMMC) and load its control set.

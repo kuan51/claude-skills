@@ -37,3 +37,9 @@ fields permitted to reach a web-searching agent are the control's *public subjec
 `domain`, `domainKey`. Justifications, in-progress notes, and evidence records never leave the
 project. The allowlist in `lib/roadmap/sanitize-control.js` is fail-closed and enforces this
 mechanically. Do not bypass it.
+
+## After the research
+
+Re-render the dashboard once the findings are merged, then present a **brief, non-blocking**
+summary, call out any `confidence: "low"` or empty-vendor results as needing manual follow-up rather
+than silently accepted, and offer `ciso:sync-tasks` to push the remaining gaps into a tracker.

@@ -64,29 +64,29 @@ Triggered by "scaffold docs," "set up documentation," "document this repo."
 3. Write `.docs-warden.yml`.
 4. Create only the **missing** files from `assets/templates/`. Never overwrite an
    existing document. List what you skipped and why.
-   **For every standard confirmed in step 2, also create its missing artifacts**
-   from `assets/standards/<id>/`. Without this the audit in step 6 reports every
-   overlay artifact as missing. A path two standards share has one template, in
-   the directory of whichever introduced it: `SUPPORT.md.tmpl` is under
-   `osps-baseline/` and the EU CRA uses it too. The artifact table in each
-   `references/standards/<id>.md` says which template covers which path, and
-   which rows have no template because no repository file satisfies them.
-   Copy `assets/lint/` into place, and `assets/ci/.pre-commit-config.yaml` to the
-   repo root; `pre-commit install` then runs the three linters before each push.
-   **Never copy `scripts/` into the target repo.** A copy buys nothing and forks
-   from the skill the moment anyone edits it. Run them from the installed plugin
-   instead. See `references/anti-drift.md` for what this does and does not
-   enforce in CI.
-   The `.vale.ini` sets `BasedOnStyles = Clarity, Microsoft, write-good, proselint, ai-tells`,
-   so copy `../clarity/assets/vale/styles/Clarity/` into the
-   repo's `styles/` directory **before** running
-   `scripts/glossary_to_vale.py <repo>` to generate the vocabulary: that
-   script overwrites `styles/Clarity/GlossaryTerms.yml`, and the copied
-   one is an empty stub, so generating first would get silently
-   reverted by the copy. Then run `vale sync` to fetch the four packages
-   named in `Packages =`. Skip the copy or `vale sync`
-   and `vale` cannot resolve `BasedOnStyles`; skip `glossary_to_vale.py` and
-   `Vocab = Project` has no vocabulary directory to load.
+   - **For every standard confirmed in step 2, also create its missing artifacts**
+     from `assets/standards/<id>/`. Without this the audit in step 6 reports every
+     overlay artifact as missing. A path two standards share has one template, in
+     the directory of whichever introduced it: `SUPPORT.md.tmpl` is under
+     `osps-baseline/` and the EU CRA uses it too. The artifact table in each
+     `references/standards/<id>.md` says which template covers which path, and
+     which rows have no template because no repository file satisfies them.
+   - Copy `assets/lint/` into place, and `assets/ci/.pre-commit-config.yaml` to the
+     repo root; `pre-commit install` then runs the three linters before each push.
+   - **Never copy `scripts/` into the target repo.** A copy buys nothing and forks
+     from the skill the moment anyone edits it. Run them from the installed plugin
+     instead. See `references/anti-drift.md` for what this does and does not
+     enforce in CI.
+   - The `.vale.ini` sets `BasedOnStyles = Clarity, Microsoft, write-good, proselint, ai-tells`,
+     so copy `../clarity/assets/vale/styles/Clarity/` into the
+     repo's `styles/` directory **before** running
+     `scripts/glossary_to_vale.py <repo>` to generate the vocabulary: that
+     script overwrites `styles/Clarity/GlossaryTerms.yml`, and the copied
+     one is an empty stub, so generating first would get silently
+     reverted by the copy. Then run `vale sync` to fetch the four packages
+     named in `Packages =`. Skip the copy or `vale sync`
+     and `vale` cannot resolve `BasedOnStyles`; skip `glossary_to_vale.py` and
+     `Vocab = Project` has no vocabulary directory to load.
 5. Seed `docs/GLOSSARY.md`: see **Glossary seeding** below.
 6. Run `scripts/audit.py` and show the scorecard.
 
