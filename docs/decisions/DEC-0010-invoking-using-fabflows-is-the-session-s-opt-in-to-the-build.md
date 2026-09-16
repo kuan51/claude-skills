@@ -26,9 +26,8 @@ table that is supposed to govern the session from its first turn.
   never changes is not consent, it is friction.
 - **Skills load at session start.** Whatever is going to govern the session has to be
   invocable at the top of the conversation, not discovered halfway through.
-- **The routing table already exists in one place.** Anything new must point at the
-  `fabflows` skill rather than restate it, or the two copies drift.
-- **No new machinery.** A skill file is the cheapest thing that can carry this.
+- **No new machinery, no second copy.** A skill file is the cheapest carrier, and it must
+  point at the `fabflows` skill rather than restate it, or the two copies drift.
 
 ## Considered options
 

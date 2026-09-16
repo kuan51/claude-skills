@@ -29,21 +29,5 @@ spec-able, prepare the loop and launch it.
 
 ## The build loop
 
-Mirrors "The build loop" in the fabflows skill.
-
-1. Write the spec: the behaviour, how to check it, what is out of scope.
-2. Confirm `git status --porcelain` prints nothing, and that `git rev-parse --abbrev-ref HEAD`
-   prints a feature branch, never the default branch. On the default branch, create one
-   named for the change and check it out.
-3. Take `baseRef` from `git rev-parse HEAD`.
-4. Pick `testCommand` from the repository's own docs.
-5. Call `Workflow({ name: "fabflows:build", args: { spec, branch, baseRef, testCommand } })`.
-
-On `accepted`, run the gate exactly as the fabflows skill describes it. Handle
-`escalate`, `blocked` and `reviewer-blocked` as it describes them too.
-
-## Boundaries
-
-- Never merge, push, or open a pull request from the loop. The lead does those only when
-  the user asks.
-- Never run the loop without all four arguments.
+Prepare and launch it per "The build loop" in the fabflows skill, gate and escalation
+included.
