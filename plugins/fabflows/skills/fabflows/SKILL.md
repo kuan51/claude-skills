@@ -12,6 +12,9 @@ discount. Both halves are this skill: hand the work down, then prove the answer.
 The workers are real agents included with this plugin. They are namespaced, so the
 address is `fabflows:explorer`, not `explorer`.
 
+`using-fabflows` is the session entrypoint: a user who invokes it at the start of a
+conversation has already opted into this discipline and into the build loop below.
+
 ## Boundaries
 
 **This skill will:** pick a worker tier for a task, write the four-part brief that
@@ -131,8 +134,8 @@ Cross-check each claim against real tool output. Treat anything you cannot confi
 For a spec'd, sizeable change, offer `fabflows:build`. An Opus `editor` implements the
 spec on the current feature branch and commits; a fresh `refuter` reads the diff against
 the spec and re-runs the tests; a REWORK verdict sends the must-fix list to a fresh
-builder, up to the rework cap. It runs through the Workflow tool, so start it only when
-the user asks for it or agrees to it.
+builder, up to the rework cap. It runs through the Workflow tool, so start it when
+the user asks for it, agrees to it, or opened the session with `using-fabflows`.
 
 Before starting it:
 

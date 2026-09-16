@@ -168,6 +168,16 @@ test('the skill routes to the namespaced agents that actually ship', () => {
   }
 });
 
+test('the entrypoint skill points at the fabflows skill and the build loop', () => {
+  const skill = fs.readFileSync(path.join(SKILLS_DIR, 'using-fabflows', 'SKILL.md'), 'utf8');
+  for (const ref of ['fabflows:fabflows', 'fabflows:build']) {
+    assert.ok(
+      skill.includes(ref),
+      `using-fabflows/SKILL.md must name ${ref} -- it is the entrypoint's whole job`
+    );
+  }
+});
+
 test('the skill fits the post-compaction re-injection cap', () => {
   // Claude Code re-injects an invoked skill after compaction, capped at 5,000 tokens.
   // 20,000 characters is a rough proxy (about four characters per token), not an exact count.
