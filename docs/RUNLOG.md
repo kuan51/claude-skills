@@ -388,3 +388,12 @@ denied the same way. After the change the loop, `sort` and `basename` print noth
 **SKIPPED** — `awk` and `sed` were left off the allowlist, so they still deny when
 they name a protected path. Both can write (`sed -i`, `print > file`), and the
 readers already on the list cover the same inspection.
+
+**CONFIRMED** — `npx -y markdownlint-cli2` over the repo reports no error in the
+`CHANGELOG.md` or `docs/RUNLOG.md` lines this change added. The one `docs/RUNLOG.md`
+hit (line 197, MD018) predates it, as do the other 282 errors repo-wide.
+
+**SKIPPED** — `vale` and `lychee` were not run: neither binary is installed in this
+container and installing it is blocked. `.pre-commit-config.yaml` calls them "the same
+three linters as CI", but no workflow is tracked under `.github/`, so nothing runs them
+on a pull request either.
