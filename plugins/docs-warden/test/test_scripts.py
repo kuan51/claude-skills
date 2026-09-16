@@ -16,6 +16,9 @@ from pathlib import Path
 import yaml
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "skills" / "docs-warden" / "scripts"
+ONTOLOGY = (Path(__file__).resolve().parent.parent / "skills"
+            / "ontological-documentation")
+ONTOLOGY_SCRIPTS = ONTOLOGY / "scripts"
 
 
 def test_matrix_links_are_relative_to_the_matrix():
@@ -755,10 +758,11 @@ def test_the_fixtures_still_report_what_they_were_built_to_report():
     """
     expectations = {
         "repo-it-tooling": ["required-files=pass", "adr-index=pass", "links=pass",
-                            "phi-secrets=pass", "standards:osps-baseline=pass"],
+                            "phi-secrets=pass", "standards:osps-baseline=pass",
+                            "ontology=pass"],
         "repo-regulated": ["required-files=pass", "adr-index=pass", "links=pass",
                            "phi-secrets=pass", "front-matter=warn",
-                           "standards:iec-62304=fail"],
+                           "standards:iec-62304=fail", "ontology=skipped"],
     }
     for name, expected in expectations.items():
         with tempfile.TemporaryDirectory() as tmp:
@@ -1827,6 +1831,217 @@ def test_decisions_check_hook_speaks_only_at_50():
     result = subprocess.run([sys.executable, str(hook)], input="not json",
                             capture_output=True, text=True, check=False)
     assert result.returncode == 0 and result.stdout == ""
+
+
+# --- ontological-documentation -------------------------------------------------
+
+def _ontology_repo(tmp):
+    """A repo with one file per language the extractor reads."""
+    repo = Path(tmp)
+    (repo / "a.py").write_text(
+        'class Order:\n'
+        '    """An order placed by a customer."""\n'
+        '\n'
+        'class PaymentGateway:\n'
+        '    pass\n'
+        '\n'
+        'class OrderService(Order):\n'
+        '    def __init__(self, payment_gateway):\n'
+        '        self.payment_gateway = payment_gateway\n',
+        encoding="utf-8")
+    (repo / "b.ts").write_text(
+        "interface Customer {\n  id: string;\n}\n"
+        "class VipCustomer extends Customer {\n}\n", encoding="utf-8")
+    (repo / "Cert.psm1").write_text(
+        "# fixture\nfunction Invoke-CertRotation {\n"
+        "    param([string]$HubName)\n}\nImport-Module Logging\n", encoding="utf-8")
+    (repo / "main.tf").write_text(
+        'module "network" {\n  source = "./modules/network"\n}\n'
+        'resource "aws_instance" "web" {\n'
+        '  subnet_id = module.network.subnet_id\n}\n', encoding="utf-8")
+    return repo
+
+
+def _extract(repo):
+    result = subprocess.run(
+        [sys.executable, str(ONTOLOGY_SCRIPTS / "extract_concepts.py"), str(repo)],
+        capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout), result.stderr
+
+
+def _has_edge(model, relationship, subject, obj):
+    return {"subject": subject, "object": obj} in model["relationships"][relationship]
+
+
+def test_extractor_reads_all_four_languages_and_categorises_by_name():
+    """The extractor's whole contract in one repo: a concept per language, the
+    domain/technical split, and one edge of each kind it can derive. The
+    category is the part most easily broken by a refactor, because nothing else
+    in the pipeline recomputes it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        model, _ = _extract(_ontology_repo(tmp))
+        concepts = model["concepts"]
+
+        assert model["sources"] == {"python": 1, "javascript": 1,
+                                    "powershell": 1, "terraform": 1}, model["sources"]
+        assert concepts["Order"]["category"] == "domain", concepts["Order"]
+        assert concepts["OrderService"]["category"] == "technical", \
+            concepts["OrderService"]
+        assert concepts["CertRotation"]["category"] == "domain", \
+            concepts["CertRotation"]
+        assert concepts["CertRotation"]["kind"] == "noun", concepts["CertRotation"]
+        assert concepts["Order"]["summary"] == "An order placed by a customer.", \
+            concepts["Order"]
+
+        assert _has_edge(model, "is_a", "OrderService", "Order"), model
+        assert _has_edge(model, "is_a", "VipCustomer", "Customer"), model
+        assert _has_edge(model, "depends_on", "OrderService", "PaymentGateway"), model
+        assert _has_edge(model, "depends_on", "aws_instance.web", "network"), model
+        assert _has_edge(model, "associates_with",
+                         "Invoke-CertRotation", "CertRotation"), model
+        # Logging is imported but defined nowhere here: an edge to something
+        # outside the repository is not this repository's domain.
+        assert not any(e["object"] == "Logging"
+                       for e in model["relationships"]["depends_on"]), model
+
+
+def test_extractor_says_so_instead_of_reporting_an_empty_repo():
+    """A C repository and a repository with no code are not the same finding.
+    Exit 0 with empty concepts plus a stderr line is what lets the audit answer
+    skipped rather than pass over a population of nothing."""
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "main.c").write_text("int main(void) { return 0; }\n",
+                                          encoding="utf-8")
+        model, stderr = _extract(Path(tmp))
+        assert model["concepts"] == {}, model
+        assert sum(model["sources"].values()) == 0, model["sources"]
+        assert "no supported source files" in stderr, stderr
+
+
+def _domain_model(repo, *flags):
+    return subprocess.run(
+        [sys.executable, str(ONTOLOGY_SCRIPTS / "domain_model.py"), str(repo), *flags],
+        capture_output=True, text=True, check=False)
+
+
+def test_domain_model_is_idempotent_and_check_detects_a_hand_edit():
+    """Generated means generated: a second run must produce an empty diff, or
+    CI cannot gate on the document at all. The three --check exits are the
+    contract audit.py maps onto pass, fail and skipped."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _ontology_repo(tmp)
+        model_path = repo / "docs" / "architecture" / "domain-model.md"
+
+        assert _domain_model(repo, "--write").returncode == 0
+        first = model_path.read_bytes()
+        assert _domain_model(repo, "--write").returncode == 0
+        assert model_path.read_bytes() == first, "a second --write changed the bytes"
+        assert _domain_model(repo, "--check").returncode == 0, \
+            _domain_model(repo, "--check").stderr
+
+        model_path.write_bytes(first + b"hand-edited\n")
+        stale = _domain_model(repo, "--check")
+        assert stale.returncode == 1, (stale.returncode, stale.stderr)
+        assert stale.stderr.strip(), "a failing --check must say why"
+
+        for name in ("a.py", "b.ts", "Cert.psm1", "main.tf"):
+            (repo / name).unlink()
+        assert _domain_model(repo, "--check").returncode == 2, \
+            "no readable source must exit 2, not 1: it is skipped, not broken"
+
+
+def test_concept_categories_reference_matches_the_code():
+    """The archetypes.md <-> archetypes.py discipline, applied to the suffix
+    table. A reference people read instead of the code has to be the code."""
+    sys.path.insert(0, str(ONTOLOGY_SCRIPTS))
+    try:
+        import extract_concepts
+    finally:
+        sys.path.pop(0)
+    text = (ONTOLOGY / "references" / "concept-categories.md").read_text(
+        encoding="utf-8")
+    listed = [m for m in re.findall(r"^\| `([^`]+)` \|", text, re.MULTILINE)]
+    assert listed == list(extract_concepts.CATEGORY_SUFFIXES), \
+        (f"concept-categories.md lists {listed}, "
+         f"CATEGORY_SUFFIXES is {list(extract_concepts.CATEGORY_SUFFIXES)}")
+
+
+def _ontology_audit_repo(tmp, manifest_extra=""):
+    """A minimal repo the ontology check can run over end to end."""
+    repo = Path(tmp)
+    (repo / "docs").mkdir()
+    (repo / "src").mkdir()
+    (repo / "src" / "a.py").write_text(
+        'class Order:\n    """An order."""\n', encoding="utf-8")
+    (repo / ".docs-warden.yml").write_text(
+        "archetype: it-tooling\nowner: t\nreview_cadence_days: 180\n" + manifest_extra,
+        encoding="utf-8")
+    return repo
+
+
+def test_ontology_check_reports_missing_stale_untagged_and_current():
+    """All four states of check 13 in one repo, in the order a repository
+    actually meets them. The fail and the warn must stay different states:
+    a stale generated file is a defect, and an undocumented concept is advice."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _ontology_audit_repo(tmp)
+
+        entry = _audit_check(repo, "ontology")
+        assert entry["state"] == "skipped", entry
+        assert "domain-model.md" in entry["reason"], entry
+
+        assert _domain_model(repo, "--write").returncode == 0
+        model_path = repo / "docs" / "architecture" / "domain-model.md"
+        model_path.write_text(model_path.read_text(encoding="utf-8") + "edited\n",
+                              encoding="utf-8")
+        entry = _audit_check(repo, "ontology")
+        assert entry["state"] == "fail", entry
+
+        assert _domain_model(repo, "--write").returncode == 0
+        (repo / "docs" / "x.md").write_text(
+            "---\nowner: t\nreview_by: 2099-01-01\nconcepts: [Nope]\n---\n\n# X\n",
+            encoding="utf-8")
+        entry = _audit_check(repo, "ontology")
+        assert entry["state"] == "warn", entry
+        assert "Order" in entry["reason"], entry
+        assert "Nope" in entry["reason"], entry
+
+        (repo / "docs" / "x.md").write_text(
+            "---\nowner: t\nreview_by: 2099-01-01\nconcepts: [Order]\n---\n\n# X\n",
+            encoding="utf-8")
+        assert _domain_model(repo, "--write").returncode == 0
+        entry = _audit_check(repo, "ontology")
+        assert entry["state"] == "pass", entry
+
+
+def test_ontology_overrides_drop_a_concept_and_a_bad_value_fails_the_manifest():
+    """An override the generator ignores reads as a correction that was
+    applied, which is why the manifest check has to refuse the value rather
+    than the generator swallowing it."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _ontology_audit_repo(tmp, "ontology:\n  overrides:\n    Order: ignore\n")
+        assert _domain_model(repo, "--write").returncode == 0
+        text = (repo / "docs" / "architecture" / "domain-model.md").read_text(
+            encoding="utf-8")
+        assert "| Order |" not in text, f"ignore did not drop the row:\n{text}"
+        assert _audit_check(repo, "manifest")["state"] == "pass"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _ontology_audit_repo(tmp, "ontology:\n  overrides:\n    Order: maybe\n")
+        entry = _audit_check(repo, "manifest")
+        assert entry["state"] == "fail", entry
+        assert "maybe" in entry["reason"], entry
+
+    # A present falsy value of the wrong type was coerced to the default by
+    # `.get(key) or {}` before the type check ran, so "ontology: []" and
+    # "waivers: []" both read as a manifest the audit believed.
+    for key, extra in (("ontology", "ontology: []\n"), ("waivers", "waivers: []\n")):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _ontology_audit_repo(tmp, extra)
+            entry = _audit_check(repo, "manifest")
+            assert entry["state"] == "fail", (key, entry)
+            assert key in entry["reason"], (key, entry["reason"])
 
 
 def main():

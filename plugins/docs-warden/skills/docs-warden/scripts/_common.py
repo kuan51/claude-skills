@@ -27,6 +27,7 @@ DECISIONS = "docs/DECISIONS.md"
 RUNLOG = "docs/RUNLOG.md"
 GLOSSARY = "docs/GLOSSARY.md"
 SECURITY = "docs/SECURITY.md"
+DOMAIN_MODEL = "docs/architecture/domain-model.md"
 DECISIONS_DIR = "docs/decisions"
 DECISIONS_ARCHIVE_DIR = "docs/decisions/archive"
 RUNLOG_ARCHIVE_DIR = "docs/runlog"
@@ -157,6 +158,67 @@ def parse_glossary(path: Path):
                    if r.strip() and not r.strip().startswith("{{")]
         entries.append((term, rejects))
     return entries
+
+
+# The two tables domain_model.py renders, by their headings. The generator and
+# the audit both read this, so they cannot drift into two answers for "what
+# does a concept row look like".
+DOMAIN_MODEL_SECTIONS = {
+    "## Domain concepts": "domain",
+    "## Technical concepts": "technical",
+}
+
+
+def parse_domain_model(path: Path):
+    """Return [(concept, category)] from the generated domain model tables."""
+    entries = []
+    category = None
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return entries
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            category = DOMAIN_MODEL_SECTIONS.get(stripped)
+            continue
+        if category is None or not stripped.startswith("|"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        name = cells[0] if cells else ""
+        if not name or name.lower() == "concept" or set(name) <= {"-", ":", " "}:
+            continue
+        entries.append((name, category))
+    return entries
+
+
+def long_lived_docs(repo):
+    """Everything under docs/ that requires owner/review_by front matter. A stale
+    architecture note is exactly as misleading as a stale CONVENTIONS, so this
+    walks the whole tree rather than a fixed list of names."""
+    docs = repo / "docs"
+    if not docs.is_dir():
+        return
+    exempt = {(repo / RUNLOG).resolve()}
+    archive = (repo / RUNLOG_ARCHIVE_DIR).resolve()
+    decisions = (repo / DECISIONS_DIR).resolve()
+    adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
+    for path in sorted(docs.rglob("*.md")):
+        if path.name == "README.md":
+            continue
+        # The run log is append-only and has no owner in the review sense: a
+        # review_by on it would be a promise about entries nobody may edit.
+        # Same for the rotated quarterly archives it spills into.
+        if path.resolve() in exempt or archive in path.resolve().parents:
+            continue
+        # Decision records carry their own front matter (id, status, date) and
+        # are immutable once accepted, so a review_by on one would be a promise
+        # nobody is allowed to keep. Whether the front matter itself is even
+        # parseable is checked separately, by check_adr_immutability.
+        # The archive adr_compact.py moves them into is the same kind of file.
+        if path.resolve().parent == decisions or adr_archive in path.resolve().parents:
+            continue
+        yield path
 
 
 def adr_files(repo: Path, archived: bool = False):

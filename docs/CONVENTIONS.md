@@ -75,3 +75,4 @@ Do not hand-edit these. CI regenerates each and fails on any diff.
 |------|-----------------|
 | `docs/DECISIONS.md` | `adr_index.py .` |
 | `docs/decisions/README.md` | the same command |
+| `docs/architecture/domain-model.md` | `domain_model.py . --write` |
