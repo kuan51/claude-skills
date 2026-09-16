@@ -42,8 +42,11 @@ set it, overrides every pin.
 
 Plus the `fabflows` skill, which carries the routing table, the four-part delegation
 brief, the worker report contract, and the verification gate the lead has to pass before
-accepting anything; and the `fabflows:build` workflow, described in
-[The build loop](#the-build-loop).
+accepting anything; the `fabflows:build` workflow, described in
+[The build loop](#the-build-loop); and the `using-fabflows` entrypoint skill, which you
+invoke at the start of a conversation to run the whole session on that discipline.
+Invoking it is your opt-in to the build loop for the session, so the lead prepares and
+launches it for a spec-able change instead of asking each time.
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 

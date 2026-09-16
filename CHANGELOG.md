@@ -37,6 +37,13 @@ per-plugin history until entries are recorded here going forward.
   permission denial counts as a blocker; DEC-0006 records why. A report whose first line
   starts with a denial escalates too, and a reply with an empty report or a blocked reply with no
   reason escalates as `unexplained` instead of reaching review.
+- **fabflows 0.3.0** -- `using-fabflows`, an entrypoint skill invoked at the start of a
+  conversation. It loads the `fabflows` skill first, then treats its own invocation as the
+  user's standing opt-in to the Workflow tool and `fabflows:build` for the rest of the
+  session: a task that implements a feature, a component or another spec-able change goes
+  straight into the build loop, prepared and launched by the lead, rather than prompting
+  for opt-in again. DEC-0010 records why an entrypoint skill rather than a SessionStart
+  hook.
 - **docs-warden 0.3.0** -- two more Vale packages beside `Microsoft` and `write-good`:
   `proselint` (misused words, hedging, jargon, typography) and `ai-tells` (patterns of
   machine-written prose), both pinned by release URL. The shipped configs default both
