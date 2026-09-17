@@ -391,6 +391,39 @@ def test_a_repository_can_add_a_requirement_of_its_own():
         assert _audit_check(repo, "required-files")["state"] == "pass"
 
 
+def test_a_bare_manifest_key_means_the_default_not_a_wrong_type():
+    """`waivers:` with nothing under it is YAML null. It says "no waivers",
+    which is the default, and must not fail the manifest the way `waivers: []`
+    (a real wrong type) does."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL + "waivers:" + NL + "extra_files:" + NL
+            + "ontology:" + NL, encoding="utf-8")
+        entry = _audit_check(repo, "manifest")
+        assert entry["state"] == "pass", entry
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL + "waivers: []" + NL, encoding="utf-8")
+        assert _audit_check(repo, "manifest")["state"] == "fail"
+
+
+def test_a_missing_ontology_generator_is_a_failure_not_a_skip():
+    """CPython exits 2 for a missing script, the same code the generator uses
+    for "no sources to read", so an absent generator read as a clean skip."""
+    sys.path.insert(0, str(SCRIPTS))
+    try:
+        import audit
+    finally:
+        sys.path.pop(0)
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs" / "architecture").mkdir(parents=True)
+        (repo / audit.DOMAIN_MODEL).write_text("# x" + NL, encoding="utf-8")
+        entry = audit.check_ontology(repo, repo / "nowhere" / "s" / "d" / "scripts")
+        assert entry["state"] == "fail", entry
+        assert "missing" in entry["reason"], entry["reason"]
+
+
 def test_a_waiver_keeps_the_finding_visible_and_is_not_a_pass():
     """The alternative to a waiver is a permanent red row people learn to
     ignore, which costs more than the waiver does. It only works if waiving is
