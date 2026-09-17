@@ -244,7 +244,17 @@ function checkShell(command, cwd) {
     (s) => INERT.test(s) || FOR_HEADER.test(s) || (!redirects(s) &&!EXEC_FLAGS.test(s) && READ_ONLY.test(s))
   );
 
+  // `cd x && git commit` is judged in x, not in the session cwd, so a command that
+  // moves into a worktree is checked against that worktree's branch.
+  let effCwd = cwd;
   for (const seg of segments) {
+    const cd = /^cd\s+(.+)$/.exec(seg);
+    if (cd) {
+      const arg = cd[1].trim().replace(/^(["'])(.*)\1$/, '$2');
+      if (arg === '~') effCwd = os.homedir();
+      else if (arg !== '-') effCwd = path.resolve(effCwd, arg);
+    }
+
     for (const re of INSTALL) {
       if (re.test(seg)) {
         deny(
@@ -282,7 +292,7 @@ function checkShell(command, cwd) {
     }
 
     if (GIT_OP.test(seg)) {
-      const b = branches(cwd);
+      const b = branches(effCwd);
       if (!b) continue; // fail open
       const onDefault = b.defaults.includes(b.current);
       if (onDefault) {
