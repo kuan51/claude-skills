@@ -251,8 +251,7 @@ function checkShell(command, cwd) {
     const cd = /^cd\s+(.+)$/.exec(seg);
     if (cd) {
       const arg = cd[1].trim().replace(/^(["'])(.*)\1$/, '$2');
-      if (arg === '~') effCwd = os.homedir();
-      else if (arg !== '-') effCwd = path.resolve(effCwd, arg);
+      effCwd = path.resolve(effCwd, arg.replace(/^~(?=\/|$)/, os.homedir()));
     }
 
     for (const re of INSTALL) {
@@ -387,13 +386,9 @@ function main() {
   else preToolUse(input);
 }
 
-if (require.main === module) {
-  try {
-    main();
-  } catch {
-    // Fail open. See the header.
-  }
-  process.exit(0);
+try {
+  main();
+} catch {
+  // Fail open. See the header.
 }
-
-module.exports = { VAR_PREFIX };
+process.exit(0);
