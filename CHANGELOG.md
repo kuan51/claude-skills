@@ -56,6 +56,15 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.3.4** -- tuned for a Fable lead on a subscription weekly cap. The skill
+  now runs routine lead turns at `medium` effort and reserves `xhigh` or `max` for the
+  planning turn, since thinking is billed as output and output is what drains the cap.
+  Delegation now turns on context volume: a worker pays off only when it keeps a large
+  log, search or file out of the lead, so a one-file grep or a one-line edit stays
+  inline. Workers return each command's exit status, final summary and failing lines,
+  never a whole log or diff. The README cache tip now says a subscription's main
+  conversation already has a one-hour cache and only workers need
+  `subagentPromptCacheTtl`. DEC-0012 records why.
 - **ciso 1.1.3, data-analysis-review 0.1.1, fabflows 0.2.1** -- wording only. Every
   living document is reworded to pass the new Vale rules without changing what it
   says. Front matter descriptions are untouched, so skill routing does not change.
