@@ -56,6 +56,10 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.3.5** -- the lead's verification gate reads the diff instead of every
+  changed file and caps command output to its tail, and the build loop's report schema
+  and review brief ask for summaries and failing lines rather than whole logs, matching
+  the 0.3.4 worker contract.
 - **fabflows 0.3.4** -- tuned for a Fable lead on a subscription weekly cap. The lead
   keeps the session's effort; only workers pin theirs. Delegation now turns on context
   volume: a worker pays off only when it keeps a large

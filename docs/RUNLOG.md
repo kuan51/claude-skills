@@ -506,3 +506,17 @@ DEC-0013 superseding DEC-0012 on that point, and re-run both suites.
 
 **CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
 `node --test "test/*.test.js"`: 4 pass, 0 fail.
+
+## 2026-09-17 — fabflows 0.3.5: cap what reaches the lead
+
+**PLANNED** — Prompt review for token efficiency. Change the gate table to read the
+diff and cap command output, align `build.js`'s report schema and review brief with the
+trimmed worker contract, bump both manifests to 0.3.5. Verify with both suites and the
+SKILL.md size check.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail. `wc -c`: fabflows/SKILL.md under 20,000.
+
+**SKIPPED** — Agent-body dedupe (each worker repeats the brief check, injection clause
+and report contract) left as is: per-spawn cost on cheap tiers only, and agent files
+have no include mechanism. Not exercised in a live session.
