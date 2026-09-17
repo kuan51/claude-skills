@@ -529,3 +529,18 @@ pushed anyway. Fixed forward in the next commit.
 
 **CONFIRMED** — After the fix: `node --check plugins/fabflows/workflows/build.js` clean;
 `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+
+## 2026-09-17 — code review findings on already-merged guard.js and audit.py
+
+**PLANNED** — `/code-review` diffed a stale local `master` (PR #35) against HEAD, so
+its four findings sit in code merged by PRs #36 to #42, not in this branch's own
+changes. Reproduce each with a scratch script, fix guard.js (assignment-only redirect;
+unresolvable `cd` fallback) and audit.py (null manifest keys; missing generator), add
+regression rows, bump docs-warden to 0.4.1.
+
+**CONFIRMED** — Before: `X=1>~/.claude/settings.json` allow; `cd $WT; git commit`,
+`cd nope; …`, `cd .. && …`, `(cd x); …`, `cd -; …` on `main` all allow; a bare
+`waivers:` failed the manifest check; a missing `domain_model.py` read as ontology
+skipped. After: all deny or fail. `node --test "plugins/fabflows/test/*.test.js"`:
+36 pass, 0 fail. `python3 plugins/docs-warden/test/test_scripts.py`: 80 PASS, no FAIL.
+`node --test "test/*.test.js"`: 4 pass, 0 fail.
