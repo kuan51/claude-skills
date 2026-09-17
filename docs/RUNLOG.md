@@ -480,3 +480,22 @@ past the install rule before, is now denied.
 
 **SKIPPED** — Not exercised from a live session with 0.3.2 installed: the hook loads at
 session start, so that needs the cache copy and a restart.
+
+## 2026-09-17 — fabflows 0.3.4: tune for a Fable lead on a weekly cap
+
+**PLANNED** — Rewrite the skill's lead-effort guidance to `medium` by default, add a
+delegate-on-volume rule, trim the four Bash-capable workers' report contracts to exit
+status, summary and failing lines, correct the README cache tip, bump both manifests to
+0.3.4, and record DEC-0012. Verify with `node --test "plugins/fabflows/test/*.test.js"`,
+`node --test "test/*.test.js"`, and `wc -c plugins/fabflows/skills/*/SKILL.md` under
+20,000.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail (36,
+not the 37 logged at 0.3.2: the 0.3.3 guard trim removed one row).
+`node --test "test/*.test.js"`: 4 pass, 0 fail. `wc -c`: fabflows/SKILL.md 13,430,
+using-fabflows/SKILL.md 1,165. `adr_index.py .` regenerated `docs/DECISIONS.md` with 12
+records.
+
+**SKIPPED** — Not exercised from a live session with 0.3.4 installed, and no `/usage`
+before-and-after on a subscription: skills load at session start and the cap's token
+weighting is unpublished, so the effect on the weekly meter is unmeasured.
