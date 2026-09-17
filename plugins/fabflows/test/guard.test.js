@@ -267,6 +267,11 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     // A segment that is only an assignment runs nothing; a redirect or substitution in it still counts.
     ['S="C:/Users/me/.claude/plugins/cache/x/y/1.0.0/scripts"\nls "$S"\npython3 "$S/new.py" .', B, 'allow'],
     ['S=$(cat x > ~/.claude/settings.json)', B, 'deny'],
+    // A substituted command is judged as a command, and a `>` inside quotes is text.
+    ['for d in C:/Users/me/.claude/plugins/cache/x/y/*/; do v=$(grep -m1 \'"version"\' "$d/plugin.json" 2>/dev/null | head -1); echo "$(basename $d) -> ${v:-no plugin.json} $(test -d "$d/skills/z" && echo \'[z]\')"; done', B, 'allow'],
+    ['S=$(npm install evil)', B, 'deny'],
+    ['for d in ~/.claude/plugins/*/; do echo x > "$d/p.json"; done', B, 'deny'],
+    ['echo "a -> b" > ~/.claude/settings.json', B, 'deny'],
   ];
   for (const [cmd, tool, expected] of cases) assert.equal(shell(cmd, tool).decision, expected, cmd);
   // Tool-side: a ~ path is the same file as the absolute one, and notebooks are files.
@@ -379,7 +384,7 @@ test('VAR_PREFIX strips leading assignments and nothing else', () => {
   assert.equal(strip('S="C:/Users/me/.claude/plugins/cache/x/scripts"'), '');
   assert.equal(strip('S=~/.claude/hooks'), '');
   // A substitution or redirect in the value survives, so the rest of the guard sees it.
-  assert.equal(strip('S=$(cat x > ~/.claude/settings.json)'), 'x > ~/.claude/settings.json)');
+  assert.equal(strip('S=$(cat x > ~/.claude/settings.json)'), 'cat x > ~/.claude/settings.json)');
   assert.equal(strip('S=x > ~/.claude/hooks/y'), '> ~/.claude/hooks/y');
   // Not an assignment: a comparison or a command that merely contains `=`.
   assert.equal(strip('test a=b'), 'test a=b');
