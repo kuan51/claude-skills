@@ -499,3 +499,10 @@ records.
 **SKIPPED** — Not exercised from a live session with 0.3.4 installed, and no `/usage`
 before-and-after on a subscription: skills load at session start and the cap's token
 weighting is unpublished, so the effect on the weekly meter is unmeasured.
+
+**PLANNED** — Follow-up: drop the lead-effort default from the skill, README and
+changelog (the lead inherits the session's effort; workers keep their pins), record
+DEC-0013 superseding DEC-0012 on that point, and re-run both suites.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail.

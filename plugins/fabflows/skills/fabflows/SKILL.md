@@ -72,11 +72,11 @@ context every turn, and cached reads are cheap. A builder writes a lot of output
 fresh context, and output is the expensive part. Put the most expensive model on the lead,
 not on the typing.
 
-- **Lead on Fable.** Run routine turns at `medium` effort, `high` when the task is hard,
-  and `xhigh` or `max` only for the planning or architecture turn, then drop back. A
-  high-effort turn's thinking is billed as output, and output, not the cached re-read,
-  is what drains a weekly cap. On Fable 5.1 with an API key or a Claude subscription,
-  changing effort keeps the prompt cache, so move it as the work changes.
+- **Lead on Fable.** The lead runs at whatever effort the session is set to; this skill
+  does not change it. Workers do not inherit that level: each pins the effort its role
+  needs (see the agent table in the README). On Fable 5.1 with an API key or a Claude
+  subscription, changing the session's effort keeps the prompt cache, so the user can
+  move it as the work changes at no rebuild cost.
 - **Lead on Opus 5.** It reaches for subagents readily, so delegate only independent,
   sizeable work, and skip `fabflows:refuter` for routine edits. Changing effort
   mid-session re-reads the whole context uncached, so pick a level at session start.
