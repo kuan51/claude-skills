@@ -129,10 +129,10 @@ pattern fails.
 | --- | --- |
 | `fabflows:explorer` | Open one cited file at the cited line and confirm it says what the report claims. |
 | `fabflows:researcher` | Fetch one cited URL and confirm it supports the claim attached to it. |
-| `fabflows:editor` | Re-read every changed file. Run the build or tests yourself and read the output. |
-| `fabflows:test-runner` | Re-run the command yourself. A pasted pass you did not reproduce is not a pass. |
-| `fabflows:refuter` | Re-run the test command yourself and open one cited finding at its `path:line`. |
-| `fabflows:investigator` | Run the reproduction command yourself and confirm the failure it reports. |
+| `fabflows:editor` | Read the diff, not every changed file. Run the build or tests yourself with the output capped (`<cmd> 2>&1 \| tail -30`) and read the summary and any failure. |
+| `fabflows:test-runner` | Re-run the command yourself, output capped the same way. A pasted pass you did not reproduce is not a pass. |
+| `fabflows:refuter` | Re-run the test command yourself, output capped, and open one cited finding at its `path:line`. |
+| `fabflows:investigator` | Run the reproduction command yourself, output capped, and confirm the failure it reports. |
 
 Cross-check each claim against real tool output. Treat anything you cannot confirm as
 `UNVERIFIABLE` and say so: do not quietly promote it to done.
