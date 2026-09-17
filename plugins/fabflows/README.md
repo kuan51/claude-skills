@@ -126,8 +126,10 @@ be walked around:
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
   repository the command targets.
 - `git push origin HEAD:master` from a feature branch is not caught.
-- `cd elsewhere && git commit`: the second segment runs somewhere the guard did not
-  look.
+- `cd elsewhere && git commit`: the second segment is judged in `elsewhere` when that
+  is a repository, and in the session directory when the guard cannot resolve it (a
+  variable, `-`, a missing path). A real second repository on a feature branch is
+  judged there, whatever branch the session is on.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.
