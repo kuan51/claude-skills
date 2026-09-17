@@ -39,7 +39,9 @@ becoming another worker.
    you spawn. Say what you verified and how afterwards. No log file: git records the
    edits, and a second ledger only drifts from it.
 5. **Never do mechanical work while a worker fits.** Exploring, grepping, running a
-   known command, applying an already-decided edit: hand it off.
+   known command, applying an already-decided edit: hand it off when the worker would
+   read or produce more than the lead should hold (a wide search, a test run, a
+   multi-file read). A one-file grep or a one-line edit stays inline.
 
 ## Routing
 
@@ -70,8 +72,10 @@ context every turn, and cached reads are cheap. A builder writes a lot of output
 fresh context, and output is the expensive part. Put the most expensive model on the lead,
 not on the typing.
 
-- **Lead on Fable.** Run it at `low` effort for routine turns and raise it for
-  architecture or deep debugging. On Fable 5.1 with an API key or a Claude subscription,
+- **Lead on Fable.** Run routine turns at `medium` effort, `high` when the task is hard,
+  and `xhigh` or `max` only for the planning or architecture turn, then drop back. A
+  high-effort turn's thinking is billed as output, and output, not the cached re-read,
+  is what drains a weekly cap. On Fable 5.1 with an API key or a Claude subscription,
   changing effort keeps the prompt cache, so move it as the work changes.
 - **Lead on Opus 5.** It reaches for subagents readily, so delegate only independent,
   sizeable work, and skip `fabflows:refuter` for routine edits. Changing effort
@@ -95,6 +99,12 @@ Worked example:
 > **Tools and paths:** `Read`, `Grep`, `Glob` under `src/auth/` only.
 > **Boundaries:** do not edit anything. If a caller's null-handling depends on runtime
 > config you cannot see, say so under open questions rather than inferring it.
+
+The output format is where the lead's context is protected. The report is appended to
+the lead and re-read on every later turn, so cap it: for a test run, the command, its
+exit status, its final summary and every failing line, never the whole log; for a
+search, `file:line` hits, not file contents. Tell the worker to read the ranges it
+needs, not whole files.
 
 ## The worker report contract
 
@@ -203,6 +213,10 @@ call that was approved: the real containment on a worker is its tool allowlist.
 - The work is one short, dependent chain. Measured, one model at low effort beats
   any split of it, because the brief, the report, and the check together cost more than
   they save.
+- The worker would keep nothing out of the lead. A worker starts cold with its own
+  system prompt and tools, and its report lands in the lead's context for the rest of
+  the session. Delegation pays only when it keeps a large volume (logs, wide searches,
+  big files) out of the lead.
 
 ## Escalation
 
