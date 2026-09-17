@@ -62,6 +62,15 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.3.4** -- `fabflows:build` failed on Windows before it ran, with the harness
+  error "script contains control characters". The plugin cache is a git checkout, and with
+  `core.autocrlf=true` the workflow script arrived as CRLF; the harness hands that file to
+  the Workflow tool verbatim and refuses the carriage returns. A root `.gitattributes` now
+  pins LF on every platform and a test keeps the script free of control bytes. A cache
+  checked out before this fix still holds CRLF on disk: re-install the plugin, or
+  renormalise the marketplace clone (`git rm --cached -r .` followed by a hard reset) and
+  copy it into the cache again.
+
 - **docs-warden 0.1.1** -- the run log rotation rule required an entry to be both
   past the 500-line trigger and older than 90 days. Both had to hold, so a busy
   repository tripped the line count with nothing old enough to move: the rule
