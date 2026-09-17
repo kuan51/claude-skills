@@ -209,6 +209,9 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     ['node ~/.claude/plugins/cache/x/y/1.0.0/s.js 2>&1 > ~/.claude/settings.json', B, 'deny'],
     ['python3 fix.py ~/.claude/settings.json 2>&1', B, 'deny'],
     ['cat x >& ~/.claude/settings.json', B, 'deny'],
+    // An assignment-only segment still carries its redirect: `X=1>file` truncates file.
+    ['X=1>~/.claude/settings.json', B, 'deny'],
+    ['X=1 >~/.claude/settings.json', B, 'deny'],
     // An interpreter may live in a venv; an arbitrary binary is still not one.
     ['"./.venv/Scripts/python.exe" ~/.claude/plugins/cache/x/y/1.0.0/s.py . 2>&1', B, 'allow'],
     ['.venv\\Scripts\\python.exe $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.py', P, 'allow'],
@@ -309,6 +312,10 @@ test('git ops are blocked on a default branch and allowed elsewhere', () => {
     git(['worktree', 'add', '-q', wt, '-b', 'feature/wt']);
     allows(shell(`cd "${wt}" && git commit -m x`, 'Bash', repo), 'cd into a feature worktree from main');
     denies(shell(`cd "${repo}" && git commit -m x`, 'Bash', wt), 'cd from a worktree back onto main');
+    // A cd the guard cannot resolve to a repository must not erase the branch check.
+    for (const c of ['cd $WT; git commit -m x', 'cd nope; git commit -m x', 'cd .. && git commit -m x', '(cd x); git commit -m x', 'cd -; git commit -m x']) {
+      denies(shell(c, 'Bash', repo), `${c} on main`);
+    }
 
     git(['checkout', '-q', '--detach']);
     allows(shell('git commit -m x', 'Bash', repo), 'commit on a detached HEAD');

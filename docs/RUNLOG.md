@@ -480,3 +480,67 @@ past the install rule before, is now denied.
 
 **SKIPPED** — Not exercised from a live session with 0.3.2 installed: the hook loads at
 session start, so that needs the cache copy and a restart.
+
+## 2026-09-17 — fabflows 0.3.4: tune for a Fable lead on a weekly cap
+
+**PLANNED** — Rewrite the skill's lead-effort guidance to `medium` by default, add a
+delegate-on-volume rule, trim the four Bash-capable workers' report contracts to exit
+status, summary and failing lines, correct the README cache tip, bump both manifests to
+0.3.4, and record DEC-0012. Verify with `node --test "plugins/fabflows/test/*.test.js"`,
+`node --test "test/*.test.js"`, and `wc -c plugins/fabflows/skills/*/SKILL.md` under
+20,000.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail (36,
+not the 37 logged at 0.3.2: the 0.3.3 guard trim removed one row).
+`node --test "test/*.test.js"`: 4 pass, 0 fail. `wc -c`: fabflows/SKILL.md 13,430,
+using-fabflows/SKILL.md 1,165. `adr_index.py .` regenerated `docs/DECISIONS.md` with 12
+records.
+
+**SKIPPED** — Not exercised from a live session with 0.3.4 installed, and no `/usage`
+before-and-after on a subscription: skills load at session start and the cap's token
+weighting is unpublished, so the effect on the weekly meter is unmeasured.
+
+**PLANNED** — Follow-up: drop the lead-effort default from the skill, README and
+changelog (the lead inherits the session's effort; workers keep their pins), record
+DEC-0013 superseding DEC-0012 on that point, and re-run both suites.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail.
+
+## 2026-09-17 — fabflows 0.3.5: cap what reaches the lead
+
+**PLANNED** — Prompt review for token efficiency. Change the gate table to read the
+diff and cap command output, align `build.js`'s report schema and review brief with the
+trimmed worker contract, bump both manifests to 0.3.5. Verify with both suites and the
+SKILL.md size check.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail. `wc -c`: fabflows/SKILL.md under 20,000.
+
+**SKIPPED** — Agent-body dedupe (each worker repeats the brief check, injection clause
+and report contract) left as is: per-spawn cost on cheap tiers only, and agent files
+have no include mechanism. Not exercised in a live session.
+
+**CORRECTION** — The CONFIRMED entry above was wrong for the `build.js` commit: an
+unescaped apostrophe in the review brief broke the file, and
+`node --test "plugins/fabflows/test/*.test.js"` was 21 pass, 15 fail at 6605913 and
+d04d079. The commit chain ran on grep's exit status, not the test's, so it committed and
+pushed anyway. Fixed forward in the next commit.
+
+**CONFIRMED** — After the fix: `node --check plugins/fabflows/workflows/build.js` clean;
+`node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.
+
+## 2026-09-17 — code review findings on already-merged guard.js and audit.py
+
+**PLANNED** — `/code-review` diffed a stale local `master` (PR #35) against HEAD, so
+its four findings sit in code merged by PRs #36 to #42, not in this branch's own
+changes. Reproduce each with a scratch script, fix guard.js (assignment-only redirect;
+unresolvable `cd` fallback) and audit.py (null manifest keys; missing generator), add
+regression rows, bump docs-warden to 0.4.1.
+
+**CONFIRMED** — Before: `X=1>~/.claude/settings.json` allow; `cd $WT; git commit`,
+`cd nope; …`, `cd .. && …`, `(cd x); …`, `cd -; …` on `main` all allow; a bare
+`waivers:` failed the manifest check; a missing `domain_model.py` read as ontology
+skipped. After: all deny or fail. `node --test "plugins/fabflows/test/*.test.js"`:
+36 pass, 0 fail. `python3 plugins/docs-warden/test/test_scripts.py`: 80 PASS, no FAIL.
+`node --test "test/*.test.js"`: 4 pass, 0 fail.

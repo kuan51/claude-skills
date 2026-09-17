@@ -65,11 +65,16 @@ records why.
 
 ## Long sessions
 
-The [skill](skills/fabflows/SKILL.md) carries the long-session habits. On an API key the
-prompt cache lives five minutes. If your sessions remain idle longer than that between turns,
-set `"promptCacheTtl": "1h"` to keep the main conversation warm, and
-`"subagentPromptCacheTtl": "1h"` to do the same for the workers and the build loop, both
-at a higher cache-write rate (Claude Code v2.1.242 or later).
+The [skill](skills/fabflows/SKILL.md) carries the long-session habits. The lead runs at
+the session's effort; only the workers pin their own, per the table above.
+
+On a Claude subscription within plan usage, the main conversation's prompt cache already
+lives one hour. Workers and the build loop get five minutes, so set
+`"subagentPromptCacheTtl": "1h"` only if a worker idles longer than that mid-run. On an
+API key, or once a subscription spills onto usage credits, both drop to five minutes:
+set `"promptCacheTtl": "1h"` as well, at a higher cache-write rate (Claude Code v2.1.242
+or later). Compact at task boundaries and `/clear` between unrelated tasks; `/compact`
+mid-task forces one full cache rebuild.
 
 ## Why not the built-in Explore agent
 
@@ -121,8 +126,10 @@ be walked around:
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
   repository the command targets.
 - `git push origin HEAD:master` from a feature branch is not caught.
-- `cd elsewhere && git commit`: the second segment runs somewhere the guard did not
-  look.
+- `cd elsewhere && git commit`: the second segment is judged in `elsewhere` when that
+  is a repository, and in the session directory when the guard cannot resolve it (a
+  variable, `-`, a missing path). A real second repository on a feature branch is
+  judged there, whatever branch the session is on.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.

@@ -133,7 +133,13 @@ def check_manifest(repo, config):
     # .get(key, default), never `or default`: a present falsy value of the
     # wrong type ("waivers: []") was coerced to the default before the type
     # check below could report it, and read as a manifest the audit believed.
-    waivers = config.get("waivers", {})
+    # A bare key ("waivers:") is YAML null, which means the default, not a
+    # wrong type.
+    def _get(key, default):
+        value = config.get(key, default)
+        return default if value is None else value
+
+    waivers = _get("waivers", {})
     if not isinstance(waivers, dict):
         problems.append("waivers must be a mapping of check id to reason, "
                         f"got {type(waivers).__name__}")
@@ -147,10 +153,10 @@ def check_manifest(repo, config):
                 # A waiver with no reason is an unexplained hole in the
                 # standard. Requiring the sentence is the whole control.
                 problems.append(f"waiver for {cid} gives no reason")
-    extra = config.get("extra_files", [])
+    extra = _get("extra_files", [])
     if not isinstance(extra, list) or not all(isinstance(e, str) for e in extra):
         problems.append("extra_files must be a list of repository-relative paths")
-    ontology = config.get("ontology", {})
+    ontology = _get("ontology", {})
     if not isinstance(ontology, dict):
         problems.append("ontology must be a mapping, "
                         f"got {type(ontology).__name__}")
@@ -408,6 +414,11 @@ def check_ontology(repo, script_dir):
                      "is optional.")
     generator = (script_dir.parent.parent / "ontological-documentation"
                  / "scripts" / "domain_model.py")
+    # CPython also exits 2 when the script itself is missing, which would read
+    # as "nothing to extract" below.
+    if not generator.is_file():
+        return check("ontology", "fail", f"{generator} is missing.",
+                     "Reinstall the plugin: the ontology generator ships with it.")
     result = subprocess.run(
         [sys.executable, str(generator), str(repo), "--check"],
         capture_output=True, text=True, check=False,

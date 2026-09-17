@@ -159,8 +159,9 @@ const SHELL_KEYWORD = /^((do|then|else|elif|fi|done|esac|while|until|if)\s+)+/i;
 const INERT = /^(done|fi|esac)$/i;
 // One or more `VAR=value` prefixes, including a segment that is nothing but assignments.
 // `VAR=$(` is stripped as a unit, so the substituted command is judged as a command, and
-// a redirect in the value is not swallowed.
-const VAR_PREFIX = /^(\w+=(\$\(|\S*(\s+|$)))+/;
+// a redirect in the value is not swallowed: `X=1>file` truncates file, so the value stops
+// at a redirect and the segment is judged whole.
+const VAR_PREFIX = /^(\w+=(\$\(|[^\s<>]*(\s+|$)))+/;
 // A `>` inside quotes is text (`echo "a -> b"`), not a redirect.
 // ponytail: no real quote parsing; an unbalanced quote is left in, which errs toward deny.
 const redirects = (s) => s.replace(/"[^"]*"|'[^']*'/g, '').includes('>');
@@ -291,7 +292,10 @@ function checkShell(command, cwd) {
     }
 
     if (GIT_OP.test(seg)) {
-      const b = branches(effCwd);
+      // A `cd` the guard could not follow (a variable, `-`, a missing directory, a
+      // subshell) leaves effCwd outside any repo; judge in the session cwd rather than
+      // let the cd erase the branch check.
+      const b = branches(effCwd) || (effCwd !== cwd ? branches(cwd) : null);
       if (!b) continue; // fail open
       const onDefault = b.defaults.includes(b.current);
       if (onDefault) {

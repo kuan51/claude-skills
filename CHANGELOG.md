@@ -56,13 +56,25 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.3.5** -- the lead's verification gate reads the diff instead of every
+  changed file and caps command output to its tail, and the build loop's report schema
+  and review brief ask for summaries and failing lines rather than whole logs, matching
+  the 0.3.4 worker contract.
+- **fabflows 0.3.4** -- tuned for a Fable lead on a subscription weekly cap. The lead
+  keeps the session's effort; only workers pin theirs. Delegation now turns on context
+  volume: a worker pays off only when it keeps a large
+  log, search or file out of the lead, so a one-file grep or a one-line edit stays
+  inline. Workers return each command's exit status, final summary and failing lines,
+  never a whole log or diff. The README cache tip now says a subscription's main
+  conversation already has a one-hour cache and only workers need
+  `subagentPromptCacheTtl`. DEC-0012 and DEC-0013 record why.
 - **ciso 1.1.3, data-analysis-review 0.1.1, fabflows 0.2.1** -- wording only. Every
   living document is reworded to pass the new Vale rules without changing what it
   says. Front matter descriptions are untouched, so skill routing does not change.
 
 ### Fixed
 
-- **fabflows 0.3.4** -- `fabflows:build` failed on Windows before it ran, with the harness
+- **fabflows 0.3.6** -- `fabflows:build` failed on Windows before it ran, with the harness
   error "script contains control characters". The plugin cache is a git checkout, and with
   `core.autocrlf=true` the workflow script arrived as CRLF; the harness hands that file to
   the Workflow tool verbatim and refuses the carriage returns. A root `.gitattributes` now
@@ -70,7 +82,13 @@ per-plugin history until entries are recorded here going forward.
   checked out before this fix still holds CRLF on disk: re-install the plugin, or
   renormalise the marketplace clone (`git rm --cached -r .` followed by a hard reset) and
   copy it into the cache again.
-
+- **fabflows 0.3.5** -- two guard gaps. An assignment-only segment swallowed an unspaced
+  redirect, so `X=1>~/.claude/settings.json` was allowed; and a `cd` the guard could not
+  resolve to a repository (a variable, `-`, a missing path, a subshell) skipped the
+  default-branch check. Both deny now.
+- **docs-warden 0.4.1** -- a bare `waivers:` or `extra_files:` key (YAML null) no longer
+  fails the manifest check, and a missing `domain_model.py` is reported as a failure
+  instead of being mistaken for the generator's "no sources" exit code.
 - **docs-warden 0.1.1** -- the run log rotation rule required an entry to be both
   past the 500-line trigger and older than 90 days. Both had to hold, so a busy
   repository tripped the line count with nothing old enough to move: the rule
