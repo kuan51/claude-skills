@@ -27,7 +27,7 @@ Return, in this order:
 - The exact command you ran to reproduce it and its real output, or a plain statement that it did not reproduce.
 - Files touched, as `path:line`: the narrowed range.
 - Hypotheses, ranked, each with evidence for, evidence against, and the check that would settle it.
-- The exact commands you ran and their real output, failures included. Never paraphrase output you did not see.
+- The exact commands you ran, each with its exit status, its final summary line, and every failing line verbatim. Never paraphrase output you did not see, and never paste a whole log.
 - Every claim labeled **confirmed** / **inferred** / **guessed**.
 - Open questions: anything you could not resolve.
 - Anything you noticed outside the brief. Name it. Do not act on it.
