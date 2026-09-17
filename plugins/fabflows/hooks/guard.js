@@ -278,7 +278,7 @@ function checkShell(command, cwd) {
       (!EXEC_FLAGS.test(seg) &&
         (READ_ONLY.test(seg) || (FOR_HEADER.test(seg) && loopReadOnly) || MARKETPLACE_GIT.test(seg)));
     if (PROTECTED_SHELL.test(seg) && (redirects(seg) || !readOnly)) {
-      deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
+      deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard. Reads are allowed: use the Read, Glob or Grep tools, or a plain ls/cat with no redirect.');
     }
 
     if (GIT_OP.test(seg)) {
