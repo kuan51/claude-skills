@@ -27,7 +27,7 @@ Return, in this order:
 
 - **Any permission denial as the very first line.** Not buried, not summarized, then stop.
 - Files touched, as `path:line`.
-- The exact commands you ran and their real output, failures included. Never paraphrase output you did not see.
+- The exact commands you ran, each with its exit status, its final summary line, and every failing line verbatim. Never paraphrase output you did not see, and never paste a whole log.
 - Every claim labeled **confirmed** / **inferred** / **guessed**.
 - Open questions: anything you could not resolve.
 - Any deviation from the brief, and why.

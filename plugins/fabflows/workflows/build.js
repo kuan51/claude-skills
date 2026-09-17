@@ -44,7 +44,7 @@ const reviewerModel = typeof a.reviewerModel === 'string' && a.reviewerModel.tri
 const REPORT = {
   type: 'string',
   minLength: 1,
-  description: 'The worker report contract in prose: any permission denial first, files touched as path:line, each command run and its real output, and confirmed / inferred / guessed on every claim.',
+  description: 'The worker report contract in prose: any permission denial first, files touched as path:line, each command run with its exit status, final summary and failing lines (never a whole log), and confirmed / inferred / guessed on every claim.',
 }
 const BUILD = {
   type: 'object',
@@ -124,7 +124,7 @@ function reviewBrief(round) {
     a.spec,
     '</spec>',
     '',
-    '**Output:** The structured result: verdict (ACCEPT when there are no must-fix findings, REWORK when there is at least one, BLOCKED when you could not run the diff or the test command -- say what stopped you in blocker), mustFix as findings with path:line, problem, evidence and severity, and report -- your usual report contract in prose, including your notes and the test output.',
+    '**Output:** The structured result: verdict (ACCEPT when there are no must-fix findings, REWORK when there is at least one, BLOCKED when you could not run the diff or the test command -- say what stopped you in blocker), mustFix as findings with path:line, problem, evidence and severity, and report -- your usual report contract in prose, including your notes and the summary and failing lines of the test command, not its whole output.',
     '',
     `**Tools and paths:** Read, Grep, Glob, and Bash for exactly these commands: \`git diff ${a.baseRef}..HEAD\`, \`git log\`, \`git show\`, \`git status --porcelain\`, and \`${a.testCommand}\`.`,
     '',

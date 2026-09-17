@@ -39,7 +39,9 @@ becoming another worker.
    you spawn. Say what you verified and how afterwards. No log file: git records the
    edits, and a second ledger only drifts from it.
 5. **Never do mechanical work while a worker fits.** Exploring, grepping, running a
-   known command, applying an already-decided edit: hand it off.
+   known command, applying an already-decided edit: hand it off when the worker would
+   read or produce more than the lead should hold (a wide search, a test run, a
+   multi-file read). A one-file grep or a one-line edit stays inline.
 
 ## Routing
 
@@ -70,9 +72,11 @@ context every turn, and cached reads are cheap. A builder writes a lot of output
 fresh context, and output is the expensive part. Put the most expensive model on the lead,
 not on the typing.
 
-- **Lead on Fable.** Run it at `low` effort for routine turns and raise it for
-  architecture or deep debugging. On Fable 5.1 with an API key or a Claude subscription,
-  changing effort keeps the prompt cache, so move it as the work changes.
+- **Lead on Fable.** The lead runs at whatever effort the session is set to; this skill
+  does not change it. Workers do not inherit that level: each pins the effort its role
+  needs (see the agent table in the README). On Fable 5.1 with an API key or a Claude
+  subscription, changing the session's effort keeps the prompt cache, so the user can
+  move it as the work changes at no rebuild cost.
 - **Lead on Opus 5.** It reaches for subagents readily, so delegate only independent,
   sizeable work, and skip `fabflows:refuter` for routine edits. Changing effort
   mid-session re-reads the whole context uncached, so pick a level at session start.
@@ -95,6 +99,12 @@ Worked example:
 > **Tools and paths:** `Read`, `Grep`, `Glob` under `src/auth/` only.
 > **Boundaries:** do not edit anything. If a caller's null-handling depends on runtime
 > config you cannot see, say so under open questions rather than inferring it.
+
+The output format is where the lead's context is protected. The report is appended to
+the lead and re-read on every later turn, so cap it: for a test run, the command, its
+exit status, its final summary and every failing line, never the whole log; for a
+search, `file:line` hits, not file contents. Tell the worker to read the ranges it
+needs, not whole files.
 
 ## The worker report contract
 
@@ -119,10 +129,10 @@ pattern fails.
 | --- | --- |
 | `fabflows:explorer` | Open one cited file at the cited line and confirm it says what the report claims. |
 | `fabflows:researcher` | Fetch one cited URL and confirm it supports the claim attached to it. |
-| `fabflows:editor` | Re-read every changed file. Run the build or tests yourself and read the output. |
-| `fabflows:test-runner` | Re-run the command yourself. A pasted pass you did not reproduce is not a pass. |
-| `fabflows:refuter` | Re-run the test command yourself and open one cited finding at its `path:line`. |
-| `fabflows:investigator` | Run the reproduction command yourself and confirm the failure it reports. |
+| `fabflows:editor` | Read the diff, not every changed file. Run the build or tests yourself with the output capped (`<cmd> 2>&1 \| tail -30`) and read the summary and any failure. |
+| `fabflows:test-runner` | Re-run the command yourself, output capped the same way. A pasted pass you did not reproduce is not a pass. |
+| `fabflows:refuter` | Re-run the test command yourself, output capped, and open one cited finding at its `path:line`. |
+| `fabflows:investigator` | Run the reproduction command yourself, output capped, and confirm the failure it reports. |
 
 Cross-check each claim against real tool output. Treat anything you cannot confirm as
 `UNVERIFIABLE` and say so: do not quietly promote it to done.
@@ -203,6 +213,10 @@ call that was approved: the real containment on a worker is its tool allowlist.
 - The work is one short, dependent chain. Measured, one model at low effort beats
   any split of it, because the brief, the report, and the check together cost more than
   they save.
+- The worker would keep nothing out of the lead. A worker starts cold with its own
+  system prompt and tools, and its report lands in the lead's context for the rest of
+  the session. Delegation pays only when it keeps a large volume (logs, wide searches,
+  big files) out of the lead.
 
 ## Escalation
 
