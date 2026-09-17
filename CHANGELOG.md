@@ -74,6 +74,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.3.6** -- `fabflows:build` failed on Windows before it ran, with the harness
+  error "script contains control characters". The plugin cache is a git checkout, and with
+  `core.autocrlf=true` the workflow script arrived as CRLF; the harness hands that file to
+  the Workflow tool verbatim and refuses the carriage returns. A root `.gitattributes` now
+  pins LF on every platform and a test keeps the script free of control bytes. A cache
+  checked out before this fix still holds CRLF on disk: re-install the plugin, or
+  renormalise the marketplace clone (`git rm --cached -r .` followed by a hard reset) and
+  copy it into the cache again.
 - **fabflows 0.3.5** -- two guard gaps. An assignment-only segment swallowed an unspaced
   redirect, so `X=1>~/.claude/settings.json` was allowed; and a `cd` the guard could not
   resolve to a repository (a variable, `-`, a missing path, a subshell) skipped the

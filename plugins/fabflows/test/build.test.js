@@ -266,3 +266,10 @@ test('every call pins effort, requires a prose report, and carries the spec and 
     }
   }
 });
+
+// The harness hands this file to the Workflow tool as its `script` string, and refuses any
+// control character in it. A CRLF checkout on Windows (core.autocrlf) is the way one gets in,
+// which `.gitattributes` prevents; this catches a stray byte committed by any other route.
+test('build.js carries no control characters, so Workflow accepts it on every platform', () => {
+  assert.match(source, /^[\t\n\x20-\x7e]*$/);
+});
