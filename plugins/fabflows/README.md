@@ -65,11 +65,17 @@ records why.
 
 ## Long sessions
 
-The [skill](skills/fabflows/SKILL.md) carries the long-session habits. On an API key the
-prompt cache lives five minutes. If your sessions remain idle longer than that between turns,
-set `"promptCacheTtl": "1h"` to keep the main conversation warm, and
-`"subagentPromptCacheTtl": "1h"` to do the same for the workers and the build loop, both
-at a higher cache-write rate (Claude Code v2.1.242 or later).
+The [skill](skills/fabflows/SKILL.md) carries the long-session habits, including the
+lead's effort: `medium` for routine turns, `xhigh` or `max` only for the planning turn,
+because thinking is billed as output and output is what drains a weekly cap.
+
+On a Claude subscription within plan usage, the main conversation's prompt cache already
+lives one hour. Workers and the build loop get five minutes, so set
+`"subagentPromptCacheTtl": "1h"` only if a worker idles longer than that mid-run. On an
+API key, or once a subscription spills onto usage credits, both drop to five minutes:
+set `"promptCacheTtl": "1h"` as well, at a higher cache-write rate (Claude Code v2.1.242
+or later). Compact at task boundaries and `/clear` between unrelated tasks; `/compact`
+mid-task forces one full cache rebuild.
 
 ## Why not the built-in Explore agent
 
