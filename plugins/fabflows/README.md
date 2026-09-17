@@ -87,7 +87,8 @@ A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
 - **Commits, pushes, merges and rebases on a default branch.** The default is read from
   `origin/HEAD` at runtime, falling back to `main` or `master`. Force-push is blocked
   only when it targets a default branch, so `--force-with-lease` on your own feature
-  branch still works.
+  branch still works. The branch is read from the directory a `cd` earlier in the same
+  command moves into, so `cd <worktree> && git commit` is judged against that worktree.
 - **Destructive commands**: `rm -rf` and `Remove-Item -Recurse -Force` at a home,
   root, parent, or `.git` target; `git reset --hard`; `git clean -fd`; `git branch -D`
   (but not `-d`); `sudo`; `chmod 777`; `dd of=`; `mkfs`; `Set-ExecutionPolicy`; and

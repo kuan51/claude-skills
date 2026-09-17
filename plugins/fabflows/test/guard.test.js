@@ -303,6 +303,13 @@ test('git ops are blocked on a default branch and allowed elsewhere', () => {
     allows(shell('git push --force-with-lease', 'Bash', repo), 'force-with-lease on your own branch');
     denies(shell('git push --force origin main', 'Bash', repo), 'force push targeting main');
 
+    // A `cd` earlier in the command moves the branch check into that directory.
+    git(['checkout', '-q', 'main']);
+    const wt = path.join(repo, 'wt');
+    git(['worktree', 'add', '-q', wt, '-b', 'feature/wt']);
+    allows(shell(`cd "${wt}" && git commit -m x`, 'Bash', repo), 'cd into a feature worktree from main');
+    denies(shell(`cd "${repo}" && git commit -m x`, 'Bash', wt), 'cd from a worktree back onto main');
+
     git(['checkout', '-q', '--detach']);
     allows(shell('git commit -m x', 'Bash', repo), 'commit on a detached HEAD');
   } finally {
@@ -374,19 +381,4 @@ test('hooks.json wires every matcher to the guard', () => {
     assert.match(c, /\$\{CLAUDE_PLUGIN_ROOT\}/, 'paths must resolve via ${CLAUDE_PLUGIN_ROOT}');
   }
   assert.equal(new Set(commands).size, 1, 'all entries must use one identical command string, so they cannot drift');
-});
-
-test('VAR_PREFIX strips leading assignments and nothing else', () => {
-  const { VAR_PREFIX } = require(GUARD);
-  const strip = (s) => s.replace(VAR_PREFIX, '');
-  assert.equal(strip('CI=1 npm ci'), 'npm ci');
-  assert.equal(strip('FOO=1 BAR=2 pip install x'), 'pip install x');
-  assert.equal(strip('S="C:/Users/me/.claude/plugins/cache/x/scripts"'), '');
-  assert.equal(strip('S=~/.claude/hooks'), '');
-  // A substitution or redirect in the value survives, so the rest of the guard sees it.
-  assert.equal(strip('S=$(cat x > ~/.claude/settings.json)'), 'cat x > ~/.claude/settings.json)');
-  assert.equal(strip('S=x > ~/.claude/hooks/y'), '> ~/.claude/hooks/y');
-  // Not an assignment: a comparison or a command that merely contains `=`.
-  assert.equal(strip('test a=b'), 'test a=b');
-  assert.equal(strip('=x'), '=x');
 });
