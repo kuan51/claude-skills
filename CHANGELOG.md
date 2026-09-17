@@ -74,6 +74,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.3.5** -- two guard gaps. An assignment-only segment swallowed an unspaced
+  redirect, so `X=1>~/.claude/settings.json` was allowed; and a `cd` the guard could not
+  resolve to a repository (a variable, `-`, a missing path, a subshell) skipped the
+  default-branch check. Both deny now.
+- **docs-warden 0.4.1** -- a bare `waivers:` or `extra_files:` key (YAML null) no longer
+  fails the manifest check, and a missing `domain_model.py` is reported as a failure
+  instead of being mistaken for the generator's "no sources" exit code.
 - **docs-warden 0.1.1** -- the run log rotation rule required an entry to be both
   past the 500-line trigger and older than 90 days. Both had to hold, so a busy
   repository tripped the line count with nothing old enough to move: the rule
