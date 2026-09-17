@@ -520,3 +520,12 @@ SKILL.md size check.
 **SKIPPED** — Agent-body dedupe (each worker repeats the brief check, injection clause
 and report contract) left as is: per-spawn cost on cheap tiers only, and agent files
 have no include mechanism. Not exercised in a live session.
+
+**CORRECTION** — The CONFIRMED entry above was wrong for the `build.js` commit: an
+unescaped apostrophe in the review brief broke the file, and
+`node --test "plugins/fabflows/test/*.test.js"` was 21 pass, 15 fail at 6605913 and
+d04d079. The commit chain ran on grep's exit status, not the test's, so it committed and
+pushed anyway. Fixed forward in the next commit.
+
+**CONFIRMED** — After the fix: `node --check plugins/fabflows/workflows/build.js` clean;
+`node --test "plugins/fabflows/test/*.test.js"`: 36 pass, 0 fail.

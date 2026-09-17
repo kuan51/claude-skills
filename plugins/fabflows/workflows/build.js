@@ -124,7 +124,7 @@ function reviewBrief(round) {
     a.spec,
     '</spec>',
     '',
-    '**Output:** The structured result: verdict (ACCEPT when there are no must-fix findings, REWORK when there is at least one, BLOCKED when you could not run the diff or the test command -- say what stopped you in blocker), mustFix as findings with path:line, problem, evidence and severity, and report -- your usual report contract in prose, including your notes and the test command's summary and failing lines, not its whole output.',
+    '**Output:** The structured result: verdict (ACCEPT when there are no must-fix findings, REWORK when there is at least one, BLOCKED when you could not run the diff or the test command -- say what stopped you in blocker), mustFix as findings with path:line, problem, evidence and severity, and report -- your usual report contract in prose, including your notes and the summary and failing lines of the test command, not its whole output.',
     '',
     `**Tools and paths:** Read, Grep, Glob, and Bash for exactly these commands: \`git diff ${a.baseRef}..HEAD\`, \`git log\`, \`git show\`, \`git status --porcelain\`, and \`${a.testCommand}\`.`,
     '',
