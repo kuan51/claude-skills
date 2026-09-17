@@ -158,8 +158,12 @@ const SHELL_KEYWORD = /^((do|then|else|elif|fi|done|esac|while|until|if)\s+)+/i;
 // What is left when a segment is only a keyword. Neither runs anything.
 const INERT = /^(done|fi|esac)$/i;
 // One or more `VAR=value` prefixes, including a segment that is nothing but assignments.
-// A substitution or redirect in the value is not swallowed, so it is still judged.
-const VAR_PREFIX = /^(\w+=\S*(\s+|$))+/;
+// `VAR=$(` is stripped as a unit, so the substituted command is judged as a command, and
+// a redirect in the value is not swallowed.
+const VAR_PREFIX = /^(\w+=(\$\(|\S*(\s+|$)))+/;
+// A `>` inside quotes is text (`echo "a -> b"`), not a redirect.
+// ponytail: no real quote parsing; an unbalanced quote is left in, which errs toward deny.
+const redirects = (s) => s.replace(/"[^"]*"|'[^']*'/g, '').includes('>');
 // The header runs nothing unless it carries a substitution -- but it hides the path in a
 // variable the rules below cannot follow, so it is read-only only when the body is too.
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
@@ -237,7 +241,7 @@ function checkShell(command, cwd) {
 
   // `for d in ~/.claude/plugins; do rm -rf "$d"; done` must not pass on its header alone.
   const loopReadOnly = segments.every(
-    (s) => INERT.test(s) || FOR_HEADER.test(s) || (!s.includes('>') && !EXEC_FLAGS.test(s) && READ_ONLY.test(s))
+    (s) => INERT.test(s) || FOR_HEADER.test(s) || (!redirects(s) &&!EXEC_FLAGS.test(s) && READ_ONLY.test(s))
   );
 
   for (const seg of segments) {
@@ -273,7 +277,7 @@ function checkShell(command, cwd) {
       RUNS_PROTECTED_SCRIPT.test(seg) ||
       (!EXEC_FLAGS.test(seg) &&
         (READ_ONLY.test(seg) || (FOR_HEADER.test(seg) && loopReadOnly) || MARKETPLACE_GIT.test(seg)));
-    if (PROTECTED_SHELL.test(seg) && (seg.includes('>') || !readOnly)) {
+    if (PROTECTED_SHELL.test(seg) && (redirects(seg) || !readOnly)) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard.');
     }
 

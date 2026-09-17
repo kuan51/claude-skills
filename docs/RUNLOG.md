@@ -462,3 +462,21 @@ allow after; assignment with substitution or redirect still DENY.
 
 **SKIPPED** — Not exercised from a live session with 0.3.1 installed: the hook loads at
 session start, so that needs the cache copy and a restart.
+
+## 2026-09-16 — fabflows 0.3.2: read-only loop over the plugin cache
+
+**PLANNED** — The guard denied a `for` loop that only listed docs-warden versions in the
+plugin cache. Two body segments read as not read-only: `v=$(grep ...` lost its command
+to the `VAR=value` strip, and `echo "... -> ..."` counted a quoted `>` as a redirect.
+Add the reported command and three deny rows to `test/guard.test.js` and see them fail,
+strip `VAR=$(` as a unit, ignore `>` inside quotes, bump both manifests to 0.3.2, and
+verify with `node --test "plugins/fabflows/test/*.test.js"` and
+`node --test "test/*.test.js"`.
+
+**CONFIRMED** — Before the fix the reported command row got `deny`, expected `allow`.
+After: `node --test "plugins/fabflows/test/*.test.js"`: 37 pass, 0 fail.
+`node --test "test/*.test.js"`: 4 pass, 0 fail. `S=$(npm install evil)`, which slipped
+past the install rule before, is now denied.
+
+**SKIPPED** — Not exercised from a live session with 0.3.2 installed: the hook loads at
+session start, so that needs the cache copy and a restart.
