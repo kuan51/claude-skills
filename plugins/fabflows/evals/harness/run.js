@@ -92,7 +92,8 @@ function claudeArgs(a, cell, runDir, settingsPath) {
     '--verbose',
     '--permission-mode', 'dontAsk',
     '--permission-prompts', 'none',
-    '--allowedTools', 'Read,Edit,Write,Grep,Glob,Bash,PowerShell,Agent,Skill,TaskCreate,TaskGet,TaskList,TaskUpdate,TaskOutput,TaskStop,NotebookEdit',
+    '--allowedTools', 'Read,Edit,Write,Grep,Glob,Bash,Agent,Skill,TaskCreate,TaskGet,TaskList,TaskUpdate,TaskOutput,TaskStop,NotebookEdit',
+    '--disallowedTools', 'PowerShell',
     '--setting-sources', 'user',
     '--settings', settingsPath,
     '--strict-mcp-config',
@@ -103,13 +104,39 @@ function claudeArgs(a, cell, runDir, settingsPath) {
   return args;
 }
 
-function prepareFixture(fixture, branch) {
+// Don't-ask mode refuses a Bash command that combines `cd` with a pipe, and every PowerShell
+// call, whatever the allow list says (probed 2026-09-19; permission rules did not change it).
+// Iteration 1 took 28 such denials, a wasted turn each, in both arms. The fix that widens no
+// permission is to tell the lead, in the fixture's own CLAUDE.md, and to drop the tool. This is
+// benchmark-only: the plugin itself, its guard included, is unchanged. On Linux and macOS the
+// PowerShell tool is not offered, so the disallow is expected to be a no-op there (untested).
+const ENV_NOTE = [
+  '',
+  '## Benchmark environment',
+  '',
+  'The working directory is already this repository root. Run commands as written, without a',
+  'leading `cd`. Use the Bash tool for shell commands, never the PowerShell tool.',
+  '',
+].join('\n');
+
+// setup: [{ file, find, replace }] edits applied and committed before the session starts, so a
+// task can plant a failure and still begin from a clean `git status`.
+function prepareFixture(fixture, branch, setup = []) {
   fs.rmSync(fixture, { recursive: true, force: true });
   fs.mkdirSync(path.dirname(fixture), { recursive: true });
   const clone = spawnSync('git', ['-c', 'core.longpaths=true', 'clone', '-q', '--no-hardlinks', REPO, fixture], { encoding: 'utf8' });
   if (clone.status !== 0) throw new Error(`clone failed: ${clone.stderr}`);
   const co = spawnSync('git', ['-C', fixture, 'checkout', '-q', '-b', branch], { encoding: 'utf8' });
   if (co.status !== 0) throw new Error(`checkout failed: ${co.stderr}`);
+  for (const s of setup) {
+    const p = path.join(fixture, s.file);
+    const before = fs.readFileSync(p, 'utf8');
+    if (!before.includes(s.find)) throw new Error(`setup: ${s.file} does not contain ${JSON.stringify(s.find)}`);
+    fs.writeFileSync(p, before.replace(s.find, s.replace));
+  }
+  fs.appendFileSync(path.join(fixture, 'CLAUDE.md'), ENV_NOTE);
+  const commit = spawnSync('git', ['-C', fixture, 'commit', '-q', '-am', 'bench: environment note and task setup'], { encoding: 'utf8' });
+  if (commit.status !== 0) throw new Error(`setup commit failed: ${commit.stderr}`);
 }
 
 function writeJson(p, data) {
@@ -175,7 +202,7 @@ function runCell(a, cell, settingsPath) {
     return Promise.resolve({ cell, ...measureAndGrade(a, cell, runDir, fixture) });
   }
 
-  prepareFixture(fixture, `bench/t${cell.task.id}-${cell.arm}-r${cell.run}`);
+  prepareFixture(fixture, `bench/t${cell.task.id}-${cell.arm}-r${cell.run}`, cell.task.setup || []);
   const args = claudeArgs(a, cell, runDir, settingsPath);
   const env = { ...process.env, FABFLOWS_PROBE: path.join(runDir, 'hook-probe.jsonl') };
   delete env.CLAUDECODE; // the nested-session guard is for interactive terminals

@@ -64,6 +64,28 @@
           { "file": ".claude-plugin/marketplace.json", "pattern": "\"version\": \"0.3.7\"" }
         ]
       }
+    },
+    {
+      "id": 5,
+      "name": "deep-read",
+      "routing": "explorer (volume: 13 records, ~60k chars of prose)",
+      "prompt": "Read every decision record under docs/decisions/DEC-*.md. For each one give: its id, its title, its status, which option number the Decision outcome chose, one plain-English sentence saying what was decided, and the main alternative it rejected. One table row per record, in id order. Report only; change nothing.",
+      "grade": { "kind": "decision-digest" }
+    },
+    {
+      "id": 6,
+      "name": "triage-failures",
+      "routing": "test-runner (volume: a ~200-line log with planted failures)",
+      "prompt": "Run the whole test suite with `node --test \"plugins/*/test/*.test.js\" \"test/*.test.js\"`. Some tests fail. For each failing test report its test name, the test file as a path, the assertion message, and in one sentence what the test expected versus what it found. Do not fix anything and do not change any file.",
+      "setup": [
+        { "file": "plugins/fabflows/test/frontmatter.test.js", "find": "explorer: 'haiku',", "replace": "explorer: 'sonnet'," },
+        { "file": "plugins/ciso/test/agents-frontmatter.test.js", "find": "'hitrust-controls-reconciler': 'Read',", "replace": "'hitrust-controls-reconciler': 'Read, Grep'," },
+        { "file": "plugins/data-analysis-review/test/agents-frontmatter.test.js", "find": "'data-quality-reviewer': 'Read, Grep, Glob, Bash',", "replace": "'data-quality-reviewer': 'Read, Grep, Glob'," }
+      ],
+      "grade": {
+        "kind": "test-triage",
+        "testCommand": "node --test \"plugins/*/test/*.test.js\" \"test/*.test.js\""
+      }
     }
   ]
 }

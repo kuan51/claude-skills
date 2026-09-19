@@ -214,6 +214,100 @@ function gradeNewTests(exp, spec, fixture) {
   });
 }
 
+// Ground truth for a triage task is whatever the suite reports as failing right now, read from
+// the TAP reporter so the grader does not depend on the lead's own output. Each failure carries
+// its test name and, from the YAML block, its file.
+function failingTests(fixture, testCommand) {
+  const cmd = testCommand.replace(/^node --test\b/, 'node --test --test-reporter=tap');
+  const r = sh(cmd, fixture);
+  const out = [];
+  let current = null;
+  for (const line of r.out.split(/\r?\n/)) {
+    const m = line.match(/^\s*not ok \d+ - (.+?)\s*(?:#.*)?$/);
+    if (m) {
+      current = { name: m[1].trim(), file: null };
+      out.push(current);
+      continue;
+    }
+    // TAP quotes the location as a JS string, so Windows paths arrive with doubled backslashes.
+    const loc = current && line.match(/location:\s*'?([^'\s]+?):(\d+):\d+'?/);
+    if (loc && !current.file) {
+      const raw = posix(loc[1].replace(/\\\\/g, '\\'));
+      current.file = raw.toLowerCase().startsWith(posix(fixture).toLowerCase() + '/') ? raw.slice(posix(fixture).length + 1) : raw;
+    }
+  }
+  // Nested subtests repeat the parent as its own `not ok`; keep the leaf names, which have a file.
+  return out.filter((t) => t.file);
+}
+
+function gradeTriage(exp, spec, fixture, resultText) {
+  const truth = failingTests(fixture, spec.testCommand);
+  const text = posix(resultText);
+  const lower = text.toLowerCase();
+  exp.push({
+    text: `Names every failing test (${truth.length})`,
+    passed: truth.length > 0 && truth.every((t) => lower.includes(t.name.toLowerCase())),
+    evidence: truth.length ? `missing: ${truth.filter((t) => !lower.includes(t.name.toLowerCase())).map((t) => t.name).join('; ') || 'none'}` : 'no failing test found in the fixture (setup missing?)',
+  });
+  const files = [...new Set(truth.map((t) => t.file))];
+  exp.push({
+    text: `Names every file with a failing test (${files.length})`,
+    passed: files.length > 0 && files.every((f) => lower.includes(f.toLowerCase()) || lower.includes(path.basename(f).toLowerCase())),
+    evidence: `missing: ${files.filter((f) => !lower.includes(f.toLowerCase()) && !lower.includes(path.basename(f).toLowerCase())).join(', ') || 'none'}`,
+  });
+  const mentioned = [...new Set((text.match(/[\w./-]+\.test\.js/gi) || []).map((s) => s.toLowerCase()))];
+  const allTests = new Set();
+  for (const dir of ['test', ...fs.readdirSync(path.join(fixture, 'plugins')).map((p) => `plugins/${p}/test`)]) {
+    if (fs.existsSync(path.join(fixture, dir))) for (const f of fs.readdirSync(path.join(fixture, dir))) if (f.endsWith('.test.js')) allTests.add(`${dir}/${f}`.toLowerCase());
+  }
+  const invented = mentioned.filter((m) => ![...allTests].some((t) => t.endsWith(m.replace(/^\.\//, '')) || m.endsWith(path.basename(t))));
+  exp.push({ text: 'Invents no test file', passed: invented.length === 0, evidence: invented.length ? `not in the repo: ${invented.join(', ')}` : `${mentioned.length} test files mentioned, all real` });
+  const passingNamed = files.length ? [...allTests].filter((t) => !files.map((f) => f.toLowerCase()).includes(t) && lower.includes(path.basename(t).toLowerCase()) && new RegExp(`${path.basename(t).replace(/\./g, '\\.')}[^\\n]{0,80}(fail|✖|not ok)`, 'i').test(text)) : [];
+  exp.push({ text: 'Reports no passing file as failing', passed: passingNamed.length === 0, evidence: passingNamed.length ? `claimed failing: ${passingNamed.join(', ')}` : 'no false failures' });
+  const status = gitStatus(fixture);
+  exp.push({ text: 'Changed nothing in the repo', passed: status.length === 0, evidence: status.length ? `git status: ${status.map((s) => `${s.code} ${s.file}`).join(', ')}` : 'git status --porcelain is empty' });
+}
+
+// Ground truth for the decision digest is each record's frontmatter plus the option number in
+// its "Decision outcome" section. A record without that phrase is skipped for the option check.
+function decisionTruth(fixture) {
+  const dir = path.join(fixture, 'docs', 'decisions');
+  const rows = [];
+  for (const f of fs.readdirSync(dir).filter((x) => /^DEC-\d+.*\.md$/.test(x)).sort()) {
+    const text = fs.readFileSync(path.join(dir, f), 'utf8');
+    const get = (k) => (text.match(new RegExp(`^${k}:\\s*(.+)$`, 'm')) || [])[1];
+    const chose = text.match(/Chose \*\*option (\d+)\*\*/i);
+    rows.push({ id: (get('id') || '').trim(), title: (get('title') || '').trim().replace(/^["']|["']$/g, ''), status: (get('status') || '').trim(), option: chose ? chose[1] : null });
+  }
+  return rows;
+}
+
+function gradeDigest(exp, fixture, resultText) {
+  const truth = decisionTruth(fixture);
+  const text = resultText;
+  const lower = text.toLowerCase();
+  const missingIds = truth.filter((t) => !text.includes(t.id));
+  exp.push({ text: `Lists every record (${truth.length})`, passed: missingIds.length === 0, evidence: missingIds.length ? `missing: ${missingIds.map((t) => t.id).join(', ')}` : 'all ids present' });
+  const badTitle = truth.filter((t) => {
+    const w = windowFor(text, t.id);
+    const head = t.title.split(/\s+/).slice(0, 4).join(' ').toLowerCase();
+    return !w || !w.toLowerCase().includes(head);
+  });
+  exp.push({ text: 'Gives each record its own title', passed: badTitle.length === 0, evidence: badTitle.length ? `title absent or wrong for: ${badTitle.map((t) => t.id).join(', ')}` : 'first four words of every title match' });
+  const badStatus = truth.filter((t) => { const w = windowFor(text, t.id); return !w || !w.toLowerCase().includes(t.status.toLowerCase()); });
+  exp.push({ text: 'Gives each record its frontmatter status', passed: badStatus.length === 0, evidence: badStatus.length ? `status absent or wrong for: ${badStatus.map((t) => t.id).join(', ')}` : 'every status matches' });
+  const withOpt = truth.filter((t) => t.option);
+  const badOpt = withOpt.filter((t) => { const w = windowFor(text, t.id); return !w || !new RegExp(`\\b(option\\s*)?${t.option}\\b`).test(w.replace(t.id, '')); });
+  exp.push({ text: `Gives the chosen option number for every record that states one (${withOpt.length})`, passed: badOpt.length === 0, evidence: badOpt.length ? `option absent or wrong for: ${badOpt.map((t) => `${t.id} (option ${t.option})`).join(', ')}` : 'every chosen option matches' });
+  const thin = truth.filter((t) => { const w = windowFor(text, t.id); return !w || w.split(/\s+/).length < 20; });
+  exp.push({ text: 'Says something about each record beyond its metadata (20+ words in its row)', passed: thin.length === 0, evidence: thin.length ? `thin rows: ${thin.map((t) => t.id).join(', ')}` : 'every row carries a summary' });
+  const invented = [...new Set(text.match(/DEC-\d{4}/g) || [])].filter((id) => !truth.some((t) => t.id === id));
+  exp.push({ text: 'Invents no record id', passed: invented.length === 0, evidence: invented.length ? `not in the repo: ${invented.join(', ')}` : `${(text.match(/DEC-\d{4}/g) || []).length} id mentions, all real` });
+  const status = gitStatus(fixture);
+  exp.push({ text: 'Changed nothing in the repo', passed: status.length === 0, evidence: status.length ? `git status: ${status.map((s) => `${s.code} ${s.file}`).join(', ')}` : 'git status --porcelain is empty' });
+  void lower;
+}
+
 function grade({ task, fixture, metrics, timing, maxTurns }) {
   const exp = [];
   const r = metrics.result || {};
@@ -237,6 +331,8 @@ function grade({ task, fixture, metrics, timing, maxTurns }) {
   if (spec.kind === 'agent-inventory') gradeInventory(exp, fixture, r.result_text || '');
   else if (spec.kind === 'edit') gradeEdit(exp, spec, fixture);
   else if (spec.kind === 'new-tests') gradeNewTests(exp, spec, fixture);
+  else if (spec.kind === 'test-triage') gradeTriage(exp, spec, fixture, r.result_text || '');
+  else if (spec.kind === 'decision-digest') gradeDigest(exp, fixture, r.result_text || '');
   else throw new Error(`unknown grade kind ${spec.kind}`);
 
   const passed = exp.filter((e) => e.passed).length;

@@ -85,6 +85,13 @@ several events that repeat its usage) and reports:
 | 2 | `scoped-edit` | editor (Sonnet) + gate | Guard tests pass; exactly `guard.js` and `guard.test.js` changed; `guard.js` really denies `pipx install black` and still allows `pipx run`. |
 | 3 | `write-tests` | test-runner (Sonnet) | New `*.test.js` under `plugins/fabflows/test/`; suite passes; nothing outside that directory changed; the test covers the three cases. |
 | 4 | `short-chain` | none (DEC-0004 predicts inline wins) | Both manifests read `0.3.7`; marketplace test passes; exactly two files changed. |
+| 5 | `deep-read` | explorer, volume: 13 decision records, ~60k chars of prose | Every record listed with its id, title, status and chosen option (from frontmatter and the outcome section); a 20+ word row each; no invented id; repo unchanged. |
+| 6 | `triage-failures` | test-runner, volume: a ~200-line suite log with 3 planted failures | Every failing test and file named (truth from a TAP re-run); no invented or falsely failing file; repo unchanged. The three breaks are applied and committed by the task's `setup` before the session starts. |
+
+Tasks 1 to 4 are short chains, added in iteration 1. Tasks 5 and 6 were added for iteration 2
+because iteration 1 showed the lead never delegating on short work: they carry evidence large
+enough that the skill's own rule ("delegate when it keeps a large volume out of the lead")
+should apply, while the graded answer stays small.
 
 Every run also checks: finished without error, no denied tool call, under the turn cap.
 Grading is programmatic against the clone, never against what the lead said it did.
@@ -111,9 +118,16 @@ touches routing, and whenever a decision record wants a number instead of arithm
   from each Agent call's `subagent_tokens`; never from the stream.
 - `os.tmpdir()` can return an 8.3 short name (`REXLIN~1`). A cwd in that form made don't-ask
   mode deny every edit as outside the working directory, so the runner resolves it first.
-- Don't-ask mode denies any Bash command that starts with `cd <dir> &&` and every PowerShell
-  call, allow list or not. Iteration 1 took 28 such denials across both arms, each costing a
-  turn. Fix before iteration 2 (see `RESULTS.md`, H0).
+- Don't-ask mode denies a Bash command that combines `cd <dir> &&` with a pipe, and every
+  PowerShell call, allow list or not (`Bash(cd *)`, `Bash(cd:*)`, `PowerShell(*)` and
+  `PowerShell(node:*)` were all probed and changed nothing; `--permission-mode auto` is not
+  accepted headless). Iteration 1 took 28 such denials across both arms, each costing a turn.
+  From iteration 2 the runner appends an environment note to the fixture's `CLAUDE.md` (run
+  from the root without `cd`, use Bash not PowerShell) and passes `--disallowedTools
+  PowerShell`. This is benchmark-only and widens no permission: the plugin, its guard included,
+  is unchanged for every platform. On Linux and macOS the PowerShell tool is not offered, so
+  the disallow should be a no-op there (not tested from this machine). On Windows the benchmark
+  therefore runs without a tool a real session would have.
 - The fixture's own `guard.test.js` drives `guard.js` with synthetic payloads while the task's
   test command runs, and they land in the `FABFLOWS_PROBE` file. `metrics.js` sets aside every
   payload without a `session_id`; only hook-runner payloads are counted.

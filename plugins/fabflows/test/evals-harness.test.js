@@ -21,8 +21,9 @@ test('tasks.json is well formed: unique ids, both arms, a prompt and a grade kin
   assert.equal(new Set(ids).size, ids.length, 'task ids must be unique');
   for (const t of cfg.tasks) {
     assert.ok(t.name && t.prompt && t.routing, `task ${t.id} needs name, prompt and routing`);
-    assert.ok(['agent-inventory', 'edit', 'new-tests'].includes(t.grade.kind), `task ${t.id} has unknown grade kind ${t.grade.kind}`);
-    if (t.grade.kind !== 'agent-inventory') assert.ok(t.grade.testCommand, `task ${t.id} must name the test command that proves it`);
+    assert.ok(['agent-inventory', 'edit', 'new-tests', 'test-triage', 'decision-digest'].includes(t.grade.kind), `task ${t.id} has unknown grade kind ${t.grade.kind}`);
+    if (['edit', 'new-tests', 'test-triage'].includes(t.grade.kind)) assert.ok(t.grade.testCommand, `task ${t.id} must name the test command that proves it`);
+    for (const s of t.setup || []) assert.ok(s.file && s.find && typeof s.replace === 'string', `task ${t.id} setup entries need file, find and replace`);
   }
 });
 
