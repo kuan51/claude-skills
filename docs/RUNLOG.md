@@ -544,3 +544,59 @@ regression rows, bump docs-warden to 0.4.1.
 skipped. After: all deny or fail. `node --test "plugins/fabflows/test/*.test.js"`:
 36 pass, 0 fail. `python3 plugins/docs-warden/test/test_scripts.py`: 80 PASS, no FAIL.
 `node --test "test/*.test.js"`: 4 pass, 0 fail.
+
+## 2026-09-19 — fabflows: token benchmark, iteration 1
+
+**PLANNED** — Close the "no eval covers any of this" gap that DEC-0004, DEC-0012 and
+DEC-0013 each accepted. Add `plugins/fabflows/evals/` (tasks, a headless `claude -p`
+harness with per-model attribution, a grader) and one free suite test. Probe the harness
+assumptions on Haiku first, smoke-test it end to end on task 4, then run the matrix:
+4 tasks x 2 arms (with_skill via `--plugin-dir`, without_skill) x 2 repeats, Fable lead
+at medium effort, in a clean room (all plugins off through `--settings`,
+`--strict-mcp-config`, advisor removed). Aggregate with skill-creator's
+`aggregate_benchmark.py`, review in its viewer, write `evals/RESULTS.md`. No plugin
+behaviour change and no version bump in this iteration.
+
+**CONFIRMED** — Probes, each a 1-turn Haiku `claude -p ... --output-format json|stream-json`
+from a scratch directory: the result carries `usage`, `modelUsage` (per model, `costBasis:
+list`), `total_cost_usd`, `num_turns`, `permission_denials`, `subagent_stats`; worker
+`assistant` events carry `parent_tool_use_id`; one message arrives as several events with
+repeated `usage`, so sums dedupe on `message.id`. `--plugin-dir plugins/fabflows` lists the
+six `fabflows:*` agents, `fabflows:build` and both skills; `--settings
+'{"enabledPlugins":{"fabflows@claude-skills":false}}'` removes them. `--safe-mode` drops
+`--plugin-dir` plugins too; `--bare` needs an API key. With every plugin off and
+`--strict-mcp-config`, the first-turn system prompt fell from 55,344 to 7,427 cache-write
+plus 30,035 cache-read tokens and no foreign SessionStart hook ran. `advisorModel: ""`
+removed the `advisor` tool in two runs where the control run listed it. With
+`FABFLOWS_PROBE` set, a `fabflows:explorer` spawned by the lead produced `PreToolUse Read`
+and `SubagentStop` payloads tagged `agent_type: fabflows:explorer`, so the guard runs
+inside workers. `node --test "plugins/fabflows/test/*.test.js"`: 39 pass, 0 fail
+(36 existing + 3 new); `node --test "test/*.test.js"`: 4 pass, 0 fail.
+
+**CONFIRMED** — Smoke test on Haiku (task 4, both arms, iteration 0) found two harness bugs
+before any Fable run: `os.tmpdir()` returned an 8.3 short name and don't-ask mode denied every
+Edit and Write against that cwd (3/7 both arms); the status parser trimmed the leading space
+off porcelain output. After `fs.realpathSync.native` and an untrimmed parse: 7/7 and 6/7.
+Matrix: `node plugins/fabflows/evals/harness/run.js --iteration 1 --confirm --parallel 2`,
+16 runs, 23:01 to 23:10 UTC, then `--regrade` after two grader fixes (a section lead-in
+counts as flagging every row under it; synthetic guard payloads from the fixture's own tests
+are set aside). `summarize.js` over `runs/iteration-1`: quality 1.00 in all 16 runs;
+with_skill mean 13.0 turns, 2,666 lead output, 34,230 cache-write, 364,496 cache-read,
+$0.92 list, 70 s; without_skill 8.5 turns, 1,866, 20,146, 239,191, $0.56, 44 s. Zero
+routing-driven spawns in 8 with_skill runs; 3 fallback test-runner spawns after shell
+denials. 25 denials across both arms, all `cd`-prefixed Bash or PowerShell in don't-ask mode (28 counting the 3 fallback workers' own denials).
+`aggregate_benchmark.py` plus `annotate_benchmark.py` and `generate_review.py --static`
+produced `benchmark.json`, `benchmark.md`, `review.html`. `node --test
+"plugins/fabflows/test/*.test.js"`: 40 pass, 0 fail; `node --test "test/*.test.js"`: 4 pass,
+0 fail. Findings and iteration-2 hypotheses in `plugins/fabflows/evals/RESULTS.md`.
+
+**SKIPPED** — No live interactive session; every measurement is headless `claude -p` in a
+clean room, so the user's real environment (other plugins, MCP tools, advisor) is not in the
+numbers. The build loop, the verification gate and the Haiku/Sonnet/Opus tiers were not
+exercised: no task reached them.
+
+**CORRECTION** — The first CONFIRMED entry above gives the plugin suite as "39 pass, 0 fail
+(36 existing + 3 new)". The 39 was arithmetic, not an observed count: the full-suite run at
+that moment had 40 tests with 1 failing (a tautological guard test in the new file, since
+removed), and only the new file's own run (3 pass) had been read. The observed count after
+the removal is 40 pass, 0 fail: 8 frontmatter, 16 build, 13 guard, 3 evals-harness.
