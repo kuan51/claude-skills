@@ -600,3 +600,17 @@ exercised: no task reached them.
 that moment had 40 tests with 1 failing (a tautological guard test in the new file, since
 removed), and only the new file's own run (3 pass) had been read. The observed count after
 the removal is 40 pass, 0 fail: 8 frontmatter, 16 build, 13 guard, 3 evals-harness.
+
+## 2026-09-19 — fabflows: token benchmark, iteration 2
+
+**PLANNED** — H0 then H4 then H1, per the user's choice after reviewing iteration 1. H0:
+remove the shell-denial confound without widening permissions (probes showed don't-ask mode
+refuses `cd` combined with a pipe and every PowerShell call; `Bash(cd *)`, `Bash(cd:*)`,
+`PowerShell(*)` and `PowerShell(node:*)` allow rules changed nothing; `--permission-mode
+auto` falls back to default headless). Fix: an environment note appended to the fixture's
+CLAUDE.md plus `--disallowedTools PowerShell`, benchmark-only. H4: two volume tasks, a
+decision-record digest (13 files, ~60k chars) and a suite triage with three planted failures
+applied by a per-task `setup` step. Smoke both on Haiku, then run
+`node plugins/fabflows/evals/harness/run.js --iteration 2 --tasks 2,3,4,5,6 --confirm
+--parallel 2` (20 Fable runs; task 1 had no denials and is not rerun). H1 follows as
+iteration 3 with a trimmed skill snapshot via `--plugin-dir`.
