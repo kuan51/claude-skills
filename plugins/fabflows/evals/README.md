@@ -111,6 +111,11 @@ node plugins/fabflows/evals/harness/run.js --iteration 3 --arms with_skill --plu
 
 The description stays identical in a variant so that triggering is not a second variable.
 
+Variants so far: `h1-trimmed.patch` (iteration 3: 38% shorter, gate scoped to worker reports,
+build-loop outcomes moved to `references/build-loop.md`) and `h1b-narrowed.patch` (iteration
+4: the same plus a volume rule, "delegate the reading, keep the judging", and a judgment
+clause narrowed to root-cause, architecture and coupled-refactor calls).
+
 ## Caps
 
 `tasks.json` sets `maxTurns`, `maxBudgetUsd` (list price, passed as `--max-budget-usd`) and a

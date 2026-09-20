@@ -1,0 +1,429 @@
+{
+  "metadata": {
+    "skill_name": "fabflows",
+    "skill_path": "plugins/fabflows/evals/runs/snapshots/h1b-narrowed/skills/fabflows",
+    "executor_model": "lead claude-fable-5-1; workers per agent pins",
+    "analyzer_model": "authoring session",
+    "timestamp": "2026-09-20T00:50:32Z",
+    "evals_run": [
+      1,
+      5,
+      6
+    ],
+    "runs_per_configuration": 2
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 40.4,
+        "tokens": 265363,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 52.9,
+        "tokens": 314261,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 138.5,
+        "tokens": 435665,
+        "tool_calls": 21,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Lists every record (13)",
+          "passed": true,
+          "evidence": "all ids present"
+        },
+        {
+          "text": "Gives each record its own title",
+          "passed": true,
+          "evidence": "first four words of every title match"
+        },
+        {
+          "text": "Gives each record its frontmatter status",
+          "passed": true,
+          "evidence": "every status matches"
+        },
+        {
+          "text": "Gives the chosen option number for every record that states one (12)",
+          "passed": true,
+          "evidence": "every chosen option matches"
+        },
+        {
+          "text": "Says something about each record beyond its metadata (20+ words in its row)",
+          "passed": true,
+          "evidence": "every row carries a summary"
+        },
+        {
+          "text": "Invents no record id",
+          "passed": true,
+          "evidence": "19 id mentions, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 141.6,
+        "tokens": 389501,
+        "tool_calls": 20,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Lists every record (13)",
+          "passed": true,
+          "evidence": "all ids present"
+        },
+        {
+          "text": "Gives each record its own title",
+          "passed": true,
+          "evidence": "first four words of every title match"
+        },
+        {
+          "text": "Gives each record its frontmatter status",
+          "passed": true,
+          "evidence": "every status matches"
+        },
+        {
+          "text": "Gives the chosen option number for every record that states one (12)",
+          "passed": true,
+          "evidence": "every chosen option matches"
+        },
+        {
+          "text": "Says something about each record beyond its metadata (20+ words in its row)",
+          "passed": true,
+          "evidence": "every row carries a summary"
+        },
+        {
+          "text": "Invents no record id",
+          "passed": true,
+          "evidence": "16 id mentions, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 68.5,
+        "tokens": 265708,
+        "tool_calls": 5,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=8"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=8"
+        },
+        {
+          "text": "Names every failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Names every file with a failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Invents no test file",
+          "passed": true,
+          "evidence": "3 test files mentioned, all real"
+        },
+        {
+          "text": "Reports no passing file as failing",
+          "passed": true,
+          "evidence": "no false failures"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.875,
+        "passed": 7,
+        "failed": 1,
+        "total": 8,
+        "time_seconds": 76.4,
+        "tokens": 428745,
+        "tool_calls": 11,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=14"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, Bash"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=14"
+        },
+        {
+          "text": "Names every failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Names every file with a failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Invents no test file",
+          "passed": true,
+          "evidence": "3 test files mentioned, all real"
+        },
+        {
+          "text": "Reports no passing file as failing",
+          "passed": true,
+          "evidence": "no false failures"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9792,
+        "stddev": 0.051,
+        "min": 0.875,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 86.3833,
+        "stddev": 43.4053,
+        "min": 40.4,
+        "max": 141.6
+      },
+      "tokens": {
+        "mean": 349873.8333,
+        "stddev": 78288.3643,
+        "min": 265363,
+        "max": 435665
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.98",
+      "time_seconds": "+86.4",
+      "tokens": "+349874"
+    }
+  },
+  "notes": [
+    "Narrowed trim (the iteration-3 skill plus a one-line volume rule, 'delegate the reading and keep the judging', and a judgment clause limited to root-cause, architecture and coupled-refactor calls), with_skill only, tasks 1, 5 and 6, two runs each. Quality 100% of task assertions in all six runs; the one failed expectation is the environment check (two denied Bash calls in one triage run).",
+    "wide-search: $0.68 against $0.65 trimmed, $1.20 full skill and $0.46 no skill. The short-task saving of the trim is kept.",
+    "deep-read: both runs delegated to fabflows:explorer by routing, one quoting the new rule ('Thirteen records, more than a handful, so per the routing table I'm handing the reading to a cheap explorer and keeping the judgement'). $0.96 against $0.94 full skill, $1.10 trimmed and $1.07 no skill; lead final context 53,973 against 66,487 with no skill. The volume-task delegation the first trim weakened is back.",
+    "triage-failures: $0.73 against $0.67 full, $0.65 trimmed and $0.51 no skill, inflated by one run that hit two shell denials and recovered over 14 turns; no delegation in any variant, for the gate reason recorded in iteration 2.",
+    "Two runs per cell: direction, not significance. Across the three tasks the narrowed trim is the only variant that keeps both the short-task saving and the volume-task delegation."
+  ]
+}
