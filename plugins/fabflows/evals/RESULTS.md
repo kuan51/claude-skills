@@ -1,17 +1,43 @@
 # fabflows benchmark results
 
+## The three questions, answered so far
+
+**Token efficiency.** On short tasks fabflows is overhead: +64% list cost against a plain
+Fable session in iteration 1, +21% once a shell-permission confound was removed in iteration
+2, for identical quality every time. The cost lands on the lead (two Skill loads, a
+deliberation turn, self-verification of its own inline work), and cache writes at the 1-hour
+rate are about three quarters of it. On the one large read (13 files, ~60k characters) the
+skill delegated by routing and came in 12% cheaper with a lead context 12k tokens smaller, at
+twice the wall time. A trimmed skill removed about three quarters of the short-task overhead
+but, in one of two runs, also talked the lead out of that delegation.
+
+**The right model for the job.** Only the Haiku explorer was ever exercised by routing, on the
+large read, and it did the job (100% of assertions, 6k to 11k output tokens, about $0.10). The
+Sonnet test-runner ran only as a fallback after denied shell calls, never by routing: the gate
+tells the lead to re-run the test command itself, which makes delegating a bare test run
+pointless by the skill's own logic. Editor, refuter, investigator and researcher were never
+reached, so the pre-registered tier hypotheses (refuter on Sonnet, editor on Haiku) are still
+unmeasured and need direct-spawn probes.
+
+**Diminishing returns on iterations.** The build loop and its two-round rework cap were
+deferred with your approval and remain unmeasured; that is the one part of the original ask
+left untouched. Within the lead's own work, the measurable diminishing return is
+self-verification: the full skill made the lead re-confirm grep results it had just read,
+and stating that the gate is for worker reports removed it without any loss in quality.
+
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
-under each iteration directory has every run.
+and `benchmark.json` under each iteration directory are tracked and hold every run.
 
 ## Iteration 3 (2026-09-20): H1, the trimmed skill
 
 **Bottom line.** A trimmed skill (8,362 characters against 13,544; the build-loop failure
 handling moved to an on-demand reference file; the gate scoped in as many words to worker
 reports) **removes about three quarters of the overhead on a short task** and changes nothing
-on the triage task, but **gave back the volume-task win**: one of two deep-read runs read all
-13 files itself where the full skill delegated both times. Same quality throughout. The trim
-as drafted over-corrects on one clause; a middle version is the obvious next test, and it is
-a decision for you because the approved run budget is spent.
+on the triage task, but **may have weakened the volume-task delegation**: one of two deep-read
+runs read all 13 files itself where the full skill delegated both times, a one-run-each-way
+split. Same quality throughout. The trim as drafted over-corrects on one clause; a middle
+version is the obvious next test, and it is a decision for you because the approved run
+budget is spent.
 
 ### Setup (confirmed)
 
@@ -140,10 +166,11 @@ Delegation (confirmed from transcripts):
    only when the worker does more than run (writes tests, triages a log the lead's capped
    re-run would not show) or when the gate for it is relaxed to a cheaper check. That is a
    design decision (a DEC), not a benchmark fix.
-4. **The residual denials are skill-induced.** Three of the four with-skill denials come from
-   the lead appending `echo "exit=${PIPESTATUS[0]}"` to its test command, which the report
-   contract's "exit status" wording invites, and which don't-ask mode refuses as a variable
-   expansion. The baseline lead did it once. This is an artefact of the benchmark's permission
+4. **The residual denials are shell idioms around exit status and log capture.** Three of
+   the four with-skill denials are the lead's own: `echo "exit=${PIPESTATUS[0]}"` twice and a
+   `$TMPDIR` redirect with an `echo "exit=$?"` once, all refused by don't-ask mode as variable
+   expansions; the report contract's "exit status" wording invites the idiom. The fourth is a
+   fallback worker's `cd`. The baseline lead hit one, a redirect of the same kind. This is an artefact of the benchmark's permission
    mode, not of real sessions, which prompt instead of denying.
 5. **Short tasks still pay the skill's overhead** (+33% to +42%) for the same reasons as
    iteration 1: two Skill loads, a deliberation turn, more cache writes. Iteration 1's +64%
