@@ -1,5 +1,102 @@
 # fabflows benchmark results
 
+Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
+under each iteration directory has every run.
+
+## Iteration 2 (2026-09-19): volume tasks and a denial-free fixture
+
+**Bottom line.** With the shell-denial confound removed and two volume tasks added, the
+overall gap narrows to about +21% list cost for the same quality. **On the 13-file read the
+skill paid for itself for the first time:** both with-skill runs delegated to the Haiku
+explorer by routing, ran the gate, and finished about 12% cheaper with a final context some
+12k tokens smaller than the baseline lead that read everything itself, at the price of twice
+the wall time. On the suite-triage task the lead declined to delegate for a reason written into
+the skill: the gate would make it re-run the test command anyway. Short tasks still cost
++33% to +42% with the skill loaded.
+
+### What changed from iteration 1 (confirmed)
+
+- Tasks 5 (`deep-read`, 13 decision records, ~60k chars of prose) and 6 (`triage-failures`,
+  the full suite with three planted failures) added; tasks 2 to 4 rerun; task 1 not rerun (it
+  had no denials).
+- The fixture's `CLAUDE.md` gains an environment note (no leading `cd`, no PowerShell) and the
+  PowerShell tool is disallowed for the benchmark session. The first launch still hit the
+  denials because `--setting-sources user` drops the project `CLAUDE.md`; it was stopped after
+  two runs, `project` was added, and a task-2 rerun then passed 9/9 in all four runs with no
+  denials. Both arms now carry the repo's own `CLAUDE.md`, which iteration 1 did not.
+- Grader: a record or agent mentioned in a preamble before its table row no longer fails the
+  row checks; worker output comes from the per-model residual, since the Agent tool result's
+  `subagent_tokens` is not a sum of the usage categories.
+
+### Observed
+
+| task | arm | quality | denials | turns | lead out | thinking | cache read | cache write | final ctx | worker out | list $ | sec |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| scoped-edit | with | 1.00 | 0.0 | 12.0 | 1,397 | 59 | 298,099 | 23,450 | 49,609 | 0 | 0.61 | 61 |
+| scoped-edit | without | 1.00 | 0.0 | 8.0 | 1,310 | 0 | 190,707 | 17,092 | 43,251 | 0 | 0.46 | 53 |
+| write-tests | with | 1.00 | 1.5 | 12.0 | 2,666 | 518 | 380,436 | 31,520 | 54,371 | 185 | 0.88 | 58 |
+| write-tests | without | 1.00 | 0.0 | 7.5 | 1,646 | 70 | 217,061 | 24,217 | 47,068 | 0 | 0.62 | 62 |
+| short-chain | with | 1.00 | 0.0 | 12.0 | 1,528 | 23 | 291,720 | 26,885 | 49,736 | 0 | 0.69 | 27 |
+| short-chain | without | 1.00 | 0.0 | 7.5 | 1,212 | 0 | 184,500 | 19,151 | 42,002 | 0 | 0.49 | 29 |
+| **deep-read** | **with** | 1.00 | 0.0 | 9.5 | 3,165 | 288 | 247,293 | 31,936 | **54,787** | **8,596** | **0.94** | 111 |
+| **deep-read** | **without** | 1.00 | 0.0 | 15.0 | 3,496 | 68 | 101,904 | 43,636 | **66,487** | 0 | **1.07** | 50 |
+| triage-failures | with | 1.00 | 0.5 | 7.0 | 1,422 | 233 | 196,985 | 27,466 | 50,317 | 0 | 0.67 | 59 |
+| triage-failures | without | 1.00 | 0.5 | 4.0 | 1,326 | 44 | 142,845 | 20,359 | 43,210 | 0 | 0.51 | 104 |
+| **all** | **with** | **1.00** | 0.4 | **10.5** | **2,035** | **224** | 282,906 | **28,251** | **51,764** | 1,756 | **0.76** | 63 |
+| **all** | **without** | **1.00** | 0.1 | **8.4** | **1,798** | **36** | 167,403 | **24,891** | **48,404** | 0 | **0.63** | 60 |
+
+Delegation (confirmed from transcripts):
+
+- **deep-read, both with-skill runs:** "Thirteen records. This is a wide multi-file read, so
+  I'm handing the extraction to the Haiku explorer and will spot-check its report against the
+  source before I present it." The gate then ran: a grep over status and outcome lines plus
+  two spot-read records in one run, two spot-reads in the other. The explorer read all 13 files
+  (about 68k input-side tokens, 6k to 11k output) and the lead's context ended 11.7k tokens
+  smaller than the baseline's.
+- **triage-failures, both with-skill runs, no delegation:** "Running a known command whose
+  output I must re-run myself for the gate anyway, so I'll run it inline with capped output
+  rather than delegate."
+- **write-tests run 1:** one `fabflows:test-runner` spawn, again a fallback after the lead's
+  own shell call was denied.
+
+### What it means (inferred unless marked)
+
+1. **Quality tie holds:** every task assertion passed in all 20 runs (confirmed).
+2. **Delegation pays where the skill says it should, and the margin is modest.** The baseline
+   lead's 13 Reads cost it mostly cache writes (43.6k tokens at Fable's 1-hour rate, roughly
+   $0.87 of its $1.07). The fabflows lead avoided most of that but still wrote 31.9k (two Skill
+   loads, the brief, the worker's report, its own spot-checks), and the Haiku explorer added
+   about $0.10. Net about 12% cheaper, and the lead kept 12k tokens out of its context, which
+   compounds over a long session in a way a single-task run cannot show. Wall time doubled
+   because the worker's read runs before the lead can continue.
+3. **The test-runner row is self-defeating for a bare test run.** The gate tells the lead to
+   re-run the command itself, so delegating only adds a worker's cost on top. The row can pay
+   only when the worker does more than run (writes tests, triages a log the lead's capped
+   re-run would not show) or when the gate for it is relaxed to a cheaper check. That is a
+   design decision (a DEC), not a benchmark fix.
+4. **The residual denials are skill-induced.** Three of the four with-skill denials come from
+   the lead appending `echo "exit=${PIPESTATUS[0]}"` to its test command, which the report
+   contract's "exit status" wording invites, and which don't-ask mode refuses as a variable
+   expansion. The baseline lead did it once. This is an artefact of the benchmark's permission
+   mode, not of real sessions, which prompt instead of denying.
+5. **Short tasks still pay the skill's overhead** (+33% to +42%) for the same reasons as
+   iteration 1: two Skill loads, a deliberation turn, more cache writes. Iteration 1's +64%
+   included the denial cascades on top.
+
+### Where this leaves the hypotheses
+
+- **H4 (volume task): answered.** Delegation happens by routing and pays on a wide read.
+  It does not happen on a single test run, by design.
+- **H1 (trimmed skill):** iteration 3, running with the snapshot in `snapshots/h1-trimmed`.
+- **H2 (refuter on Sonnet), H3 (editor on Haiku):** still unexercised; no task reached those
+  tiers. Need direct-spawn probes.
+- **New, H5: relax the test-runner gate** to "confirm exit status and the failing lines"
+  rather than a full re-run, or reword the row to "write and run tests", and measure whether
+  the lead then delegates test runs at lower total cost. A DEC-worthy change.
+- **New, H6: trigger and load scope.** On short tasks the skill is overhead every time it
+  loads. Narrow the description toward volume and multi-step work, or make `using-fabflows`
+  the only entry so the load is paid once per session.
+
 ## Iteration 1 (2026-09-19): fabflows 0.3.6 against a plain session
 
 **Bottom line.** On four short tasks a Fable lead produced identical-quality work with and
