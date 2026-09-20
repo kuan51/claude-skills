@@ -24,6 +24,12 @@ styles/config/templates/
 *.env
 .env.*
 
-# fabflows benchmark raw outputs (transcripts, metrics, grading). Re-runnable via
-# plugins/fabflows/evals/harness/run.js; the summary lives in plugins/fabflows/evals/RESULTS.md.
-plugins/fabflows/evals/runs/
+# fabflows benchmark raw outputs (transcripts, fixtures, snapshots, logs) stay out of git. The small
+# per-iteration evidence behind evals/RESULTS.md is tracked so its tables can be checked without
+# re-running: git cannot re-include a file inside an ignored directory, hence the contents-only rules.
+plugins/fabflows/evals/runs/*
+!plugins/fabflows/evals/runs/iteration-*/
+plugins/fabflows/evals/runs/iteration-*/*
+!plugins/fabflows/evals/runs/iteration-*/cells.json
+!plugins/fabflows/evals/runs/iteration-*/benchmark.json
+!plugins/fabflows/evals/runs/iteration-*/benchmark.md
