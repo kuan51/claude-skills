@@ -20,27 +20,9 @@ limit, and leave a one-line pointer. Whole entries only.
 
 Older entries: [docs/runlog/2026-Q3.md](runlog/2026-Q3.md).
 
+Older entries: [docs/runlog/2026-Q3.md](runlog/2026-Q3.md).
+
 ---
-
-## 2026-09-13 — fabflows: renumber the dirty-tree decision record
-
-**PLANNED** — PR #23 (fabflows 0.2.0 plus the refuter's BLOCKED verdict) already adds a
-DEC-0005, and sibling PRs #27, #24 and #26 took DEC-0006 to DEC-0008, so this branch's
-record moves to DEC-0009. Rename the file with `git mv`, change its `id` and heading,
-regenerate `docs/DECISIONS.md` with `adr_index.py`, and retarget PR #25 onto #23's
-branch, `claude/fabflows-reviewer-blocked`. The entry above that names DEC-0005 stays as
-written: it was true when logged. Verify with `adr_index.py` and `node --test
-"plugins/fabflows/test/*.test.js"`.
-
-**CONFIRMED** — `adr_index.py` reported 5 records, and `docs/DECISIONS.md` lists
-DEC-0009 with no DEC-0005 row. `node --test "plugins/fabflows/test/*.test.js"` printed
-`tests 31`, `pass 31`, `fail 0`, and `node --test "test/*.test.js"` printed `tests 4`,
-`pass 4`, `fail 0`. `gh pr view 25` printed `base=claude/fabflows-reviewer-blocked
-commits=1` after the retarget. The merge base with #23's branch is `ea72d41`: a local
-`git fetch` of that branch failed with a connection reset, but #23's commit list on
-GitHub contains `ea72d41` and none of this branch's commits. The branch this PR first
-targeted, `claude/fabflows-plugin-design-5bb9a2`, was pushed by mistake (it duplicates
-#23's commits) and was deleted from origin; `git ls-remote` no longer finds it.
 
 ## 2026-09-13 — fabflows 0.2.0: fence the must-fix list in rework briefs
 
@@ -494,3 +476,20 @@ Bash variable expansion). Written up in `evals/RESULTS.md`, iteration 3.
 (iteration 2: 4 rerun plus 16, plus 2 stopped; iteration 3: 6). The narrowed-clause variant
 of the trimmed skill, the test-runner gate change (H5) and the trigger scope (H6) are
 proposed, not run.
+
+**CONFIRMED** (iteration 4, narrowed trim) — Snapshot `runs/snapshots/h1b-narrowed`, the
+iteration-3 skill plus one rewritten "When to delegate" paragraph (8,613 chars); patch at
+`evals/snapshots/h1b-narrowed.patch`, and `diff` between the two snapshots shows only that
+paragraph. `node plugins/fabflows/evals/harness/run.js --iteration 4 --arms with_skill
+--plugin-dir plugins/fabflows/evals/runs/snapshots/h1b-narrowed --tasks 1,5,6 --repeats 2
+--confirm --parallel 2`: 6 runs, 00:42 to 00:48 UTC. Quality 1.00 in all six. Means:
+wide-search $0.68 (trimmed $0.65, full $1.20, none $0.46); deep-read $0.96 with 2/2 runs
+delegating to fabflows:explorer and lead final context 53,973 (full $0.94 and 2/2; trimmed
+$1.10 and 1/2; none $1.07); triage-failures $0.73, no delegation, one run with two denials.
+Written up in `evals/RESULTS.md`, iteration 4; adoption proposed in DEC-0015.
+
+**CONFIRMED** (housekeeping) — `adr_new.py` created DEC-0014 (trigger and load scope) and
+DEC-0015 (adopt the narrowed trim), both `status: proposed`; `adr_index.py` regenerated
+`docs/DECISIONS.md`. Run-log rotation per DEC-0001 via a one-off script: 651 lines to 496,
+nine oldest whole entries moved to `docs/runlog/2026-Q3.md` with a pointer under the header.
+Fixture clones under `%TEMP%/fabflows-bench` kept at the user's request.
