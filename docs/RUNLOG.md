@@ -614,3 +614,21 @@ applied by a per-task `setup` step. Smoke both on Haiku, then run
 `node plugins/fabflows/evals/harness/run.js --iteration 2 --tasks 2,3,4,5,6 --confirm
 --parallel 2` (20 Fable runs; task 1 had no denials and is not rerun). H1 follows as
 iteration 3 with a trimmed skill snapshot via `--plugin-dir`.
+
+**CONFIRMED** — Haiku smoke of tasks 5 and 6 (`--iteration 0 --tasks 5,6 --model haiku`):
+10/10 and 8/8 in both arms, no denials. First Fable launch of
+`--iteration 2 --tasks 2,3,4,5,6 --confirm --parallel 2` still hit the denials in its first
+two runs (the fixture CLAUDE.md note was not loaded: `--setting-sources user` drops project
+CLAUDE.md files, confirmed by a Haiku probe that answered NOT LOADED under `user` and quoted
+the note under `user,project`); killed via Stop-Process after 2 runs. With `user,project`,
+task 2 rerun: 9/9 in all four runs, no denials. Tasks 3 to 6: 16 runs, 00:03 to 00:14 UTC.
+Regraded both iterations after two grader fixes (any mention of a record or agent may satisfy
+a row check, not only the first; worker output from the per-model residual, since
+`subagent_tokens` is not a category sum) and one metric added (the lead's post-spawn tool
+calls). `summarize.js` over iteration-2: quality 1.00 in all 20 runs; with_skill mean 10.5
+turns, 2,035 lead output, 28,251 cache-write, $0.76 list, 63 s; without 8.4, 1,798, 24,891,
+$0.63, 60 s. deep-read: with $0.94 vs without $1.07, lead final context 54,787 vs 66,487,
+both with_skill runs delegated to fabflows:explorer by routing and ran the gate;
+triage-failures: no delegation, the lead citing the gate's re-run rule. 5 denials in total
+(4 with, 1 without), all variable expansions or redirects. `node --test
+"plugins/fabflows/test/*.test.js"`: 40 pass, 0 fail. Details in `evals/RESULTS.md`.
