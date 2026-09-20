@@ -96,6 +96,21 @@ should apply, while the graded answer stays small.
 Every run also checks: finished without error, no denied tool call, under the turn cap.
 Grading is programmatic against the clone, never against what the lead said it did.
 
+## Skill variants
+
+A hypothesis about the skill's prose runs against a modified copy of the plugin loaded with
+`--plugin-dir`, never against the installed cache. The copy lives under `runs/snapshots/`
+(gitignored) and is reproducible from a tracked patch under `snapshots/`:
+
+```bash
+mkdir -p plugins/fabflows/evals/runs/snapshots/h1-trimmed
+cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/h1-trimmed/
+patch -p3 -d plugins/fabflows/evals/runs/snapshots/h1-trimmed/skills < plugins/fabflows/evals/snapshots/h1-trimmed.patch
+node plugins/fabflows/evals/harness/run.js --iteration 3 --arms with_skill --plugin-dir plugins/fabflows/evals/runs/snapshots/h1-trimmed --tasks 1,5,6 --confirm
+```
+
+The description stays identical in a variant so that triggering is not a second variable.
+
 ## Caps
 
 `tasks.json` sets `maxTurns`, `maxBudgetUsd` (list price, passed as `--max-budget-usd`) and a
