@@ -3,6 +3,72 @@
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 under each iteration directory has every run.
 
+## Iteration 3 (2026-09-20): H1, the trimmed skill
+
+**Bottom line.** A trimmed skill (8,362 characters against 13,544; the build-loop failure
+handling moved to an on-demand reference file; the gate scoped in as many words to worker
+reports) **removes about three quarters of the overhead on a short task** and changes nothing
+on the triage task, but **gave back the volume-task win**: one of two deep-read runs read all
+13 files itself where the full skill delegated both times. Same quality throughout. The trim
+as drafted over-corrects on one clause; a middle version is the obvious next test, and it is
+a decision for you because the approved run budget is spent.
+
+### Setup (confirmed)
+
+- Snapshot in `runs/snapshots/h1-trimmed/` (gitignored), reproducible from the tracked
+  `snapshots/h1-trimmed.patch`. Loaded via `--plugin-dir`; the description is unchanged so
+  triggering is not a variable. Six runs: tasks 1, 5 and 6, `with_skill` only, two repeats,
+  compared against the full-skill and no-skill cells of iterations 1 and 2.
+- What the trim changed: "Boundaries" and the non-negotiables merged into one "When to
+  delegate" section that ends "What you read from your own tools is already evidence; do not
+  re-run it to confirm it"; the guard section reduced to a pointer; the build loop's
+  non-accepted outcomes moved to `references/build-loop.md`; routing table, brief, report
+  contract and gate table kept.
+
+### Observed (means of 2)
+
+| task | variant | quality | turns | lead out | thinking | cache write | final ctx | worker out | list $ | sec | delegated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| wide-search | full skill | 1.00 | 10.0 | 2,428 | 464 | 51,236 | 51,268 | 0 | 1.20 | 55 | 0/2 |
+| wide-search | **trimmed** | 1.00 | 9.0 | 2,099 | 215 | 24,525 | 47,376 | 0 | **0.65** | 44 | 0/2 |
+| wide-search | no skill | 1.00 | 4.0 | 1,636 | 103 | 17,339 | 43,545 | 0 | 0.46 | 31 | 0/2 |
+| deep-read | full skill | 1.00 | 9.5 | 3,165 | 288 | 31,936 | 54,787 | 8,596 | **0.94** | 111 | **2/2** |
+| deep-read | **trimmed** | 1.00 | 14.5 | 3,654 | 387 | 41,136 | 63,987 | 4,573 | 1.10 | 99 | **1/2** |
+| deep-read | no skill | 1.00 | 15.0 | 3,496 | 68 | 43,636 | 66,487 | 0 | 1.07 | 50 | 0/2 |
+| triage-failures | full skill | 1.00 | 7.0 | 1,422 | 233 | 27,466 | 50,317 | 0 | 0.67 | 59 | 0/2 |
+| triage-failures | **trimmed** | 1.00 | 7.5 | 1,623 | 161 | 25,910 | 48,761 | 0 | 0.65 | 53 | 0/2 |
+| triage-failures | no skill | 1.00 | 4.0 | 1,326 | 44 | 20,359 | 43,210 | 0 | 0.51 | 104 | 0/2 |
+
+The two trimmed deep-read runs, from their transcripts (confirmed): one said "Thirteen records.
+That's a multi-file read, so I'm handing the extraction to a Haiku explorer" and delegated; the
+other said "Thirteen records. This needs judgment about what each decided, so I'll read them
+all directly in parallel rather than delegate."
+
+### What it means (inferred)
+
+1. **The short-task overhead was mostly self-verification, and the trim removed it.** On
+   wide-search the confirmation greps disappeared (cache writes halved, thinking halved) once
+   the skill said in plain words that the gate is for worker reports. The remaining $0.19 over
+   the baseline is the two Skill loads and one deliberation turn.
+2. **The trim's judgment clause is too broad.** "When it needs judgement about why the code is
+   the way it is" was meant for root-cause and architecture calls. One lead read it as covering
+   a summarising task and took a 60k-character read into its own context. The full skill's
+   longer prose did not produce that reading in either run. The fix is one sentence: volume is
+   decided by what must be read, not by whether judgment follows; the worker extracts, the lead
+   judges.
+3. **Triage is unmoved by prose length**, as expected: the reason it is not delegated is the
+   gate's re-run rule, which both versions keep (H5).
+
+### Where this leaves the hypotheses
+
+- **H1: partly confirmed.** The trim holds quality and cuts short-task overhead sharply, but as
+  drafted it weakens the one delegation trigger that pays. Not ready to ship as is.
+- **Next test, if you want it (6 runs):** the trimmed skill with the judgment clause narrowed
+  and a one-line volume rule ("a read of more than a handful of files is volume; delegate the
+  reading, keep the judging"), on tasks 1, 5 and 6 again.
+- **H5 (test-runner gate) and H6 (trigger and load scope)** stand as decision candidates; the
+  data for both is in iteration 2.
+
 ## Iteration 2 (2026-09-19): volume tasks and a denial-free fixture
 
 **Bottom line.** With the shell-denial confound removed and two volume tasks added, the
