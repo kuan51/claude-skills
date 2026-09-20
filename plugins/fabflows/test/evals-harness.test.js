@@ -49,8 +49,8 @@ test('metrics take input-side sums from the stream and output from the result, p
   assert.equal(w.spawns, 1);
   assert.equal(w.messages, 2);
   assert.equal(w.cacheWrite, 8300);
-  assert.equal(w.reportedTokens, 16410, 'the Agent tool_result usage block is the worker total');
-  assert.equal(w.output, 16410 - 10 - 8000 - 8300, 'worker output is the reported total less its input side');
+  assert.equal(w.reportedTokens, 16410, 'the Agent tool_result usage block is kept as reported');
+  assert.equal(w.output, 100, "worker output is its model's residual after the lead's share, since it is the only Haiku worker");
   assert.deepEqual(w.toolCalls, { Read: 1 });
 
   assert.equal(m.byModel['claude-fable-5-1'].output, 180);

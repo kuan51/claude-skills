@@ -60,22 +60,33 @@ function agentTruth(fixture) {
 // `withLeadIn`, the window also reaches back to the section's lead-in (a heading, a bold line,
 // or a line ending in a colon), because a lead that writes "11 agents pin no model" above a
 // table has flagged every row in it as surely as one that writes "none" in each row.
-function windowFor(text, needle, withLeadIn = false) {
+function windowsFor(text, needle, withLeadIn = false) {
   const lines = text.split(/\r?\n/);
-  const i = lines.findIndex((l) => l.toLowerCase().includes(needle.toLowerCase()));
-  if (i === -1) return null;
-  let start = i;
-  if (withLeadIn) {
-    for (let k = i - 1; k >= 0 && k >= i - 25; k--) {
-      const l = lines[k].trim();
-      if (/^#{1,6}\s/.test(l) || /^\*\*.+\*\*:?$/.test(l) || /:$/.test(l)) {
-        start = k;
-        break;
+  const out = [];
+  lines.forEach((l, i) => {
+    if (!l.toLowerCase().includes(needle.toLowerCase())) return;
+    let start = i;
+    if (withLeadIn) {
+      for (let k = i - 1; k >= 0 && k >= i - 25; k--) {
+        const t = lines[k].trim();
+        if (/^#{1,6}\s/.test(t) || /^\*\*.+\*\*:?$/.test(t) || /:$/.test(t)) {
+          start = k;
+          break;
+        }
       }
     }
-  }
-  return lines.slice(start, i + 3).join('\n');
+    out.push(lines.slice(start, i + 3).join('\n'));
+  });
+  return out;
 }
+
+// A needle can be mentioned in a preamble before its table row, so a check passes if any
+// mention's window satisfies it, not only the first.
+function windowFor(text, needle, withLeadIn = false) {
+  const w = windowsFor(text, needle, withLeadIn);
+  return w.length ? w : null;
+}
+const anyWindow = (text, needle, pred, withLeadIn = false) => windowsFor(text, needle, withLeadIn).some(pred);
 
 function gradeInventory(exp, fixture, resultText) {
   const truth = agentTruth(fixture);
@@ -88,10 +99,7 @@ function gradeInventory(exp, fixture, resultText) {
   });
 
   const pinned = truth.filter((t) => t.model);
-  const wrongModel = pinned.filter((t) => {
-    const w = windowFor(text, `agents/${t.base}`);
-    return !w || !new RegExp(`\\b${t.model}\\b`, 'i').test(w);
-  });
+  const wrongModel = pinned.filter((t) => !anyWindow(text, `agents/${t.base}`, (w) => new RegExp(`\\b${t.model}\\b`, 'i').test(w)));
   exp.push({
     text: `Reports the correct model for every pinned agent (${pinned.length})`,
     passed: wrongModel.length === 0,
@@ -107,10 +115,7 @@ function gradeInventory(exp, fixture, resultText) {
 
   const unpinned = truth.filter((t) => !t.model);
   const flagRe = /\b(none|no model|no pin|not pinned|unpinned|missing|inherits?|no `?model`?:?`?|pins? no|without a? ?`?model)\b|\|\s*[-—–]+\s*\|/i;
-  const unflagged = unpinned.filter((t) => {
-    const w = windowFor(text, `agents/${t.base}`, true);
-    return !w || !flagRe.test(w);
-  });
+  const unflagged = unpinned.filter((t) => !anyWindow(text, `agents/${t.base}`, (w) => flagRe.test(w), true));
   exp.push({
     text: `Flags every agent without a model pin (${unpinned.length})`,
     passed: unflagged.length === 0,
@@ -289,17 +294,16 @@ function gradeDigest(exp, fixture, resultText) {
   const missingIds = truth.filter((t) => !text.includes(t.id));
   exp.push({ text: `Lists every record (${truth.length})`, passed: missingIds.length === 0, evidence: missingIds.length ? `missing: ${missingIds.map((t) => t.id).join(', ')}` : 'all ids present' });
   const badTitle = truth.filter((t) => {
-    const w = windowFor(text, t.id);
     const head = t.title.split(/\s+/).slice(0, 4).join(' ').toLowerCase();
-    return !w || !w.toLowerCase().includes(head);
+    return !anyWindow(text, t.id, (w) => w.toLowerCase().includes(head));
   });
   exp.push({ text: 'Gives each record its own title', passed: badTitle.length === 0, evidence: badTitle.length ? `title absent or wrong for: ${badTitle.map((t) => t.id).join(', ')}` : 'first four words of every title match' });
-  const badStatus = truth.filter((t) => { const w = windowFor(text, t.id); return !w || !w.toLowerCase().includes(t.status.toLowerCase()); });
+  const badStatus = truth.filter((t) => !anyWindow(text, t.id, (w) => w.toLowerCase().includes(t.status.toLowerCase())));
   exp.push({ text: 'Gives each record its frontmatter status', passed: badStatus.length === 0, evidence: badStatus.length ? `status absent or wrong for: ${badStatus.map((t) => t.id).join(', ')}` : 'every status matches' });
   const withOpt = truth.filter((t) => t.option);
-  const badOpt = withOpt.filter((t) => { const w = windowFor(text, t.id); return !w || !new RegExp(`\\b(option\\s*)?${t.option}\\b`).test(w.replace(t.id, '')); });
+  const badOpt = withOpt.filter((t) => !anyWindow(text, t.id, (w) => new RegExp(`\\b(option\\s*)?${t.option}\\b`).test(w.split(t.id).join(''))));
   exp.push({ text: `Gives the chosen option number for every record that states one (${withOpt.length})`, passed: badOpt.length === 0, evidence: badOpt.length ? `option absent or wrong for: ${badOpt.map((t) => `${t.id} (option ${t.option})`).join(', ')}` : 'every chosen option matches' });
-  const thin = truth.filter((t) => { const w = windowFor(text, t.id); return !w || w.split(/\s+/).length < 20; });
+  const thin = truth.filter((t) => !anyWindow(text, t.id, (w) => w.split(/\s+/).length >= 20));
   exp.push({ text: 'Says something about each record beyond its metadata (20+ words in its row)', passed: thin.length === 0, evidence: thin.length ? `thin rows: ${thin.map((t) => t.id).join(', ')}` : 'every row carries a summary' });
   const invented = [...new Set(text.match(/DEC-\d{4}/g) || [])].filter((id) => !truth.some((t) => t.id === id));
   exp.push({ text: 'Invents no record id', passed: invented.length === 0, evidence: invented.length ? `not in the repo: ${invented.join(', ')}` : `${(text.match(/DEC-\d{4}/g) || []).length} id mentions, all real` });

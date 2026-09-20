@@ -85,7 +85,9 @@ function computeMetrics(events, opts = {}) {
   const testCommand = opts.testCommand || null;
   const seenMessages = new Set();
   const seenToolUses = new Set();
-  const lead = { model: null, ...zeroInput(), output: null, thinking: null, finalContext: 0, toolCalls: {}, verificationRuns: 0 };
+  // postSpawnCalls: the lead's own tool calls once a worker has been spawned, by tool. That is
+  // where the verification gate shows up (a Read at a cited line, a Grep, a test re-run).
+  const lead = { model: null, ...zeroInput(), output: null, thinking: null, finalContext: 0, toolCalls: {}, verificationRuns: 0, postSpawnCalls: {} };
   const spawns = {}; // Agent tool_use id -> subagent_type
   const workers = {}; // subagent_type -> input-side sums, spawns, tool calls, reported totals
   const hooks = { started: {}, permissionDenied: 0, rateLimitEvents: 0 };
@@ -136,6 +138,7 @@ function computeMetrics(events, opts = {}) {
         continue;
       }
       bump(lead.toolCalls, b.name);
+      if (sawSpawn && b.name !== 'Agent') bump(lead.postSpawnCalls, b.name);
       if (b.name === 'Agent') {
         spawns[b.id] = (b.input && b.input.subagent_type) || 'unknown';
         sawSpawn = true;
@@ -171,8 +174,9 @@ function computeMetrics(events, opts = {}) {
   for (const w of Object.values(workers)) {
     w.spawns = w.spawnIds.size;
     delete w.spawnIds;
-    // Total minus the input side leaves output. Null when no tool_result reported a total.
-    w.output = w.reportedSpawns ? Math.max(0, w.reportedTokens - w.input - w.cacheRead - w.cacheWrite) : null;
+    // reportedTokens is kept as reported. It is not the sum of the usage categories (observed
+    // 33,957 against 67k of modelUsage for one explorer), so output is not derived from it.
+    w.output = null;
   }
 
   const byModel = {};
@@ -197,6 +201,12 @@ function computeMetrics(events, opts = {}) {
       cacheWrite: mu.cacheWrite - (isLead ? ru.cache_creation_input_tokens || 0 : 0),
     };
     if (w.input || w.output || w.cacheRead || w.cacheWrite) workersByModel[model] = w;
+  }
+  // When exactly one worker type ran on a model, that model's residual output is its output.
+  // Two types on one model (editor and test-runner on Sonnet, say) stay null: ambiguous.
+  for (const [model, residual] of Object.entries(workersByModel)) {
+    const types = Object.values(workers).filter((w) => w.model === model);
+    if (types.length === 1) types[0].output = residual.output;
   }
 
   const totals = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, thinking: 0 };
