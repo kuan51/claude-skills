@@ -632,3 +632,19 @@ both with_skill runs delegated to fabflows:explorer by routing and ran the gate;
 triage-failures: no delegation, the lead citing the gate's re-run rule. 5 denials in total
 (4 with, 1 without), all variable expansions or redirects. `node --test
 "plugins/fabflows/test/*.test.js"`: 40 pass, 0 fail. Details in `evals/RESULTS.md`.
+
+**CONFIRMED** (iteration 3, H1) — Snapshot `runs/snapshots/h1-trimmed` (SKILL.md 8,362 chars
+against 13,544, plus `references/build-loop.md`, 1,821), patch tracked at
+`evals/snapshots/h1-trimmed.patch`; a Haiku probe with `--plugin-dir` on the snapshot listed
+all six agents and both skills. `node plugins/fabflows/evals/harness/run.js --iteration 3
+--arms with_skill --plugin-dir plugins/fabflows/evals/runs/snapshots/h1-trimmed --tasks 1,5,6
+--repeats 2 --confirm --parallel 2`: 6 runs, 00:23 to 00:28 UTC. Quality 1.00 in all six.
+Means against the full skill and no skill: wide-search $0.65 vs $1.20 vs $0.46 (cache-write
+24,525 vs 51,236 vs 17,339); deep-read $1.10 vs $0.94 vs $1.07 with 1/2 runs delegating vs
+2/2 vs 0/2; triage-failures $0.65 vs $0.67 vs $0.51, no delegation in any. One denial (a
+Bash variable expansion). Written up in `evals/RESULTS.md`, iteration 3.
+
+**SKIPPED** — No iteration 4. The approved budget of roughly 24 further Fable runs is spent
+(iteration 2: 4 rerun plus 16, plus 2 stopped; iteration 3: 6). The narrowed-clause variant
+of the trimmed skill, the test-runner gate change (H5) and the trigger scope (H6) are
+proposed, not run.
