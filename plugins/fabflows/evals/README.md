@@ -124,7 +124,10 @@ touches routing, and whenever a decision record wants a number instead of arithm
   accepted headless). Iteration 1 took 28 such denials across both arms, each costing a turn.
   From iteration 2 the runner appends an environment note to the fixture's `CLAUDE.md` (run
   from the root without `cd`, use Bash not PowerShell) and passes `--disallowedTools
-  PowerShell`. This is benchmark-only and widens no permission: the plugin, its guard included,
+  PowerShell`. The note only loads with `--setting-sources user,project`; `user` alone drops
+  the project CLAUDE.md, which is why the first iteration-2 launch still hit the denials and
+  was stopped after two runs. Iteration 1 therefore ran without the repo's own CLAUDE.md in
+  either arm; from iteration 2 both arms carry it. This is benchmark-only and widens no permission: the plugin, its guard included,
   is unchanged for every platform. On Linux and macOS the PowerShell tool is not offered, so
   the disallow should be a no-op there (not tested from this machine). On Windows the benchmark
   therefore runs without a tool a real session would have.

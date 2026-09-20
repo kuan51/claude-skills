@@ -94,7 +94,9 @@ function claudeArgs(a, cell, runDir, settingsPath) {
     '--permission-prompts', 'none',
     '--allowedTools', 'Read,Edit,Write,Grep,Glob,Bash,Agent,Skill,TaskCreate,TaskGet,TaskList,TaskUpdate,TaskOutput,TaskStop,NotebookEdit',
     '--disallowedTools', 'PowerShell',
-    '--setting-sources', 'user',
+    // 'project' is needed for the fixture's CLAUDE.md (the environment note) to load at all;
+    // 'user' alone drops it. The repo tracks no .claude/ settings, so nothing else comes in.
+    '--setting-sources', 'user,project',
     '--settings', settingsPath,
     '--strict-mcp-config',
     '--max-turns', String(CONFIG.caps.maxTurns),
