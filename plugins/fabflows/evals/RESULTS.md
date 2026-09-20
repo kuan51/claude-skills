@@ -9,7 +9,9 @@ deliberation turn, self-verification of its own inline work), and cache writes a
 rate are about three quarters of it. On the one large read (13 files, ~60k characters) the
 skill delegated by routing and came in 12% cheaper with a lead context 12k tokens smaller, at
 twice the wall time. A trimmed skill removed about three quarters of the short-task overhead
-but, in one of two runs, also talked the lead out of that delegation.
+but, in one of two runs, also talked the lead out of that delegation; adding a one-line volume
+rule brought the delegation back in both runs while keeping the saving (iteration 4), and that
+narrowed variant is the one proposed for adoption.
 
 **The right model for the job.** Only the Haiku explorer was ever exercised by routing, on the
 large read, and it did the job (100% of assertions, 6k to 11k output tokens, about $0.10). The
@@ -27,6 +29,63 @@ and stating that the gate is for worker reports removed it without any loss in q
 
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
+
+## Iteration 4 (2026-09-20): the narrowed trim
+
+**Bottom line.** One paragraph fixed the trim. Adding a volume rule ("a read of more than a
+handful of files is volume even when you will summarise or judge the result, so delegate the
+reading and keep the judging") and limiting the judgment clause to root-cause, architecture
+and coupled-refactor calls kept the short-task saving of iteration 3 and **restored the
+volume-task delegation in both runs**, at the same quality. Across tasks 1, 5 and 6 it is the
+only variant that does both. It is the version proposed for adoption in DEC-0015.
+
+### Setup (confirmed)
+
+Snapshot `runs/snapshots/h1b-narrowed/`, reproducible from `snapshots/h1b-narrowed.patch`;
+it differs from the iteration-3 snapshot by the one "When to delegate" paragraph (8,613
+characters against 8,362). Six runs, tasks 1, 5 and 6, `with_skill` only, two repeats.
+
+### Observed (means of 2; the other variants from iterations 1 to 3 for comparison)
+
+| task | variant | quality | turns | lead out | thinking | cache write | final ctx | worker out | list $ | sec | delegated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| wide-search | full skill | 1.00 | 10.0 | 2,428 | 464 | 51,236 | 51,268 | 0 | 1.20 | 55 | 0/2 |
+| wide-search | trimmed | 1.00 | 9.0 | 2,099 | 215 | 24,525 | 47,376 | 0 | 0.65 | 44 | 0/2 |
+| wide-search | **narrowed** | 1.00 | 9.0 | 2,281 | 381 | 24,790 | 47,641 | 0 | **0.68** | 47 | 0/2 |
+| wide-search | no skill | 1.00 | 4.0 | 1,636 | 103 | 17,339 | 43,545 | 0 | 0.46 | 31 | 0/2 |
+| deep-read | full skill | 1.00 | 9.5 | 3,165 | 288 | 31,936 | 54,787 | 8,596 | 0.94 | 111 | 2/2 |
+| deep-read | trimmed | 1.00 | 14.5 | 3,654 | 387 | 41,136 | 63,987 | 4,573 | 1.10 | 99 | 1/2 |
+| deep-read | **narrowed** | 1.00 | 9.0 | 3,277 | 255 | 31,122 | **53,973** | 10,635 | **0.96** | 140 | **2/2** |
+| deep-read | no skill | 1.00 | 15.0 | 3,496 | 68 | 43,636 | 66,487 | 0 | 1.07 | 50 | 0/2 |
+| triage-failures | full skill | 1.00 | 7.0 | 1,422 | 233 | 27,466 | 50,317 | 0 | 0.67 | 59 | 0/2 |
+| triage-failures | trimmed | 1.00 | 7.5 | 1,623 | 161 | 25,910 | 48,761 | 0 | 0.65 | 53 | 0/2 |
+| triage-failures | **narrowed** | 1.00 | 11.0 | 2,134 | 96 | 27,330 | 50,181 | 0 | 0.73 | 72 | 0/2 |
+| triage-failures | no skill | 1.00 | 4.0 | 1,326 | 44 | 20,359 | 43,210 | 0 | 0.51 | 104 | 0/2 |
+
+From the transcripts (confirmed): one narrowed deep-read lead said "Thirteen records, more than
+a handful, so per the routing table I'm handing the reading to a cheap explorer and keeping the
+judgement. Then I'll spot-check its report against one file myself." The triage mean is
+inflated by one run that hit two shell denials (a variable expansion each) and recovered over
+14 turns; the other run took 8.
+
+### What it means (inferred)
+
+1. **The volume rule is what the lead needed.** With it, both runs delegated and one cited it
+   almost word for word; without it (iteration 3) one lead read the judgment clause as covering
+   a summary. Prose the lead can apply as a rule beats prose it has to interpret.
+2. **The short-task saving survives the extra sentence.** wide-search sits at $0.68, within
+   noise of the trimmed $0.65 and far below the full skill's $1.20.
+3. **Triage is unchanged in kind**: no variant delegates a bare test run, for the gate reason in
+   iteration 2 (H5). The narrowed variant's higher mean here is one denial-recovery run, not a
+   property of the prose.
+
+### Where this leaves the hypotheses
+
+- **H1: confirmed in its narrowed form.** Proposed for adoption as DEC-0015: replace the shipped
+  skill body with the `h1b-narrowed` variant, add `references/build-loop.md`, keep the
+  description unchanged, patch bump.
+- **H5 (test-runner gate)** stands as a proposal in iteration 2; not selected for a record.
+- **H6 (trigger and load scope)** is drafted as DEC-0014.
 
 ## Iteration 3 (2026-09-20): H1, the trimmed skill
 
