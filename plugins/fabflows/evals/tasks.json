@@ -2,6 +2,7 @@
   "skill_name": "fabflows",
   "lead": { "model": "fable", "effort": "medium" },
   "caps": { "maxTurns": 80, "maxBudgetUsd": 10, "runTimeoutMinutes": 25 },
+  "fixture": { "kind": "repo", "ref": "3fbe15b" },
   "arms": {
     "with_skill": {
       "pluginDir": "plugins/fabflows",

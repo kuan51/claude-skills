@@ -312,6 +312,118 @@ function gradeDigest(exp, fixture, resultText) {
   void lower;
 }
 
+// A build task is graded by a hidden acceptance suite that lives outside the fixture, so the lead
+// can neither read it nor tune its own tests to it. The suite loads the project through an env
+// var (spec.rootEnv) and runs from its own directory with the test files named explicitly, which
+// makes node print one column-0 `ok`/`not ok` per test. A project that fails to load instead
+// yields one file-level `not ok <file>` per test file; those are set aside so a broken project
+// reads as "could not run" rather than as N named failures.
+function gradeHiddenTests(exp, spec, fixture, metrics) {
+  // Status is read before anything runs in the fixture, so a test that writes a scratch file
+  // cannot dirty the tree the lead left.
+  const status = gitStatus(fixture);
+  // `node --test` with a glob that matches nothing exits 0, so a project with no tests at all
+  // would pass; the spec asks for tests, so at least one test file has to exist.
+  const testDir = path.join(fixture, 'test');
+  const ownTests = fs.existsSync(testDir) && fs.readdirSync(testDir, { recursive: true }).some((f) => /\.test\.(js|mjs|cjs)$/.test(String(f)));
+  const t = sh(spec.testCommand, fixture);
+  exp.push({
+    text: `Public test command passes in the fixture (${spec.testCommand})`,
+    passed: t.status === 0 && ownTests,
+    evidence: `exit ${t.status}${ownTests ? '' : '; no *.test.js under test/'}: ${tail(t.out)}`,
+  });
+
+  exp.push({
+    text: 'Working tree is clean (work committed)',
+    passed: status.length === 0,
+    evidence: status.length ? `git status: ${status.map((s) => `${s.code} ${s.file}`).join(', ')}` : 'git status --porcelain is empty',
+  });
+
+  // Newest first, so the lead's commits are the ones before the first `bench:` subject.
+  const log = spawnSync('git', ['log', '--format=%s'], { cwd: fixture, encoding: 'utf8' });
+  const subjects = log.status === 0 ? log.stdout.split(/\r?\n/).filter(Boolean) : [];
+  const own = subjects.findIndex((s) => s.startsWith('bench:'));
+  const commits = own === -1 ? subjects.length : own;
+  exp.push({
+    text: 'At least one commit was made on the branch',
+    passed: commits >= 1,
+    evidence: commits ? `${commits} commit(s): ${subjects.slice(0, commits).join(' | ')}` : `no commit after the bench: setup (${subjects.length} in log)`,
+  });
+
+  let pkg = null;
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(fixture, 'package.json'), 'utf8'));
+  } catch {
+    pkg = null;
+  }
+  const deps = pkg ? [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.devDependencies || {})] : [];
+  const nodeModules = fs.existsSync(path.join(fixture, 'node_modules'));
+  exp.push({
+    text: 'No dependency was added',
+    passed: pkg !== null && deps.length === 0 && !nodeModules,
+    evidence: pkg === null ? 'package.json missing or unparseable' : deps.length || nodeModules ? `dependencies: ${deps.join(', ') || 'none'}; node_modules ${nodeModules ? 'present' : 'absent'}` : 'no dependencies, no node_modules',
+  });
+
+  const workflows = metrics.workflows || [];
+  exp.push({
+    text: 'Every launched workflow finished before the session ended',
+    passed: workflows.every((w) => w.completed),
+    evidence: workflows.length ? workflows.map((w) => `${w.name}: ${w.completed ? 'completed' : 'unfinished'}`).join('; ') : 'no workflow launched',
+  });
+
+  const hiddenDir = path.resolve(__dirname, '..', spec.hidden);
+  const files = fs.readdirSync(hiddenDir).filter((f) => f.endsWith('.test.js')).sort();
+  const r = spawnSync(process.execPath, ['--test', '--test-reporter=tap', ...files], {
+    cwd: hiddenDir,
+    // The suite runs from its own directory, so a relative fixture path would resolve there.
+    env: { ...process.env, [spec.rootEnv]: path.resolve(fixture) },
+    encoding: 'utf8',
+    timeout: 5 * 60 * 1000,
+  });
+  const out = `${r.stdout || ''}${r.stderr || ''}${r.error ? `\n${r.error.message}` : ''}`;
+  const lines = out.split(/\r?\n/);
+  const tests = [];
+  lines.forEach((line, i) => {
+    const m = line.match(/^(not )?ok \d+ - (.+?)(?: # .*)?$/);
+    if (!m || files.includes(m[2])) return;
+    // The YAML block runs to the next column-0 line. Node writes the assertion as a `|-` block
+    // scalar whose first line is the generic header and whose later lines hold the expected and
+    // actual values, so the whole scalar is kept, up to the next key.
+    let evidence = '';
+    for (let k = i + 1; k < lines.length && /^\s/.test(lines[k]); k++) {
+      const e = lines[k].match(/^(\s+)(message|error):\s*(.*)$/);
+      if (!e) continue;
+      let value = e[3];
+      if (/^[|>]-?$/.test(value) || !value) {
+        const block = [];
+        for (let j = k + 1; j < lines.length && (lines[j].trim() === '' || lines[j].startsWith(`${e[1]} `)); j++) {
+          if (lines[j].trim()) block.push(lines[j].trim());
+        }
+        value = block.join(' | ');
+      }
+      evidence = `${e[2]}: ${value}`.slice(0, 200);
+      break;
+    }
+    tests.push({ name: m[2], passed: !m[1], evidence });
+  });
+  if (!tests.length) {
+    exp.push({
+      text: 'Hidden acceptance suite could not run',
+      passed: false,
+      evidence: lines.find((l) => /\bError\b/.test(l)) || tail(out) || 'no output',
+    });
+  }
+  for (const h of tests) exp.push({ text: `hidden: ${h.name}`, passed: h.passed, evidence: h.passed ? 'ok' : h.evidence || 'not ok' });
+  const passed = tests.filter((h) => h.passed).length;
+  // A test file that crashes at load, or a hung one killed by the timeout, prints no per-test
+  // lines and so vanishes from the count; the runner's exit status still says it failed.
+  exp.push({
+    text: `Hidden acceptance suite: ${passed}/${tests.length} tests pass`,
+    passed: tests.length > 0 && passed === tests.length && r.status === 0,
+    evidence: `exit ${r.status}${r.error ? ` (${r.error.code})` : ''}; ${files.length} test files`,
+  });
+}
+
 function grade({ task, fixture, metrics, timing, maxTurns }) {
   const exp = [];
   const r = metrics.result || {};
@@ -337,12 +449,15 @@ function grade({ task, fixture, metrics, timing, maxTurns }) {
   else if (spec.kind === 'new-tests') gradeNewTests(exp, spec, fixture);
   else if (spec.kind === 'test-triage') gradeTriage(exp, spec, fixture, r.result_text || '');
   else if (spec.kind === 'decision-digest') gradeDigest(exp, fixture, r.result_text || '');
+  else if (spec.kind === 'hidden-tests') gradeHiddenTests(exp, spec, fixture, metrics);
   else throw new Error(`unknown grade kind ${spec.kind}`);
 
   const passed = exp.filter((e) => e.passed).length;
   const workerSpawns = Object.entries(metrics.workers || {}).map(([k, v]) => `${k} x${v.spawns} (${v.model})`);
   const leadOut = metrics.lead.output || 0;
   const totalOut = metrics.totals.output || 0;
+  const workflows = metrics.workflows || [];
+  const agents = workflows.flatMap((w) => w.agents || []).map((a) => `${a.label}/${a.model}:${a.output == null ? '?' : a.output}`);
 
   return {
     expectations: exp,
@@ -362,6 +477,7 @@ function grade({ task, fixture, metrics, timing, maxTurns }) {
       `lead final context ${metrics.lead.finalContext} tokens over ${metrics.lead.messages} messages`,
       `verification re-runs of the test command by the lead after a spawn: ${metrics.lead.verificationRuns}`,
       `hook payloads by event:tool:agent: ${JSON.stringify(metrics.hooks.probe || {})}`,
+      `workflows launched: ${workflows.length}; agents: ${agents.length ? agents.join(' ') : 'none'}`,
     ],
   };
 }
