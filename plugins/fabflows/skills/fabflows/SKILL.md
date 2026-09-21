@@ -119,8 +119,8 @@ not as a string.
 On `accepted`, run the gate yourself: `git status --porcelain` still prints nothing, re-run
 `testCommand`, read `git diff --stat <baseRef>..HEAD`, and check that one must-fix from an
 earlier round is really fixed. Every other outcome carries `reason` and a one-line `next`:
-act on those first, since they are in the result itself. `references/build-loop.md` has the
-detail per outcome when you can read it.
+act on those, since they are in the result itself. `references/build-loop.md` covers the one
+case they cannot, a workflow error in place of a result.
 
 ## Guard hook
 
