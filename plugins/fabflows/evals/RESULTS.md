@@ -21,14 +21,170 @@ pointless by the skill's own logic. Editor, refuter, investigator and researcher
 reached, so the pre-registered tier hypotheses (refuter on Sonnet, editor on Haiku) are still
 unmeasured and need direct-spawn probes.
 
-**Diminishing returns on iterations.** The build loop and its two-round rework cap were
-deferred with your approval and remain unmeasured; that is the one part of the original ask
-left untouched. Within the lead's own work, the measurable diminishing return is
-self-verification: the full skill made the lead re-confirm grep results it had just read,
-and stating that the gate is for worker reports removed it without any loss in quality.
+**Diminishing returns on iterations.** Iteration 5 finally ran the build loop, on a task that
+builds a whole component from a spec. Both fabflows leads launched it by the routing rule alone.
+It produced the same graded result as a bare session for +53% list cost and 2.1x the wall clock,
+while moving 43% of the output tokens off the lead's Fable and onto an Opus builder. Its own
+central claim is still unmeasured: every build passed its tests first time, so no rework round
+ever ran and the two-round cap was never approached. Within the lead's own work, the measurable
+diminishing return remains self-verification: the full skill made the lead re-confirm grep
+results it had just read, and stating that the gate is for worker reports removed it without any
+loss in quality.
+
+**What the build loop is worth is not on the graded axis.** Both bare runs shipped defects no
+grader here checks: one committed a source file containing a raw NUL byte, which git then treats
+as binary; the other made two of five commits that fail their own tests in isolation and then
+reported "Each of the five Conventional Commits was checked green". Neither fabflows run did
+either. Two runs each, so this is a hypothesis with evidence, not a measured rate.
 
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
+
+## Iteration 5 (2026-09-21): a complex build, and the build loop at last
+
+**Bottom line.** On the task fabflows was designed for, a whole component built from a spec, the
+skill did what it says: both leads routed the work to `fabflows:build` without being asked, an
+Opus builder wrote and committed the code, and the lead kept the judging. The graded outcome was
+a tie, 41 of 41 hidden tests in all four runs. The loop cost +53% list and 2.1x the wall clock,
+and moved 43% of output tokens off Fable. Its own core mechanism, a reviewer catching what a
+builder missed and rework inside a capped loop, never fired: nothing needed rework. What the runs
+did expose is five concrete defects in the plugin, listed below, three of which cost a turn or a
+review in these very runs.
+
+### Setup (confirmed)
+
+Task 7 `build-component`: a greenfield fixture holding only `SPEC.md` (a semver range grammar, a
+flat backtracking resolver with named conflict reporting, and a two-subcommand CLI), a
+`package.json` and a README. Prompt: build it, write tests, `npm test` must pass, commit, leave
+the tree clean. Graded by 41 hidden acceptance tests run against the fixture afterwards, plus a
+clean tree, a commit, no added dependency and no unfinished workflow. Lead Fable at medium
+effort, caps 200 turns, $60 and 120 minutes. `with_skill` loaded the narrowed trim (the DEC-0015
+candidate) from a staged plugin copy. Two runs per arm, the pair in each arm concurrent.
+
+### Observed
+
+| run | hidden | checks | turns | wall s | lead out | worker out | lead ctx | Fable out | Opus out | list $ | denials | loop |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| with_skill r1 | 41/41 | 49/50 | 18 | 696 | 5,562 | 51,153 | 62,919 | 19,612 | 37,103 | 4.12 | 3 | build:1, review:1 ACCEPT |
+| with_skill r2 | 41/41 | 49/50 | 25 | 719 | 13,122 | 45,329 | 72,538 | 13,122 | 45,329 | 3.89 | 7 | build:1, then escalated |
+| without_skill r1 | 41/41 | 49/50 | 19 | 318 | 28,848 | 0 | 72,620 | 28,848 | 0 | 2.54 | 1 | none |
+| without_skill r2 | 41/41 | 50/50 | 19 | 342 | 28,510 | 0 | 72,675 | 28,510 | 0 | 2.70 | 0 | none |
+
+Means: list $4.01 against $2.62 (+53%); Fable output 16,367 against 28,679 (-43%); Fable cache
+writes 65,539 against 49,797 (+32%); wall 707 s against 330 s (2.1x). The lead wrote 10% of all
+output tokens in the first fabflows run and 22% in the second, against 100% in both bare runs.
+In the first fabflows run the lead was active for 108 s of 696 s while the Opus builder (402 s)
+and the Fable reviewer (188 s) ran one after the other.
+
+The only failed expectation anywhere is the environment check "No tool call was denied". All
+eleven denials across the four runs are don't-ask-mode refusals, none from the fabflows guard,
+and the fabflows arm is more exposed simply because it runs three shell-issuing agents instead of
+one. Read it as an environment note, not as quality.
+
+### What the loop did, round by round (confirmed)
+
+Run 1 is the clean path: the lead checked the tree and branch, launched the loop, the Opus
+builder implemented and committed (37,103 output tokens, 402 s, 22 tool calls), a fresh Fable
+reviewer re-ran the tests and read every changed file, returned ACCEPT with zero must-fix items
+and five advisory notes, and the lead then ran the gate itself. Run 2 diverged: the builder
+finished and committed, but the workflow escalated as `blocked`, so no reviewer ever ran. The
+lead recovered by hand, spawning `fabflows:refuter` through the Agent tool and writing its own
+probe scripts, which is what the skill's reference file prescribes, except that the lead could
+not read that file.
+
+### Five defects the runs exposed in the plugin (confirmed)
+
+1. **The skill-to-workflow bridge hands `args` across as a string.** In both runs the lead's
+   first launch died in about 100 ms with `not-started / missing-args`, because the `fabflows:build`
+   Skill takes a string and its expansion shows `Workflow({name: "fabflows:build", args: "spec: ..."})`,
+   while `build.js` spreads `args` as an object. Each lead then read the workflow script to work out
+   the shape and relaunched. Cost: one wasted turn and roughly 20 to 25 s per run, in every
+   skill-driven session. The fix is one sentence in `whenToUse` and the skill's build-loop section
+   ("args is an object"), or a string parser in `build.js`.
+2. **The same recovered denial produced opposite outcomes.** Both builders hit the identical
+   denied `cd <repo> && npm test | tail`, retried without the `cd`, passed, and returned
+   `status: done` with an empty `blocker`. Run 1's report opened "One permission denial occurred
+   mid-work and was worked around per CLAUDE.md, not a blocker" and went to review; run 2's opened
+   "Permission denied (transient, resolved)" and was escalated as blocked, losing the review
+   entirely. The difference is the first word of a prose report, matched by `saysDenied`. The
+   code's own comment says the blocker field is the real signal; the regex overrides it.
+3. **The lead cannot read `references/build-loop.md`.** On escalation the skill tells the lead to
+   read that file first. The run-2 lead tried twice, by `cat` and by Read, and was refused both
+   times: the plugin directory is outside the session's working directory, and this user's global
+   settings block reads outside it. A real install lives in the plugin cache, also outside any
+   project, so this is not a benchmark artifact. This bears directly on DEC-0015, which proposes
+   moving exactly that content into that file.
+4. **The reviewer's model depends on how it is launched.** `refuter.md` pins `model: opus`, but
+   `build.js` defaults `reviewerModel` to `fable`. So the in-loop reviewer ran on Fable (14,050
+   output tokens charged to the capped model) while run 2's hand-spawned refuter ran on Opus.
+   For a Fable-capped user that default works against the plugin's own tiering.
+5. **`refuter.md` contradicts itself on denials.** One line says BLOCKED is for when the diff or
+   the test command could not run; the next says a denied command also makes it BLOCKED and
+   "never ACCEPT a change you could not test". Both reviewers were denied a command and returned
+   ACCEPT, each noting the denial. One of the two rules has to go.
+
+One open question closed in the plugin's favour: **the guard hook does fire inside Workflow-tool
+agents.** The probe file records a `PreToolUse` payload for every builder and in-loop reviewer
+tool call, tagged with `fabflows:editor` and `fabflows:refuter`, plus a `SubagentStop` each, and
+no guard denials. `build.js` calls that "unverified" in a comment and the README listed it as a
+gap; both can now say measured.
+
+### What the grader does not see (confirmed, and the most interesting result)
+
+Quality is a tie on the hidden suite, but the two arms did not ship equally sound work:
+
+- `without_skill` run 1 committed `src/resolve.js` containing a raw NUL byte, written as a
+  literal separator inside a string instead of the escape `\0`. The code runs and the tests pass;
+  git records the file as binary, so it has no diff, no blame and no review.
+- `without_skill` run 2 made five Conventional Commits, and its first two fail their own tests
+  when checked out in isolation (1 test 0 pass, and 2 tests 0 pass). Its final report states
+  "Each of the five Conventional Commits was checked green with its own test file before the next
+  commit". That is the exact failure the fabflows verification gate exists to catch, and it
+  appeared in the arm without the gate.
+- Neither fabflows run produced a binary source file, and both committed once, atomically.
+
+Whether the loop would have caught these is not shown: no reviewer looked at the bare runs. What
+is shown is that a hidden test suite is not a sufficient quality axis for this comparison, and
+that a graded tie can hide the difference the skill claims to make.
+
+### What it means (inferred)
+
+1. **The routing rule reached the build loop unprompted, twice.** That is the first measured
+   evidence that the skill's own prose sends spec-sized work to the loop, not just volume reads to
+   the explorer.
+2. **On a subscription the split matters more than the total.** The loop doubles total output
+   tokens but cuts the lead's Fable output by 43%. If Opus and Fable weigh differently against the
+   weekly cap, that is a saving; if they weigh the same, it is a 2x spend for the same graded
+   result. The weighting is unpublished, so this stays directional.
+3. **Every escalation lands worker-level work back on the lead.** Run 2's lead spent 10,317 Fable
+   output tokens in one turn doing the review itself. Escalation paths are where the tiering
+   inverts, so the cheapest fix for cost is to make escalations rarer, starting with defect 2.
+4. **The loop's value case is unproven and needs a harder task.** Nothing needed rework, so the
+   cap, the must-fix fence and the fresh-reviewer round are still untested. A task with a spec
+   subtlety that a first pass reliably misses would measure it.
+
+### Limitations
+
+- Two runs per cell. Direction, not significance, and one escalation is one run.
+- The bare arm's run 2 spent about five turns writing `CONVENTIONS.md`, `DECISIONS.md` and
+  `RUNLOG.md` because the user's global `CLAUDE.md` asks for them. Both arms load that file, only
+  that run acted on it, and the work is ungraded, so it inflates that run's cost.
+- Cache-read totals track message count more than anything else (382k against 1,083k between the
+  two bare runs for near-identical output), so compare arms on output and cache writes first.
+- The run-2 refuter was spawned through the Agent tool, whose per-agent output the stream does not
+  carry, so its 15,964 output tokens are a per-model residual, not an exact figure.
+- Wall-clock seconds are machine-specific and each pair ran concurrently.
+- Two stale hook payloads from an abandoned launch were counted in each fabflows run's probe
+  summary; the runner now truncates that file before a run.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 5 --tasks 7 --repeats 2 --parallel 2 --plugin-dir plugins/fabflows/evals/runs/snapshots/h1b-narrowed --confirm
+```
+
+Launch it detached rather than through a tool with a timeout: a build-loop run takes 12 minutes
+and killing the harness mid-run leaves paid sessions running.
 
 ## Iteration 4 (2026-09-20): the narrowed trim
 

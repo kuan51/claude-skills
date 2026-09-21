@@ -476,3 +476,43 @@ redirect and a quoted `cd` into the fixture's real path all allowed and only the
 denied, so the fixture's environment note now names that and says to retry without the `cd`
 instead of editing settings. Harness, fixture preparation, hidden-suite grading and the
 per-run outputs all worked end to end.
+
+**CONFIRMED** (iteration 5, task 7) — The first launch of `node plugins/fabflows/evals/harness/run.js
+--iteration 5 --tasks 7 --repeats 2 --parallel 2 --plugin-dir
+plugins/fabflows/evals/runs/snapshots/h1b-narrowed --confirm` went through the Bash tool, whose
+ten-minute ceiling would have outlived neither run, so it was stopped after about a minute
+(harness, both sessions) and relaunched detached with `Start-Process`, logging to
+`runs/iteration-5/launch.log`; four runs, 02:16 to 02:34 UTC. Every run passed all 41 hidden
+tests; the only failed expectation anywhere was the no-denial environment check (with_skill 3
+and 7 denials, without_skill 1 and 0). List cost with_skill $4.12 and $3.89 against without
+$2.54 and $2.70; wall clock 696 s and 719 s against 318 s and 342 s; lead output 5,562 and
+13,122 tokens against 28,848 and 28,510. Both with_skill leads launched `fabflows:build` by the
+standing rule, and both first passed its args as a text block and got `not-started` before
+relaunching with an object. Run 1: one Opus build round (37,103 output tokens, 402 s), one Fable
+review round (14,050 output, 188 s), ACCEPT. Run 2: one Opus build round (29,365 output, 303 s),
+then the workflow escalated `blocked` because the builder's report opened with the permission
+denial it had recovered from, so no reviewer ran; the lead tried to read the skill's
+`references/build-loop.md` (denied twice: the plugin directory is outside the fixture and the
+user's `blockReadsOutsideWorkingDirectories` setting is on), spawned `fabflows:refuter` through
+the Agent tool on Opus, wrote its own probe scripts and finished. Denied commands were `cd
+"<fixture>" && npm test | tail`, `npm test | tail; echo ${PIPESTATUS[0]}`, multi-line `node -e`
+scripts, and one compound `ls && cat; git log | head`.
+
+**CONFIRMED** (iteration 5 analysis and reporting) — The four transcripts were analysed by a
+Workflow orchestration (one analyst per run reading the full stream and the workflow agents' own
+transcript files, one synthesiser, then two refuters per finding); the analysts and synthesiser
+finished, all 46 refuters died on the session limit, so the 23 findings were verified by hand
+instead. Verified directly: `git show --stat` in the bare arm's first fixture prints
+`src/resolve.js | Bin 0 -> 5408 bytes`, and the file holds one NUL byte at offset 2621, written
+as a literal separator inside a string; checking out each of the bare arm's second run's five
+commits with `git archive` and running the suite gives 1 test 0 pass and 2 tests 0 pass for the
+first two, against its report's claim "Each of the five Conventional Commits was checked green";
+`refuter.md` line 5 pins `model: opus` while `build.js` line 40 defaults `reviewerModel` to
+`fable`; `refuter.md` lines 19 and 21 give two different rules for BLOCKED; the two builder
+reports differ only in their first word and `saysDenied` escalated one and not the other; both
+fabflows runs' probe files carry two payloads from the abandoned first launch. Harness fixes
+from the analysis: the probe file is truncated before each run, `summarize.js` reads the wall
+clock from `timing.json`, and a model's residual output is split when some of its workers are
+exact. `node --test "plugins/fabflows/test/*.test.js"` 44 pass. Reporting:
+`summarize.js`, `aggregate_benchmark`, `annotate_benchmark.py` and `generate_review.py` over
+`runs/iteration-5`; results written up in `evals/RESULTS.md`.
