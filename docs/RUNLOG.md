@@ -558,3 +558,35 @@ moved +0.11 with fabflows against +0.10 bare (ratio 1.10), which tracks the Fabl
 (1.08) and not total tokens (2.13) or list dollars (1.53). The subscription meter charges for the
 lead's model and barely notices 1.7M Opus tokens, so the +53% list headline is not what this
 account pays. `node --test "test/*.test.js"` 4 pass.
+
+## 2026-09-21 — fabflows 0.3.7: harden the build loop on the benchmark's evidence
+
+**PLANNED** — Implement DEC-0016 and DEC-0015 together on
+`claude/fabflows-token-optimization-b4d2c5`. Six behaviour and prose changes: the escalation
+condition stops reading the builder's prose and `saysDenied` only classifies the reason; the
+builder brief distinguishes a denial that stopped the builder from one it worked around;
+`reviewerModel` defaults to `opus`; a string `args` payload is parsed and fails safe to
+`missing-args`; `escalate()` carries a one-line `next` per reason; the skill body is replaced with
+the narrowed variant plus `references/build-loop.md`. Then the refuter's contradictory BLOCKED
+rules, the editor's line-range demand, two comments the benchmark disproved, and the version.
+Verify with `node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`
+after every commit.
+
+**CONFIRMED** — Seven commits, each green on both suites. Plugin suite 40 to 47 tests, root suite
+4. New coverage: the string-args parser in four readable shapes and seven unreadable ones, a `next`
+field on all eight escalation reasons with distinct text per reason, the five denial openings that
+cost benchmark run 2 its review now asserted to reach review, and the reviewer override re-pointed
+at a third model so it still proves the override once Opus is the default. Checked rather than
+assumed: benchmark task 4 asks a session to bump 0.3.6 to 0.3.7, and a design review flagged that
+shipping 0.3.7 would make it unpassable. It does not, because that task's fixture is pinned at
+`3fbe15b`, where both manifests still read 0.3.6; `git show 3fbe15b:plugins/fabflows/.claude-plugin/plugin.json`
+confirms it. No edit was needed. Pull request
+https://github.com/kuan51/claude-skills/pull/45 opened before the records were accepted, so both
+could carry its link.
+
+**CONFIRMED** (decision records) — DEC-0015 and DEC-0016 moved from `proposed` to `accepted`, which
+`plugins/docs-warden/skills/docs-warden/references/adr-format.md` defines as the sanctioned
+transition; immutability starts at that commit, so it was made last and carries everything those
+records will ever say. DEC-0016 argued for a minor bump to 0.4.0 and 0.3.7 shipped: the record now
+states that, the reason, and leaves the original reasoning visible beneath it. `adr_index.py`
+regenerated `docs/DECISIONS.md`, which shows the two as the only accepted records of sixteen.

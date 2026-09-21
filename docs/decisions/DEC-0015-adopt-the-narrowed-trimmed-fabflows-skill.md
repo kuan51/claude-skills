@@ -1,7 +1,7 @@
 ---
 id: DEC-0015
 title: Adopt the narrowed trimmed fabflows skill
-status: proposed
+status: accepted
 date: 2026-09-19
 deciders: [kuan51]
 supersedes: []
@@ -101,7 +101,7 @@ minor is defensible; the choice is theirs.
 ## Links
 
 - Ticket: none
-- Pull request: pending
+- Pull request: https://github.com/kuan51/claude-skills/pull/45
 - Related: DEC-0012 (this sharpens its delegate-on-volume rule), DEC-0013, DEC-0004, DEC-0014;
   `plugins/fabflows/evals/RESULTS.md` iterations 3 and 4;
   `plugins/fabflows/evals/snapshots/h1b-narrowed.patch`

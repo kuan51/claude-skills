@@ -1,7 +1,7 @@
 ---
 id: DEC-0016
 title: 'Harden the fabflows build loop: denial classification, reviewer model, and escalation guidance'
-status: proposed
+status: accepted
 date: 2026-09-21
 deciders: [kuan51]
 supersedes: []
@@ -129,7 +129,12 @@ review, run 1 disobeyed and got one. The loop's success in this iteration depend
 ignoring an instruction.
 
 This is a plugin behaviour change: `plugin.json` and `marketplace.json` bump together, and the
-frontmatter test's model pins are unaffected. A minor bump (0.3.6 to 0.4.0) fits, because the
+frontmatter test's model pins are unaffected. **Shipped as 0.3.7, a patch, not the minor bump this
+record argued for.** The deciders judged that no install breaks, nothing a consumer relies on is
+removed, and the one experienced change, the reviewer's tier, is restored by passing
+`reviewerModel: 'fable'`. DEC-0015 landed in the same release and asks for the same patch number.
+The original reasoning is left below as written, since an accepted record is not edited: a minor
+bump (0.3.6 to 0.4.0) fits, because the
 reviewer's model changes and, if C3 lands, the escalation contract consumers read gains a field.
 
 ## Consequences
@@ -204,7 +209,7 @@ reviewer's model changes and, if C3 lands, the escalation contract consumers rea
 ## Links
 
 - Ticket: none
-- Pull request: pending
+- Pull request: https://github.com/kuan51/claude-skills/pull/45
 - Related: DEC-0004 (the loop's original tiers and its accepted eval gap), DEC-0015 (its
   reference-file element is what option C revisits; read them together), DEC-0012, DEC-0014;
   `plugins/fabflows/evals/RESULTS.md` iteration 5
