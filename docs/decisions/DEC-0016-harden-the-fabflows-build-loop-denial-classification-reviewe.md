@@ -24,10 +24,13 @@ direction, not significance, but the two runs diverged in a way that is not abou
 - **Run 1** took the clean path. The builder implemented and committed; a fresh reviewer re-ran
   the tests, read every changed file and returned ACCEPT with zero must-fix items; the lead ran
   the gate itself.
-- **Run 2** lost its review entirely. The builder did the same work, hit the same denied shell
+- **Run 2** lost the loop's review. The builder did the same work, hit the same denied shell
   command, recovered the same way, and returned `status: done` with an empty `blocker`. The
   workflow escalated it as `blocked` because the first line of its prose report began with the
-  word "Permission" rather than, as in run 1, the word "One".
+  word "Permission" rather than, as in run 1, the word "One". The lead then re-created the review
+  by hand, spawning `fabflows:refuter` through the Agent tool, which ran on Opus and also returned
+  ACCEPT with no must-fix items. So the review still happened, but as unbudgeted lead-driven work
+  rather than as the loop's own step.
 
 Three decisions follow from what the runs showed. Two further defects are plain bugs with no
 options worth recording (the skill hands `args` to the workflow as a string, which `build.js`
@@ -40,19 +43,25 @@ listed under consequences so the fix ships with this record.
 - **A prose regex decides whether a review happens.** `saysDenied` reads the first line of a free
   text report; `build.js`'s own comment concedes "the builder quoting it in blocker is the real
   signal". In run 2 the structured fields said done with no blocker and the prose overrode them.
-- **The loop's value is the review.** Losing it is not a degraded run, it is the bare arm with an
-  Opus builder attached. Run 2 cost $3.89 and got no independent check from the loop.
-- **Escalation lands worker-level work back on the expensive lead.** Run 2's lead spent 10,317
-  Fable output tokens in one turn doing the review itself, which inverts the tiering the skill
-  exists for.
+- **The loop's value is the review, and losing it re-prices rather than removes it.** Run 2 cost
+  $3.89, and the only independent check it got was one its lead had to brief, spawn and pay for
+  itself, on its own turn.
+- **Escalation moves orchestration back onto the lead.** Run 2's lead spent 10,317 Fable output
+  tokens across the twelve turns of its final segment writing a refuter brief, two probe scripts
+  and its report. It did not do the review itself, and the escalation did not invert the tiering:
+  run 2 cost less than run 1 and used fewer Fable tokens, because skipping the in-loop reviewer
+  skipped the one step that defaults to Fable. That is an argument for the next driver, not
+  against it.
 - **The reviewer's model depends on how it is launched.** `refuter.md` pins `model: opus`;
   `build.js` defaults `reviewerModel` to `fable`. The in-loop reviewer therefore spent 14,050
-  output tokens on the model the user's weekly cap actually binds.
-- **A reference file may be unreadable.** The escalation path tells the lead to read
-  `references/build-loop.md` first. Run 2's lead tried twice and was refused twice: the plugin
-  directory is outside the session's working directory, and this user's global settings block
-  reads outside it. An installed plugin lives in the cache, outside any project, so this is not a
-  benchmark artifact.
+  output and 48,100 cache-write tokens on the model the user's weekly cap actually binds: $1.33 of
+  run 1's $4.12, and the whole of the arm's cache-write regression.
+- **A reference file may be unreadable, in one specific setup.** The escalation path tells the
+  lead to read `references/build-loop.md` first. Run 2's lead tried twice and was refused twice,
+  because the benchmark stages the plugin inside the repository and this user's global settings
+  block reads outside the working directory. `~/.claude/plugins/**` is exempt from that setting,
+  so a cache install would have been readable; the exposure is to plugins loaded from a
+  development path with `--plugin-dir`, which is how anyone testing a branch runs it.
 - **Measured, not argued.** Every claim above is from the transcripts and the workflow agents'
   own files, listed in `evals/RESULTS.md` iteration 5.
 
@@ -109,19 +118,29 @@ escalation contract consumers read gains a field and the reviewer's model change
 **Good:**
 
 - A builder that recovers from a denial keeps its review, which is what the loop is for.
-- The in-loop reviewer stops spending the capped model.
+- The in-loop reviewer stops spending the capped model, and for review work it is cheaper at list
+  price too. Run 1's reviewer usage costs $1.33 on Fable against $0.70 on Opus. The two models'
+  rates are inverted rather than one being uniformly cheaper: Opus is half Fable on input, output
+  and cache write, and Fable is half Opus on cache read ($0.25/M against $0.50/M). Review is
+  output-heavy, so Opus wins; the crossover for this reviewer's mix would need about 2.6 million
+  cache-read tokens, 27 times what it used. B2 therefore saves on both the subscription axis and
+  the list-price axis, but the reason is the token mix, not a blanket price advantage.
 - The lead can act on an escalation without reading a file it may not be allowed to open.
-- Shipped with the same change, the two plain bugs: `whenToUse` and the skill's build-loop section
-  say `args` is an object (or `build.js` parses a string), and `refuter.md`'s two BLOCKED rules
-  are reconciled to one.
+- Shipped with the same change, the two plain bugs: `build.js` parses a string `args` (a sentence
+  in the skill's build-loop section helps, but one in `whenToUse` is reprinted inside the same
+  Skill expansion that generates the bad call, so it is not sufficient on its own), and
+  `refuter.md`'s two BLOCKED rules are reconciled to the narrow one, BLOCKED only when the diff or
+  the test command could not be run. Keeping the broad rule instead would have turned run 1's
+  ACCEPT into a `reviewer-blocked` escalation and left the iteration with no successful loop run.
 
 **Bad:**
 
 - A builder that hides a denial in prose and leaves `blocker` empty now reaches review. The
   reviewer re-runs the tests itself, so the failure mode is a wasted review round, not a false
   accept.
-- Opus review costs more per round at list price than Fable review; the point is which budget it
-  comes from, and for a list-price payer this is a rise.
+- A2 makes escalations rarer, and run 2 shows an escalation can be cheaper than the clean path
+  when it skips a Fable reviewer. Applied without B2, A2 would therefore raise the mean cost.
+  They belong together.
 - `escalate()` gains a field, so anything reading its result shape has to tolerate it.
 
 ## Gaps accepted
@@ -131,10 +150,18 @@ escalation contract consumers read gains a field and the reviewer's model change
   fence around the must-fix list and the cap are all still arithmetic. Measuring them needs a task
   whose spec a first pass reliably misses.
 - **One run per behaviour.** The escalation was observed once, the clean path once.
-- **Whether the loop prevents the bare arm's defects is unmeasured.** Both bare runs shipped
-  commit-hygiene faults (a NUL byte in a committed source file; two of five commits failing in
-  isolation, reported as green) that neither fabflows run did. No reviewer ever looked at a bare
-  run, so the loop's role in that difference is a hypothesis.
+- **Whether the loop prevents the bare arm's defects is unmeasured, and the comparison is
+  confounded.** Both bare runs shipped commit-hygiene faults (a NUL byte in a committed source
+  file; two of five commits failing in isolation) that neither fabflows run did. But three of the
+  four runs made exactly one feature commit, including a bare one, so only one run could
+  structurally show the isolation fault; the builder brief steers towards that single commit; and
+  nothing in the loop checks a commit in isolation, since both the gate and the refuter run
+  against the final tree. No reviewer ever looked at a bare run. Treat this as a hypothesis about
+  what a review culture might catch, not as a measured property of the loop.
+- **The efficiency case rests on an unpublished fact.** Whether the weekly cap counts weighted
+  dollars or raw tokens decides whether the loop as shipped helps this user at all: Fable output
+  falls 43% but Fable total tokens rise 8%, which is inside the bare arm's own 2.52x run-to-run
+  noise. B2 removes that dependency, which is the strongest argument for adopting it first.
 - **The guard hook question is now closed the other way:** payloads confirm it fires inside
   Workflow-tool agents, so `build.js`'s default-branch check is a second line of defence rather
   than the only one. No decision needed, but the comment and the README should stop calling it

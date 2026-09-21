@@ -516,3 +516,25 @@ clock from `timing.json`, and a model's residual output is split when some of it
 exact. `node --test "plugins/fabflows/test/*.test.js"` 44 pass. Reporting:
 `summarize.js`, `aggregate_benchmark`, `annotate_benchmark.py` and `generate_review.py` over
 `runs/iteration-5`; results written up in `evals/RESULTS.md`.
+
+**CONFIRMED** (iteration 5, refutation and token ledger) — Two read-only Workflow passes, no new
+sessions. Refutation attacked every claim written into `evals/RESULTS.md` iteration 5 and
+DEC-0016: 63 verdicts, 30 upheld, 22 overstated, 11 refuted. The corrections that changed the
+reading: only ten of the eleven denials are don't-ask-mode (the eleventh is the blocked plugin
+read, which the same document already described as defect 3); `~/.claude/plugins/**` is exempt
+from `blockReadsOutsideWorkingDirectories`, so the unreadable reference file is an artifact of
+`--plugin-dir` staging rather than a property of an install, and the shipped 0.3.6 has no
+`references/` directory at all; run 2 did not lose its review, it re-created it by hand on Opus,
+and cost less than run 1 with fewer Fable tokens because the escalation skipped the Fable
+reviewer, so escalation did not invert the tiering; the bare arm's commit-hygiene comparison is
+confounded, since three of four runs made one feature commit (including a bare one), the builder
+brief steers towards one commit, and nothing in the loop checks a commit in isolation; the bare
+lead's "checked green" claim is literally true and merely vacuous, not false; the NUL byte costs
+the textual diff and `git grep`, not blame or patch transport; and the "43% off the lead's Fable"
+figure is total Fable output, the lead's own output having fallen 67%. The token ledger assigned
+every token in the four runs to a phase. Rates solved from the runs' own reported costs, verified
+here to reproduce all six per-model figures exactly: Fable $10/M input, $50/M output, $0.25/M
+cache read, $12.50/M 5-minute cache write, $20/M 1-hour; Opus $5/$25/$0.50/$6.25. The two are
+inverted, Opus half on everything produced and Fable half on cache reads, so the in-loop
+reviewer's $1.33 on Fable is $0.70 on Opus and the crossover needs 2.6M cache-read tokens, 26.7x
+what that reviewer used. RESULTS.md and DEC-0016 corrected accordingly.
