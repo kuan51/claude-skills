@@ -87,6 +87,20 @@
         "kind": "test-triage",
         "testCommand": "node --test \"plugins/*/test/*.test.js\" \"test/*.test.js\""
       }
+    },
+    {
+      "id": 7,
+      "name": "build-component",
+      "routing": "fabflows:build (a spec'd, sizeable change)",
+      "fixture": { "kind": "dir", "from": "fixtures/dep-resolver/visible" },
+      "caps": { "maxTurns": 200, "maxBudgetUsd": 60, "runTimeoutMinutes": 120 },
+      "prompt": "Build the library and CLI specified in SPEC.md in this repository. Write its tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
+      "grade": {
+        "kind": "hidden-tests",
+        "testCommand": "npm test",
+        "hidden": "fixtures/dep-resolver/hidden",
+        "rootEnv": "LOCKSTEP_ROOT"
+      }
     }
   ]
 }

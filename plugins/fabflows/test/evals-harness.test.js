@@ -7,23 +7,69 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const { parseTranscript, computeMetrics, summarizeProbe } = require('../evals/harness/metrics.js');
 
 const EVALS = path.join(__dirname, '..', 'evals');
 const FIXTURE = path.join(__dirname, 'fixtures', 'transcript-sample.jsonl');
+const DEP_RESOLVER = path.join(EVALS, 'fixtures', 'dep-resolver');
 
 test('tasks.json is well formed: unique ids, both arms, a prompt and a grade kind per task', () => {
   const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
   assert.deepEqual(Object.keys(cfg.arms).sort(), ['with_skill', 'without_skill']);
   assert.ok(cfg.arms.with_skill.pluginDir, 'with_skill must name the plugin directory to load');
   assert.ok(cfg.caps.maxTurns > 0 && cfg.caps.maxBudgetUsd > 0, 'caps must be set: an uncapped run is an open wallet');
+  // The default fixture is a pinned commit so no session ever sees the benchmark's own tasks,
+  // graders or results inside its working tree.
+  assert.equal(cfg.fixture.kind, 'repo', 'the default fixture must be a clone of this repo');
+  assert.equal(typeof cfg.fixture.ref, 'string', 'the default fixture must pin a ref');
   const ids = cfg.tasks.map((t) => t.id);
   assert.equal(new Set(ids).size, ids.length, 'task ids must be unique');
   for (const t of cfg.tasks) {
     assert.ok(t.name && t.prompt && t.routing, `task ${t.id} needs name, prompt and routing`);
-    assert.ok(['agent-inventory', 'edit', 'new-tests', 'test-triage', 'decision-digest'].includes(t.grade.kind), `task ${t.id} has unknown grade kind ${t.grade.kind}`);
-    if (['edit', 'new-tests', 'test-triage'].includes(t.grade.kind)) assert.ok(t.grade.testCommand, `task ${t.id} must name the test command that proves it`);
+    assert.ok(['agent-inventory', 'edit', 'new-tests', 'test-triage', 'decision-digest', 'hidden-tests'].includes(t.grade.kind), `task ${t.id} has unknown grade kind ${t.grade.kind}`);
+    if (['edit', 'new-tests', 'test-triage', 'hidden-tests'].includes(t.grade.kind)) assert.ok(t.grade.testCommand, `task ${t.id} must name the test command that proves it`);
+    if (t.grade.kind === 'hidden-tests') assert.ok(t.grade.hidden && t.grade.rootEnv, `task ${t.id} must name the hidden suite and the env var that points it at the fixture`);
     for (const s of t.setup || []) assert.ok(s.file && s.find && typeof s.replace === 'string', `task ${t.id} setup entries need file, find and replace`);
+    if (t.fixture) {
+      assert.ok(['repo', 'dir'].includes(t.fixture.kind), `task ${t.id} has unknown fixture kind ${t.fixture.kind}`);
+      if (t.fixture.kind === 'repo') assert.equal(typeof t.fixture.ref, 'string', `task ${t.id} repo fixture must pin a ref`);
+      if (t.fixture.kind === 'dir') {
+        assert.equal(typeof t.fixture.from, 'string', `task ${t.id} dir fixture must say where it is copied from`);
+        assert.ok(fs.existsSync(path.join(EVALS, t.fixture.from, 'SPEC.md')), `task ${t.id} dir fixture must exist and carry a SPEC.md`);
+      }
+    }
+    for (const [k, v] of Object.entries(t.caps || {})) assert.ok(typeof v === 'number' && v > 0, `task ${t.id} cap ${k} must be a positive number`);
+  }
+});
+
+test('the hidden acceptance suite passes against the reference implementation', () => {
+  // If the ground truth stops being satisfiable, every build-component run would grade 0/N and
+  // look like the lead's failure rather than the benchmark's.
+  const hidden = path.join(DEP_RESOLVER, 'hidden');
+  const files = fs.readdirSync(hidden).filter((f) => f.endsWith('.test.js'));
+  assert.ok(files.length > 0, 'the hidden suite has no test files');
+  const r = spawnSync(process.execPath, ['--test', ...files], {
+    cwd: hidden,
+    env: { ...process.env, LOCKSTEP_ROOT: path.join(DEP_RESOLVER, 'reference') },
+    timeout: 120000,
+    encoding: 'utf8',
+  });
+  assert.equal(r.status, 0, `hidden suite failed against the reference:\n${(r.stdout || '').slice(-2000)}\n${(r.stderr || '').slice(-2000)}`);
+});
+
+test('the visible fixture carries no benchmark context', () => {
+  // The lead builds from SPEC.md alone; a stray mention of the plugin or its vocabulary would
+  // prime one arm and not the other.
+  const visible = path.join(DEP_RESOLVER, 'visible');
+  const banned = /fabflows|delegate|subagent|worker|workflow|benchmark|refuter/i;
+  const files = fs.readdirSync(visible, { recursive: true })
+    .map((f) => path.join(visible, f))
+    .filter((f) => fs.statSync(f).isFile());
+  assert.ok(files.length > 0, 'the visible fixture is empty');
+  for (const f of files) {
+    const hit = fs.readFileSync(f, 'utf8').match(banned);
+    assert.equal(hit, null, `${path.relative(visible, f)} mentions "${hit && hit[0]}"`);
   }
 });
 

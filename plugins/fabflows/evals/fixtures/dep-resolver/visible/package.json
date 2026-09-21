@@ -1,0 +1,17 @@
+{
+  "name": "lockstep",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A flat dependency resolver. See SPEC.md.",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "bin": {
+    "lockstep": "bin/lockstep.js"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
