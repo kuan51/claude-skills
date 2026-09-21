@@ -68,14 +68,14 @@ def test_audit_reports_a_failing_generator_instead_of_in_sync():
         (repo / ".docs-warden.yml").write_text(
             "archetype: it-tooling\n"
             "owner: t\nreview_cadence_days: 180\n"
-            'generated_docs:\n  - path: target.md\n    command: ["python3", "gen.py"]\n',
+            'generated_docs:\n  - path: target.md\n    command: ['
+            + json.dumps(sys.executable) + ', "gen.py"]\n',
             encoding="utf-8")
         out = repo / "s.json"
         subprocess.run(
             [sys.executable, str(SCRIPTS / "audit.py"), str(repo),
              "--run-generators", "--json-out", str(out)],
             capture_output=True, check=False)
-        import json
         card = json.loads(out.read_text(encoding="utf-8"))
         entry = [c for c in card["checks"] if c["id"] == "generated-docs"][0]
         assert entry["state"] != "pass", \
