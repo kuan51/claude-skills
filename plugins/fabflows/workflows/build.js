@@ -154,10 +154,10 @@ function reviewBrief(round) {
 const rounds = []
 let mustFix = null
 
-// The lead's next action per reason, carried in the result itself. references/build-loop.md says
-// the same, but a plugin loaded from a development path sits outside the session's working
-// directory, where a read of it can be refused; the result object is the one channel that cannot
-// be blocked.
+// The lead's next action per reason, carried in the result itself: a plugin loaded from a
+// development path sits outside the session's working directory, where a read of
+// references/build-loop.md can be refused, and the result is the one channel that cannot be
+// blocked. Every reason escalate() is called with has an entry here, so there is no fallback.
 const NEXT = {
   blocked: "Read the last round's build.blocker, or the start of its report when blocker is empty. A permission denial is the user's to resolve: never bypass it and never re-issue the denied call yourself.",
   unexplained: 'The builder named no reason. Read its report if it has one, then run `git status --porcelain` and `git log <baseRef>..HEAD` to see what it left, and take the work over.',
@@ -173,7 +173,7 @@ const NEXT = {
 // action the lead should take next.
 function escalate(reason) {
   const verdict = rounds.map((r) => r.review).filter(Boolean).pop() || null
-  return { status: 'escalate', reason, baseRef: a.baseRef, rounds, verdict, next: NEXT[reason] || 'Read reason and verdict, and take the work over. The builder\'s commits are already on the branch.' }
+  return { status: 'escalate', reason, baseRef: a.baseRef, rounds, verdict, next: NEXT[reason] }
 }
 
 for (let round = 1; round <= MAX_REWORK + 1; round++) {
