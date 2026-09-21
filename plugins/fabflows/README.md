@@ -57,11 +57,14 @@ list. The delegation tree therefore remains one level deep, and the cost remains
 
 `fabflows:build` takes one spec'd change through build and review: an Opus `editor`
 implements the spec on the checked-out feature branch and commits, a fresh `refuter`
-(Fable by default) reviews the diff and re-runs the tests, and after two rework rounds
-the loop hands back to the lead. It never merges, pushes, or reverts. The
-[skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
+(Opus by default, matching the pin in `agents/refuter.md`) reviews the diff and re-runs the
+tests, and after two rework rounds the loop hands back to the lead. It never merges, pushes,
+or reverts. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
 [DEC-0004](../../docs/decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md)
-records why.
+records the original design and
+[DEC-0016](../../docs/decisions/DEC-0016-harden-the-fabflows-build-loop-denial-classification-reviewe.md)
+records why the reviewer moved off the lead's tier. Pass `reviewerModel: 'fable'` to restore
+the old default.
 
 ## Long sessions
 
