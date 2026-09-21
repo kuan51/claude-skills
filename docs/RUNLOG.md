@@ -538,3 +538,23 @@ cache read, $12.50/M 5-minute cache write, $20/M 1-hour; Opus $5/$25/$0.50/$6.25
 inverted, Opus half on everything produced and Fable half on cache reads, so the in-loop
 reviewer's $1.33 on Fable is $0.70 on Opus and the crossover needs 2.6M cache-read tokens, 26.7x
 what that reviewer used. RESULTS.md and DEC-0016 corrected accordingly.
+
+**CONFIRMED** (iteration 5, lever refutation and confound hunt) — The two passes that died on the
+session limit, re-run batched (four agents instead of twenty-one), read-only. Ten efficiency
+levers attacked on arithmetic and on quality cost: two survive (default the in-loop reviewer to
+Opus, worth $1.33 and 159,865 Fable tokens per review round; tell the lead `args` is an object,
+worth $0.16 per session), three overstated, five refuted. The confound hunt found six problems
+that invalidate headline claims, all now in RESULTS.md: the bare arm ran with no plugin loaded at
+all, so nothing can be attributed to the loop alone; decomposed by actor, delegation is +11% and
+the review is the remaining +42 points of the +53%; the loop completed once, not twice, and that
+run reached review only because its builder ignored the report opening `build.js` itself mandates
+and then escalates on; the "+32% Fable cache writes" regression is inside the treatment arm's own
+run-to-run range; the graded axis is saturated at 41/41 so it has no power; and the staged plugin
+is the unadopted DEC-0015 trim, 141 lines against the shipped 227, whose `references/` directory
+does not exist in 0.3.6, so the unreadable-reference defect has never shipped. The largest finding
+was free and already on disk: every transcript carries the account's `rate_limit_event`
+utilisation. Verified here from the four transcripts: over each arm's pair the five-hour window
+moved +0.11 with fabflows against +0.10 bare (ratio 1.10), which tracks the Fable-token ratio
+(1.08) and not total tokens (2.13) or list dollars (1.53). The subscription meter charges for the
+lead's model and barely notices 1.7M Opus tokens, so the +53% list headline is not what this
+account pays. `node --test "test/*.test.js"` 4 pass.

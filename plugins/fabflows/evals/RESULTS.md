@@ -34,16 +34,17 @@ return remains self-verification: the full skill made the lead re-confirm grep r
 just read, and stating that the gate is for worker reports removed it without any loss in
 quality.
 
-**The efficiency answer, in one line.** The loop is worth its tokens when the work produces a lot
-of code and Fable headroom is the binding constraint, and only after the in-loop reviewer comes
-off Fable. As shipped it is marginal: Fable output falls 43% but Fable cache writes rise 32%,
-because the reviewer the loop spawns runs on the capped model. Defaulting that reviewer to Opus,
-which is what `refuter.md` already pins and what every other launch path uses, takes run 1's
-Fable spend from $2.50 to $1.17 and reverses the cache-write regression. It is cheaper at list
-price too, because the two models' rates are inverted: Opus is half Fable on input, output and
-cache write, and Fable is half Opus on cache read. Review work is output-heavy, so Opus wins it;
-a worker that reads enormously and writes little would go the other way. The ledger and the
-ranked levers are in the iteration-5 section.
+**The efficiency answer, in the currency you actually pay.** List dollars say the loop costs +53%.
+The subscription meter says something else, and the meter is what binds. Every transcript records
+the account's own rate-limit utilisation, and over each arm's pair of runs the five-hour window
+moved +0.11 for fabflows against +0.10 for a plain session, a ratio of 1.10. That tracks the
+ratio of Fable tokens (1.08) and nothing else: total tokens differ by 2.13x and list dollars by
+1.53x. So the meter charges for the lead's own model and barely notices an Opus worker. The loop
+doubles the tokens and costs half again as much at list price while moving the meter about as far
+as doing the work inline. Move the in-loop reviewer off Fable, the one change these runs support
+unambiguously, and it moves the meter slightly less than a plain session (a Fable-token ratio of
+0.98) for the same graded result. Two-decimal readings and one pair per arm, so this is direction,
+not a measurement, but it is direction in the right currency and it was free to collect.
 
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
@@ -74,6 +75,14 @@ clean tree, a commit, no added dependency and no unfinished workflow. Lead Fable
 effort, caps 200 turns, $60 and 120 minutes. `with_skill` loaded the narrowed trim (the DEC-0015
 candidate) from a staged plugin copy. Two runs per arm, the pair in each arm concurrent.
 
+Two things about this design limit what any number below can mean. The bare arm had **no plugin
+loaded at all**, so the treatment bundles the prompt prefix, a mandated skill invocation, two
+skill loads, the guard hook running on every tool call, and the build loop. Nothing here can
+attribute a cost to the loop alone; the missing arm is plugin loaded, skill invoked, loop not
+used. And all four runs passed 41 of 41 hidden tests, so the graded outcome has **no variance**
+and therefore no power to detect a quality difference in either direction. "Quality is a tie" is
+a ceiling effect, not a finding. The task was too easy to discriminate.
+
 ### Observed
 
 | run | hidden | checks | turns | wall s | lead out | worker out | lead ctx | Fable out | Opus out | list $ | denials | loop |
@@ -103,6 +112,15 @@ expectation is an environment note rather than a quality signal, but one of thes
 cost run 2 its in-loop review.
 
 ### What the loop did, round by round (confirmed)
+
+**The loop ran once, not twice, and it ran by accident.** `build.js` tells the builder that a
+permission denial is a blocker and to open its report with `Permission denied:`. `build.js` then
+escalates any report whose first line opens that way. Run 2's builder followed the instruction
+and was routed out of the loop before any review; run 1's builder ignored the mandated wording,
+opening with "One permission denial occurred...", and was rewarded with a review. Under a harness
+where a denial was near-certain, escalation is the design's modal behaviour and the completed loop
+is the outlier. Every figure below that describes a full build-and-review cycle rests on that one
+run.
 
 Run 1 is the clean path: the lead checked the tree and branch, launched the loop, the Opus
 builder implemented and committed (37,103 output tokens, 402 s, 22 tool calls), a fresh Fable
@@ -217,13 +235,51 @@ at a bare run.
 3. **Escalation moves work, and it did not invert the tiering here.** Run 2's lead spent 10,317
    Fable output tokens across the twelve turns of its final segment, but it did not do the review
    itself: it re-delegated to an Opus `fabflows:refuter` and spent its own tokens on the brief, two
-   probe scripts and the gate. Run 2 cost less than run 1 ($3.89 against $4.12) and used fewer
-   Fable tokens (13,122 against 19,612), precisely because the escalation skipped the in-loop
-   reviewer that defaults to Fable. That is one observation, not a rate, and it is an argument for
-   fixing the reviewer's model rather than for tolerating escalations.
+   probe scripts and the gate. Run 2 cost less than run 1 ($3.89 against $4.12) and emitted fewer
+   Fable *output* tokens (13,122 against 19,612), precisely because the escalation skipped the
+   in-loop reviewer that defaults to Fable. On total Fable tokens it used 15% more. That is one
+   observation, not a rate, and it is an argument for fixing the reviewer's model rather than for
+   tolerating escalations. It also means the denial fix and the reviewer-model fix have to ship
+   together: routing more runs into a Fable review, without moving that review to Opus, would
+   raise Fable spend rather than lower it.
 4. **The loop's value case is unproven and needs a harder task.** Nothing needed rework, so the
    cap, the must-fix fence and the fresh-reviewer round are still untested. A task with a spec
    subtlety that a first pass reliably misses would measure it.
+
+### What the subscription meter says (the number that actually binds)
+
+Every run's stream carries `rate_limit_event` records holding the account's live utilisation of
+its five-hour and seven-day windows. This was recorded in all four runs from the start and not
+read until a confound review pointed at it. The two runs in each arm ran concurrently, so the
+meter moves per pair, not per run.
+
+| window | fabflows pair | bare pair | ratio |
+| --- | --- | --- | --- |
+| five-hour | 0.11 to 0.22, **+0.11** | 0.22 to 0.32, **+0.10** | 1.10 |
+| seven-day | 0.49 to 0.50, **+0.01** | 0.50 to 0.52, **+0.02** | at the quantisation floor |
+
+The five-hour window has usable resolution here, eleven and ten steps of 0.01. Comparing its
+movement with each candidate measure of what the runs consumed:
+
+| measure | fabflows : bare | distance from the meter's 1.10 |
+| --- | --- | --- |
+| **Fable tokens** | **1.08** | **0.02** |
+| list dollars | 1.53 | 0.43 |
+| Fable output tokens | 0.57 | 0.53 |
+| all tokens, both models | 2.13 | 1.03 |
+
+The meter moved with the lead's own model and effectively ignored 1.7 million Opus tokens. That
+reframes the whole cost question. The +53% list figure and the doubled token count are real, and
+neither is what a subscription charges: on the meter the loop is roughly neutral. With the in-loop
+reviewer moved to Opus, the fabflows pair's Fable tokens fall to 1,594,734 against the bare pair's
+1,622,124, a ratio of 0.98, so the loop would draw slightly less than doing the work inline.
+
+Hold this loosely. The readings are two decimals, so the 1.10 ratio carries about ±10%; the
+Fable-token ratio of 1.08 sits inside that band and the total-token ratio of 2.13 sits far outside
+it, which is what makes the direction robust even though the exact weighting is not. There is one
+pair per arm, the pairs ran fifteen minutes apart, and the seven-day window moved too little to
+say anything at all. Future iterations should record the utilisation delta per run and run the
+arms interleaved so each run's own movement can be read.
 
 ### Where the tokens went (the efficiency ledger)
 
@@ -252,7 +308,13 @@ and run totals are exact. The lead writes cache at the 1-hour rate and every wor
 
 Four things the ledger says that the headline numbers do not.
 
-1. **The in-loop reviewer is the single largest Fable line item in a clean run.** Run 1's reviewer
+1. **Delegation is cheap; the review is the whole of the cost delta.** Decomposed by actor, the
+   lead plus the Opus builder come to $2.92 against the bare arm's $2.62, +11%. Adding the review
+   round takes it to $4.01, +53%. So 78% of the extra list cost is the review, and spawning an
+   Opus agent to write code needs no plugin at all: the Agent tool does that. Whatever the loop is
+   worth, it is the review that has to be worth it, and in the one run where a review ran it
+   returned ACCEPT with zero must-fix items.
+2. **The in-loop reviewer is the single largest Fable line item in a clean run.** Run 1's reviewer
    spent 14,050 output and 48,100 cache-write tokens, all on the capped model: $1.33 of the run's
    $4.12. It is also the whole of the arm's cache-write regression. The identical work on Opus
    costs $0.70.
@@ -273,25 +335,67 @@ Four things the ledger says that the headline numbers do not.
    cache reads would have to be about 2.6 million tokens, 27 times what this reviewer used, before
    Fable became the cheaper choice. A worker that reads enormously and writes little is the case
    where the capped model is also the cheap one.
-2. **Output, not cache, is what dominates this kind of work.** Earlier iterations found cache
+3. **Output, not cache, is what dominates this kind of work.** Earlier iterations found cache
    writes to be about three quarters of a run's cost, but those were short tasks that generated
    little. Here output is 53 to 57% of cost and cache write 37 to 39%. On build work the thing to
    attack is output tokens, and moving output onto a cheaper uncapped model is exactly what the
    loop does.
-3. **The long idle wait is free.** The lead's 1-hour cache survived run 1's 591-second workflow
+4. **The long idle wait is free.** The lead's 1-hour cache survived run 1's 591-second workflow
    gap intact, so waking it cost only the two agent reports (5,127 cache-write tokens). The risk
    is the TTL, not the wait: a full rework loop of three builds and three reviews at about 590 s
    each would cross an hour, and the lead would then re-prime its whole context at the 1-hour
    write rate, roughly $1.45 on a 72,000-token context. No run has approached that, so it is
    arithmetic rather than observation.
-4. **Noise is larger than several of the deltas.** The two bare runs differ by 2.52x on total
-   tokens (460,546 against 1,161,578) for the same work, driven by message batching and by run 2
-   obeying the user's global `CLAUDE.md`. Output tokens and cache writes are stable between them;
-   totals and cache reads are not, so only the first two should carry an argument.
+5. **Noise is larger than several of the deltas, including one this write-up leaned on.** The two
+   bare runs differ by 2.52x on total tokens (460,546 against 1,161,578) for the same work, driven
+   by message batching and by run 2 obeying the user's global `CLAUDE.md`. Output tokens are
+   stable between them; totals and cache reads are not. The "+32% Fable cache writes" figure the
+   first draft called the arm's one concrete regression does not survive this test either: the
+   gap between the arms on that metric is smaller than the spread between the two fabflows runs,
+   so it is not separable from run-to-run variance. The case for moving the reviewer off Fable
+   does not need it and never did: one usage record and the price table settle it.
+
+### The levers, after attack
+
+Ten efficiency levers were proposed from the ledger and each was attacked twice, once on its
+arithmetic and once on what it would cost quality. Two survive.
+
+| lever | verdict | what it is worth |
+| --- | --- | --- |
+| Default the in-loop reviewer to Opus | **survives** | −$1.33 and −159,865 Fable tokens per review round, exact. Run 1's Fable spend $2.50 to $1.17. |
+| Tell the lead `args` is an object | **survives** | −$0.16 of Fable per session, exact and conservative. Amortises to nothing over a long session. |
+| Stop the prose regex overriding the contract | overstated | Sound one-token fix, but shipped alone it is a Fable *regression* of $0.61 to $1.08, because it routes runs back into a Fable review. |
+| Trim the lead's post-accept gate | overstated | Recoverable is $0.17 to $0.19, not the $0.24 claimed, and half of that is denial fallout. The mandated gate itself costs $0.05. |
+| Let the builder tier be chosen | overstated | Up to $0.97 at list price, all of it Opus, and nothing on Fable. Its cost table misstates run 1's builder by 24%. |
+| Pass the spec as a path | refuted | The spec was never passed as a blob. Residual saving $0.02, and it deletes acceptance criteria. |
+| Return escalation guidance in the result | refuted | Fixes a defect that has never shipped: 0.3.6 already holds the guidance inline. Only becomes real if DEC-0015 lands. |
+| Collapse the skill chain | refuted | $0.023 per session, 0.55%, and `using-fabflows` is the session opt-in rather than a pointer. Re-opens DEC-0011. |
+| Hand the reviewer the diff | refuted | Zero on a greenfield task where every file is new. An open question for a brownfield fixture. |
+| Overlap builder and reviewer | refuted | Saves no tokens and costs a few. Keep its one measured finding: a workflow gap is free. |
+
+The two survivors are worth roughly $1.49 of Fable on a run like run 1, and they are independent
+of every confound above, because each is settled by a price table and one usage record rather than
+by comparing arms.
 
 ### Limitations
 
-- Two runs per cell. Direction, not significance, and one escalation is one run.
+- Two runs per cell, and on the thing the section is about, one. The loop completed once.
+- **The bare arm ran with no plugin at all**, so the comparison is a fabflows session against a
+  plain one, not the build loop against its absence.
+- **The graded axis is saturated.** 41/41 in every run means the quality comparison has no power.
+  The only expectation that ever differed penalises the arm that runs more agents under don't-ask
+  mode, so bare run 2's 50/50 is an agent-count artifact, not a quality edge.
+- **The leads read a plugin nobody has installed.** The staged copy is the unadopted DEC-0015
+  trim: 141 lines against the shipped 227, and it adds a `references/build-loop.md` that 0.3.6
+  does not contain. Defects in `build.js` are real today; the reference-file defect only becomes
+  real if DEC-0015 lands. Skill-load costs were measured on a body 38% shorter than the shipped
+  one.
+- **Arm order was not counterbalanced.** Both fabflows runs ran before both bare runs, so arm is
+  confounded with time, account utilisation and machine load.
+- **The artifacts differ.** The arms wrote different amounts of different code, up to 18% apart in
+  size, so output-token comparisons are not strictly like for like.
+- Only one run obeyed the user's global `CLAUDE.md`, and the loop's builder brief suppresses that
+  policy by construction, which is what produced the commit-structure difference above.
 - The bare arm's run 2 spent about five turns writing `CONVENTIONS.md`, `DECISIONS.md` and
   `RUNLOG.md` because the user's global `CLAUDE.md` asks for them. Both arms load that file, only
   that run acted on it, and the work is ungraded, so it inflates that run's cost.
@@ -302,6 +406,35 @@ Four things the ledger says that the headline numbers do not.
 - Wall-clock seconds are machine-specific and each pair ran concurrently.
 - Two stale hook payloads from an abandoned launch were counted in each fabflows run's probe
   summary; the runner now truncates that file before a run.
+
+### What iteration 6 should do instead
+
+The honest summary of iteration 5 is that it measured one review, on a task with no defect in it,
+which found no defect. The design that would actually answer the question, and which needs no
+Fable at all:
+
+1. **Re-price what exists against the meter, not against list dollars.** Done above; it is free
+   and it points the other way from the cost headline.
+2. **Move the lead off Fable.** The question is the ratio of capped-model tokens to worker tokens,
+   and that ratio transfers across lead models. Run the lead on Sonnet at the same effort.
+3. **Add the arm that isolates the review.** Three arms, all with the plugin loaded and the skill
+   invoked so the plugin, the hook and the skill load are held constant: (A) the lead builds
+   inline, (B) the lead delegates the build to an Opus agent through the plain Agent tool with the
+   same brief and no review, (C) the full loop. B minus A is the price of delegation; C minus B is
+   the price of the review, which is the number the whole decision turns on and which no iteration
+   has ever produced.
+4. **Make the outcome vary.** Replace the greenfield task with a brownfield fixture carrying one
+   planted defect that the visible suite passes and a hidden test fails. The primary outcome
+   becomes binary: did the reviewer return REWORK naming that defect. A binary with real variance
+   carries more information per run than a saturated token count.
+5. **Make sure the treatment is administered.** Add an allow rule for the test command so no
+   denial fires, or `saysDenied` escalates the loop out of existence again; pass `reviewerModel`
+   explicitly; and confirm a review round actually ran before grading.
+6. **Remove the free design flaws.** Interleave and counterbalance the arms, give every arm the
+   same instruction about commit granularity and project docs, and stage the shipped plugin or say
+   which variant is under test.
+
+Nine runs of about twelve minutes, none of them on Fable.
 
 ### Reproduce
 

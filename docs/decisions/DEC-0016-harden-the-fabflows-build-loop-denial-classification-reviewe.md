@@ -90,8 +90,15 @@ listed under consequences so the fix ships with this record.
 
 ### C. Where the escalation guidance lives
 
-1. **Keep it in `references/build-loop.md`** — status quo and the DEC-0015 candidate. Shortest
-   SKILL.md; unreadable for this user, and for any install reached from a project directory.
+This one is contingent, and the first draft of this record overstated it. Shipped 0.3.6 has no
+`references/` directory: its SKILL.md already carries the escalation branches inline, so there is
+nothing to fix today. The defect exists only in the DEC-0015 candidate, which moves that content
+into a file, and only for a plugin loaded from a development path with `--plugin-dir`, since the
+plugin cache is exempt from the setting that blocked the read. So C is not a fix to the current
+plugin; it is a condition on adopting DEC-0015.
+
+1. **Keep it in `references/build-loop.md`** — the DEC-0015 candidate. Shortest SKILL.md, and
+   unreadable for a `--plugin-dir` load, which is how every branch test and this benchmark run.
 2. **Inline the branch table back into SKILL.md** — a few lines, always loaded, no file read.
    Costs the character budget the trim was chasing.
 3. **Return the next action in the workflow result** — `escalate()` already carries `reason`; have
@@ -100,18 +107,30 @@ listed under consequences so the fix ships with this record.
 
 ## Decision outcome
 
-Proposed: **A2, B2 and C3**, with C2 as the fallback if C3 is judged too large a change to
-`build.js`.
+Proposed: **B2 first and on its own merits, A2 with it, and C3 only as a condition on DEC-0015.**
 
-A2 because the structured contract is the one the builder was asked to fill, and the code's own
-comment already says so. B2 because the plugin pins the refuter to Opus everywhere else, and the
-one place it does not is the place that spends the capped model. C3 because the guidance is three
-lines per outcome and the result object is the one channel that cannot be blocked by a permission
-setting; it also removes the read that DEC-0015's trim depends on.
+**B2 is the one change this evidence supports unambiguously**, and it needs no comparison between
+arms to justify it: one usage record and the price table settle it. Run 1's in-loop reviewer cost
+$1.33 on Fable against $0.70 for the identical work on Opus, and `refuter.md` already pins Opus
+everywhere else, so the loop is the single place the plugin contradicts its own tiering.
+
+**A2 must ship with B2, not before it.** The structured contract is the one the builder was asked
+to fill, and `build.js`'s own comment says the blocker field is the real signal. But A2 routes
+more runs into a review, and while that review defaults to Fable, A2 alone raises Fable spend by
+$0.61 to $1.08 per rescued run. The two changes are one change.
+
+**C3 is contingent.** It fixes nothing in 0.3.6, whose SKILL.md already holds the guidance inline.
+Adopt it only if DEC-0015's trim is adopted, as the price of moving that content into a file.
+
+There is a sharper reason to act on A2 than its cost. `build.js` instructs the builder to open its
+report with `Permission denied:` when a denial occurs, and then escalates any report that opens
+that way. A builder that obeys the brief is routed out of the loop; run 2 obeyed and lost its
+review, run 1 disobeyed and got one. The loop's success in this iteration depended on a worker
+ignoring an instruction.
 
 This is a plugin behaviour change: `plugin.json` and `marketplace.json` bump together, and the
 frontmatter test's model pins are unaffected. A minor bump (0.3.6 to 0.4.0) fits, because the
-escalation contract consumers read gains a field and the reviewer's model changes.
+reviewer's model changes and, if C3 lands, the escalation contract consumers read gains a field.
 
 ## Consequences
 
@@ -130,8 +149,10 @@ escalation contract consumers read gains a field and the reviewer's model change
   in the skill's build-loop section helps, but one in `whenToUse` is reprinted inside the same
   Skill expansion that generates the bad call, so it is not sufficient on its own), and
   `refuter.md`'s two BLOCKED rules are reconciled to the narrow one, BLOCKED only when the diff or
-  the test command could not be run. Keeping the broad rule instead would have turned run 1's
-  ACCEPT into a `reviewer-blocked` escalation and left the iteration with no successful loop run.
+  the test command could not be run, which is what `refuter.md`'s own description and `build.js`'s
+  review brief already state. Worth recording rather than using as a justification: under the
+  broad reading, run 1's reviewer was denied a command and should have returned BLOCKED, so zero
+  of four runs complete the loop under the plugin's other stated rule.
 
 **Bad:**
 
@@ -158,10 +179,23 @@ escalation contract consumers read gains a field and the reviewer's model change
   nothing in the loop checks a commit in isolation, since both the gate and the refuter run
   against the final tree. No reviewer ever looked at a bare run. Treat this as a hypothesis about
   what a review culture might catch, not as a measured property of the loop.
-- **The efficiency case rests on an unpublished fact.** Whether the weekly cap counts weighted
-  dollars or raw tokens decides whether the loop as shipped helps this user at all: Fable output
-  falls 43% but Fable total tokens rise 8%, which is inside the bare arm's own 2.52x run-to-run
-  noise. B2 removes that dependency, which is the strongest argument for adopting it first.
+- **The efficiency case was argued in the wrong currency, and the right one is only suggestive.**
+  Each run's stream records the account's own rate-limit utilisation. Over each arm's pair the
+  five-hour window moved +0.11 for fabflows against +0.10 bare, a ratio of 1.10 that tracks Fable
+  tokens (1.08) and neither total tokens (2.13) nor list dollars (1.53). So the subscription
+  charges for the lead's model and barely notices an Opus worker, and the +53% list figure is not
+  what this user pays. The readings are two decimals with one pair per arm, so this is direction
+  only. It strengthens B2, which takes the Fable-token ratio to 0.98, below a plain session.
+- **The loop completed once.** Run 2 escalated before any review, so every figure describing a
+  full build-and-review cycle is n=1, and that one run reached review only because its builder
+  ignored the report format the brief mandates.
+- **The comparison cannot isolate the loop.** The bare arm ran with no plugin loaded at all, so
+  the treatment bundles the prompt prefix, the skill loads, the guard hook and the loop. Decomposed
+  by actor, delegation accounts for +11% and the review for the remaining +42 points of the +53%.
+  The arm that would separate them, plugin loaded and loop unused, has never been run.
+- **The graded axis is saturated.** All four runs passed 41 of 41 hidden tests, so the quality
+  comparison has no power in either direction. Nothing here shows the loop produces better work,
+  only that it did not produce worse.
 - **The guard hook question is now closed the other way:** payloads confirm it fires inside
   Workflow-tool agents, so `build.js`'s default-branch check is a second line of defence rather
   than the only one. No decision needed, but the comment and the README should stop calling it
