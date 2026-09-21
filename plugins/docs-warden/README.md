@@ -110,3 +110,11 @@ Assert-based, no framework; prints one line per check and exits non-zero on any
 failure. `test/fixtures/` contains two small synthetic repos the scripts run against:
 one IT-tooling, one regulated. All fixture data is synthetic, with no PHI,
 real personal data, or secrets.
+
+## Evals
+
+`evals/` holds a `claude plugin eval` suite for the skills themselves: whether they
+trigger on the right prompts and not on near-misses, and whether a run obeys the
+non-negotiables (never fixes silently, never edits an accepted record, never fakes a
+lint pass). It spends tokens and never runs under the unit tests. See
+[evals/README.md](evals/README.md) for the commands and the WSL2 requirement.
