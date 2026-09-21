@@ -108,7 +108,7 @@ function buildBrief(round, mustFix) {
     '</spec>',
     ...fence,
     '',
-    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a blocked reply must name its reason there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec. A permission denial is a blocker: quote it in blocker, and start report with `Permission denied:` and the same quote.',
+    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a blocked reply must name its reason there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec. A permission denial that stopped you is a blocker: quote it in blocker, and start report with `Permission denied:` and the same quote. A denial you worked around is not a blocker: leave blocker empty, report done, and say what you did instead further down the report.',
     '',
     `**Tools and paths:** Read, Edit, Write, Grep, Glob, and Bash in this repository. Run \`${a.testCommand}\` to prove the change.`,
     '',
@@ -136,10 +136,26 @@ function reviewBrief(round) {
 const rounds = []
 let mustFix = null
 
-// Every escalation carries the last review the loop saw, or null when none ran.
+// The lead's next action per reason, carried in the result itself. references/build-loop.md says
+// the same, but a plugin loaded from a development path sits outside the session's working
+// directory, where a read of it can be refused; the result object is the one channel that cannot
+// be blocked.
+const NEXT = {
+  blocked: "Read the last round's build.blocker, or the start of its report when blocker is empty. A permission denial is the user's to resolve: never bypass it and never re-issue the denied call yourself.",
+  unexplained: 'The builder named no reason. Read its report if it has one, then run `git status --porcelain` and `git log <baseRef>..HEAD` to see what it left, and take the work over.',
+  'builder-failed': 'The builder returned nothing. Check `git log <baseRef>..HEAD` for a partial commit, then take the work over rather than relaunching.',
+  'reviewer-failed': 'The reviewer returned nothing. The builder\'s commits are on the branch: run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the loop.',
+  'reviewer-blocked': 'The review never ran. Fix what verdict.blocker names (a missing dependency is the user\'s to install), then run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the loop.',
+  'accept-with-must-fix': 'The reviewer contradicted itself: it accepted while listing must-fix items. Read verdict.mustFix and decide yourself; do not relaunch on a contradiction.',
+  'rework-without-must-fix': 'The reviewer asked for rework without naming anything to fix. Read verdict.report and decide yourself; do not relaunch on a contradiction.',
+  'rework-cap': 'Two rework rounds did not satisfy the reviewer. Read verdict.mustFix and the rounds, and take the work over rather than raising the cap.',
+}
+
+// Every escalation carries the last review the loop saw, or null when none ran, and the one
+// action the lead should take next.
 function escalate(reason) {
   const verdict = rounds.map((r) => r.review).filter(Boolean).pop() || null
-  return { status: 'escalate', reason, baseRef: a.baseRef, rounds, verdict }
+  return { status: 'escalate', reason, baseRef: a.baseRef, rounds, verdict, next: NEXT[reason] || 'Read reason and verdict, and take the work over. The builder\'s commits are already on the branch.' }
 }
 
 for (let round = 1; round <= MAX_REWORK + 1; round++) {
@@ -156,14 +172,15 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     log(`round ${round}: the builder returned nothing -- escalating to the lead`)
     return escalate('builder-failed')
   }
-  // Only a clean done goes to review. A named blocker or a denial is blocked, whatever status
-  // says; a blank report, or blocked with no blocker, names no reason.
+  // The structured fields decide, not the prose. A builder that hit a denial, worked around it
+  // and finished has status done and an empty blocker, and its review is the point of the loop;
+  // benchmark iteration 5 lost one to a report that merely opened with the word "Permission".
+  // saysDenied still classifies the reason once a reply has failed on its own fields.
   const blocker = (build.blocker || '').trim()
   const report = (build.report || '').trim()
-  const denied = saysDenied(report)
-  if (build.status !== 'done' || blocker || denied || !report) {
+  if (build.status !== 'done' || blocker || !report) {
     rounds.push({ round, build, review: null })
-    const reason = blocker || denied ? 'blocked' : 'unexplained'
+    const reason = blocker || saysDenied(report) ? 'blocked' : 'unexplained'
     log(`round ${round}: the builder's reply is ${reason} -- escalating to the lead`)
     return escalate(reason)
   }

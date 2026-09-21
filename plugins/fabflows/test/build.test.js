@@ -167,24 +167,27 @@ test('escalates a done reply that still names a blocker, and tells the builder a
 });
 
 // The stubs skip schema validation, so the loop itself must catch an empty report.
-test('escalates a builder reply the lead cannot act on, and a denial on the report\'s first line', async () => {
+test('escalates a builder reply the lead cannot act on, but reviews one that recovered from a denial', async () => {
   for (const report of ['', '   ']) {
     const { result, calls } = await run(ARGS, [{ ...built, report }, accept]);
     assert.equal(result.reason, 'unexplained', `report=${JSON.stringify(report)}`);
     assert.equal(calls.length, 1, 'no review may run on an empty report');
   }
 
-  const deniedLines = [
+  // A builder that hit a denial, worked around it and finished says so: status done, no blocker.
+  // Its prose must not cost it the review -- that is what the loop exists to run. Benchmark
+  // iteration 5 lost a review to exactly these openings (evals/RESULTS.md, iteration 5).
+  const recoveredLines = [
     'Permission denied: npm test',
     'Permission denied: none of the tests could run',
     'Denied: Bash(npm test); none of the checks ran',
     'Permission to use Bash has been denied.',
     'fabflows: package installs are blocked (npm install).',
   ];
-  for (const line of deniedLines) {
+  for (const line of recoveredLines) {
     const { result, calls } = await run(ARGS, [{ ...built, report: `${line}\nFiles touched: none` }, accept]);
-    assert.equal(result.reason, 'blocked', line);
-    assert.equal(calls.length, 1, `no review may run on a denied build: ${line}`);
+    assert.equal(result.status, 'accepted', `a done reply with no blocker is reviewed, whatever its prose opens with: ${line}`);
+    assert.equal(calls.length, 2, `the review must run on a recovered denial: ${line}`);
   }
 
   // Only a line that starts with a denial counts, so paths and feature names do not.
@@ -207,13 +210,38 @@ test('escalates a builder reply the lead cannot act on, and a denial on the repo
   assert.equal(quoted.result.reason, 'blocked', 'a denial on the first non-blank line is the reason');
 
   assert.match(silent.calls[0].prompt, /start report with `Permission denied:`/);
+  assert.match(silent.calls[0].prompt, /A denial you worked around is not a blocker/);
+});
+
+test('every escalation tells the lead what to do next', async () => {
+  // The trimmed skill points at references/build-loop.md, which a plugin loaded from a
+  // development path cannot read. The result itself has to carry the next action.
+  const cases = [
+    [[blocked], 'blocked'],
+    [[{ status: 'blocked', report: 'r' }], 'unexplained'],
+    [[null], 'builder-failed'],
+    [[built, null], 'reviewer-failed'],
+    [[built, reviewBlocked], 'reviewer-blocked'],
+    [[built, { ...accept, mustFix: rework.mustFix }], 'accept-with-must-fix'],
+    [[built, { ...rework, mustFix: [] }], 'rework-without-must-fix'],
+    [[built, rework, built, rework, built, rework], 'rework-cap'],
+  ];
+  const seen = new Set();
+  for (const [replies, reason] of cases) {
+    const { result } = await run(ARGS, replies);
+    assert.equal(result.reason, reason);
+    assert.equal(typeof result.next, 'string', `${reason} must carry next`);
+    assert.ok(result.next.trim().length > 20, `${reason} next must say something actionable`);
+    seen.add(result.next);
+  }
+  assert.equal(seen.size, cases.length, 'each reason needs its own next action, not one generic line');
 });
 
 test('every escalation carries status, baseRef, and the last verdict', async () => {
   const cases = [
     [[blocked], 'blocked', null],
     [[{ ...built, blocker: 'could not run tests' }], 'blocked', null],
-    [[{ ...built, report: 'Permission denied: npm test' }], 'blocked', null],
+    [[{ status: 'blocked', report: 'Permission denied: npm test' }], 'blocked', null],
     [[{ ...built, report: '' }], 'unexplained', null],
     [[{ status: 'blocked', report: 'r' }], 'unexplained', null],
     [[built, rework, { ...built, report: ' ' }], 'unexplained', 'REWORK'],
