@@ -6,6 +6,7 @@ Why this repository is the way it is. Newest first.
 
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
+| [DEC-0014](decisions/DEC-0014-benchmark-plugins-with-claude-plugin-eval-not-a-ported-harne.md) | Benchmark plugins with claude plugin eval, not a ported harness | proposed | 2026-09-19 | - | - |
 | [DEC-0013](decisions/DEC-0013-the-lead-keeps-the-session-effort-only-workers-pin-theirs.md) | The lead keeps the session effort; only workers pin theirs | proposed | 2026-09-17 | DEC-0012 | - |
 | [DEC-0012](decisions/DEC-0012-lead-runs-fable-at-medium-effort-delegate-on-context-volume.md) | Lead runs Fable at medium effort; delegate on context volume | proposed (superseded) | 2026-09-17 | - | DEC-0013 |
 | [DEC-0011](decisions/DEC-0011-invoking-using-fabflows-is-the-session-s-opt-in-to-the-build.md) | Invoking using-fabflows is the session's opt-in to the build loop | proposed | 2026-09-16 | - | - |

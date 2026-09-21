@@ -60,6 +60,13 @@ test suite drives directly. Nothing in this repository runs these suites
 automatically, so a security-adjacent code path is protected by convention alone.
 Run the suite for any plugin you touch.
 
+Behavioral evals for a plugin's skills live in `plugins/<name>/evals/` in
+`claude plugin eval` format: one directory per case holding `prompt.md`,
+`graders/*.md` and, when the case needs a seeded repository, `case.yaml` plus
+`fixture.sh`. They spend tokens and never run under the unit tests; each plugin's
+`evals/README.md` gives the command and its prerequisites. `docs-warden` has the
+first suite (DEC-0014).
+
 ## Documentation
 
 Every pull request updates the affected documents or says why not.
