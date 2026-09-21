@@ -50,8 +50,9 @@ if (missing.length) {
 }
 for (const k of REQUIRED) a[k] = a[k].trim()
 
-// A backstop, not the main control: whether the guard hook fires inside workflow agents is
-// unverified, and a builder handed the default branch would commit to it.
+// A second line of defence: benchmark iteration 5 confirmed the guard hook does fire inside
+// workflow agents, with a PreToolUse payload per builder and reviewer tool call. This still
+// earns its place, because a builder handed the default branch would commit to it.
 if (/^(main|master)$/i.test(a.branch)) {
   log(`refusing to build on ${a.branch}`)
   return {

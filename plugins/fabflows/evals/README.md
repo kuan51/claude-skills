@@ -178,7 +178,9 @@ touches routing, and whenever a decision record wants a number instead of arithm
   run in iterations 1 to 4 whatever the lead decided. Both arms now allow it; a bare lead has no
   reason to use it. Workflow agents cache prompts at the 5-minute rate where the lead uses the
   1-hour rate, which shows up in `modelUsage` as cheaper cache writes for them.
-- Hooks inside Workflow-tool agents remain unmeasured.
+- Iteration 5 measured the guard hook firing inside Workflow-tool agents, so that gap is closed;
+  what remains unmeasured is whether a guard *denial* inside one is handled well, since none
+  fired.
 - Per-message stream usage is the message-start snapshot: input-side fields are final, the
   output field is a placeholder. Output comes from the result's `usage` and `modelUsage` and
   from each Agent call's `subagent_tokens`; never from the stream.
