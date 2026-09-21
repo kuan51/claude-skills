@@ -681,6 +681,84 @@ def test_audit_survives_a_document_that_is_not_valid_utf8():
             _one_check(card, "readme-shape")
 
 
+def _make_unreadable(repo):
+    """Plant one .md the audit can discover but not open. Returns its
+    repo-relative name, or None if this platform offers no such file.
+
+    chmod 000 is the vector that found this -- `claude plugin eval` drops a
+    .claude/ of nobody-owned character devices into the workspace -- but it
+    denies nothing to the owner on Windows. A directory someone named x.md is
+    the same failure through the same call: rglob("*.md") yields it and
+    read_text raises OSError. Whichever the platform gives, the check under
+    test is identical.
+    """
+    denied = repo / ".claude"
+    denied.mkdir()
+    path = denied / "loop.md"
+    path.write_text("x\n", encoding="utf-8")
+    os.chmod(path, 0o000)
+    try:
+        path.read_text(encoding="utf-8")
+    except OSError:
+        return ".claude/loop.md"
+    # Windows: chmod 000 clears the read-only bit at most, so read it back.
+    os.chmod(path, 0o600)
+    path.unlink()
+    (denied / "loop.md").mkdir()
+    try:
+        (denied / "loop.md").read_text(encoding="utf-8")
+    except OSError:
+        print("  note: chmod vector not covered here -- using a directory "
+              "named *.md, which fails the same read_text")
+        return ".claude/loop.md"
+    return None
+
+
+def test_audit_survives_a_document_it_cannot_read():
+    """The same goal as the non-UTF-8 check one step further: errors="replace"
+    survives undecodable bytes but not an unreadable file, so the first .md the
+    walk could not open raised OSError out of check_glossary_reject_terms and
+    killed the run before any scorecard was written -- every other check lost
+    with it, phi-secrets included.
+
+    Surviving is half of it. An unreadable document that vanishes from the
+    report would be the fake pass the second non-negotiable forbids, so each
+    walking check has to name what it did not examine.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "README.md").write_text(
+            "# Thing\n\n## Quick start\n\nx\n\n## Documentation\n\ny\n",
+            encoding="utf-8")
+        (repo / "docs").mkdir()
+        (repo / "docs" / "GLOSSARY.md").write_text(
+            "| Term | Definition | Do not use | Source |\n"
+            "|------|------------|------------|--------|\n"
+            "| Widget | A thing. | gadget | here |\n",
+            encoding="utf-8")
+        (repo / "docs" / "notes.md").write_text("MRN: 12345678\n", encoding="utf-8")
+
+        name = _make_unreadable(repo)
+        if name is None:
+            print("  note: unreadable-document vector not covered -- every .md "
+                  "here is readable")
+            return
+
+        card = _full_card(repo)
+        assert len(card["checks"]) >= 11, \
+            f"the run died partway: {[c['id'] for c in card['checks']]}"
+        assert _one_check(card, "phi-secrets")["state"] != "pass", \
+            "phi-secrets passed over a document it never opened"
+        assert _one_check(card, "phi-secrets")["state"] == "fail", \
+            "the planted MRN went unreported because an earlier check crashed"
+        # Every check that walks discovered files has to say what it skipped;
+        # fixing only the one the traceback named just moves the crash.
+        for cid in ("links", "glossary-reject-terms", "phi-secrets"):
+            entry = _one_check(card, cid)
+            assert name in entry["reason"], \
+                f"{cid} did not name the document it could not read: {entry}"
+
+
 def test_review_by_may_carry_a_time_without_killing_the_run():
     """PyYAML resolves "review_by: 2020-01-01 09:00:00" to a datetime, and
     datetime subclasses date -- so it satisfied the isinstance(v, dt.date) test
