@@ -20,90 +20,7 @@ limit, and leave a one-line pointer. Whole entries only.
 
 Older entries: [docs/runlog/2026-Q3.md](runlog/2026-Q3.md).
 
-Older entries: [docs/runlog/2026-Q3.md](runlog/2026-Q3.md).
-
 ---
-
-## 2026-09-13 — fabflows 0.2.0: fence the must-fix list in rework briefs
-
-**PLANNED** — Close the gap where a REWORK verdict's findings entered the next builder's
-brief unmarked, inside its Objective. `buildBrief()` moves them into a `<must-fix>` block
-after the spec, labels it as the reviewer's findings to be treated as data, tells the
-builder to report any item the spec does not need instead of doing it, and strips
-`must-fix` tags from finding text so it cannot close the fence. Record the choice as
-DEC-0008. Add a test that fails against the unfenced brief. Verify with
-`node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`.
-
-**CONFIRMED** — Against the old `buildBrief()`, the new test failed on its fence match
-(`actual: null`, `expected: true`). After the fix, `node --test
-"plugins/fabflows/test/*.test.js"` printed `tests 31`, `pass 31`, `fail 0`, and `node --test
-"test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. A throwaway mutation probe (a
-scratchpad copy of `build.js` broken one piece at a time, run against the fence test)
-killed all three mutants -- `unfence` made a no-op, the fence dropped, the data label
-dropped -- with the baseline green. `adr_index.py . --check` printed `index up to date
-(5 record(s))`. After rebasing onto the BLOCKED-verdict branch (PR #23), the same two
-commands printed `tests 32`, `pass 32`, `fail 0` and `tests 4`, `pass 4`, `fail 0`, the
-probe again killed all three mutants, and the regenerated index held 6 records.
-
-**SKIPPED** — vale on DEC-0008. It stopped with `'Project' vocabulary not found`, and the
-Microsoft and write-good packages are absent from the tree; fetching them needs
-`vale sync`, a download. A search of the record for spaced em dashes, the error the
-earlier records were fixed for, found none.
-
-## 2026-09-13 — fabflows 0.2.0: a contradictory builder reply escalates
-
-**PLANNED** — A stub run of `build.js` showed a builder reply of `done` with a `blocker`,
-`done` with an empty report, and `done` with a permission denial only in its report all
-ending `accepted`. Make the loop escalate any reply that names a blocker, add `minLength: 1`
-to the shared report schema, tell the builder a permission denial is a blocker, and tell the
-lead where the builder's blocker lives on escalation. Record it as DEC-0006. Verify with
-`node --test "plugins/fabflows/test/*.test.js"` (the new tests failing first) and
-`node --test "test/*.test.js"`.
-
-**CONFIRMED** — Against the old loop the new assertions failed (`actual: 'accepted'`,
-`expected: 'escalate'`; `actual: 'reviewer-failed'`, `expected: 'blocked'`; `minLength`
-`actual: undefined`, `expected: 1`), then passed after the change.
-`node --test "plugins/fabflows/test/*.test.js"` printed `tests 31`, `pass 31`, `fail 0`;
-`node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`. Re-running the
-scratchpad stub script on the new `build.js`: `done` with a blocker now escalates after one
-call; `done` with an empty report and `done` with a denial only in the report still end
-`accepted` there, because stubs skip schema validation and the loop reads no prose -- both
-recorded as gaps in DEC-0006. `adr_new.py` numbered the record DEC-0005, since this branch
-lacks the sibling's DEC-0005; it was renamed to DEC-0006 and `adr_index.py` rebuilt the index.
-After rebasing onto `claude/fabflows-reviewer-blocked` (PR #23) and resolving the SKILL.md,
-run-log and index conflicts, `node --test "plugins/fabflows/test/*.test.js"` printed
-`tests 32`, `pass 32`, `fail 0` and `node --test "test/*.test.js"` printed `tests 4`,
-`pass 4`, `fail 0`; `python3 plugins/docs-warden/skills/docs-warden/scripts/audit.py .`
-passed `adr-index` and `links` (96 relative links).
-
-**SKIPPED** — No live run: whether the runtime enforces `minLength`, and whether a real
-builder puts a permission denial in `blocker`, needs the plugin installed from this branch
-and a new session.
-
-## 2026-09-13 — fabflows 0.2.0: close DEC-0006's three builder-reply gaps
-
-**PLANNED** — DEC-0006 left three builder replies the loop could not act on: `done` with an
-empty report ends `accepted` against the stubs, `done` with a permission denial only in the
-report ends `accepted`, and `blocked` with no blocker escalates with no reason. Make the loop
-escalate an empty or blank report and a reason-less `blocked` as `unexplained`, and treat a
-denial on the report's first non-blank line -- where the report contract puts it -- as
-`blocked`. Tell the builder to quote a denial there too, and tell the lead what `unexplained`
-means. No decision record: reversing it is one pull request, so the admission test says no.
-Verify with `node --test "plugins/fabflows/test/*.test.js"` (the new tests failing first),
-`node --test "test/*.test.js"`, and `python3 plugins/docs-warden/skills/docs-warden/scripts/audit.py .`.
-
-**CONFIRMED** — Before the change, `node --test "plugins/fabflows/test/*.test.js"` failed on
-the new assertions (`actual: undefined`, `expected: 'unexplained'` for an empty report that
-ended `accepted`; `actual: 'reviewer-failed'`, `expected: 'blocked'` for a denial in the
-report that went to review). After it, the same command printed `tests 35`, `pass 35`,
-`fail 0`, and `node --test "test/*.test.js"` printed `tests 4`, `pass 4`, `fail 0`.
-`audit.py .` passed `adr-index` and `links` (87 relative links). Its `lint` check failed;
-`markdownlint-cli2` on the three touched Markdown files reports only
-`docs/RUNLOG.md:197` MD018, which predates this entry.
-
-**SKIPPED** — No live run: whether the runtime enforces `minLength`, and whether a real
-builder puts a denial on its report's first line, needs the plugin installed from this
-branch and a new session. Vale not run: it stops on the missing `Project` vocabulary.
 
 ## 2026-09-13 — fabflows 0.2.0: anchor the builder denial check
 
@@ -493,3 +410,69 @@ DEC-0015 (adopt the narrowed trim), both `status: proposed`; `adr_index.py` rege
 `docs/DECISIONS.md`. Run-log rotation per DEC-0001 via a one-off script: 651 lines to 496,
 nine oldest whole entries moved to `docs/runlog/2026-Q3.md` with a pointer under the header.
 Fixture clones under `%TEMP%/fabflows-bench` kept at the user's request.
+
+## 2026-09-19 — fabflows: token benchmark, iteration 5 (a complex build with the build loop)
+
+**PLANNED** — Extend the benchmark to the shape fabflows is for: a whole component built from a
+spec, with `fabflows:build` available. Task 7 `build-component`: a greenfield fixture
+(`evals/fixtures/dep-resolver/visible`: SPEC.md for a semver range parser, a flat backtracking
+resolver and a CLI, plus package.json) graded by a hidden 41-test acceptance suite
+(`fixtures/dep-resolver/hidden`, run at grade time with `LOCKSTEP_ROOT` pointing at the fixture,
+never copied into it) that a reference implementation passes; a free suite test keeps that true.
+Blindness, at the user's direction: every fixture is blind to the benchmark from here on. Repo
+fixtures clone a pinned pre-benchmark commit (`3fbe15b`: 13 decision records, no `evals/`), the
+with_skill plugin is staged without `evals/`, and the task prompt names only the spec. Harness:
+`Workflow` added to the allowed tools in both arms (probes showed it was never allowed, so no
+build loop could have run in iterations 1 to 4); workflow agents attributed from `task_progress`
+events and their per-agent transcript files, since they emit no stream events, and a run with a
+workflow has two `result` events (per-turn usage summed, cumulative cost taken from the last);
+per-task caps (200 turns, $60 list, 120 min). Skill variant, per the user: the narrowed trim
+(`runs/snapshots/h1b-narrowed`, the DEC-0015 candidate). Arms `with_skill` and `without_skill`,
+two repeats each; an explicit build-loop arm only if neither with_skill run launches the loop by
+the standing rule. Verify: `node --test "plugins/fabflows/test/*.test.js"` and
+`node --test "test/*.test.js"`; dry run `node plugins/fabflows/evals/harness/run.js --iteration 5
+--tasks 7`; Haiku smoke `node plugins/fabflows/evals/harness/run.js --iteration 0 --tasks 7 --arms
+without_skill --repeats 1 --model haiku --confirm`; then `node plugins/fabflows/evals/harness/run.js
+--iteration 5 --tasks 7 --repeats 2 --parallel 2 --plugin-dir
+plugins/fabflows/evals/runs/snapshots/h1b-narrowed --confirm`.
+
+**CONFIRMED** (task 7 review and harness verification) — Both were run as Workflow-tool
+orchestrations. The first launch of each died on the account's usage limit with no agent
+finished (about 840k subagent tokens spent for nothing; the one partial edit, a correct
+`tasks.json`, was reverted before relaunch). Review, relaunched: four finder lenses (hidden
+assertions not implied by the spec, spec ambiguity, reference against spec, blindness of the
+visible fixture) and two refuters per finding; 30 of 38 agents finished before the limit hit
+again. 17 findings, none survived both refuters; the four reference-lens findings whose refuters
+died were checked by hand against the code and all four were real edge cases the hidden suite did
+not cover, fixed in `visible/SPEC.md` and `reference/src/index.js` (conflict reporting through an
+already-selected package, build metadata on wildcard partials, `maxSatisfying` on non-strings,
+operators on a bare wildcard). One finding refuted as "no grading impact" was a fixture defect all
+the same: `node --test test/` fails on Node 24 (reproduced: `not ok 1 - test`, exit 1), so the
+fixture's `npm test` is now `node --test "test/**/*.test.js"`. Harness build, relaunched: four
+agents (metrics.js, run.js, grade.js, tasks.json + tests) finished; the verifier hit the limit.
+Verification, third workflow: contract review (four low findings, none blocking), adversarial code
+review (three medium/high: the hidden-suite summary ignored the runner's exit status so a crashed
+test file vanished from the count; `npm test` passed vacuously with no test files; a run killed
+mid-workflow recorded the first turn's duration), runtime checks all passed including
+`node run.js --iteration 4 --regrade` with `cells.json` unchanged. The three bugs and three low
+ones (git identity in fresh fixtures, node_modules filtered on copy, status read before tests)
+fixed by hand; the fix agent had hit the limit. After the fixes: `node --test
+"plugins/fabflows/test/*.test.js"` 44 pass (40 plus 4 new), `node --test "test/*.test.js"` 4
+pass, dry run prints per-task caps, grading a scratch fixture holding the reference gives 50/50
+with "Hidden acceptance suite: 41/41", an empty fixture 6/10 with "could not run", a fixture with
+one planted bug 48/50 with the expected-versus-actual evidence. A scan of every tool call in the
+32 iteration-2-to-4 transcripts found none touching `evals/`, `tasks.json`, RESULTS.md or the
+run log.
+
+**CONFIRMED** (task 7 smoke) — `node plugins/fabflows/evals/harness/run.js --iteration 0 --tasks
+7 --arms without_skill --repeats 1 --model haiku --confirm`: one Haiku run, 251 s, $0.68 list,
+25 turns, graded 38/50 with the hidden suite at 34/41 (the failures were the prerelease rule,
+hyphen rounding, cycle recursion and conflict reporting, so the task's hard parts are where
+they should be). The lead never committed: its first `npm test` was written as `cd /mnt/c/...
+&& npm test | head`, denied as a move outside the working directory, after which it tried to
+read and write `.claude/settings.json` (denied) and stopped. A six-command Haiku probe in the
+same environment (`permprobe-cd`) then showed bare `npm test`, a pipe into `tail`, `$HOME`, a
+redirect and a quoted `cd` into the fixture's real path all allowed and only the `/mnt/c` form
+denied, so the fixture's environment note now names that and says to retry without the `cd`
+instead of editing settings. Harness, fixture preparation, hidden-suite grading and the
+per-run outputs all worked end to end.
