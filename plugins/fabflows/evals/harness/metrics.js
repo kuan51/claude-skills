@@ -326,10 +326,14 @@ function computeMetrics(events, opts = {}) {
     if (w.input || w.output || w.cacheRead || w.cacheWrite) workersByModel[model] = w;
   }
   // When exactly one worker type ran on a model, that model's residual output is its output.
-  // Two types on one model (editor and test-runner on Sonnet, say) stay null: ambiguous.
+  // Two types on one model (editor and test-runner on Sonnet, say) stay null: ambiguous. When
+  // all but one of them are exact (workflow agents read from their files), the remainder is
+  // the last one's: an Opus refuter the lead spawned beside an Opus workflow builder, say.
   for (const [model, residual] of Object.entries(workersByModel)) {
     const types = Object.values(workers).filter((w) => w.model === model);
-    if (types.length === 1 && !exact.has(types[0])) types[0].output = residual.output;
+    const open = types.filter((w) => !exact.has(w));
+    if (open.length !== 1) continue;
+    open[0].output = residual.output - types.filter((w) => exact.has(w)).reduce((n, w) => n + (w.output || 0), 0);
   }
 
   const totals = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, thinking: 0 };

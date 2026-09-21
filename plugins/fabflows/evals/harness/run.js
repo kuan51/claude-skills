@@ -312,7 +312,11 @@ function runCell(a, cell, settingsPath) {
 
   prepareFixture(fixture, `bench/t${cell.task.id}-${cell.arm}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || []);
   const args = claudeArgs(a, cell, runDir, settingsPath);
-  const env = { ...process.env, FABFLOWS_PROBE: path.join(runDir, 'hook-probe.jsonl') };
+  // The guard appends, so a relaunch into the same run directory would carry the abandoned
+  // launch's payloads into this run's hook counts (observed in iteration 5, two stale rows).
+  const probePath = path.join(runDir, 'hook-probe.jsonl');
+  fs.rmSync(probePath, { force: true });
+  const env = { ...process.env, FABFLOWS_PROBE: probePath };
   delete env.CLAUDECODE; // the nested-session guard is for interactive terminals
   writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: ['claude', ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE }, startedAt: new Date().toISOString() });
 

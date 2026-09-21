@@ -35,7 +35,9 @@ for (const evalDir of fs.readdirSync(iterDir).filter((d) => d.startsWith('eval-'
         worker_out: Object.values(wb).reduce((s, w) => s + w.output, 0),
         worker_in: Object.values(wb).reduce((s, w) => s + w.input + w.cacheRead + w.cacheWrite, 0),
         workers: Object.fromEntries(Object.entries(m.workers).map(([k, v]) => [k, v.spawns])),
-        cost: m.result.total_cost_usd, sec: (m.result.duration_ms || 0) / 1000,
+        // timing.json holds the harness wall clock, which is the only clock that spans a
+        // workflow running between the lead's turns; the result's duration is per turn.
+        cost: m.result.total_cost_usd, sec: ((fs.existsSync(path.join(dir, 'timing.json')) && JSON.parse(fs.readFileSync(path.join(dir, 'timing.json'), 'utf8')).duration_ms) || m.result.duration_ms || 0) / 1000,
         verification_runs: m.lead.verificationRuns,
         hook_payloads: Object.entries(m.hooks.probe || {}).filter(([k]) => !k.startsWith('synthetic') && k !== 'unparseable').reduce((s, [, n]) => s + n, 0),
         tools: m.lead.toolCalls,
