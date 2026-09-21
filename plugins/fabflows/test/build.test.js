@@ -243,31 +243,7 @@ testCommand: npm test`;
   assert.deepEqual(partial.result.missing, ['baseRef', 'testCommand'], 'a partial object names what is missing');
 });
 
-test('every escalation tells the lead what to do next', async () => {
-  // The trimmed skill points at references/build-loop.md, which a plugin loaded from a
-  // development path cannot read. The result itself has to carry the next action.
-  const cases = [
-    [[blocked], 'blocked'],
-    [[{ status: 'blocked', report: 'r' }], 'unexplained'],
-    [[null], 'builder-failed'],
-    [[built, null], 'reviewer-failed'],
-    [[built, reviewBlocked], 'reviewer-blocked'],
-    [[built, { ...accept, mustFix: rework.mustFix }], 'accept-with-must-fix'],
-    [[built, { ...rework, mustFix: [] }], 'rework-without-must-fix'],
-    [[built, rework, built, rework, built, rework], 'rework-cap'],
-  ];
-  const seen = new Set();
-  for (const [replies, reason] of cases) {
-    const { result } = await run(ARGS, replies);
-    assert.equal(result.reason, reason);
-    assert.equal(typeof result.next, 'string', `${reason} must carry next`);
-    assert.ok(result.next.trim().length > 20, `${reason} next must say something actionable`);
-    seen.add(result.next);
-  }
-  assert.equal(seen.size, cases.length, 'each reason needs its own next action, not one generic line');
-});
-
-test('every escalation carries status, baseRef, and the last verdict', async () => {
+test('every escalation carries status, baseRef, the last verdict, and what to do next', async () => {
   const cases = [
     [[blocked], 'blocked', null],
     [[{ ...built, blocker: 'could not run tests' }], 'blocked', null],
@@ -283,7 +259,11 @@ test('every escalation carries status, baseRef, and the last verdict', async () 
     [[built, rework, built, reviewBlocked], 'reviewer-blocked', 'BLOCKED'],
     [[built, rework, null], 'builder-failed', 'REWORK'],
     [[built, rework, built, null], 'reviewer-failed', 'REWORK'],
+    [[built, rework, built, rework, built, rework], 'rework-cap', 'REWORK'],
   ];
+  // The trimmed skill points at references/build-loop.md, which a plugin loaded from a
+  // development path cannot read, so the result itself has to carry the next action.
+  const nexts = new Map();
   for (const [replies, reason, last] of cases) {
     const { result } = await run(ARGS, replies);
     assert.equal(result.status, 'escalate', reason);
@@ -291,7 +271,11 @@ test('every escalation carries status, baseRef, and the last verdict', async () 
     assert.equal(result.baseRef, 'abc1234', `${reason} must carry baseRef`);
     assert.ok('verdict' in result, `${reason} must carry verdict`);
     assert.equal(result.verdict ? result.verdict.verdict : null, last, `${reason} last verdict`);
+    assert.ok(typeof result.next === 'string' && result.next.trim().length > 20, `${reason} must carry an actionable next`);
+    nexts.set(reason, result.next);
   }
+  assert.equal(nexts.size, 8, 'every escalation reason must appear in this table');
+  assert.equal(new Set(nexts.values()).size, nexts.size, 'each reason needs its own next action, not one generic line');
 });
 
 // The tests run against the working tree but the review reads the commits, so work left
@@ -311,9 +295,6 @@ test('every brief checks the working tree for uncommitted work', async () => {
 test('reviewerModel overrides the Opus default', async () => {
   const { calls } = await run({ ...ARGS, reviewerModel: 'sonnet' }, [built, accept]);
   assert.equal(calls[1].opts.model, 'sonnet');
-
-  const back = await run({ ...ARGS, reviewerModel: 'fable' }, [built, accept]);
-  assert.equal(back.calls[1].opts.model, 'fable', 'a consumer can restore the old Fable reviewer');
 });
 
 test('every call pins effort, requires a prose report, and carries the spec and all four brief parts', async () => {
