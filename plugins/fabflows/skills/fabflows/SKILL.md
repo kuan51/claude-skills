@@ -40,7 +40,7 @@ tools is already evidence; do not re-run it to confirm it.
 | review a finished change against its spec, re-running its tests | `fabflows:refuter` | Opus, read-only + Bash |
 | reproduce and narrow a self-contained failure | `fabflows:investigator` | Opus, read-only + Bash |
 | root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | none |
-| a spec'd, sizeable change | `fabflows:build` | Opus builder, Fable reviewer |
+| a spec'd, sizeable change | `fabflows:build` | Opus builder, Opus reviewer |
 
 The built-in `Explore` agent inherits the lead's model, so under an expensive lead it costs
 about what searching yourself would. `fabflows:explorer` is the cheap tier.
@@ -104,7 +104,7 @@ verified and how afterwards. No log file: git records the edits.
 ## The build loop
 
 For a spec'd, sizeable change, `fabflows:build` runs an Opus `editor` that implements the
-spec and commits on the feature branch, then a fresh `refuter` (Fable by default) that reads
+spec and commits on the feature branch, then a fresh `refuter` (Opus by default) that reads
 the diff against the spec and re-runs the tests; REWORK sends the must-fix list to a fresh
 builder, up to two rework rounds. Offer it, or launch it when the session opened with
 `using-fabflows`. It never merges, pushes, or reverts.

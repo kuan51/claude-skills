@@ -1,7 +1,7 @@
 export const meta = {
   name: 'build',
   description: "Build one spec'd change on a feature branch: an Opus builder implements and commits, a fresh reviewer returns ACCEPT or REWORK, and rework is capped",
-  whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args: spec, branch, baseRef, testCommand, and optionally reviewerModel. The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
+  whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef, testCommand, and optionally reviewerModel (Opus by default). The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
   phases: [
     { title: 'Build', detail: 'fabflows:editor on Opus implements the spec and commits to the branch' },
     { title: 'Review', detail: 'a fresh fabflows:refuter reads the diff and re-runs the tests' },
@@ -62,7 +62,11 @@ if (/^(main|master)$/i.test(a.branch)) {
 }
 
 const MAX_REWORK = 2
-const reviewerModel = typeof a.reviewerModel === 'string' && a.reviewerModel.trim() ? a.reviewerModel.trim() : 'fable'
+// Opus, which is what agents/refuter.md pins and what every other launch path already uses.
+// The loop was the one place that reviewed on the lead's own tier: benchmark iteration 5
+// measured that reviewer at $1.33 against $0.70 for the identical work on Opus, all of it on
+// the model a subscription's weekly cap actually binds.
+const reviewerModel = typeof a.reviewerModel === 'string' && a.reviewerModel.trim() ? a.reviewerModel.trim() : 'opus'
 
 // Workers keep their prose report contract inside the structured result, so the lead can read
 // it and the SubagentStop contract check still finds its markers.

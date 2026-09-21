@@ -53,7 +53,7 @@ test('starts nothing without settings, with partial settings, or on a default br
   }
 });
 
-test('accepts on the first round: Opus editor builds, Fable refuter reviews', async () => {
+test('accepts on the first round: Opus editor builds, Opus refuter reviews', async () => {
   const { result, calls } = await run(ARGS, [built, accept]);
   assert.equal(result.status, 'accepted');
   assert.equal(result.baseRef, 'abc1234');
@@ -62,7 +62,7 @@ test('accepts on the first round: Opus editor builds, Fable refuter reviews', as
   assert.equal(calls[0].opts.model, 'opus');
   assert.match(calls[0].prompt, /git rev-parse --abbrev-ref HEAD`; if it does not print `feat\/dry-run`/);
   assert.equal(calls[1].opts.agentType, 'fabflows:refuter');
-  assert.equal(calls[1].opts.model, 'fable');
+  assert.equal(calls[1].opts.model, 'opus', 'the reviewer defaults to the tier refuter.md pins, not to the lead');
   assert.match(calls[1].prompt, /git diff abc1234\.\.HEAD/);
 });
 
@@ -317,9 +317,13 @@ test('every brief checks the working tree for uncommitted work', async () => {
   assert.doesNotMatch(calls[2].prompt, /earlier commits are already on the branch/);
 });
 
-test('reviewerModel overrides the Fable default', async () => {
-  const { calls } = await run({ ...ARGS, reviewerModel: 'opus' }, [built, accept]);
-  assert.equal(calls[1].opts.model, 'opus');
+// A third value, so the override is still proved once the default is Opus.
+test('reviewerModel overrides the Opus default', async () => {
+  const { calls } = await run({ ...ARGS, reviewerModel: 'sonnet' }, [built, accept]);
+  assert.equal(calls[1].opts.model, 'sonnet');
+
+  const back = await run({ ...ARGS, reviewerModel: 'fable' }, [built, accept]);
+  assert.equal(back.calls[1].opts.model, 'fable', 'a consumer can restore the old Fable reviewer');
 });
 
 test('every call pins effort, requires a prose report, and carries the spec and all four brief parts', async () => {
