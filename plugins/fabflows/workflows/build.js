@@ -8,33 +8,21 @@ export const meta = {
   ],
 }
 
-// The fabflows:build Skill takes a string, and its expansion prints an `Invoke:` line that
-// passes that string straight through as args. A lead that copies it used to land on
-// missing-args and lose a turn working out the shape: that happened in both runs of benchmark
-// iteration 5. So a string payload is parsed here, in the two shapes a lead actually writes.
-// A key only delimits when it starts a line, so a multi-line spec survives; a spec whose own
-// text begins a line with one of these keys would split there, which is the format's limit.
-const ARG_KEYS = ['spec', 'branch', 'baseRef', 'testCommand', 'reviewerModel']
+// A lead that hands args across as a string used to land on missing-args and lose a turn
+// working out the shape: that happened in both runs of benchmark iteration 5. The skill says
+// to pass an object, and an object stringified on the way across is read here. Anything else
+// is {}, which reaches the missing-args return below rather than throwing.
 function parseArgs(text) {
   try {
     const json = JSON.parse(text)
-    if (json && typeof json === 'object' && !Array.isArray(json)) return json
+    return json && typeof json === 'object' && !Array.isArray(json) ? json : {}
   } catch {
-    // Not JSON, so fall through to the `key: value` block.
+    return {}
   }
-  const out = {}
-  const hits = [...text.matchAll(new RegExp(`(?:^|\\n)[ \\t]*(${ARG_KEYS.join('|')})[ \\t]*:[ \\t]*`, 'g'))]
-  hits.forEach((m, i) => {
-    const start = m.index + m[0].length
-    const end = i + 1 < hits.length ? hits[i + 1].index : text.length
-    out[m[1]] = text.slice(start, end).trim().replace(/,$/, '').replace(/^(["'])([\s\S]*)\1$/, '$2')
-  })
-  return out
 }
 
 // No filesystem or shell here: the lead gathers baseRef and checks the tree before starting.
-// A copy, so trimming below never touches the caller's args. Anything unparseable becomes {},
-// which reaches the missing-args return below rather than throwing.
+// A copy, so trimming below never touches the caller's args.
 const a = typeof args === 'string' ? parseArgs(args) : { ...args }
 
 const REQUIRED = ['spec', 'branch', 'baseRef', 'testCommand']
