@@ -213,6 +213,46 @@ test('escalates a builder reply the lead cannot act on, but reviews one that rec
   assert.match(silent.calls[0].prompt, /A denial you worked around is not a blocker/);
 });
 
+// The Skill hands args across as a string; both runs of benchmark iteration 5 lost a turn to it.
+test('accepts the string args payload the build skill hands across', async () => {
+  const block = [
+    'spec: Add a --json flag to the CLI.',
+    'It prints the lockfile to stdout and exits 0.',
+    '',
+    'branch: feature/json-flag',
+    'baseRef: abc1234',
+    'testCommand: npm test',
+  ].join('\n');
+  const { result, calls } = await run(block, [built, accept]);
+  assert.equal(result.status, 'accepted', 'a key: value block must reach a build');
+  assert.match(calls[0].prompt, /Add a --json flag to the CLI\./);
+  assert.match(calls[0].prompt, /It prints the lockfile to stdout and exits 0\./, 'a multi-line spec survives the parse');
+  assert.match(calls[0].prompt, /feature\/json-flag/);
+
+  const quoted = await run('spec: "Ship it."\nbranch: "feature/x"\nbaseRef: "abc1234"\ntestCommand: "npm test"', [built, accept]);
+  assert.equal(quoted.result.status, 'accepted', 'quoted values are unwrapped');
+  assert.match(quoted.calls[0].prompt, /Ship it\./);
+  assert.ok(!/"Ship it\."/.test(quoted.calls[0].prompt), 'the quotes do not reach the brief');
+
+  const json = await run(JSON.stringify({ spec: 'Ship it.', branch: 'feature/x', baseRef: 'abc1234', testCommand: 'npm test' }), [built, accept]);
+  assert.equal(json.result.status, 'accepted', 'a JSON object string is accepted too');
+
+  const withModel = await run(`${block}\nreviewerModel: sonnet`, [built, accept]);
+  assert.equal(withModel.calls[1].opts.model, 'sonnet', 'reviewerModel parses out of the block');
+});
+
+test('a string args payload it cannot read fails as missing-args, never by throwing', async () => {
+  for (const bad of ['', '   ', '{not json', 'null', '[]', '"just a string"', 'spec without a colon']) {
+    const { result, calls } = await run(bad, [built, accept]);
+    assert.equal(result.status, 'not-started', `args=${JSON.stringify(bad)}`);
+    assert.equal(result.reason, 'missing-args', `args=${JSON.stringify(bad)}`);
+    assert.equal(calls.length, 0, `no agent may run on unreadable args: ${JSON.stringify(bad)}`);
+  }
+
+  const partial = await run('spec: Ship it.\nbranch: feature/x', [built, accept]);
+  assert.deepEqual(partial.result.missing, ['baseRef', 'testCommand'], 'a partial block names what is missing');
+});
+
 test('every escalation tells the lead what to do next', async () => {
   // The trimmed skill points at references/build-loop.md, which a plugin loaded from a
   // development path cannot read. The result itself has to carry the next action.
