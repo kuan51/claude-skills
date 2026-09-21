@@ -590,3 +590,31 @@ transition; immutability starts at that commit, so it was made last and carries 
 records will ever say. DEC-0016 argued for a minor bump to 0.4.0 and 0.3.7 shipped: the record now
 states that, the reason, and leaves the original reasoning visible beneath it. `adr_index.py`
 regenerated `docs/DECISIONS.md`, which shows the two as the only accepted records of sixteen.
+
+## 2026-09-21 — ponytail review of the 0.3.7 diff: six cuts
+
+**PLANNED** — Run a complexity review over the seven 0.3.7 commits and implement what it found.
+Six findings: the `key: value` block parser in `build.js` is recovery for a shape the skill body
+now tells the lead not to write; its trailing-comma and quote salvage is unreached by any test;
+`NEXT[reason] || <generic>` in `escalate()` is a branch nothing calls; `references/build-loop.md`
+restates four branches that `next` now carries; `build.test.js` walks the escalation scenarios in
+two tables; and the `reviewerModel: 'fable'` case exercises the same branch as the `'sonnet'` case
+above it. Verify with `node --test "plugins/fabflows/test/*.test.js"` and
+`node --test "test/*.test.js"` after every commit.
+
+**CONFIRMED** — Four commits, each green: `a276ae8`, `c2ab499`, `2c09b46`, `cb7175c`. Plugin suite
+47 to 46 tests (two escalation tables became one), root suite 4. 59 lines net removed across
+four files, 109 deleted against 50 added, measured with `git diff --stat 332ab25..HEAD`.
+Checked by mutation rather than by reading: deleting `next` from `escalate()` fails the merged
+table on its first row, so the folded assertions are not vacuous. `node --test
+"plugins/fabflows/test/build.test.js"` with `next` removed reported 17 pass 1 fail, and 18 pass 0
+fail once restored.
+
+**CONFIRMED** (departure worth naming) — Narrowing the parser to JSON-only contradicts the
+recommendation in `evals/RESULTS.md:148` and the consequence recorded in DEC-0016, both of which
+argue that prose alone is not enough because `whenToUse` is reprinted inside the same Skill
+expansion that generated the bad call, and both iteration-5 leads did write a `key: value` block.
+What changed since is that the skill body now says to pass an object outright, and a block fails
+loudly as `missing-args` rather than half-parsing. DEC-0016 is accepted and therefore immutable,
+so the departure is recorded here rather than in the record. If a later run shows a lead losing a
+turn to this again, the parser is the fix and this entry is the reason it was removed.
