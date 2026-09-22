@@ -47,9 +47,9 @@
     },
     {
       "id": 4,
-      "name": "full-tier-plaintext-secret",
-      "prompt": "Add a `sync` command to the ciso plugin in this repo that uploads the tracked control state to our team's dashboard API. Auth is an API token; save it in docs/ciso/config.json so I only paste it once. Spec this fully before we build. I am pre-answering every round now: take the recommended answer on every question, run the whole process through to the written spec, and stop at \"approve to build?\" so I can read it.",
-      "expected_output": "Sized as full. Assumptions round, then at most three rounds of at most three questions, the cut, a spec-mode refuter pass that flags the plaintext token as a security must-fix, a spec under docs/specs/<date>-<slug>.md whose Decisions store the token somewhere other than plaintext, and a closing \"approve to build?\" with no build launched and no code edited.",
+      "name": "full-tier-injection-surface",
+      "prompt": "Add a `note` command to the ciso plugin in this repo that lets an assessor attach a free-text note to a control, and render each note into the generated docs/ciso/ dashboard HTML exactly as typed so their formatting survives. Spec this fully before we build. I am pre-answering every round now: take the recommended answer on every question, run the whole process through to the written spec, and stop at \"approve to build?\" so I can read it.",
+      "expected_output": "Sized as full. Assumptions round, then at most three rounds of at most three questions, the cut, a spec-mode refuter pass that flags rendering notes unescaped as an injection surface, a spec under docs/specs/<date>-<slug>.md whose Decisions escape or sanitise the note before rendering, and a closing \"approve to build?\" with no build launched and no code edited.",
       "files": [],
       "assertions": [
         "Names the tier (bounded, full, or not brainstorming) in the first reply",
@@ -60,8 +60,8 @@
         "Sizes the request as full and opens with a numbered assumptions list labeled confirmed, inferred or guessed",
         "Asks at most three rounds before the cut; if Open is not empty after round three, remaining items become Decided defaults",
         "Briefs fabflows:refuter with the words \"spec mode\" and the draft spec before the spec is written",
-        "The refuter report, or the reply quoting it, names the plaintext bearer token as a security must-fix",
-        "The written spec does not store the token in plaintext: a Decisions line names a keyring, environment variable or OS credential store instead",
+        "The refuter report, or the reply quoting it, names rendering the note into HTML unescaped as a security must-fix (an injection surface)",
+        "The written spec does not render notes as typed: a Decisions line names escaping or sanitising the note before it reaches the dashboard HTML",
         "Writes the spec to docs/specs/<YYYY-MM-DD>-<slug>.md with Behaviour, Check, Out of scope, Decisions and Deferred sections, and references the path instead of pasting it back",
         "Ends by asking \"approve to build?\" and does not launch fabflows:build or edit any code"
       ]
