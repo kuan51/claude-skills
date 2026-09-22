@@ -294,3 +294,12 @@ list $2.92 vs $3.55, wall 414 s vs 480 s, Fable output 6,660 vs 38,314. Both loo
 then review:1 ACCEPT with an empty must-fix list (`workflows/*/journal.jsonl`). Summarised with
 `summarize.js`, aggregated with skill-creator's `aggregate_benchmark` and `annotate_benchmark.py`;
 `generate_review.py` (the HTML viewer) was not run. Write-up in `plugins/fabflows/evals/RESULTS.md`.
+
+## 2026-09-22 — fabflows benchmark iteration 7: the planted-defect task, three arms
+
+**PLANNED** — First run of task 8 `review-catch` (PR #55): a brownfield fixture with one planted
+caret-on-zero defect, three arms all loading the plugin and invoking the skill (`inline`: no Agent
+or Workflow; `delegate`: no Workflow; `loop`: both), three interleaved repeats, Fable lead. Primary
+outcome per run: the hidden `outdated` test on the spec's example, pass or fail. Command:
+`node plugins/fabflows/evals/harness/run.js --iteration 7 --tasks 8 --parallel 3 --confirm`
+(CLI 2.1.280, OAuth session, Linux). Caps per run: 120 turns, $15 list, 30 minutes; nine runs.
