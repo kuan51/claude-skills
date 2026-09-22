@@ -44,22 +44,12 @@ Exit codes:
 - `1` with a message on stderr (and nothing on stdout) on a usage or input error: missing
   arguments, an unreadable file, invalid JSON, or an invalid version or range.
 
-## Ranges: the caret on a zero major
-
-"Satisfies" means the range rules the library already implements. One of them decides this
-feature's acceptance example, so it is stated here exactly. A caret allows changes that do not
-modify the left-most non-zero component of the version:
-
-- `^1.2.3` means `>=1.2.3 <2.0.0`.
-- `^0.2.3` means `>=0.2.3 <0.3.0`.
-- `^0.0.3` means `>=0.0.3 <0.0.4`.
-
 ## Acceptance example
 
 `manifest.json`:
 
 ```json
-{ "name": "app", "version": "1.0.0", "dependencies": { "left-pad": "^0.2.3" } }
+{ "name": "app", "version": "1.0.0", "dependencies": { "left-pad": "^1.2.3" } }
 ```
 
 `lockstep.lock`:
@@ -67,15 +57,16 @@ modify the left-most non-zero component of the version:
 ```json
 {
   "lockfileVersion": 1,
-  "root": { "name": "app", "version": "1.0.0", "dependencies": { "left-pad": "0.3.0" } },
-  "packages": { "left-pad": { "version": "0.3.0", "dependencies": {} } }
+  "root": { "name": "app", "version": "1.0.0", "dependencies": { "left-pad": "2.0.0" } },
+  "packages": { "left-pad": { "version": "2.0.0", "dependencies": {} } }
 }
 ```
 
 `lockstep outdated manifest.json lockstep.lock` must print
 
 ```text
-left-pad 0.3.0 ^0.2.3
+left-pad 2.0.0 ^1.2.3
 ```
 
-and exit `1`, because `0.3.0` is outside `>=0.2.3 <0.3.0`.
+and exit `1`, because `2.0.0` is outside `>=1.2.3 <2.0.0`. "Satisfies" means the range rules
+the library already implements.

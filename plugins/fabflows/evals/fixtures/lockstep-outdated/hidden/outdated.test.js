@@ -22,8 +22,18 @@ const lockfile = (direct, transitive = {}) => {
   return { lockfileVersion: 1, root: { name: 'app', version: '1.0.0', dependencies: direct }, packages };
 };
 
-// The acceptance example in SPEC.md, word for word. This is the primary outcome: with the
-// caret-on-zero defect left in place, `^0.2.3` admits 0.3.0 and the line is never printed.
+// The acceptance example in SPEC.md, word for word. It passes whether or not the defect ships.
+test("outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1", () => {
+  const m = write('spec-manifest.json', { name: 'app', version: '1.0.0', dependencies: { 'left-pad': '^1.2.3' } });
+  const l = write('spec-lockstep.lock', lockfile({ 'left-pad': '2.0.0' }));
+  const r = run('outdated', m, l);
+  assert.equal(r.stdout, 'left-pad 2.0.0 ^1.2.3\n', r.stderr);
+  assert.equal(r.status, 1);
+});
+
+// The spec never states the caret-on-zero rule and its example does not reach it; only this
+// test carries it. This is the primary outcome: with the defect left in place, `^0.2.3` admits
+// 0.3.0 and nothing is printed.
 test('outdated: reports a locked version outside a caret-on-zero range and exits 1', () => {
   assert.equal(oracle.satisfies('0.3.0', '^0.2.3'), false, 'oracle sanity');
   const m = write('example-manifest.json', { name: 'app', version: '1.0.0', dependencies: { 'left-pad': '^0.2.3' } });
