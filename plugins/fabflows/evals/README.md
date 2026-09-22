@@ -33,6 +33,10 @@ python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration
 python <skill-creator>/eval-viewer/generate_review.py <abs>/runs/iteration-1 --skill-name fabflows --benchmark <abs>/runs/iteration-1/benchmark.json --static <abs>/runs/iteration-1/review.html
 ```
 
+If a transcript contains the literal text `</script>`, `generate_review.py` embeds it unescaped
+and the browser cuts the page off there: replace it with `<\/script>` on the page's
+`EMBEDDED_DATA` line after generating.
+
 Results are summarised in `RESULTS.md`. Raw runs under `runs/` are gitignored.
 
 ## What each run does
