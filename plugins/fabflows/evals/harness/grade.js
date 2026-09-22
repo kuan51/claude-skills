@@ -82,10 +82,6 @@ function windowsFor(text, needle, withLeadIn = false) {
 
 // A needle can be mentioned in a preamble before its table row, so a check passes if any
 // mention's window satisfies it, not only the first.
-function windowFor(text, needle, withLeadIn = false) {
-  const w = windowsFor(text, needle, withLeadIn);
-  return w.length ? w : null;
-}
 const anyWindow = (text, needle, pred, withLeadIn = false) => windowsFor(text, needle, withLeadIn).some(pred);
 
 function gradeInventory(exp, fixture, resultText) {
@@ -290,7 +286,6 @@ function decisionTruth(fixture) {
 function gradeDigest(exp, fixture, resultText) {
   const truth = decisionTruth(fixture);
   const text = resultText;
-  const lower = text.toLowerCase();
   const missingIds = truth.filter((t) => !text.includes(t.id));
   exp.push({ text: `Lists every record (${truth.length})`, passed: missingIds.length === 0, evidence: missingIds.length ? `missing: ${missingIds.map((t) => t.id).join(', ')}` : 'all ids present' });
   const badTitle = truth.filter((t) => {
@@ -309,7 +304,6 @@ function gradeDigest(exp, fixture, resultText) {
   exp.push({ text: 'Invents no record id', passed: invented.length === 0, evidence: invented.length ? `not in the repo: ${invented.join(', ')}` : `${(text.match(/DEC-\d{4}/g) || []).length} id mentions, all real` });
   const status = gitStatus(fixture);
   exp.push({ text: 'Changed nothing in the repo', passed: status.length === 0, evidence: status.length ? `git status: ${status.map((s) => `${s.code} ${s.file}`).join(', ')}` : 'git status --porcelain is empty' });
-  void lower;
 }
 
 // A build task is graded by a hidden acceptance suite that lives outside the fixture, so the lead

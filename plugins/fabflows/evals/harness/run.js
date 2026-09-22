@@ -15,7 +15,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
-const { metricsFromFiles, parseTranscript } = require('./metrics.js');
+const { metricsFromFiles, parseTranscript, textOf } = require('./metrics.js');
 const { grade } = require('./grade.js');
 
 const HARNESS = __dirname;
@@ -197,7 +197,6 @@ function writeJson(p, data) {
   fs.writeFileSync(p, `${JSON.stringify(data, null, 2)}\n`);
 }
 
-const toolResultText = (b) => (typeof b.content === 'string' ? b.content : (b.content || []).map((c) => c.text || '').join('\n'));
 const shortModel = (m) => ((m || '').match(/haiku|sonnet|opus|fable/) || [m])[0];
 
 // Workflow tool_use ids from the lead: the join key for their tool_results, progress events and
@@ -221,7 +220,7 @@ function copyWorkflowDirs(events, dest) {
     if (e.type !== 'user') continue;
     for (const b of (e.message && e.message.content) || []) {
       if (!b || b.type !== 'tool_result' || !ids.has(b.tool_use_id)) continue;
-      const m = /^Transcript dir: (.+)$/m.exec(toolResultText(b));
+      const m = /^Transcript dir: (.+)$/m.exec(textOf(b.content));
       if (!m) continue;
       const src = m[1].trim();
       if (fs.existsSync(src)) fs.cpSync(src, path.join(dest, path.basename(src)), { recursive: true });
