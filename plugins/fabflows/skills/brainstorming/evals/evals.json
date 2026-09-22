@@ -1,0 +1,23 @@
+{
+  "skill_name": "brainstorming",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want users to be able to export their data somehow. Probably CSV? Not sure where it should live in the app. Think this through with me before we build anything. The repo is the one you're in.",
+      "expected_output": "First reply sizes the request as full, does not ask what the stack or test command is (workers read it), opens with a numbered assumptions list labeled confirmed/inferred/guessed, and asks at most three numbered questions each with a recommended answer, round one including the premise check. Ends with a Decided/Open/Deferred block. No code written.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I have an idea for a small CLI that watches a folder of markdown notes and builds a static site from them. Nothing exists yet, no repo. Help me scope it.",
+      "expected_output": "Greenfield path: no explorer spawned, round one covers stack, hosting and storage with a recommended answer each plus the premise check, at most three questions, Decided/Open/Deferred block at the end.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "The 'Known gaps' list in plugins/fabflows/README.md should mention that the guard can't see inside a Makefile target. Spec this before you touch it.",
+      "expected_output": "Sized as bounded: one or two rounds at most, spec block printed in chat (Behaviour, Check, Out of scope, Decisions, Deferred), no file written to docs/specs, no edit made.",
+      "files": []
+    }
+  ]
+}
