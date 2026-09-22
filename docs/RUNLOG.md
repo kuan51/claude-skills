@@ -276,3 +276,13 @@ record by writing a new record carrying `supersedes:`, and that narrowing DEC-00
 recorded only in this log. No superseding record was written: DEC-0016's three decisions all stand,
 and the parser is listed there under consequences rather than as a decision. If that reading is
 wrong, the fix is a new record superseding DEC-0016, not an edit to it.
+
+## 2026-09-22 — fabflows benchmark iteration 6: task 7 with Opus 5.5 workers
+
+**PLANNED** — Re-run the build-loop benchmark now that Opus 5.5 is released, to record which real
+model id the `opus` alias resolves to for the builder and reviewer, and to re-measure token
+efficiency, hidden-test accuracy and graded code quality against iteration 5. No plugin change:
+every Opus-tier pin is the `opus` alias, which the CLI documents as "the latest model". Lead stays
+on Fable; task 7 only; both arms; two repeats. Command:
+`node plugins/fabflows/evals/harness/run.js --iteration 6 --tasks 7 --repeats 2 --parallel 2 --confirm`
+(CLI 2.1.280, OAuth session, Linux). Caps per run: 200 turns, $60 list, 120 minutes.
