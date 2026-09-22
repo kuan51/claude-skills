@@ -33,7 +33,7 @@ does its job:
 | `fabflows:researcher` | Haiku | none | Read, Grep, Glob, WebFetch, WebSearch | external docs and APIs, distilled with sources |
 | `fabflows:editor` | Sonnet | medium | Read, Edit, Write, Grep, Glob, Bash | scoped code changes |
 | `fabflows:test-runner` | Sonnet | low | Read, Grep, Glob, Bash, Write | writing and running tests, reporting real output |
-| `fabflows:refuter` | Opus | medium | Read, Grep, Glob, Bash | reviewing a finished change against its spec, re-running its tests |
+| `fabflows:refuter` | Opus | medium | Read, Grep, Glob, Bash | reviewing a finished change against its spec, re-running its tests; or a draft spec, lens by lens |
 | `fabflows:investigator` | Opus | high | Read, Grep, Glob, Bash | reproducing and narrowing a self-contained failure |
 
 Effort is pinned so a worker does not inherit the lead's session effort. Haiku 4.5 has
@@ -46,12 +46,25 @@ accepting anything; the `fabflows:build` workflow, described in
 [The build loop](#the-build-loop); and the `using-fabflows` entrypoint skill, which you
 invoke at the start of a conversation to run the whole session on that discipline.
 Invoking it authorizes the lead to launch the build loop, which commits to your feature
-branch, without asking again per task.
+branch, without asking again per task. The `brainstorming` skill sits in front of the loop
+for a request that arrives without a spec; see [Brainstorming](#brainstorming).
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 
 None of the workers can spawn a worker of its own. `Agent` is absent from every tool
 list. The delegation tree therefore remains one level deep, and the cost remains bounded.
+
+## Brainstorming
+
+`fabflows:brainstorming` turns a rough idea into the spec the build loop needs. The lead
+sizes the request first: bounded (one behaviour, a few files) is designed in chat, full
+(data, interfaces, auth, a feature) gets a spec written to `docs/specs/<date>-<slug>.md`.
+Facts come from `explorer` and `researcher`, never from the user; the conversation opens
+with an assumptions round, then runs rounds of at most three numbered questions, each with
+a recommended answer, until nothing is open. The lead states the maximal version, cuts it
+to the smallest shippable slice, and sends the draft to `refuter` in spec mode, which
+attacks it across seven lenses and blocks on a security gap. The user reads the spec before
+`fabflows:build` launches.
 
 ## The build loop
 

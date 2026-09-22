@@ -48,7 +48,9 @@ so it picks up the newly installed plugin.
   skill that makes the lead write a proper delegation brief and re-verify what comes
   back instead of trusting it; `fabflows:build`, a deterministic build-and-review
   loop for a spec'd change; and `using-fabflows`, the entrypoint skill you invoke at the
-  start of a conversation to put the whole session on that discipline. Includes an
+  start of a conversation to put the whole session on that discipline; and `brainstorming`,
+  which turns a rough idea into a spec the build loop can take, with the refuter attacking
+  the draft before it is written. Includes an
   **active guard hook** that blocks package installs, default-branch commits,
   destructive commands, and credential reads and writes. Read that plugin's README
   before installing, including its "Known gaps" section.
