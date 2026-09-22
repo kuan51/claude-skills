@@ -9,14 +9,15 @@ per-plugin history until entries are recorded here going forward.
 ### Added
 
 - **fabflows 0.5.0** -- brought in line with Anthropic's skill guide. The guard gains one
-  exception: `pip install --target <dir> pypdf` (also `python -m pip`, `uv pip`) when `<dir>`
-  is a literal path under the OS temp directory or inside a `scratchpad` directory, so a
-  session can read a PDF without anything landing in site-packages; every other install stays
-  blocked. The `fabflows` description drops "any task a Haiku or Sonnet worker could do" for
-  the shapes that pay (DEC-0014, now accepted) and ends with a negative trigger for short
-  tasks. All three skills declare `compatibility` (Claude Code only), the `fabflows` skill
-  gains a troubleshooting table, and `evals/trigger-corpus.json` adds the trigger-accuracy
-  corpus the benchmark could not measure, in ciso's format with a shape test.
+  exception: `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>`
+  is a literal path with a `scratchpad` directory in it and outside live configuration, so a
+  session can read a PDF without anything landing in site-packages; `--isolated` keeps pip
+  from reading `PIP_*` variables or user config, and every other install stays blocked. The
+  `fabflows` description drops "any task a Haiku or Sonnet worker could do" for the shapes
+  that pay (DEC-0014, now accepted) and ends with a negative trigger for short tasks. All
+  three skills declare `compatibility` (Claude Code only), the `fabflows` skill gains a
+  troubleshooting table, and `evals/trigger-corpus.json` adds the trigger-accuracy corpus the
+  benchmark could not measure, in ciso's format with a shape test.
 - **fabflows 0.4.0** -- `brainstorming`, a design skill that turns a rough idea into the
   spec `fabflows:build` needs. The lead sizes the request (bounded, in chat; or full, with a
   spec written to `docs/specs/`), sends `explorer` and `researcher` for the facts instead of

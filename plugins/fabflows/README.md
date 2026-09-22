@@ -143,10 +143,12 @@ A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
 
 - **Package installs** across npm, pnpm, yarn, bun, pip, uv, dotnet, cargo, go, gem,
   apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`. One exception:
-  `pip install --target <dir> pypdf` (also `python -m pip`, `uv pip`) when `<dir>` is a
-  literal path under the OS temp directory or inside a `scratchpad` directory, so a session
-  can read a PDF without anything landing in site-packages. A variable in the path, a second
-  package, or a `-r` file is still denied.
+  `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
+  literal path with a `scratchpad` directory in it and outside the live configuration below,
+  so a session can read a PDF without anything landing in site-packages. `--isolated` is
+  required because it makes pip ignore `PIP_*` variables and user config, the two ways the
+  install could be pointed at another index. A variable in the path, a second package, an
+  index flag, or a `-r` file is still denied.
 - **Commits, pushes, merges and rebases on a default branch.** The default is read from
   `origin/HEAD` at runtime, falling back to `main` or `master`. Force-push is blocked
   only when it targets a default branch, so `--force-with-lease` on your own feature
