@@ -235,3 +235,11 @@ guard.js review, token benchmark iterations 1, 2 and 5) moved to `docs/runlog/20
 
 **CONFIRMED** (correction to the entry above) — The two eval 4 prompt commits are `0605fc7`
 (reword) and `d1d2ddb` (injection surface); the entry above left a placeholder for them.
+
+**CONFIRMED** — The iteration-4 review page rendered raw JSON from the old-skill transcript
+on: that transcript's spike output contains the literal text `</script>`, and skill-creator's
+`generate_review.py` embeds transcripts with plain `json.dumps` inside a `<script>` tag, so
+the browser closed the block there. Fixed in the scratchpad only: regenerated the page and
+replaced `</script>` with `<\/script>` on the `EMBEDDED_DATA` line. `grep -c '</script>'`
+went from 3 to 2 and the embedded JSON still parses. The generator is the synced skill, not
+this repo, so the post-process is the fix until it escapes the tag itself.
