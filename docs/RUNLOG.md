@@ -494,3 +494,17 @@ printed `With Skill: 100%`, `Old Skill: 87.5%`; notes in `skills/brainstorming/e
 **SKIPPED** — The run briefs forbade destructive fixtures, so iteration 3 does not show
 whether the skill wording alone prevents them; the guard rule is the mechanical layer. Still
 first reply only, one prompt, one run per configuration.
+
+## 2026-09-22 — fabflows 0.4.0: ponytail review cuts
+
+**CONFIRMED** — Eight cuts from `/ponytail-review` applied: one extension list feeds both
+runner-file regexes, the notebook fallback and the chained unquoting strips are gone, the
+refuter owns the lens list, the hard block is stated once, and the three eval write-ups
+moved from `skills/brainstorming/evals/` (which installs into consumers' caches) to
+`plugins/fabflows/evals/brainstorming/`. Earlier entries above cite the old path; they
+were true when written. `node --test "plugins/fabflows/test/*.test.js"` printed `pass 48`,
+`fail 0`; root suite `fail 0`. Net 16 lines fewer in code and skill.
+
+**SKIPPED** (departure worth naming) — The file move landed inside commit `43c9666`
+(the guard refactor) because `git mv` had staged it before that commit ran, so that commit
+mixes a refactor with a docs move. History is pushed, so it stays as is.
