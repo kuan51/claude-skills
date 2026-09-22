@@ -15,6 +15,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
+const { parseArgs: parseArgv } = require('node:util');
 const { metricsFromFiles, parseTranscript, textOf } = require('./metrics.js');
 const { grade } = require('./grade.js');
 
@@ -24,23 +25,18 @@ const REPO = path.resolve(EVALS, '..', '..', '..');
 const CONFIG = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
 
 function parseArgs(argv) {
-  const a = { iteration: 1, repeats: 2, parallel: 1, confirm: false, regrade: false, tasks: null, arms: null, pluginDir: null, model: CONFIG.lead.model, effort: CONFIG.lead.effort };
-  for (let i = 0; i < argv.length; i++) {
-    const k = argv[i];
-    const v = argv[i + 1];
-    if (k === '--confirm') a.confirm = true;
-    else if (k === '--regrade') a.regrade = true;
-    else if (k === '--iteration') a.iteration = Number(v), i++;
-    else if (k === '--repeats') a.repeats = Number(v), i++;
-    else if (k === '--parallel') a.parallel = Number(v), i++;
-    else if (k === '--tasks') a.tasks = v.split(',').map(Number), i++;
-    else if (k === '--arms') a.arms = v.split(','), i++;
-    else if (k === '--plugin-dir') a.pluginDir = path.resolve(v), i++;
-    else if (k === '--model') a.model = v, i++;
-    else if (k === '--effort') a.effort = v, i++;
-    else throw new Error(`unknown argument ${k}`);
-  }
-  return a;
+  const s = { type: 'string' };
+  const { values: v } = parseArgv({ args: argv, strict: true, options: {
+    confirm: { type: 'boolean', default: false }, regrade: { type: 'boolean', default: false },
+    iteration: { ...s, default: '1' }, repeats: { ...s, default: '2' }, parallel: { ...s, default: '1' },
+    tasks: s, arms: s, 'plugin-dir': s, model: { ...s, default: CONFIG.lead.model }, effort: { ...s, default: CONFIG.lead.effort },
+  } });
+  return {
+    confirm: v.confirm, regrade: v.regrade, model: v.model, effort: v.effort,
+    iteration: Number(v.iteration), repeats: Number(v.repeats), parallel: Number(v.parallel),
+    tasks: v.tasks ? v.tasks.split(',').map(Number) : null, arms: v.arms ? v.arms.split(',') : null,
+    pluginDir: v['plugin-dir'] ? path.resolve(v['plugin-dir']) : null,
+  };
 }
 
 // Clean room: every installed plugin off (fabflows comes back only through --plugin-dir in the
@@ -361,31 +357,6 @@ async function pool(items, size, fn) {
   return results;
 }
 
-function summarize(results) {
-  const rows = [['task', 'arm', 'run', 'pass', 'turns', 'lead out', 'worker out', 'lead ctx', 'cost $', 'sec', 'workers', 'workflow']];
-  // Agents come sorted by label (build:1 build:2 review:1 ...); the column reads in round order.
-  const round = (agent) => Number(agent.label.split(':')[1]) || 0;
-  for (const r of results) {
-    if (!r.metrics) {
-      rows.push([r.cell.task.name, r.cell.arm, String(r.cell.run), r.skipped || r.error || '?']);
-      continue;
-    }
-    const m = r.metrics;
-    const workerOut = Object.values(m.workersByModel).reduce((s, w) => s + (w.output || 0), 0);
-    rows.push([
-      r.cell.task.name, r.cell.arm, String(r.cell.run),
-      `${r.grading.summary.passed}/${r.grading.summary.total}`,
-      String(m.result.num_turns ?? '-'), String(m.lead.output ?? '-'), String(workerOut), String(m.lead.finalContext),
-      m.result.total_cost_usd != null ? m.result.total_cost_usd.toFixed(2) : '-',
-      String(Math.round((m.result.duration_ms || 0) / 1000)),
-      Object.entries(m.workers).map(([k, v]) => `${k.replace('fabflows:', '')}x${v.spawns}`).join(' ') || '-',
-      (m.workflows || []).flatMap((w) => [...w.agents].sort((x, y) => round(x) - round(y)).map((ag) => ag.label)).join(' ') || '-',
-    ]);
-  }
-  const widths = rows[0].map((_, i) => Math.max(...rows.map((r) => (r[i] || '').length)));
-  return rows.map((r) => r.map((c, i) => (c || '').padEnd(widths[i])).join('  ')).join('\n');
-}
-
 async function main() {
   const a = parseArgs(process.argv.slice(2));
   const cells = buildCells(a);
@@ -408,7 +379,7 @@ async function main() {
   const pluginArm = cells.map((c) => CONFIG.arms[c.arm]).find((x) => x.pluginDir);
   if (pluginArm && !a.regrade) a.stagedPluginDir = stagePlugin(a.pluginDir || path.join(REPO, pluginArm.pluginDir), path.join(iterDir, 'plugin'));
 
-  const results = await pool(cells, a.parallel, async (cell) => {
+  await pool(cells, a.parallel, async (cell) => {
     const label = `${cell.task.name}/${cell.arm}/run-${cell.run}`;
     console.log(`[${new Date().toISOString()}] start ${label}`);
     const r = await runCell(a, cell, settingsPath);
@@ -416,10 +387,11 @@ async function main() {
     console.log(`[${new Date().toISOString()}] done  ${label}: ${verdict}`);
     return r;
   });
-  console.log(`\n${summarize(results)}`);
+  // Per-run errors and skips were printed above; the per-cell table comes from the run dirs.
+  spawnSync(process.execPath, [path.join(HARNESS, 'summarize.js'), iterDir], { stdio: 'inherit' });
 }
 
-module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, summarize };
+module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin };
 
 if (require.main === module) {
   main().catch((e) => {
