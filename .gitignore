@@ -33,3 +33,11 @@ plugins/fabflows/evals/runs/iteration-*/*
 !plugins/fabflows/evals/runs/iteration-*/cells.json
 !plugins/fabflows/evals/runs/iteration-*/benchmark.json
 !plugins/fabflows/evals/runs/iteration-*/benchmark.md
+
+# Written by `claude plugin eval` for plugins/docs-warden/evals; each run is a fresh directory.
+plugins/docs-warden/evals/results/
+
+# Local Claude Code session state. settings.local.json is per-developer, and
+# data/ holds databases plugins write while running; neither belongs in git.
+.claude/settings.local.json
+.claude/data/

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: trigger-neg-changelog-entry
+context:
+  scaffold_script: fixture.sh
