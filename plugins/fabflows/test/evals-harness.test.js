@@ -101,8 +101,8 @@ test('the review-catch fixture, defect in place, fails only the caret-on-zero te
 test('cells interleave by repeat then arm, and a task sets its own repeats unless --repeats is given', () => {
   const { buildCells } = require('../evals/harness/run.js');
   const labels = buildCells({ tasks: [8], arms: null, repeats: null }).map((c) => `${c.arm}-${c.run}`);
-  assert.deepEqual(labels, ['inline-1', 'delegate-1', 'loop-1', 'inline-2', 'delegate-2', 'loop-2', 'inline-3', 'delegate-3', 'loop-3']);
-  assert.equal(buildCells({ tasks: [8], arms: null, repeats: 1 }).length, 3, 'the flag overrides the task');
+  assert.deepEqual(labels, ['inline-1', 'loop-1', 'inline-2', 'loop-2', 'inline-3', 'loop-3', 'inline-4', 'loop-4', 'inline-5', 'loop-5']);
+  assert.equal(buildCells({ tasks: [8], arms: null, repeats: 1 }).length, 2, 'the flag overrides the task');
   assert.equal(buildCells({ tasks: [7], arms: null, repeats: null }).length, 4, 'a task without repeats falls back to 2');
 });
 
@@ -113,7 +113,7 @@ test("an arm's disallowedTools reach the claude argument list", () => {
     const args = claudeArgs(a, c, '/run', '/settings.json');
     return [c.arm, args[args.indexOf('--disallowedTools') + 1]];
   }));
-  assert.deepEqual(byArm, { inline: 'PowerShell,Agent,Workflow', delegate: 'PowerShell,Workflow', loop: 'PowerShell' });
+  assert.deepEqual(byArm, { inline: 'PowerShell,Agent,Workflow', loop: 'PowerShell' });
 });
 
 test('every visible fixture carries no benchmark context', () => {
@@ -194,4 +194,29 @@ test('probe summary counts hook payloads by event, tool and agent type, and sets
     'synthetic (fixture tests)': 1,
     unparseable: 1,
   });
+});
+
+test('grade reads the two halves of the review question from the workflow journal and the hidden run', () => {
+  const { grade } = require('../evals/harness/grade.js');
+  const os = require('node:os');
+  const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
+  const t8 = cfg.tasks.find((t) => t.id === 8);
+  const task = { ...t8, grade: { ...t8.grade, ...t8.arms.loop.grade, testCommand: 'node -e 0' } };
+  // The solution passes the hidden suite, so "shipped" can only come from the review naming it.
+  const fixture = path.join(OUTDATED, 'solution');
+  const metrics = { result: {}, lead: { output: 0 }, totals: { output: 0 }, workers: {}, workflows: [{ name: 'fabflows:build', completed: true, agents: [{ agentType: 'fabflows:refuter' }] }], hooks: {} };
+  const withJournal = (rows) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wf-'));
+    fs.mkdirSync(path.join(dir, 'wf_x'));
+    fs.writeFileSync(path.join(dir, 'wf_x', 'journal.jsonl'), rows.map((r) => JSON.stringify(r)).join('\n'));
+    const g = grade({ task, fixture, metrics, timing: {}, maxTurns: 10, workflowDir: dir });
+    return Object.fromEntries(g.expectations.filter((e) => e.informational).map((e) => [e.text, e.passed]));
+  };
+  const rework = withJournal([{ type: 'result', result: { verdict: 'REWORK', mustFix: [{ location: 'src/index.js:90', problem: 'caret on a zero major admits the next minor' }] } }]);
+  assert.equal(rework['The review named the planted defect'], true);
+  assert.equal(rework['The build round shipped the planted defect'], true);
+  assert.equal(rework['The review returned REWORK on any round'], true);
+  const accept = withJournal([{ type: 'result', result: { verdict: 'ACCEPT', mustFix: [] } }]);
+  assert.equal(accept['The review named the planted defect'], false);
+  assert.equal(accept['The build round shipped the planted defect'], false);
 });

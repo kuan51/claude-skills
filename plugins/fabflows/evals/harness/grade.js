@@ -313,6 +313,7 @@ function gradeDigest(exp, fixture, resultText) {
 // yields one file-level `not ok <file>` per test file; those are set aside so a broken project
 // reads as "could not run" rather than as N named failures.
 function gradeHiddenTests(exp, spec, fixture, metrics, workflowDir) {
+  const after = []; // expectations that need the hidden results, pushed once they exist
   // Status is read before anything runs in the fixture, so a test that writes a scratch file
   // cannot dirty the tree the lead left.
   const status = gitStatus(fixture);
@@ -374,6 +375,7 @@ function gradeHiddenTests(exp, spec, fixture, metrics, workflowDir) {
     });
     // Verdicts come from the copied journals' result rows; REWORK on any round counts.
     const verdicts = [];
+    const mustFix = [];
     const dirs = workflowDir && fs.existsSync(workflowDir) ? fs.readdirSync(workflowDir) : [];
     for (const d of dirs) {
       const journal = path.join(workflowDir, d, 'journal.jsonl');
@@ -381,7 +383,10 @@ function gradeHiddenTests(exp, spec, fixture, metrics, workflowDir) {
       for (const line of fs.readFileSync(journal, 'utf8').split(/\r?\n/)) {
         try {
           const row = JSON.parse(line);
-          if (row.type === 'result' && row.result && row.result.verdict) verdicts.push(row.result.verdict);
+          if (row.type === 'result' && row.result && row.result.verdict) {
+            verdicts.push(row.result.verdict);
+            for (const f of row.result.mustFix || []) mustFix.push(`${f.location || ''} ${f.problem || ''}`);
+          }
         } catch {
           // A blank or truncated line carries no verdict.
         }
@@ -393,6 +398,29 @@ function gradeHiddenTests(exp, spec, fixture, metrics, workflowDir) {
       passed: verdicts.includes('REWORK'),
       evidence: verdicts.length ? `verdicts: ${verdicts.join(', ')}` : 'no review verdict in any journal',
     });
+    // The two halves of the question: did the build ship the planted defect, and did the review
+    // name it. A review that names it proves both; a final hidden failure on the defect's test
+    // proves the first and disproves the second. Both are pushed after the hidden run below.
+    if (spec.defectPattern) {
+      const re = new RegExp(spec.defectPattern, 'i');
+      const named = mustFix.filter((m) => re.test(m));
+      after.push((tests) => {
+        const defectTests = tests.filter((h) => re.test(h.name));
+        const shipped = named.length > 0 || defectTests.some((h) => !h.passed);
+        exp.push({
+          text: 'The build round shipped the planted defect',
+          informational: true,
+          passed: shipped,
+          evidence: named.length ? `review named it: ${named[0].slice(0, 120)}` : defectTests.length ? `defect tests after the run: ${defectTests.map((h) => `${h.passed ? 'ok' : 'not ok'} ${h.name}`).join('; ').slice(0, 160)}` : 'no defect test matched',
+        });
+        exp.push({
+          text: 'The review named the planted defect',
+          informational: true,
+          passed: named.length > 0,
+          evidence: named.length ? named[0].slice(0, 160) : mustFix.length ? `must-fix items: ${mustFix.length}, none matched` : 'no must-fix items',
+        });
+      });
+    }
   }
 
   const hiddenDir = path.resolve(__dirname, '..', spec.hidden);
@@ -438,6 +466,7 @@ function gradeHiddenTests(exp, spec, fixture, metrics, workflowDir) {
     });
   }
   for (const h of tests) exp.push({ text: `hidden: ${h.name}`, passed: h.passed, evidence: h.passed ? 'ok' : h.evidence || 'not ok' });
+  for (const fn of after) fn(tests);
   const passed = tests.filter((h) => h.passed).length;
   // A test file that crashes at load, or a hung one killed by the timeout, prints no per-test
   // lines and so vanishes from the count; the runner's exit status still says it failed.

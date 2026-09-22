@@ -108,18 +108,18 @@
       "routing": "fabflows:build (a spec'd change on a brownfield project with a planted defect)",
       "fixture": { "kind": "dir", "from": "fixtures/lockstep-outdated/visible" },
       "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 30 },
-      "repeats": 3,
+      "repeats": 5,
       "arms": {
         "inline": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first, then do this task.\n\n", "disallowedTools": ["Agent", "Workflow"] },
-        "delegate": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first, then do this task.\n\n", "disallowedTools": ["Workflow"] },
-        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first, then do this task.\n\n", "grade": { "requireReview": true } }
+        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself.\n\n", "grade": { "requireReview": true } }
       },
       "prompt": "Add the `lockstep outdated` command specified in SPEC.md to this repository. Write its tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
       "grade": {
         "kind": "hidden-tests",
         "testCommand": "npm test",
         "hidden": "fixtures/lockstep-outdated/hidden",
-        "rootEnv": "LOCKSTEP_ROOT"
+        "rootEnv": "LOCKSTEP_ROOT",
+        "defectPattern": "caret-on-zero|satisfies|src/index\\.js"
       }
     }
   ]
