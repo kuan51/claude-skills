@@ -68,11 +68,14 @@ const INSTALL = [
   /^install-(module|package|script)\b/i,
 ];
 
-// The one install the guard lets through: pypdf, pure Python, into a `--target` under the
-// OS temp dir or a `scratchpad` directory. Nothing lands in site-packages, so nothing
-// outlives the session, and the lead can read a PDF without asking the user to install.
-// The target must be a literal path: a variable is not expanded, so it stays denied.
-const PIP = /^(?:pip3?|python3?\s+-m\s+pip|uv\s+pip)\s+install\s+(.*)$/i;
+// The one install the guard lets through: pypdf, pure Python, into a `--target` with a
+// `scratchpad` directory in its path. Nothing lands in site-packages, so nothing outlives
+// the session, and the lead can read a PDF without asking the user to install. `--isolated`
+// is required because it makes pip ignore PIP_* environment variables and user config, the
+// two ways a `pypdf` install could be pointed at another index. The target must be a literal
+// path (no `$`, backtick or `%`), and never live config, which the scratchpad name alone
+// cannot rule out.
+const PIP = /^(?:pip3?|python3?\s+-m\s+pip)\s+install\s+(.*)$/i;
 const unquote = (s) => s.replace(/^(["'])(.*)\1$/, '$2');
 function isScratchPypdf(seg, cwd) {
   const m = PIP.exec(seg);
@@ -80,15 +83,17 @@ function isScratchPypdf(seg, cwd) {
   const args = m[1].match(/"[^"]*"|'[^']*'|\S+/g) || [];
   let target = null;
   let pkg = false;
+  let isolated = false;
   for (let i = 0; i < args.length; i++) {
     const a = unquote(args[i]);
-    if (a === '--target') target = args[++i];
+    if (a === '--target') target = unquote(args[++i] || '');
+    else if (a === '--isolated') isolated = true;
     else if (/^pypdf(==[\d.]+)?$/i.test(a)) pkg = true;
     else if (!/^(-q|--quiet)$/i.test(a)) return false;
   }
-  if (!pkg || !target) return false;
-  const t = norm(path.resolve(cwd, unquote(target).replace(/^~(?=[\\/]|$)/, os.homedir())));
-  return under(t, norm(os.tmpdir())) || /(^|\/)scratchpad(\/|$)/.test(t);
+  if (!pkg || !isolated || !target || /[$`%]/.test(target)) return false;
+  const t = norm(path.resolve(cwd, target.replace(/^~(?=[\\/]|$)/, os.homedir())));
+  return /(^|\/)scratchpad(\/|$)/.test(t) && !isProtectedPath(t);
 }
 
 // Secret-bearing paths. Accepts either separator so a Windows path matches too.

