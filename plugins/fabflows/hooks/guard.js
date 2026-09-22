@@ -73,7 +73,6 @@ const INSTALL = [
 // outlives the session, and the lead can read a PDF without asking the user to install.
 // The target must be a literal path: a variable is not expanded, so it stays denied.
 const PIP = /^(?:pip3?|python3?\s+-m\s+pip|uv\s+pip)\s+install\s+(.*)$/i;
-const PIP_FLAG = /^(-q|--quiet|--no-deps|-U|--upgrade)$/i;
 const unquote = (s) => s.replace(/^(["'])(.*)\1$/, '$2');
 function isScratchPypdf(seg, cwd) {
   const m = PIP.exec(seg);
@@ -83,10 +82,9 @@ function isScratchPypdf(seg, cwd) {
   let pkg = false;
   for (let i = 0; i < args.length; i++) {
     const a = unquote(args[i]);
-    if (a === '--target' || a === '-t') target = args[++i];
-    else if (a.startsWith('--target=')) target = a.slice('--target='.length);
+    if (a === '--target') target = args[++i];
     else if (/^pypdf(==[\d.]+)?$/i.test(a)) pkg = true;
-    else if (!PIP_FLAG.test(a)) return false;
+    else if (!/^(-q|--quiet)$/i.test(a)) return false;
   }
   if (!pkg || !target) return false;
   const t = norm(path.resolve(cwd, unquote(target).replace(/^~(?=[\\/]|$)/, os.homedir())));

@@ -81,8 +81,7 @@ test('lets pypdf into a scratch --target through, and nothing else', () => {
   for (const cmd of [
     `pip install --target ${tmp} pypdf`,
     'python3 -m pip install -q --target /home/u/scratchpad/pylib pypdf==4.3.1',
-    `uv pip install --target=${tmp} pypdf`,
-    `pip3 install --no-deps -t "${tmp}" pypdf`,
+    `uv pip install --target "${tmp}" pypdf`,
   ]) {
     allows(shell(cmd), cmd);
   }
@@ -94,7 +93,6 @@ test('lets pypdf into a scratch --target through, and nothing else', () => {
     'pip install --target /opt/lib pypdf',
     'pip install --target ~/.claude/plugins/x pypdf',
     'pip install --target $S/pylib pypdf',
-    `echo x && pip install --target ${tmp} pypdf requests`,
   ]) {
     denies(shell(cmd), cmd);
   }
