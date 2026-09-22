@@ -49,6 +49,16 @@ the one that matters:
 `skipped` is never reported as `pass`. A scorecard that quietly passes checks it
 never ran is worse than no scorecard, because people believe it.
 
+A document the audit can discover but not open -- permission-restricted, a
+device node, a directory someone named `x.md` -- follows the same rule. The
+check reports on what it did read and names what it did not in its `reason`,
+after `-- not examined (unreadable):`. It downgrades to `warn` where it would
+otherwise have passed, and to `skipped` when nothing at all could be read. It
+never drops the file silently: an unreadable document that vanishes from the
+report is a pass nobody earned. This applies to `front-matter`, `links`,
+`glossary-reject-terms` and `phi-secrets`, the four checks that walk discovered
+files.
+
 ## JSON shape
 
 ```json

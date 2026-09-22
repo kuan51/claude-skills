@@ -50,6 +50,7 @@ from _common import (
     parse_domain_model,
     parse_front_matter,
     parse_glossary,
+    read_doc,
     read_front_matter,
     review_date,
     strip_code,
@@ -82,6 +83,28 @@ GENERATED_REGION_RE = re.compile(
 
 def check(cid, state, reason, fix=""):
     return {"id": cid, "state": state, "reason": reason, "fix": fix}
+
+
+UNREADABLE_FIX = ("Make the file readable, or move it out of the documentation "
+                  "tree. Until then this check has not seen it.")
+
+
+def _only_note(unreadable):
+    """The whole reason, when a check could not read a single thing it walked."""
+    return "Nothing examined; could not read: " + _shown(unreadable) + "."
+
+
+def _unread_note(unreadable):
+    """The tail a check appends when it could not open some of what it walked.
+
+    Named, not counted, and never dropped: an unreadable document that vanishes
+    from the report is the fake pass the second non-negotiable forbids. The
+    check still reports on what it did read -- one bad file is not a reason to
+    throw away nine good findings -- so the reason has to say which nine.
+    """
+    if not unreadable:
+        return ""
+    return " -- not examined (unreadable): " + _shown(unreadable)
 
 
 ARCHETYPE_FIX = ("Set archetype in .docs-warden.yml to one of the known values. "
@@ -241,11 +264,17 @@ def check_required_files(repo, config):
 
 def check_front_matter(repo):
     today = dt.date.today()
-    missing, overdue = [], []
+    missing, overdue, unreadable = [], [], []
     examined = 0
     for path in long_lived_docs(repo):
         name = path.relative_to(repo).as_posix()
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text = read_doc(path)
+        if text is None:
+            # Not folded into "missing owner/review_by": read_front_matter
+            # returns {} for an unreadable file too, so that would report a
+            # front-matter defect about a file nobody has read.
+            unreadable.append(name)
+            continue
         if text.startswith(GENERATED_MARKER):
             continue
         front, _ = read_front_matter(path)
@@ -262,16 +291,28 @@ def check_front_matter(repo):
             continue
         if due < today:
             overdue.append(f"{name} (due {due.isoformat()})")
+    note = _unread_note(unreadable)
     if missing:
         return check(
-            "front-matter", "fail", "Missing owner/review_by: " + ", ".join(missing),
+            "front-matter", "fail",
+            "Missing owner/review_by: " + ", ".join(missing) + note,
             "Add the front matter block. See references/universal-set.md.",
         )
     if overdue:
         return check(
-            "front-matter", "warn", "Past review_by: " + ", ".join(overdue),
+            "front-matter", "warn",
+            "Past review_by: " + ", ".join(overdue) + note,
             "Review the document, then push review_by out by the cadence.",
         )
+    if unreadable:
+        # Checked some, could not check others: the state check_lint already
+        # reports in for exactly this shape. A pass would claim the unreadable
+        # documents carry front matter.
+        clean = (f"Owner and review_by present and current on {examined} "
+                 f"document(s).")
+        return check("front-matter", "warn" if examined else "skipped",
+                     (clean + note) if examined else _only_note(unreadable),
+                     UNREADABLE_FIX)
     if not examined:
         # A pass over an empty population is the false green this tool exists to
         # catch. "skipped" is the honest state: nothing was verified.
@@ -646,32 +687,40 @@ def check_links(repo):
     docs = [p for p in _documentation_files(repo) if not _is_example_asset(p, repo)]
     if not docs:
         return check("links", "skipped", "No documentation files to check.", "")
-    broken, checked = [], 0
+    broken, unreadable, checked = [], [], 0
     adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
     for path in docs:
         # An archived record sits one folder deeper than it was written, so
         # its ../ links break; it is immutable, so the fix cannot be to edit it.
         if adr_archive in path.resolve().parents:
             continue
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
         name = path.relative_to(repo).as_posix()
+        text = read_doc(path)
+        if text is None:
+            # Was a bare `continue`: the file vanished from the report and the
+            # check still said every link resolves, which is the same fake pass
+            # by a quieter route than the crash.
+            unreadable.append(name)
+            continue
         for target in _relative_link_targets(text):
             checked += 1
             if not (path.parent / target).exists():
                 broken.append(f"{name} -> {target}")
+    note = _unread_note(unreadable)
     if broken:
         shown = "; ".join(broken[:10])
         if len(broken) > 10:
             shown += f"; and {len(broken) - 10} more"
         return check(
-            "links", "fail", "Broken relative links: " + shown,
+            "links", "fail", "Broken relative links: " + shown + note,
             "Fix the path, or delete the link if its target is not coming.",
         )
-    return check("links", "pass",
-                 f"{checked} relative link(s) across {len(docs)} document(s) resolve.")
+    read = len(docs) - len(unreadable)
+    resolved = f"{checked} relative link(s) across {read} document(s) resolve."
+    if unreadable:
+        return check("links", "warn" if read else "skipped",
+                     (resolved + note) if read else _only_note(unreadable), UNREADABLE_FIX)
+    return check("links", "pass", resolved)
 
 
 # DEC-0004: markdownlint and lychee block from the start -- structural breakage
@@ -794,40 +843,69 @@ def check_glossary_reject_terms(repo):
     # Markdown -- was dropped, and the audit reported "declares no rejected
     # terms" about a glossary the generator was already enforcing. Its
     # separator-row guard also missed alignment colons.
+    if read_doc(glossary) is None:
+        # parse_glossary yields nothing for a file it cannot open, which would
+        # have been reported as "declares no rejected terms" -- a statement
+        # about a glossary nobody read.
+        return check("glossary-reject-terms", "skipped",
+                     f"{GLOSSARY} could not be read.", UNREADABLE_FIX)
     rejects = sorted({r for _, rejected in parse_glossary(glossary) for r in rejected})
     if not rejects:
         return check("glossary-reject-terms", "skipped",
                      "Glossary declares no rejected terms.",
                      "Fill the 'Do not use' column to make the glossary enforceable.")
-    hits = []
+    hits, unreadable, examined = [], [], 0
     for path in markdown_docs(repo):
         if path == glossary:
             continue
-        prose = strip_code(path.read_text(encoding="utf-8", errors="replace"))
+        text = read_doc(path)
+        if text is None:
+            unreadable.append(path.relative_to(repo).as_posix())
+            continue
+        examined += 1
+        prose = strip_code(text)
         for term in rejects:
             if re.search(rf"\b{re.escape(term)}\b", prose, re.IGNORECASE):
                 hits.append(f"'{term}' in {path.relative_to(repo).as_posix()}")
+    note = _unread_note(unreadable)
     if hits:
-        return check("glossary-reject-terms", "fail", "; ".join(hits[:10]),
+        return check("glossary-reject-terms", "fail",
+                     "; ".join(hits[:10]) + note,
                      f"Use the approved term from {GLOSSARY}.")
-    return check("glossary-reject-terms", "pass",
-                 f"None of {len(rejects)} rejected term(s) found in prose.")
+    clean = (f"None of {len(rejects)} rejected term(s) found in the prose of "
+             f"{examined} document(s).")
+    if unreadable:
+        return check("glossary-reject-terms", "warn" if examined else "skipped",
+                     (clean + note) if examined else _only_note(unreadable), UNREADABLE_FIX)
+    return check("glossary-reject-terms", "pass", clean)
 
 
 def check_phi_secrets(repo):
-    hits = []
+    hits, unreadable, examined = [], [], 0
     for path in markdown_docs(repo):
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text = read_doc(path)
+        if text is None:
+            unreadable.append(path.relative_to(repo).as_posix())
+            continue
+        examined += 1
         for pattern, label in PHI_PATTERNS:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 line = text[: match.start()].count("\n") + 1
                 hits.append(f"{label} at {path.relative_to(repo).as_posix()}:{line}")
+    note = _unread_note(unreadable)
     if hits:
-        return check("phi-secrets", "fail", "; ".join(hits),
+        return check("phi-secrets", "fail", "; ".join(hits) + note,
                      "Remove it and rotate anything exposed. If a synthetic example "
                      "tripped this, change the example rather than adding an exception.")
-    return check("phi-secrets", "pass", "No PHI or secret patterns in documentation.")
+    clean = f"No PHI or secret patterns in {examined} document(s)."
+    if unreadable:
+        # This check is deliberately broad because a miss puts patient data in
+        # a history nobody can rewrite. A document it never opened is a miss,
+        # so it cannot pass.
+        return check("phi-secrets", "warn" if examined else "skipped",
+                     (clean + note) if examined else _only_note(unreadable), UNREADABLE_FIX)
+    return check("phi-secrets", "pass", clean)
 
 
 def _rule_qms_record(repo, script_dir):
@@ -842,7 +920,11 @@ def _rule_qms_record(repo, script_dir):
         return []
     problems = []
     for path in sorted(root.rglob("*.md")):
-        if path.read_text(encoding="utf-8", errors="replace").startswith(GENERATED_MARKER):
+        text = read_doc(path)
+        if text is None:
+            problems.append(f"{path.relative_to(repo).as_posix()} could not be read")
+            continue
+        if text.startswith(GENERATED_MARKER):
             continue  # generated from the source; the source carries the record
         front, _ = read_front_matter(path)
         if "qms_record" not in front:
@@ -1037,7 +1119,10 @@ def check_readme_shape(repo):
     # non-UTF-8 byte -- a Latin-1 accent out of a legacy editor -- used to
     # raise UnicodeDecodeError here and cost the whole scorecard, all ten
     # other checks with it.
-    text = readme.read_text(encoding="utf-8", errors="replace")
+    text = read_doc(readme)
+    if text is None:
+        return check("readme-shape", "fail", f"{README} could not be read.",
+                     UNREADABLE_FIX)
     lowered = text.lower()
     # Line count only: a generated region is machine-owned, so its length
     # measures the data it renders, not anything a human wrote. Section

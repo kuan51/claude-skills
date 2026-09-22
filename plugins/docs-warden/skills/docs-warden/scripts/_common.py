@@ -76,6 +76,27 @@ FORGES = {
 }
 
 
+def read_doc(path: Path):
+    """Text of a document, or None if the file cannot be read at all.
+
+    errors="replace" survives undecodable bytes but not an unreadable file, so
+    every walker that read a discovered path directly died on the first one it
+    could not open -- a permission-restricted .md, a device node, a directory
+    someone named x.md -- and took the whole scorecard with it, all the other
+    checks included. One helper rather than a try/except per call site: the
+    failure is identical at each, and a partial fix just moves the crash.
+
+    None, never "": an empty document and an unreadable one are different
+    findings, and the caller has to name the second one in its reason. Silently
+    treating an unreadable file as empty prose is exactly the fake pass the
+    skill's second non-negotiable forbids.
+    """
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
 def parse_front_matter(text: str):
     """Return (front_matter_dict, body) for already-read text. Split out of
     read_front_matter so a blob out of git history is judged by exactly the
@@ -142,7 +163,9 @@ def load_config(repo: Path):
 def parse_glossary(path: Path):
     """Return [(term, [rejected, ...])] from the glossary table."""
     entries = []
-    text = path.read_text(encoding="utf-8", errors="replace")
+    text = read_doc(path)
+    if text is None:
+        return entries
     for line in text.splitlines():
         if not line.strip().startswith("|"):
             continue
@@ -173,9 +196,8 @@ def parse_domain_model(path: Path):
     """Return [(concept, category)] from the generated domain model tables."""
     entries = []
     category = None
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = read_doc(path)
+    if text is None:
         return entries
     for line in text.splitlines():
         stripped = line.strip()
