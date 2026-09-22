@@ -128,7 +128,7 @@ case they cannot, a workflow error in place of a result.
 ## Guard hook
 
 This plugin ships an active `PreToolUse` guard that blocks package installs (except `pypdf`
-into a literal `--target` under the temp directory or a `scratchpad`, for reading a PDF),
+into a literal `scratchpad` `--target` with `--isolated`, for reading a PDF),
 commits and pushes on a default branch, destructive shell commands, credential-file access,
 and writes to live Claude Code configuration. It is a tripwire, not a sandbox: it matches shell strings, it
 is bypassable, and it fails open. A call that was not blocked was not approved. The real
@@ -154,4 +154,4 @@ containment on a worker is its tool allowlist. Rules and known gaps: the plugin 
 | A report is missing a contract field | The worker skipped it | Send it back once with the field named; on a second miss, redo the step yourself |
 | A report's first line is a permission denial | The guard or the session's permission mode refused a call | Surface it to the user with the exact call; never re-issue it yourself |
 | `fabflows:build` throws instead of returning a result | A budget or token limit ended a round mid-flight | `references/build-loop.md`: resume with the same args and the run ID; never restart with a fresh `baseRef` |
-| An install is denied | The guard blocks package installs by design | Report the missing dependency as a blocker. The one exception is `pypdf` into a literal scratch `--target`, for reading a PDF |
+| An install is denied | The guard blocks package installs by design | Report the missing dependency as a blocker. The one exception is `pypdf` into a literal `scratchpad` `--target` with `--isolated`, for reading a PDF |
