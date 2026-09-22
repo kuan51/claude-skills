@@ -33,10 +33,25 @@ config:
   # says nothing about whether the table renders.
   MD060: false
 
+  # Ordered lists that continue an earlier list's numbering (a "Part 2" that
+  # picks up at step 6 because the prose refers to "step 7" and "step 9") are
+  # valid CommonMark and render as written. Renumbering them from 1 breaks
+  # every cross-reference, which is what --fix did once.
+  MD029: false
+
 globs:
   - "**/*.md"
 
 ignores:
   - node_modules/**
+  # Session scratch and other checkouts' worktrees are not this repository's docs.
+  - .claude/**
+  - .remember/**
+  # Accepted decision records are immutable and run logs are append-only, so a
+  # structural finding in one cannot be fixed without editing history. Same
+  # reasoning as .vale.ini's relaxed list.
+  - docs/decisions/**
+  - docs/RUNLOG.md
+  - docs/runlog/**
   - .venv/**
   - styles/**
