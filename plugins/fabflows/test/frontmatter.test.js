@@ -154,6 +154,12 @@ test('every skill has valid frontmatter', () => {
       fields.description.length <= MAX_DESCRIPTION,
       `skills/${dir.name}/SKILL.md description exceeds ${MAX_DESCRIPTION} chars`
     );
+    // Every skill here needs Claude Code (plugin agents, Workflow, the guard hook), and the
+    // Agent Skills spec caps the field that says so at 500 characters.
+    assert.ok(
+      fields.compatibility && fields.compatibility.length <= 500,
+      `skills/${dir.name}/SKILL.md must declare compatibility in at most 500 chars`
+    );
   }
 });
 

@@ -51,9 +51,12 @@ so it picks up the newly installed plugin.
   start of a conversation to put the whole session on that discipline; and `brainstorming`,
   which turns a rough idea into a spec the build loop can take, with the refuter attacking
   the draft before it is written. Includes an
-  **active guard hook** that blocks package installs, default-branch commits,
+  **active guard hook** that blocks package installs (one exception: `pypdf` into a
+  literal scratchpad `--target` with `--isolated`), default-branch commits,
   destructive commands, and credential reads and writes. Read that plugin's README
-  before installing, including its "Known gaps" section.
+  before installing, including its "Known gaps" section. Benchmarked: on a spec'd build with
+  Opus 5.5 workers it matched a plain Fable session on 41 hidden tests at 18% lower list price
+  and 83% fewer lead output tokens (see that README's "Measured performance").
 
 ## Adding a new plugin
 

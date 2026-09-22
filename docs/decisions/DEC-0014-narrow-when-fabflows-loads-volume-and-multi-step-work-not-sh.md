@@ -1,7 +1,7 @@
 ---
 id: DEC-0014
 title: 'Narrow when fabflows loads: volume and multi-step work, not short tasks'
-status: proposed
+status: accepted
 date: 2026-09-19
 deciders: [kuan51]
 supersedes: []
@@ -62,12 +62,13 @@ measured. The question is where the skill should load at all.
 
 ## Decision outcome
 
-Proposed: **option 2**, because it removes the loads that iterations 1 to 3 showed to be pure
+Accepted: **option 2**, because it removes the loads that iterations 1 to 3 showed to be pure
 overhead while keeping the auto-trigger for exactly the shapes where iteration 2 showed
 delegation paying. Option 3 is the fallback if a narrowed description still fires on short
 work once a trigger corpus measures it. The change is one frontmatter field in
 `plugins/fabflows/skills/fabflows/SKILL.md`, mirrored in `marketplace.json`'s description
-only if the plugin summary changes, and a patch bump.
+only if the plugin summary changes. Shipped in the fabflows 0.5.0 minor bump alongside the
+pypdf guard exception (PR #54).
 
 ## Consequences
 
@@ -92,7 +93,7 @@ only if the plugin summary changes, and a patch bump.
 
 - **No trigger corpus yet.** The right next step is a fabflows trigger corpus in the shape of
   `plugins/ciso/evals/trigger-corpus.json`, run with skill-creator's description loop, before
-  or with this change. This record proposes the direction; the corpus measures it.
+  or with this change. This record sets the direction; the corpus measures it.
 - **The per-session load via `using-fabflows` is unchanged** and remains about 4k tokens of
   prose plus two turns. Iteration 3's trimmed skill addresses that separately (DEC-0015).
 - **Single-task sessions overstate the per-task overhead.** In a real session the load is paid
@@ -102,6 +103,6 @@ only if the plugin summary changes, and a patch bump.
 ## Links
 
 - Ticket: none
-- Pull request: pending
+- Pull request: kuan51/claude-skills#54
 - Related: DEC-0011 (the session opt-in), DEC-0012 (delegate on context volume), DEC-0004;
   `plugins/fabflows/evals/RESULTS.md` iterations 1 to 3

@@ -312,7 +312,8 @@ function gradeDigest(exp, fixture, resultText) {
 // makes node print one column-0 `ok`/`not ok` per test. A project that fails to load instead
 // yields one file-level `not ok <file>` per test file; those are set aside so a broken project
 // reads as "could not run" rather than as N named failures.
-function gradeHiddenTests(exp, spec, fixture, metrics) {
+function gradeHiddenTests(exp, spec, fixture, metrics, workflowDir) {
+  const after = []; // expectations that need the hidden results, pushed once they exist
   // Status is read before anything runs in the fixture, so a test that writes a scratch file
   // cannot dirty the tree the lead left.
   const status = gitStatus(fixture);
@@ -365,6 +366,63 @@ function gradeHiddenTests(exp, spec, fixture, metrics) {
     evidence: workflows.length ? workflows.map((w) => `${w.name}: ${w.completed ? 'completed' : 'unfinished'}`).join('; ') : 'no workflow launched',
   });
 
+  if (spec.requireReview) {
+    const types = workflows.flatMap((w) => (w.agents || []).map((a) => a.agentType));
+    exp.push({
+      text: 'A review round ran inside a workflow',
+      passed: types.includes('fabflows:refuter'),
+      evidence: types.length ? `workflow agents: ${types.join(', ')}` : 'no workflow agent',
+    });
+    // Verdicts come from the copied journals' result rows; REWORK on any round counts.
+    const verdicts = [];
+    const mustFix = [];
+    const dirs = workflowDir && fs.existsSync(workflowDir) ? fs.readdirSync(workflowDir) : [];
+    for (const d of dirs) {
+      const journal = path.join(workflowDir, d, 'journal.jsonl');
+      if (!fs.existsSync(journal)) continue;
+      for (const line of fs.readFileSync(journal, 'utf8').split(/\r?\n/)) {
+        try {
+          const row = JSON.parse(line);
+          if (row.type === 'result' && row.result && row.result.verdict) {
+            verdicts.push(row.result.verdict);
+            for (const f of row.result.mustFix || []) mustFix.push(`${f.location || ''} ${f.problem || ''}`);
+          }
+        } catch {
+          // A blank or truncated line carries no verdict.
+        }
+      }
+    }
+    exp.push({
+      text: 'The review returned REWORK on any round',
+      informational: true,
+      passed: verdicts.includes('REWORK'),
+      evidence: verdicts.length ? `verdicts: ${verdicts.join(', ')}` : 'no review verdict in any journal',
+    });
+    // The two halves of the question: did the build ship the planted defect, and did the review
+    // name it. A review that names it proves both; a final hidden failure on the defect's test
+    // proves the first and disproves the second. Both are pushed after the hidden run below.
+    if (spec.defectPattern) {
+      const re = new RegExp(spec.defectPattern, 'i');
+      const named = mustFix.filter((m) => re.test(m));
+      after.push((tests) => {
+        const defectTests = tests.filter((h) => re.test(h.name));
+        const shipped = named.length > 0 || defectTests.some((h) => !h.passed);
+        exp.push({
+          text: 'The build round shipped the planted defect',
+          informational: true,
+          passed: shipped,
+          evidence: named.length ? `review named it: ${named[0].slice(0, 120)}` : defectTests.length ? `defect tests after the run: ${defectTests.map((h) => `${h.passed ? 'ok' : 'not ok'} ${h.name}`).join('; ').slice(0, 160)}` : 'no defect test matched',
+        });
+        exp.push({
+          text: 'The review named the planted defect',
+          informational: true,
+          passed: named.length > 0,
+          evidence: named.length ? named[0].slice(0, 160) : mustFix.length ? `must-fix items: ${mustFix.length}, none matched` : 'no must-fix items',
+        });
+      });
+    }
+  }
+
   const hiddenDir = path.resolve(__dirname, '..', spec.hidden);
   const files = fs.readdirSync(hiddenDir).filter((f) => f.endsWith('.test.js')).sort();
   const r = spawnSync(process.execPath, ['--test', '--test-reporter=tap', ...files], {
@@ -408,6 +466,7 @@ function gradeHiddenTests(exp, spec, fixture, metrics) {
     });
   }
   for (const h of tests) exp.push({ text: `hidden: ${h.name}`, passed: h.passed, evidence: h.passed ? 'ok' : h.evidence || 'not ok' });
+  for (const fn of after) fn(tests);
   const passed = tests.filter((h) => h.passed).length;
   // A test file that crashes at load, or a hung one killed by the timeout, prints no per-test
   // lines and so vanishes from the count; the runner's exit status still says it failed.
@@ -418,7 +477,7 @@ function gradeHiddenTests(exp, spec, fixture, metrics) {
   });
 }
 
-function grade({ task, fixture, metrics, timing, maxTurns }) {
+function grade({ task, fixture, metrics, timing, maxTurns, workflowDir }) {
   const exp = [];
   const r = metrics.result || {};
   exp.push({
@@ -443,10 +502,12 @@ function grade({ task, fixture, metrics, timing, maxTurns }) {
   else if (spec.kind === 'new-tests') gradeNewTests(exp, spec, fixture);
   else if (spec.kind === 'test-triage') gradeTriage(exp, spec, fixture, r.result_text || '');
   else if (spec.kind === 'decision-digest') gradeDigest(exp, fixture, r.result_text || '');
-  else if (spec.kind === 'hidden-tests') gradeHiddenTests(exp, spec, fixture, metrics);
+  else if (spec.kind === 'hidden-tests') gradeHiddenTests(exp, spec, fixture, metrics, workflowDir);
   else throw new Error(`unknown grade kind ${spec.kind}`);
 
-  const passed = exp.filter((e) => e.passed).length;
+  // Informational expectations are reported but never scored.
+  const scored = exp.filter((e) => !e.informational);
+  const passed = scored.filter((e) => e.passed).length;
   const workerSpawns = Object.entries(metrics.workers || {}).map(([k, v]) => `${k} x${v.spawns} (${v.model})`);
   const leadOut = metrics.lead.output || 0;
   const totalOut = metrics.totals.output || 0;
@@ -455,7 +516,7 @@ function grade({ task, fixture, metrics, timing, maxTurns }) {
 
   return {
     expectations: exp,
-    summary: { passed, failed: exp.length - passed, total: exp.length, pass_rate: exp.length ? Number((passed / exp.length).toFixed(4)) : 0 },
+    summary: { passed, failed: scored.length - passed, total: scored.length, pass_rate: scored.length ? Number((passed / scored.length).toFixed(4)) : 0 },
     execution_metrics: {
       total_tool_calls:
         Object.values(metrics.lead.toolCalls || {}).reduce((a, b) => a + b, 0) +

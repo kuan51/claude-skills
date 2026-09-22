@@ -211,3 +211,12 @@ touches routing, and whenever a decision record wants a number instead of arithm
 - The fixture's own `guard.test.js` drives `guard.js` with synthetic payloads while the task's
   test command runs, and they land in the `FABFLOWS_PROBE` file. `metrics.js` sets aside every
   payload without a `session_id`; only hook-runner payloads are counted.
+
+## Trigger corpus
+
+`trigger-corpus.json` measures skill selection, the one thing the benchmark above never does
+(the with_skill prompt names the skill). It has the same shape as ciso's corpus and runs by the
+same manual procedure, `plugins/ciso/evals/RUNBOOK.md`: split, paste each held-out query into a
+fresh session three times, take the majority selection, score under- and over-triggering.
+`test/trigger-corpus.test.js` checks only that the corpus is well-formed; the number comes from
+the run.

@@ -276,3 +276,60 @@ record by writing a new record carrying `supersedes:`, and that narrowing DEC-00
 recorded only in this log. No superseding record was written: DEC-0016's three decisions all stand,
 and the parser is listed there under consequences rather than as a decision. If that reading is
 wrong, the fix is a new record superseding DEC-0016, not an edit to it.
+
+## 2026-09-22 — fabflows benchmark iteration 6: task 7 with Opus 5.5 workers
+
+**PLANNED** — Re-run the build-loop benchmark now that Opus 5.5 is released, to record which real
+model id the `opus` alias resolves to for the builder and reviewer, and to re-measure token
+efficiency, hidden-test accuracy and graded code quality against iteration 5. No plugin change:
+every Opus-tier pin is the `opus` alias, which the CLI documents as "the latest model". Lead stays
+on Fable; task 7 only; both arms; two repeats. Command:
+`node plugins/fabflows/evals/harness/run.js --iteration 6 --tasks 7 --repeats 2 --parallel 2 --confirm`
+(CLI 2.1.280, OAuth session, Linux). Caps per run: 200 turns, $60 list, 120 minutes.
+
+**CONFIRMED** — Four runs completed, none killed, no denied tool call. All four graded 50/50
+(41/41 hidden tests). Worker model proof: `grep -ho '"model":"claude-[a-z0-9-]*"' plugins/fabflows/evals/runs/iteration-6/eval-7-*/*/run-*/workflows/*/agent-*.jsonl | sort | uniq -c`
+prints 76 messages on `claude-opus-5-5` and nothing else. Means, with_skill against without:
+list $2.92 vs $3.55, wall 414 s vs 480 s, Fable output 6,660 vs 38,314. Both loops ran build:1
+then review:1 ACCEPT with an empty must-fix list (`workflows/*/journal.jsonl`). Summarised with
+`summarize.js`, aggregated with skill-creator's `aggregate_benchmark` and `annotate_benchmark.py`;
+`generate_review.py` (the HTML viewer) was not run. Write-up in `plugins/fabflows/evals/RESULTS.md`.
+
+## 2026-09-22 — fabflows benchmark iteration 7: the planted-defect task, three arms
+
+**PLANNED** — First run of task 8 `review-catch` (PR #55): a brownfield fixture with one planted
+caret-on-zero defect, three arms all loading the plugin and invoking the skill (`inline`: no Agent
+or Workflow; `delegate`: no Workflow; `loop`: both), three interleaved repeats, Fable lead. Primary
+outcome per run: the hidden `outdated` test on the spec's example, pass or fail. Command:
+`node plugins/fabflows/evals/harness/run.js --iteration 7 --tasks 8 --parallel 3 --confirm`
+(CLI 2.1.280, OAuth session, Linux). Caps per run: 120 turns, $15 list, 30 minutes; nine runs.
+
+**CONFIRMED** — Nine runs completed, none killed, no denied tool call, hidden suite 8/8 in every
+run: the planted defect was fixed in all nine before any review ran. `loop` launched
+`fabflows:build` in 1 of 3 runs (the `requireReview` expectation failed the other two, as
+designed); `delegate` ran an Opus editor and refuter by hand through Agent in 2 of 3. Means: inline
+$1.32 / 88 s, delegate $2.06 / 222 s, loop $1.32 / 117 s. Worker model proof:
+`grep -ho '"model":"claude-[a-z0-9-]*"' plugins/fabflows/evals/runs/iteration-7/eval-8-*/*/run-*/transcript.jsonl plugins/fabflows/evals/runs/iteration-7/eval-8-*/*/run-*/workflows/*/agent-*.jsonl | sort | uniq -c`
+shows Fable, `claude-opus-5-5` and one Sonnet editor. Summarised with `summarize.js`, aggregated
+with skill-creator's `aggregate_benchmark` and `annotate_benchmark.py`; `generate_review.py` not
+run. Write-up in `plugins/fabflows/evals/RESULTS.md`.
+
+## 2026-09-22 — fabflows benchmark iteration 8: the hidden rule, two arms, five repeats
+
+**PLANNED** — Re-run task 8 after iteration 7 saturated. Changes: the spec no longer states the
+caret-on-zero rule and its example no longer reaches the defect (only the hidden test carries
+it); the `delegate` arm is dropped; the `loop` arm's prompt tells the lead to run `fabflows:build`;
+five interleaved repeats; two new informational expectations (build shipped the defect, review
+named it). Fable lead. Command:
+`node plugins/fabflows/evals/harness/run.js --iteration 8 --tasks 8 --parallel 3 --confirm`
+(CLI 2.1.280, OAuth session, Linux). Caps per run: 120 turns, $15 list, 30 minutes; ten runs.
+
+**CONFIRMED** — Ten runs completed, none killed, no denied tool call. Hidden suite 7/9 in every
+run: the planted defect shipped in all ten (five inline leads, five loop builders). All five loop
+runs ran build:1 then review:1; every verdict ACCEPT with no must-fix, none naming the defect
+(`grading.json` rows "The build round shipped the planted defect" true and "The review named the
+planted defect" false in all five). Means: inline $0.85 / 61 s, loop $1.11 / 101 s. Model proof:
+`grep -ho '"model":"claude-[a-z0-9-]*"' plugins/fabflows/evals/runs/iteration-8/eval-8-*/*/run-*/transcript.jsonl plugins/fabflows/evals/runs/iteration-8/eval-8-*/*/run-*/workflows/*/agent-*.jsonl | sort | uniq -c`
+prints Fable and `claude-opus-5-5` only. Summarised with `summarize.js`, aggregated with
+skill-creator's `aggregate_benchmark` and `annotate_benchmark.py`; `generate_review.py` not run.
+Write-up in `plugins/fabflows/evals/RESULTS.md`.
