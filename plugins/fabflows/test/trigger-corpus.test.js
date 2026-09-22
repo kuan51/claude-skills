@@ -29,6 +29,20 @@ test('every entry is well-formed and uses declared values', () => {
   }
 });
 
+test('every shipped skill and the null case are covered, across every category', () => {
+  // Derived from the skills directory, so a renamed skill or one with no queries fails here
+  // instead of the corpus silently measuring the wrong set.
+  const skills = fs.readdirSync(path.join(__dirname, '..', 'skills')).sort();
+  assert.deepEqual(corpus.expectedValues.filter(Boolean).sort(), skills);
+  for (const value of corpus.expectedValues) {
+    const n = corpus.queries.filter((q) => q.expected === value).length;
+    assert.ok(n >= 4, `need at least 4 "${value}" queries, got ${n}`);
+  }
+  for (const cat of corpus.categories) {
+    assert.ok(corpus.queries.some((q) => q.category === cat), `no query exercises category "${cat}"`);
+  }
+});
+
 test('negatives expect null and are near misses', () => {
   const negatives = corpus.queries.filter((q) => q.category === 'negative');
   assert.ok(negatives.length >= 8, `need at least 8 negatives, found ${negatives.length}`);
