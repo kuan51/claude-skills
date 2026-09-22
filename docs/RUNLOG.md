@@ -323,3 +323,13 @@ five interleaved repeats; two new informational expectations (build shipped the 
 named it). Fable lead. Command:
 `node plugins/fabflows/evals/harness/run.js --iteration 8 --tasks 8 --parallel 3 --confirm`
 (CLI 2.1.280, OAuth session, Linux). Caps per run: 120 turns, $15 list, 30 minutes; ten runs.
+
+**CONFIRMED** — Ten runs completed, none killed, no denied tool call. Hidden suite 7/9 in every
+run: the planted defect shipped in all ten (five inline leads, five loop builders). All five loop
+runs ran build:1 then review:1; every verdict ACCEPT with no must-fix, none naming the defect
+(`grading.json` rows "The build round shipped the planted defect" true and "The review named the
+planted defect" false in all five). Means: inline $0.85 / 61 s, loop $1.11 / 101 s. Model proof:
+`grep -ho '"model":"claude-[a-z0-9-]*"' plugins/fabflows/evals/runs/iteration-8/eval-8-*/*/run-*/transcript.jsonl plugins/fabflows/evals/runs/iteration-8/eval-8-*/*/run-*/workflows/*/agent-*.jsonl | sort | uniq -c`
+prints Fable and `claude-opus-5-5` only. Summarised with `summarize.js`, aggregated with
+skill-creator's `aggregate_benchmark` and `annotate_benchmark.py`; `generate_review.py` not run.
+Write-up in `plugins/fabflows/evals/RESULTS.md`.

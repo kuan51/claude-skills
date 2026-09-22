@@ -46,6 +46,12 @@ unambiguously, and it moves the meter slightly less than a plain session (a Fabl
 0.98) for the same graded result. Two-decimal readings and one pair per arm, so this is direction,
 not a measurement, but it is direction in the right currency and it was free to collect.
 
+**Iteration 8, the hidden rule.** With the rule out of the spec, the defect shipped in ten of
+ten runs, and all five in-loop reviewers returned ACCEPT without naming it. The review checks the
+diff against the spec, and does that well; it does not find a latent bug in baseline code the
+spec does not describe. The loop cost +31% list and 1.65x wall clock over inline on this small
+task, moving 40% of lead output onto Opus.
+
 **Iteration 7, the planted defect.** A task built to make quality vary did not: all nine runs in
 all three arms fixed the planted bug before any review ran, because the spec stated the rule and
 the failing example. It measured the lead's sizing instead: two of three `loop` leads declined
@@ -61,6 +67,92 @@ unexercised.
 
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
+
+## Iteration 8 (2026-09-22): the hidden rule, and what the review does not catch
+
+**Bottom line.** With the caret-on-zero rule removed from `SPEC.md` and its example moved to a
+range the defect does not touch, the planted bug shipped in ten of ten runs: five Fable leads
+building inline and five Opus builders inside `fabflows:build`. Every one of the five loop runs
+ran build then review; every reviewer returned ACCEPT with no must-fix items and none named the
+defect. This is the first measurement of the loop's review on a shipped defect, and the answer
+is that the review does not catch a latent bug in baseline code that the spec does not
+contradict. That is what the refuter is briefed to do (decide whether the diff implements the
+spec, and try to show it does not), and its reports show it doing exactly that, line by line.
+The loop cost +31% list and 1.65x wall clock over inline for the same graded result, while moving
+40% of the lead's output tokens onto Opus.
+
+### Setup (confirmed)
+
+Task 8 as in iteration 7 with three changes (`docs/RUNLOG.md`, this branch): `SPEC.md` no longer
+states the caret-on-zero rule and its acceptance example is `^1.2.3` locked at `2.0.0`, so only
+the hidden test carries the rule; the `delegate` arm is dropped; the `loop` arm's prompt tells
+the lead to run `fabflows:build` on `SPEC.md`. Two arms, five interleaved repeats, three runs
+concurrent, Fable lead at medium effort, caps 120 turns, $15, 30 minutes. Grading gained two
+informational rows read from the workflow journal and the hidden run: "the build round shipped
+the planted defect" and "the review named the planted defect". Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 8 --tasks 8 --parallel 3 --confirm
+```
+
+### Observed
+
+| arm | run | hidden | defect shipped | review ran | review named it | verdict | turns | wall s | lead out | worker out | lead ctx | Fable $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| inline | 1 | 7/9 | yes | n/a | n/a | n/a | 16 | 64 | 5,094 | 0 | 49,587 | 0.88 | 0.88 |
+| inline | 2 | 7/9 | yes | n/a | n/a | n/a | 17 | 68 | 5,477 | 0 | 50,991 | 0.90 | 0.90 |
+| inline | 3 | 7/9 | yes | n/a | n/a | n/a | 12 | 57 | 4,576 | 0 | 47,904 | 0.80 | 0.80 |
+| inline | 4 | 7/9 | yes | n/a | n/a | n/a | 14 | 56 | 4,546 | 0 | 48,340 | 0.79 | 0.79 |
+| inline | 5 | 7/9 | yes | n/a | n/a | n/a | 14 | 63 | 4,857 | 0 | 48,987 | 0.86 | 0.86 |
+| loop | 1 | 7/9 | yes | yes | no | ACCEPT | 14 | 104 | 3,399 | 6,945 | 55,964 | 0.84 | 1.20 |
+| loop | 2 | 7/9 | yes | yes | no | ACCEPT | 13 | 104 | 3,402 | 6,383 | 55,776 | 0.84 | 1.12 |
+| loop | 3 | 7/9 | yes | yes | no | ACCEPT | 11 | 93 | 1,851 | 7,033 | 52,580 | 0.69 | 0.98 |
+| loop | 4 | 7/9 | yes | yes | no | ACCEPT | 14 | 101 | 2,725 | 7,157 | 54,490 | 0.78 | 1.11 |
+| loop | 5 | 7/9 | yes | yes | no | ACCEPT | 12 | 105 | 3,289 | 6,716 | 55,541 | 0.83 | 1.15 |
+
+The two hidden failures in every run are the same two tests: the `outdated` call on `^0.2.3`
+locked at `0.3.0`, and `satisfies('0.3.0', '^0.2.3')`. The other seven, including the spec's own
+example, pass everywhere. Means: inline $0.85 and 61 s; loop $1.11 and 101 s (+31%, 1.65x). Fable
+dollars $0.85 against $0.80 (-6%); lead output 4,910 against 2,933 (-40%). No tool call was denied.
+Every loop worker ran on `claude-opus-5-5`.
+
+### What the runs showed (confirmed)
+
+1. **The fixture now discriminates.** Iteration 7 handed the bug to the reader and nine of nine
+   fixed it. Remove the hint and zero of ten find it. A Fable lead reading the spec and the
+   library does not, on its own, probe a range shape the spec never mentions.
+2. **The review is a spec check, and the spec was silent.** Each reviewer's report walks the
+   spec's requirements (output format, ordering, direct dependencies only, exit codes, error
+   path, `resolve` and `check` unchanged, tests) against the diff and the test run, with
+   `path:line` for each, and returns ACCEPT. The defect is in a function the diff calls but does
+   not change, on an input the spec never names. Nothing in the refuter's brief asks it to audit
+   baseline code the diff depends on, and none did.
+3. **So the loop's quality claim narrows to what it is.** `fabflows:build` gets a spec'd change
+   implemented and checked against its spec by a second model. It does not find latent bugs the
+   spec does not describe. A spec that states the rule (iteration 7) is caught by the builder
+   before review; a spec that does not is not caught by the reviewer either.
+4. **Cost, on a task this small.** The loop moves 40% of the lead's output to Opus and holds
+   Fable dollars level, at +31% list and 1.65x wall clock. Same direction as iteration 7 and the
+   short-task iterations, and the opposite of the large build in iteration 6.
+
+### What it means
+
+- A reviewer that only reads the diff against the spec cannot catch this class of defect. Two
+   ways to change that, both plugin changes rather than benchmark changes, and both worth an
+   iteration before adopting: brief the refuter to run the built command on an input family the
+   spec leaves unstated (an adversarial probe step); or have the refuter read the functions the
+   diff newly depends on. Either widens the review's cost.
+- The benchmark itself is now doing its job: a binary outcome that moved from 9/9 to 0/10 on a
+   one-file fixture change, with the two halves of the question graded separately.
+- Five repeats per arm on a 0/5 against 0/5 outcome is a firm negative. It says nothing about
+   how often such a review *would* catch a defect that the spec does describe but the builder
+   misses; that case has still never occurred in eleven loop runs.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 8 --tasks 8 --parallel 3 --confirm
+```
 
 ## Iteration 7 (2026-09-22): the planted defect, and who found it
 

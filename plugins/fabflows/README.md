@@ -113,12 +113,16 @@ loop cost +53% (iteration 5); the fixes that followed (DEC-0016) and Opus 5.5 tu
 the table above. The `brainstorming` skill's own evals score 100% with the skill against 87.5%
 without on spec quality.
 
-**What is not proven.** Quality has been a tie in every build run, so the reviewer has never
-been seen catching a defect and the rework path has never fired. Iteration 7 planted a bug in a
-brownfield fixture to change that, and every lead in every arm found and fixed it from the spec
-before any review ran; on that small task the leads that had the loop mostly sized the change
-as too small for it and were cheapest doing it inline, which is the skill's own rule. Two runs per arm give
-direction, not significance. Delegate sizeable, spec'd work; do the small things yourself.
+**What the review does and does not catch** (iterations 7 and 8, a brownfield fixture with one
+planted bug). When the spec states the rule the bug breaks, every lead and builder fixes it before
+any review runs (9 of 9). When the spec is silent on it, the bug ships every time (10 of 10), and
+the loop's reviewer returns ACCEPT every time (5 of 5): it checks the diff against the spec, line
+by line, and does not audit baseline code the spec does not describe. So `fabflows:build` gets a
+spec'd change implemented and checked against its spec by a second model; it is not a bug hunt.
+On that small task the loop cost +31% list price and 1.65x wall clock over inline for the same
+result, while moving 40% of the lead's output onto Opus. Two runs to five per arm give direction,
+not significance. Delegate sizeable, spec'd work; do the small things yourself; write the rule
+into the spec if you need it enforced.
 
 ## Long sessions
 
