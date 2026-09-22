@@ -11,6 +11,7 @@
 | Pass Rate | 94% ± 10% | 50% ± 29% | +0.44 |
 | Time | 45.8s ± 10.7s | 33.1s ± 6.2s | +12.7s |
 | Tokens | 62244 ± 4939 | 56007 ± 3506 | +6238 |
+
 ## Per-eval grades (6 assertions each)
 
 | Eval | With skill | Without skill |

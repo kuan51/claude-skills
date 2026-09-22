@@ -10,7 +10,8 @@ skill or a direct answer) are both real failure modes worth checking for by hand
 
 ## Should-trigger
 
-**Explicit**
+### Explicit
+
 1. "Review this data science project. Is the conclusion actually supported by the data?"
 2. "Audit this analysis and tell me if the findings hold up."
 3. "Sanity-check the README's claims against the raw data and code."

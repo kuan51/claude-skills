@@ -19,9 +19,10 @@ their contracting officer is the answer, not a guess made here.
 
 ## Run it
 
-```
+```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/register-tier.js" <docs/ciso-dir> cmmc "CMMC" "${CLAUDE_PLUGIN_ROOT}/skills/cmmc/controls/<tier>.v32cfr170.structure.json"
 ```
+
 `cmmc` and `"CMMC"` are the certification key and display name, always these exact literal values
 for this skill. `register-tier.js` lives under `skills/hitrust/lib/` for historical reasons but is
 certification-agnostic core (see `ADDING-A-CERTIFICATION.md`); it requires the cert key and display

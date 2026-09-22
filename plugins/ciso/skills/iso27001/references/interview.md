@@ -37,22 +37,28 @@ For an Annex A control, `not_applicable` is the exclusion decision the Statement
 **First, drain any finished background roadmap**: see [Roadmap](roadmap.md) step 3. Never while plan mode was still active.
 
 6. For every requirement processed in this sub-batch, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json iso27001 isms <controlId> '<jsonPayload>'
    ```
+
    where `<jsonPayload>` is `{"status": "...", "justification": "...", "currentState": "...", "estimatedCloseness": "..."}` (only the fields relevant to the status need be non-null). `apply-assessment.js` is certification-agnostic core. ISO uses its flat status path exactly as e1/i1 and SOC 2 do. **Never pass a `dimension` field**: that is HITRUST r2's PRISMA maturity model and has no ISO equivalent. ISO conformity is binary, graded by the certification body as conforming, a minor nonconformity, or a major one. This call is the mechanical backstop, not just prose: it throws and doesn't make any changes if `status` is `"met"` without a justification, or `"in_progress"` without both `currentState` and `estimatedCloseness`.
 
    Watch the ids. Clause `8.1` and Annex A `A.8.1` are different requirements (`iso27001-8.1` and `iso27001-a.8.1`), and the same collision exists at 5.1, 6.2 and 7.2. Take the id from the control record rather than building it from the code.
 7. Regenerate the dashboard now, after this sub-batch, not only once the whole domain finishes:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso-dir>
    ```
+
    One run regenerates both `dashboard.html` (the cross-certification index) and `cert-iso27001.html`. This is what bounds the value an interruption can cost.
 8. If requirements remain in the chosen domain, report a brief sub-batch summary, call `EnterPlanMode` again, and repeat step 4's loop.
 9. Once every requirement in the domain has been applied, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json iso27001 isms <domainKey>
    ```
+
    (four arguments, not five: this marks the domain complete in the interview session).
 10. If the completed domain turned up any `gap` or `in_progress` requirements whose `roadmap.status` is still `not_started`, offer [Roadmap](roadmap.md): it runs in the background and never blocks the next domain.
 

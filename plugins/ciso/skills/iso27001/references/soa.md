@@ -15,7 +15,7 @@ The mapping, which is worth stating to the user explicitly so they can see their
 
 So: **regenerate the dashboard and open `cert-iso27001.html`.** The `A5`-`A8` domains, drilled down, are the draft SoA.
 
-```
+```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso-dir>
 ```
 
