@@ -1,0 +1,1000 @@
+{
+  "metadata": {
+    "skill_name": "fabflows",
+    "skill_path": "plugins/fabflows/skills/fabflows",
+    "executor_model": "lead claude-fable-5-1; workers per agent pins",
+    "analyzer_model": "authoring session",
+    "timestamp": "2026-09-19T23:29:43Z",
+    "evals_run": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "runs_per_configuration": 2
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 51.3,
+        "tokens": 285150,
+        "tool_calls": 7,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=10"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=10"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 58,
+        "tokens": 235614,
+        "tool_calls": 7,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=10"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=10"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8889,
+        "passed": 8,
+        "failed": 1,
+        "total": 9,
+        "time_seconds": 34.7,
+        "tokens": 388344,
+        "tool_calls": 10,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=13"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=13"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 16268.1514"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
+        },
+        {
+          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "Guard denies `pipx install black`",
+          "passed": true,
+          "evidence": "guard.js decision: deny"
+        },
+        {
+          "text": "Guard allows `pipx run black --check .`",
+          "passed": true,
+          "evidence": "guard.js decision: allow"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.8889,
+        "passed": 8,
+        "failed": 1,
+        "total": 9,
+        "time_seconds": 75.1,
+        "tokens": 447592,
+        "tool_calls": 12,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=15"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=15"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 16104.9786"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
+        },
+        {
+          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "Guard denies `pipx install black`",
+          "passed": true,
+          "evidence": "guard.js decision: deny"
+        },
+        {
+          "text": "Guard allows `pipx run black --check .`",
+          "passed": true,
+          "evidence": "guard.js decision: allow"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8571,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 85,
+        "tokens": 485926,
+        "tool_calls": 11,
+        "errors": 3
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=13"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell, Bash"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=13"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 16068.8753"
+        },
+        {
+          "text": "A new *.test.js file exists under plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "new: plugins/fabflows/test/parse-frontmatter.test.js"
+        },
+        {
+          "text": "Changed nothing outside plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "only test files changed"
+        },
+        {
+          "text": "New test targets parseFrontmatter and covers the three cases",
+          "passed": true,
+          "evidence": "3 test() calls; all required mentions present"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.8571,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 93.6,
+        "tokens": 488659,
+        "tool_calls": 11,
+        "errors": 3
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=13"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell, Bash"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=13"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 15857.1367"
+        },
+        {
+          "text": "A new *.test.js file exists under plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "new: plugins/fabflows/test/parse-frontmatter.test.js"
+        },
+        {
+          "text": "Changed nothing outside plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "only test files changed"
+        },
+        {
+          "text": "New test targets parseFrontmatter and covers the three cases",
+          "passed": true,
+          "evidence": "3 test() calls; all required mentions present"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8571,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 76.9,
+        "tokens": 446570,
+        "tool_calls": 11,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=14"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=14"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 98.1855"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.8571,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 89,
+        "tokens": 518624,
+        "tool_calls": 14,
+        "errors": 3
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=16"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell, Bash"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=16"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 97.2422"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 21.3,
+        "tokens": 128692,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=4"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=4"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 40.4,
+        "tokens": 170383,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=4"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=4"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8889,
+        "passed": 8,
+        "failed": 1,
+        "total": 9,
+        "time_seconds": 28.6,
+        "tokens": 271048,
+        "tool_calls": 8,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: PowerShell, Bash"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 16431.8414"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
+        },
+        {
+          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "Guard denies `pipx install black`",
+          "passed": true,
+          "evidence": "guard.js decision: deny"
+        },
+        {
+          "text": "Guard allows `pipx run black --check .`",
+          "passed": true,
+          "evidence": "guard.js decision: allow"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.8889,
+        "passed": 8,
+        "failed": 1,
+        "total": 9,
+        "time_seconds": 76.2,
+        "tokens": 264189,
+        "tool_calls": 8,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: PowerShell"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 16028.0987"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
+        },
+        {
+          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "Guard denies `pipx install black`",
+          "passed": true,
+          "evidence": "guard.js decision: deny"
+        },
+        {
+          "text": "Guard allows `pipx run black --check .`",
+          "passed": true,
+          "evidence": "guard.js decision: allow"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8571,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 49.6,
+        "tokens": 276764,
+        "tool_calls": 7,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=8"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=8"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 16153.2984"
+        },
+        {
+          "text": "A new *.test.js file exists under plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "new: plugins/fabflows/test/parse-frontmatter.test.js"
+        },
+        {
+          "text": "Changed nothing outside plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "only test files changed"
+        },
+        {
+          "text": "New test targets parseFrontmatter and covers the three cases",
+          "passed": true,
+          "evidence": "3 test() calls; all required mentions present"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.8571,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 52.7,
+        "tokens": 276614,
+        "tool_calls": 7,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=8"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=8"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 15883.703"
+        },
+        {
+          "text": "A new *.test.js file exists under plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "new: plugins/fabflows/test/parse-frontmatter.test.js"
+        },
+        {
+          "text": "Changed nothing outside plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "only test files changed"
+        },
+        {
+          "text": "New test targets parseFrontmatter and covers the three cases",
+          "passed": true,
+          "evidence": "3 test() calls; all required mentions present"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8571,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 37.5,
+        "tokens": 353473,
+        "tool_calls": 14,
+        "errors": 4
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=15"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, Bash, PowerShell, PowerShell"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=15"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 96.051"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.8571,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 46.1,
+        "tokens": 349726,
+        "tool_calls": 10,
+        "errors": 2
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=11"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, PowerShell"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=11"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 94.4548"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9008,
+        "stddev": 0.0628,
+        "min": 0.8571,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 70.45,
+        "stddev": 20.5452,
+        "min": 34.7,
+        "max": 93.6
+      },
+      "tokens": {
+        "mean": 412059.875,
+        "stddev": 102074.7133,
+        "min": 235614,
+        "max": 518624
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.9008,
+        "stddev": 0.0628,
+        "min": 0.8571,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 44.05,
+        "stddev": 16.7159,
+        "min": 21.3,
+        "max": 76.2
+      },
+      "tokens": {
+        "mean": 261361.125,
+        "stddev": 78141.6258,
+        "min": 128692,
+        "max": 353473
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+26.4",
+      "tokens": "+150699"
+    }
+  },
+  "notes": [
+    "Every substantive assertion passed in all 16 runs. The only failed expectation anywhere is the environment check 'No tool call was denied': 28 denials across both arms (25 by the lead, 3 by fallback workers), all Bash commands prefixed with cd into the fixture or PowerShell calls, refused by don't-ask mode.",
+    "No routing-driven delegation occurred in any of the 8 with_skill runs. The lead read the skill and chose inline work each time, citing the when-not-to-delegate rules. The 3 test-runner spawns were fallbacks after the lead's own shell calls were denied, and the worker's Bash was denied the same way.",
+    "wide-search is the cleanest cell (zero denials in both arms): with_skill averaged 10 turns and $1.20 list per run against 4 turns and $0.46 without, on identical 9/9 quality.",
+    "Tokens are the run total across input, output, cache reads and cache writes from the result's modelUsage. Cache writes at the 1-hour rate are about 74% of list cost in both arms, so every extra turn costs mainly through what it appends to the cache.",
+    "Two repeats per cell show direction, not significance."
+  ]
+}

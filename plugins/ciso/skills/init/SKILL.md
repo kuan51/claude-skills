@@ -27,15 +27,19 @@ Scaffolds the local, gitignored data store (`state.json`) and dashboard pages (`
    - Offer to re-run the dashboard render (step 4) in case `dashboard.html` is missing or stale, and stop there. Do not run the scaffold script.
 
 3. **Scaffold.** Otherwise, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/init/lib/init-project.js" <target-dir> <repo-root>
    ```
+
    `<repo-root>` is the project root found in step 1 (omit it if that step fell back to a non-git directory). This creates `<target-dir>/state.json` and, if `<repo-root>` is a git repository, idempotently adds a `docs/ciso/`-style entry to its `.gitignore` so this local tracking data is never committed to the consuming project's repo. The script prints a JSON summary (`targetDir`, `stateJsonPath`, `gitignoreUpdated`, `alreadyExisted`): use it to drive your report in step 5 rather than re-deriving these facts yourself.
 
 4. **Render the dashboard.** Immediately after scaffolding, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <target-dir>
    ```
+
    This reads `<target-dir>/state.json` and writes `<target-dir>/dashboard.html` (the index: one card per certification this plugin supports) plus one `<target-dir>/cert-<certKey>.html` per certification actually registered in state. It also deletes any `cert-*.html` left over from a certification no longer in state. Do not hand-write or otherwise construct the dashboard HTML yourself. This script is the only thing that ever produces it. With an empty `certifications: {}`, it writes only the index, which lists every supported certification as "not tracked yet." That's expected for a brand-new project.
 
 5. **Report to the user:**

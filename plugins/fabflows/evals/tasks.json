@@ -1,0 +1,126 @@
+{
+  "skill_name": "fabflows",
+  "lead": { "model": "fable", "effort": "medium" },
+  "caps": { "maxTurns": 80, "maxBudgetUsd": 10, "runTimeoutMinutes": 25 },
+  "fixture": { "kind": "repo", "ref": "3fbe15b" },
+  "arms": {
+    "with_skill": {
+      "pluginDir": "plugins/fabflows",
+      "promptPrefix": "Invoke the fabflows:using-fabflows skill first, then do this task.\n\n"
+    },
+    "without_skill": {
+      "promptPrefix": ""
+    }
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "name": "wide-search",
+      "routing": "explorer",
+      "prompt": "Every plugin agent in this repo lives at plugins/<plugin>/agents/<name>.md with YAML frontmatter. Give me an inventory: for each agent, its file path, the `model:` value it pins with the line number as path:line, and its `tools:` value. Flag every agent that has no `model:` pin at all. Report only; do not change any file.",
+      "grade": { "kind": "agent-inventory" }
+    },
+    {
+      "id": 2,
+      "name": "scoped-edit",
+      "routing": "editor",
+      "prompt": "The fabflows guard hook at plugins/fabflows/hooks/guard.js blocks package installs but does not catch `pipx install`. Add `pipx install` to the blocked install patterns, following the style of the existing entries, and add a deny case for `pipx install black` in plugins/fabflows/test/guard.test.js next to the other package-manager cases. Run `node --test plugins/fabflows/test/*.test.js` and make sure it passes. Do not touch any other file and do not commit.",
+      "grade": {
+        "kind": "edit",
+        "testCommand": "node --test plugins/fabflows/test/*.test.js",
+        "expectFiles": ["plugins/fabflows/hooks/guard.js", "plugins/fabflows/test/guard.test.js"],
+        "mustContain": [
+          { "file": "plugins/fabflows/hooks/guard.js", "pattern": "pipx" },
+          { "file": "plugins/fabflows/test/guard.test.js", "pattern": "pipx install black" }
+        ],
+        "guardChecks": [
+          { "command": "pipx install black", "expect": "deny" },
+          { "command": "pipx run black --check .", "expect": "allow" }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "name": "write-tests",
+      "routing": "test-runner",
+      "prompt": "plugins/fabflows/test/helpers/frontmatter.js exports parseFrontmatter but has no tests of its own. Write a test file for it in plugins/fabflows/test/ using node:test that covers three cases: a file with no frontmatter block (it should throw), a file with CRLF line endings, and a frontmatter value that itself contains a colon. Run `node --test plugins/fabflows/test/*.test.js` and make sure everything passes. Do not change any non-test file and do not commit.",
+      "grade": {
+        "kind": "new-tests",
+        "testCommand": "node --test plugins/fabflows/test/*.test.js",
+        "newFileUnder": "plugins/fabflows/test/",
+        "mustMention": ["parseFrontmatter", "throws", "\\r\\n"]
+      }
+    },
+    {
+      "id": 4,
+      "name": "short-chain",
+      "routing": "inline",
+      "prompt": "Bump the fabflows plugin version from 0.3.6 to 0.3.7. The version lives in plugins/fabflows/.claude-plugin/plugin.json and must be mirrored in the fabflows entry of .claude-plugin/marketplace.json. Then run `node --test test/*.test.js` to confirm the two manifests agree. Do not commit.",
+      "grade": {
+        "kind": "edit",
+        "testCommand": "node --test test/*.test.js",
+        "expectFiles": ["plugins/fabflows/.claude-plugin/plugin.json", ".claude-plugin/marketplace.json"],
+        "mustContain": [
+          { "file": "plugins/fabflows/.claude-plugin/plugin.json", "pattern": "\"version\": \"0.3.7\"" },
+          { "file": ".claude-plugin/marketplace.json", "pattern": "\"version\": \"0.3.7\"" }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "name": "deep-read",
+      "routing": "explorer (volume: 13 records, ~60k chars of prose)",
+      "prompt": "Read every decision record under docs/decisions/DEC-*.md. For each one give: its id, its title, its status, which option number the Decision outcome chose, one plain-English sentence saying what was decided, and the main alternative it rejected. One table row per record, in id order. Report only; change nothing.",
+      "grade": { "kind": "decision-digest" }
+    },
+    {
+      "id": 6,
+      "name": "triage-failures",
+      "routing": "test-runner (volume: a ~200-line log with planted failures)",
+      "prompt": "Run the whole test suite with `node --test \"plugins/*/test/*.test.js\" \"test/*.test.js\"`. Some tests fail. For each failing test report its test name, the test file as a path, the assertion message, and in one sentence what the test expected versus what it found. Do not fix anything and do not change any file.",
+      "setup": [
+        { "file": "plugins/fabflows/test/frontmatter.test.js", "find": "explorer: 'haiku',", "replace": "explorer: 'sonnet'," },
+        { "file": "plugins/ciso/test/agents-frontmatter.test.js", "find": "'hitrust-controls-reconciler': 'Read',", "replace": "'hitrust-controls-reconciler': 'Read, Grep'," },
+        { "file": "plugins/data-analysis-review/test/agents-frontmatter.test.js", "find": "'data-quality-reviewer': 'Read, Grep, Glob, Bash',", "replace": "'data-quality-reviewer': 'Read, Grep, Glob'," }
+      ],
+      "grade": {
+        "kind": "test-triage",
+        "testCommand": "node --test \"plugins/*/test/*.test.js\" \"test/*.test.js\""
+      }
+    },
+    {
+      "id": 7,
+      "name": "build-component",
+      "routing": "fabflows:build (a spec'd, sizeable change)",
+      "fixture": { "kind": "dir", "from": "fixtures/dep-resolver/visible" },
+      "caps": { "maxTurns": 200, "maxBudgetUsd": 60, "runTimeoutMinutes": 120 },
+      "prompt": "Build the library and CLI specified in SPEC.md in this repository. Write its tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
+      "grade": {
+        "kind": "hidden-tests",
+        "testCommand": "npm test",
+        "hidden": "fixtures/dep-resolver/hidden",
+        "rootEnv": "LOCKSTEP_ROOT"
+      }
+    },
+    {
+      "id": 8,
+      "name": "review-catch",
+      "routing": "fabflows:build (a spec'd change on a brownfield project with a planted defect)",
+      "fixture": { "kind": "dir", "from": "fixtures/lockstep-outdated/visible" },
+      "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 30 },
+      "repeats": 5,
+      "arms": {
+        "inline": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first, then do this task.\n\n", "disallowedTools": ["Agent", "Workflow"] },
+        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself.\n\n", "grade": { "requireReview": true } }
+      },
+      "prompt": "Add the `lockstep outdated` command specified in SPEC.md to this repository. Write its tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
+      "grade": {
+        "kind": "hidden-tests",
+        "testCommand": "npm test",
+        "hidden": "fixtures/lockstep-outdated/hidden",
+        "rootEnv": "LOCKSTEP_ROOT",
+        "defectPattern": "caret-on-zero|satisfies|src/index\\.js"
+      }
+    }
+  ]
+}

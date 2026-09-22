@@ -1,0 +1,337 @@
+diff -ruN plugins/fabflows/skills/fabflows/references/build-loop.md plugins/fabflows/evals/runs/snapshots/h1-trimmed/skills/fabflows/references/build-loop.md
+--- plugins/fabflows/skills/fabflows/references/build-loop.md	1969-12-31 17:00:00.000000000 -0700
++++ plugins/fabflows/evals/runs/snapshots/h1-trimmed/skills/fabflows/references/build-loop.md	2026-09-19 17:56:04.576062700 -0600
+@@ -0,0 +1,26 @@
++# Build loop outcomes
++
++Read this when `fabflows:build` ends in anything other than `accepted`, or in a workflow error.
++The builder's commits are already on the branch in every case. The loop never merges, pushes,
++or reverts: those stay with you and the user.
++
++- **`escalate`**: read `reason` and `verdict` (the last review, or null if none ran), and take
++  the work over. `rework-cap` means two rework rounds did not satisfy the reviewer;
++  `accept-with-must-fix` and `rework-without-must-fix` mean the reviewer contradicted itself
++  and the loop stopped rather than guess.
++- **`blocked`**: the builder's reason is in the last round's `build.blocker`, or at the start of
++  its `report` when the blocker is empty. A permission denial is the user's to resolve; never
++  bypass it and never re-issue the denied call yourself.
++- **`unexplained`**: the reason is missing, an empty report or blocked with no blocker. Read the
++  `report` if there is one, since the reason may be further down, then run
++  `git status --porcelain` and `git log <baseRef>..HEAD` to see what the builder left, and take
++  the work over.
++- **`reviewer-blocked`**: the review never ran. Fix what `verdict.blocker` names (a missing
++  dependency is the user's to install), then run `fabflows:refuter` yourself on
++  `<baseRef>..HEAD` rather than restarting the loop.
++- **A workflow error instead of a result** (say a token budget ran out, which makes the next
++  `agent()` call throw): the builder may already have committed. Read `git log <baseRef>..HEAD`.
++  To carry on, relaunch in a new turn of the same session with the `scriptPath` and run ID its
++  launch returned, passing the run ID as `resumeFromRunId` and the same args; finished rounds
++  replay from cache. Never restart with a fresh `baseRef`: the new reviewer would miss the
++  earlier commits.
+diff -ruN plugins/fabflows/skills/fabflows/SKILL.md plugins/fabflows/evals/runs/snapshots/h1-trimmed/skills/fabflows/SKILL.md
+--- plugins/fabflows/skills/fabflows/SKILL.md	2026-09-19 15:52:37.745791900 -0600
++++ plugins/fabflows/evals/runs/snapshots/h1-trimmed/skills/fabflows/SKILL.md	2026-09-19 17:56:06.111075600 -0600
+@@ -5,43 +5,27 @@
+ 
+ # Fabflows
+ 
+-A lead session doing mechanical work burns the expensive tier on typing. A lead that
+-accepts a worker's report without re-checking it has bought a confident lie at a
+-discount. Both halves are this skill: hand the work down, then prove the answer.
+-
+-The workers are real agents included with this plugin. They are namespaced, so the
+-address is `fabflows:explorer`, not `explorer`.
+-
+-## Boundaries
+-
+-**This skill will:** pick a worker tier for a task, write the four-part brief that
+-makes delegation work, reject a report that arrives without its contract fields,
+-re-verify a worker's claims before accepting them, and say plainly when a task should
+-not be delegated at all.
+-
+-**This skill will not:** delegate the root-cause decision on a bug, architecture
+-decisions, or cross-file refactors; accept a worker's word as evidence; write a
+-delegation log file, or edit code itself. The lead integrates and verifies rather than
+-becoming another worker.
+-
+-## Non-negotiables
+-
+-1. **Never delegate without all four brief parts.** Objective, output format, tools and
+-   paths, boundaries. Missing one, do not spawn: a worker that has to guess the
+-   boundary will guess it wider than you meant.
+-2. **Never accept an unverified claim.** Re-read the changed files yourself. Re-run the
+-   build or the tests yourself and read the real output. A claim you have not confirmed
+-   is `UNVERIFIABLE`, not done.
+-3. **Reject an incomplete report.** No permission-denial line, no `file:line`, or
+-   paraphrased command output: send it back or redo the step yourself. Do not
+-   reconstruct the missing half from what seems likely.
+-4. **Narrate the delegation in-session.** Say what you are handing off and why before
+-   you spawn. Say what you verified and how afterwards. No log file: git records the
+-   edits, and a second ledger only drifts from it.
+-5. **Never do mechanical work while a worker fits.** Exploring, grepping, running a
+-   known command, applying an already-decided edit: hand it off when the worker would
+-   read or produce more than the lead should hold (a wide search, a test run, a
+-   multi-file read). A one-file grep or a one-line edit stays inline.
++A lead doing mechanical work burns the expensive tier on typing. A lead that accepts a
++worker's report unchecked has bought a confident lie at a discount. This skill is both
++halves: hand work down when that pays, then prove what comes back.
++
++The workers ship with this plugin and are namespaced: `fabflows:explorer`, not `explorer`.
++None of them can spawn a worker, so the tree stays one level deep.
++
++## When to delegate
++
++A worker starts cold, and its report sits in your context for the rest of the session.
++Delegation pays only when it keeps a large volume out of your context: a wide search, a long
++test log, a multi-file read. Do the task yourself when the brief would take longer to write
++than the task takes to do; when it is one short dependent chain (measured: one model at low
++effort beats any split of it); when it needs judgement about *why* the code is the way it is;
++or when it spans files whose coupling is the actual problem. After two failed verifications
++on the same brief, do it yourself or bump a tier: a third spawn buys another confident wrong
++answer.
++
++A one-file grep, a one-line edit, a known command with short output: just do it. The brief,
++the report contract and the gate below exist for worker reports. What you read from your own
++tools is already evidence; do not re-run it to confirm it.
+ 
+ ## Routing
+ 
+@@ -56,76 +40,50 @@
+ | root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | none |
+ | a spec'd, sizeable change | `fabflows:build` | Opus builder, Fable reviewer |
+ 
+-The built-in `Explore` agent is not a cheap substitute for `fabflows:explorer`. It
+-inherits the main conversation's model, capped at Opus, so under an expensive lead it
+-costs roughly what doing the search yourself would. A plugin cannot override a built-in
+-agent, so the namespaced worker is the way to get the cheap tier.
+-
+-None of the workers can spawn a worker of its own. `Agent` is absent from every
+-tool list. The delegation tree is one level deep on purpose.
++The built-in `Explore` agent inherits the lead's model, so under an expensive lead it costs
++about what searching yourself would. `fabflows:explorer` is the cheap tier.
+ 
+ ## Who leads
+ 
+-The lead plans, writes specs and briefs, verifies, and takes every escalation; workers do
+-the typing. The split pays because the two jobs cost differently. A lead re-reads a large
+-context every turn, and cached reads are cheap. A builder writes a lot of output from a
+-fresh context, and output is the expensive part. Put the most expensive model on the lead,
+-not on the typing.
+-
+-- **Lead on Fable.** The lead runs at whatever effort the session is set to; this skill
+-  does not change it. Workers do not inherit that level: each pins the effort its role
+-  needs (see the agent table in the README). On Fable 5.1 with an API key or a Claude
+-  subscription, changing the session's effort keeps the prompt cache, so the user can
+-  move it as the work changes at no rebuild cost.
+-- **Lead on Opus 5.** It reaches for subagents readily, so delegate only independent,
+-  sizeable work, and skip `fabflows:refuter` for routine edits. Changing effort
+-  mid-session re-reads the whole context uncached, so pick a level at session start.
++The lead plans, briefs, verifies and takes every escalation; workers type. The lead runs at
++whatever effort the session is set to, and workers pin their own. A lead on Opus 5 reaches
++for subagents readily: delegate only independent, sizeable work, and skip `fabflows:refuter`
++for routine edits.
+ 
+-## The delegation brief
++## The brief
+ 
+-Each spawn includes all four. They are short. The discipline is making sure none is missing.
++Four parts, every spawn. A worker that has to guess the boundary guesses it wider than you
++meant, so if one part is missing, do not spawn.
+ 
+ 1. **Objective:** the one question to answer or the one change to make.
+-2. **Output format:** what the report must contain, and in what shape.
+-3. **Tools and paths:** which directories to look in, which tools to use.
++2. **Output:** what the report must contain and in what shape. Cap it, because the report is
++   re-read on every later turn: for a test run, the command, its exit status, its final
++   summary and every failing line, never the whole log; for a search, `file:line` hits, not
++   file contents.
++3. **Tools and paths:** which tools, which directories.
+ 4. **Boundaries:** what not to touch, and what to do instead of guessing.
+ 
+-Worked example:
+-
+-> **Objective:** find every caller of `parseToken` and say which ones can receive a
+-> null token.
+-> **Output:** paths with `file:line` for each caller, plus a five-line summary. No file
+-> dumps.
++> **Objective:** find every caller of `parseToken` and say which ones can receive a null
++> token.
++> **Output:** `file:line` per caller plus a five-line summary. No file dumps.
+ > **Tools and paths:** `Read`, `Grep`, `Glob` under `src/auth/` only.
+-> **Boundaries:** do not edit anything. If a caller's null-handling depends on runtime
+-> config you cannot see, say so under open questions rather than inferring it.
++> **Boundaries:** edit nothing. If a caller's null-handling depends on runtime config you
++> cannot see, say so under open questions rather than inferring it.
+ 
+-The output format is where the lead's context is protected. The report is appended to
+-the lead and re-read on every later turn, so cap it: for a test run, the command, its
+-exit status, its final summary and every failing line, never the whole log; for a
+-search, `file:line` hits, not file contents. Tell the worker to read the ranges it
+-needs, not whole files.
+-
+-## The worker report contract
+-
+-Every worker returns these, in this order. A report missing any of them is incomplete.
+-
+-- **Any permission denial as the first line.** A worker that hits a denial and
+-  reports success anyway is the failure mode this contract exists to catch.
+-- Files touched, as `path:line`.
+-- The exact commands run and their real output. Never a paraphrase of output the worker
+-  did not see.
+-- Every claim labeled **confirmed** / **inferred** / **guessed**.
+-- Open questions.
+-- Anything noticed outside the brief, named but not acted on.
+-- Terse. No file dumps.
++## The report contract
++
++Every worker returns, in this order: any permission denial as the first line; files touched
++as `path:line`; the exact commands run and their real output, never a paraphrase; every claim
++labelled **confirmed** / **inferred** / **guessed**; open questions; anything noticed outside
++the brief, named but not acted on. Terse, no dumps. A report missing any of these is
++incomplete: send it back or redo the step yourself. Do not reconstruct the missing half from
++what seems likely.
+ 
+ ## The verification gate
+ 
+-Do this before you accept anything. Trusting the report is the most common way this
+-pattern fails.
++Trusting the report is how this pattern fails. Before accepting a worker's result:
+ 
+-| Worker | What the lead re-runs |
++| Worker | What you re-run |
+ | --- | --- |
+ | `fabflows:explorer` | Open one cited file at the cited line and confirm it says what the report claims. |
+ | `fabflows:researcher` | Fetch one cited URL and confirm it supports the claim attached to it. |
+@@ -134,94 +92,48 @@
+ | `fabflows:refuter` | Re-run the test command yourself, output capped, and open one cited finding at its `path:line`. |
+ | `fabflows:investigator` | Run the reproduction command yourself, output capped, and confirm the failure it reports. |
+ 
+-Cross-check each claim against real tool output. Treat anything you cannot confirm as
+-`UNVERIFIABLE` and say so: do not quietly promote it to done.
++Anything you cannot confirm is `UNVERIFIABLE`, not done: say so. Surface a permission denial
++to the user; never re-issue the denied call yourself. A worker's report of scope creep is
++your decision, not its.
++
++Narrate delegation in-session: what you are handing off and why before the spawn, what you
++verified and how afterwards. No log file: git records the edits.
+ 
+ ## The build loop
+ 
+-For a spec'd, sizeable change, offer `fabflows:build`, or launch it when the session
+-opened with `using-fabflows`. An Opus `editor` implements the
+-spec on the current feature branch and commits; a fresh `refuter` reads the diff against
+-the spec and re-runs the tests; a REWORK verdict sends the must-fix list to a fresh
+-builder, up to the rework cap. It runs through the Workflow tool, so start it when
+-the user asks for it, agrees to it, or opened the session with `using-fabflows`.
+-
+-Before starting it:
+-
+-1. Write the spec, covering the behaviour, how to check it, and what is out of scope.
+-2. Confirm `git status --porcelain` doesn't print anything and `git rev-parse --abbrev-ref HEAD`
+-   prints the feature branch, never the default branch.
+-3. Pass `spec`, `branch`, `baseRef` (from `git rev-parse HEAD`) and `testCommand`.
+-   Optional: `reviewerModel` (default `fable`; pass `opus` where Fable is not
+-   available).
+-
+-On `accepted`, run the gate yourself: confirm `git status --porcelain` still doesn't
+-print anything (anything it lists is work the review never saw, or a file the review's
+-test run left), then re-run `testCommand`, read `git diff --stat <baseRef>..HEAD`,
+-and check that one must-fix from an earlier round is really fixed. On `escalate`,
+-read `reason` and `verdict` (the last review, or null if none ran), and take the
+-work over. On `blocked`, the builder's reason is in the last round's `build.blocker`,
+-or at the start of its `report` when the blocker is empty. `unexplained` means the reason
+-is missing: an empty report, or blocked with no blocker. Read its `report` if it
+-has one, since the reason may be further down, then run `git status --porcelain` and
+-`git log <baseRef>..HEAD` to see what it left, and take the work over. `reviewer-blocked` means the review never
+-ran: fix what `verdict.blocker` names (a missing dependency is the user's to install),
+-then run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the
+-loop. The builder's commits are already on the branch. The loop never merges, pushes,
+-or reverts: those stay with you and the user.
+-
+-If the run ends in a workflow error instead of a result (say a `+Nk` token budget ran
+-out, which makes the next `agent()` call throw), the builder may already have committed.
+-Read `git log <baseRef>..HEAD` to see what it committed. To carry on, relaunch it in a new turn
+-of the same session with the `scriptPath` and run ID its launch returned, passing the run ID
+-as `resumeFromRunId`, and the same args. Finished rounds replay from cache. Never restart with a fresh `baseRef`: the new reviewer would miss the earlier
+-commits.
+-
+-## Guard hook rules
+-
+-This plugin includes an active `PreToolUse` hook. It blocks package installs, commits and
+-pushes on a default branch, destructive shell commands, reads and writes of
+-credential-bearing files, and writes to live Claude Code configuration or git hooks.
+-
+-It behaves like a tripwire. It doesn't sandbox anything. Pattern matching on shell strings is
+-bypassable by base64, variable expansion, heredocs, `python -c`, and full binary paths, and
+-it cannot see a command run against a different repository via `git -C`. The guard also
+-fails open: if it errors, the call proceeds. Do not treat a call that was not blocked as a
+-call that was approved: the real containment on a worker is its tool allowlist.
++For a spec'd, sizeable change, `fabflows:build` runs an Opus `editor` that implements the
++spec and commits on the feature branch, then a fresh `refuter` (Fable by default) that reads
++the diff against the spec and re-runs the tests; REWORK sends the must-fix list to a fresh
++builder, up to two rework rounds. Offer it, or launch it when the session opened with
++`using-fabflows`. It never merges, pushes, or reverts.
++
++Before starting: write the spec (the behaviour, how to check it, what is out of scope);
++confirm `git status --porcelain` prints nothing and `git rev-parse --abbrev-ref HEAD` prints
++the feature branch, never the default branch; pass `spec`, `branch`, `baseRef` (from
++`git rev-parse HEAD`) and `testCommand`, and optionally `reviewerModel` (`opus` where Fable
++is not available).
++
++On `accepted`, run the gate yourself: `git status --porcelain` still prints nothing, re-run
++`testCommand`, read `git diff --stat <baseRef>..HEAD`, and check that one must-fix from an
++earlier round is really fixed. For every other outcome, and for a run that ends in a workflow
++error, read `references/build-loop.md` before acting.
++
++## Guard hook
++
++This plugin ships an active `PreToolUse` guard that blocks package installs, commits and
++pushes on a default branch, destructive shell commands, credential-file access, and writes to
++live Claude Code configuration. It is a tripwire, not a sandbox: it matches shell strings, it
++is bypassable, and it fails open. A call that was not blocked was not approved. The real
++containment on a worker is its tool allowlist. Rules and known gaps: the plugin README.
+ 
+ ## Long sessions
+ 
+-- Follow up with a worker you already briefed by resuming it with `SendMessage`. It keeps
+-  its context, so it does not re-read what it already knows.
++- Follow up with a worker you already briefed by resuming it with `SendMessage`; it keeps
++  its context.
+ - Run workers in the background and keep working while they run.
+-- Verify a small edit by reading only its diff. Hand a large or multi-file
+-  change to `fabflows:refuter` rather than reading all of it into the lead's context.
+-- Do not pair a long session with a Fable advisor: each consult re-reads the whole
+-  transcript, uncached.
+-- Ignore any count of remaining context: do not cut work short or suggest a new session
+-  because the context is large. Compaction re-injects invoked skills within a shared
+-  budget, oldest dropped first, so if the routing table is gone after compaction, invoke
+-  this skill again.
+-
+-## When not to delegate
+-
+-- The brief would take longer to write than the task takes to do.
+-- The task needs judgement about *why* the code is the way it is.
+-- The task spans files whose relationship to each other is the actual problem. Coupled
+-  edits do not split across workers. That is where multi-agent work degrades fastest.
+-- A worker already failed verification twice on this task.
+-- The work is one short, dependent chain. Measured, one model at low effort beats
+-  any split of it, because the brief, the report, and the check together cost more than
+-  they save.
+-- The worker would keep nothing out of the lead. A worker starts cold with its own
+-  system prompt and tools, and its report lands in the lead's context for the rest of
+-  the session. Delegation pays only when it keeps a large volume (logs, wide searches,
+-  big files) out of the lead.
+-
+-## Escalation
+-
+-- After two failed verifications on the same brief, the lead does it, or bumps a tier.
+-  Re-spawning the same worker a third time buys another confident wrong answer.
+-- A worker reports a permission denial: surface it to the user. Never bypass a
+-  denial, and never re-issue the same call from the lead to dodge it.
+-- A worker reports on scope creep: decide it yourself. Do not delegate the decision.
++- Verify a small edit by reading its diff; hand a large or multi-file change to
++  `fabflows:refuter` rather than reading all of it.
++- Do not pair a long session with a Fable advisor: each consult re-reads the whole transcript
++  uncached.
++- Ignore any count of remaining context. If the routing table is gone after compaction,
++  invoke this skill again.

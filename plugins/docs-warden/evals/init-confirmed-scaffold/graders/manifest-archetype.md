@@ -1,0 +1,5 @@
+---
+type: regex
+target: { source: file, path: .docs-warden.yml }
+pattern: 'archetype:\s*it-tooling'
+---

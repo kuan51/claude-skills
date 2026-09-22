@@ -1,0 +1,1143 @@
+{
+  "metadata": {
+    "skill_name": "fabflows",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "lead claude-fable-5-1; workers per agent pins",
+    "analyzer_model": "authoring session",
+    "timestamp": "2026-09-21T15:07:54Z",
+    "evals_run": [
+      7
+    ],
+    "runs_per_configuration": 2
+  },
+  "runs": [
+    {
+      "eval_id": 7,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.98,
+        "passed": 49,
+        "failed": 1,
+        "total": 50,
+        "time_seconds": 695.7,
+        "tokens": 1597962,
+        "tool_calls": 12,
+        "errors": 3
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=18"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, Bash, Bash"
+        },
+        {
+          "text": "Stayed under the turn cap (200)",
+          "passed": true,
+          "evidence": "num_turns=18"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 1100.1792"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "1 commit(s): feat(lockstep): implement semver resolver, CLI and tests"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed; fabflows:build: completed"
+        },
+        {
+          "text": "hidden: cli: resolve prints the lockfile as indented JSON and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve --out writes the file and prints nothing",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve exits 2 with an error: line on a conflict",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve exits 1 on a missing file or invalid JSON",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: check prints true and exits 0, or false and exits 2",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: check exits 1 on an invalid version or range",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: no subcommand or an unknown one exits 1 with usage on stderr",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: any-version forms",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: wildcard partials",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: exact versions and plain operators",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: operators on wildcard partials round outward",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: tilde",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: caret",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: hyphen",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: AND within a set, OR between sets",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: the prerelease rule",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: rejects malformed ranges with a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: satisfies accepts parsed inputs and rejects an invalid version",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: maxSatisfying picks the highest admitted version or null",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: picks the highest versions along a chain",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: an empty dependency list gives an empty lockfile",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a diamond shares one version that satisfies both parents",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: backtracks through two levels of candidates",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a lower version avoids a dependency that cannot be met",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: packages not required by anything are left out",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a dependency cycle resolves and records both edges",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: prereleases are chosen only where the range admits them",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: any locally maximal solution is accepted when several exist",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: the same inputs give a deep-equal lockfile",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a conflict throws ResolutionError naming the contested package",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a conflict met through an already-selected package names that package",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a package missing from the registry is a ResolutionError from root",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: no candidate version at all is a ResolutionError, not a crash",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: an invalid range or version in the inputs is a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: parses core, prerelease and build parts",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: returns a parsed object unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: rejects every malformed form with a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: compares core numerically, not lexically",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: orders the semver 2.0.0 prerelease example",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: ignores build metadata and accepts parsed objects",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "Hidden acceptance suite: 41/41 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 4 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.98,
+        "passed": 49,
+        "failed": 1,
+        "total": 50,
+        "time_seconds": 718.9,
+        "tokens": 1853639,
+        "tool_calls": 33,
+        "errors": 7
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=25"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash, Bash, Read, Bash, Bash, Bash, Bash"
+        },
+        {
+          "text": "Stayed under the turn cap (200)",
+          "passed": true,
+          "evidence": "num_turns=25"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 1060.392"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "1 commit(s): feat: add lockstep resolver library, CLI and tests"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed; fabflows:build: completed"
+        },
+        {
+          "text": "hidden: cli: resolve prints the lockfile as indented JSON and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve --out writes the file and prints nothing",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve exits 2 with an error: line on a conflict",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve exits 1 on a missing file or invalid JSON",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: check prints true and exits 0, or false and exits 2",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: check exits 1 on an invalid version or range",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: no subcommand or an unknown one exits 1 with usage on stderr",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: any-version forms",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: wildcard partials",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: exact versions and plain operators",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: operators on wildcard partials round outward",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: tilde",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: caret",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: hyphen",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: AND within a set, OR between sets",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: the prerelease rule",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: rejects malformed ranges with a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: satisfies accepts parsed inputs and rejects an invalid version",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: maxSatisfying picks the highest admitted version or null",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: picks the highest versions along a chain",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: an empty dependency list gives an empty lockfile",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a diamond shares one version that satisfies both parents",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: backtracks through two levels of candidates",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a lower version avoids a dependency that cannot be met",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: packages not required by anything are left out",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a dependency cycle resolves and records both edges",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: prereleases are chosen only where the range admits them",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: any locally maximal solution is accepted when several exist",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: the same inputs give a deep-equal lockfile",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a conflict throws ResolutionError naming the contested package",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a conflict met through an already-selected package names that package",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a package missing from the registry is a ResolutionError from root",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: no candidate version at all is a ResolutionError, not a crash",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: an invalid range or version in the inputs is a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: parses core, prerelease and build parts",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: returns a parsed object unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: rejects every malformed form with a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: compares core numerically, not lexically",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: orders the semver 2.0.0 prerelease example",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: ignores build metadata and accepts parsed objects",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "Hidden acceptance suite: 41/41 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 4 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.98,
+        "passed": 49,
+        "failed": 1,
+        "total": 50,
+        "time_seconds": 318.2,
+        "tokens": 460546,
+        "tool_calls": 18,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=19"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": false,
+          "evidence": "denied: Bash"
+        },
+        {
+          "text": "Stayed under the turn cap (200)",
+          "passed": true,
+          "evidence": "num_turns=19"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 1237.2354"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "1 commit(s): feat: add lockstep semver library, resolver and CLI"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "no workflow launched"
+        },
+        {
+          "text": "hidden: cli: resolve prints the lockfile as indented JSON and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve --out writes the file and prints nothing",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve exits 2 with an error: line on a conflict",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve exits 1 on a missing file or invalid JSON",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: check prints true and exits 0, or false and exits 2",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: check exits 1 on an invalid version or range",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: no subcommand or an unknown one exits 1 with usage on stderr",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: any-version forms",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: wildcard partials",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: exact versions and plain operators",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: operators on wildcard partials round outward",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: tilde",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: caret",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: hyphen",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: AND within a set, OR between sets",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: the prerelease rule",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: rejects malformed ranges with a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: satisfies accepts parsed inputs and rejects an invalid version",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: maxSatisfying picks the highest admitted version or null",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: picks the highest versions along a chain",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: an empty dependency list gives an empty lockfile",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a diamond shares one version that satisfies both parents",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: backtracks through two levels of candidates",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a lower version avoids a dependency that cannot be met",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: packages not required by anything are left out",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a dependency cycle resolves and records both edges",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: prereleases are chosen only where the range admits them",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: any locally maximal solution is accepted when several exist",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: the same inputs give a deep-equal lockfile",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a conflict throws ResolutionError naming the contested package",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a conflict met through an already-selected package names that package",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a package missing from the registry is a ResolutionError from root",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: no candidate version at all is a ResolutionError, not a crash",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: an invalid range or version in the inputs is a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: parses core, prerelease and build parts",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: returns a parsed object unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: rejects every malformed form with a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: compares core numerically, not lexically",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: orders the semver 2.0.0 prerelease example",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: ignores build metadata and accepts parsed objects",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "Hidden acceptance suite: 41/41 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 4 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "without_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 50,
+        "failed": 0,
+        "total": 50,
+        "time_seconds": 341.9,
+        "tokens": 1161578,
+        "tool_calls": 18,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=19"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (200)",
+          "passed": true,
+          "evidence": "num_turns=19"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 1116.5775"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "5 commit(s): docs: usage in README and project notes under docs/ | feat(cli): add resolve and check subcommands | feat(resolve): flat resolver with backtracking | feat(range): parse, desugar and match version ranges | feat(version): parse and compare semver versions"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "no workflow launched"
+        },
+        {
+          "text": "hidden: cli: resolve prints the lockfile as indented JSON and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve --out writes the file and prints nothing",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve exits 2 with an error: line on a conflict",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: resolve exits 1 on a missing file or invalid JSON",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: check prints true and exits 0, or false and exits 2",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: check exits 1 on an invalid version or range",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: cli: no subcommand or an unknown one exits 1 with usage on stderr",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: any-version forms",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: wildcard partials",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: exact versions and plain operators",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: operators on wildcard partials round outward",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: tilde",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: caret",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: hyphen",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: AND within a set, OR between sets",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: the prerelease rule",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: rejects malformed ranges with a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: satisfies accepts parsed inputs and rejects an invalid version",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: ranges: maxSatisfying picks the highest admitted version or null",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: picks the highest versions along a chain",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: an empty dependency list gives an empty lockfile",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a diamond shares one version that satisfies both parents",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: backtracks through two levels of candidates",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a lower version avoids a dependency that cannot be met",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: packages not required by anything are left out",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a dependency cycle resolves and records both edges",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: prereleases are chosen only where the range admits them",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: any locally maximal solution is accepted when several exist",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: the same inputs give a deep-equal lockfile",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a conflict throws ResolutionError naming the contested package",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a conflict met through an already-selected package names that package",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: a package missing from the registry is a ResolutionError from root",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: no candidate version at all is a ResolutionError, not a crash",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: resolver: an invalid range or version in the inputs is a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: parses core, prerelease and build parts",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: returns a parsed object unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: rejects every malformed form with a TypeError",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: compares core numerically, not lexically",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: orders the semver 2.0.0 prerelease example",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: versions: ignores build metadata and accepts parsed objects",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "Hidden acceptance suite: 41/41 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 4 test files"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.98,
+        "stddev": 0.0,
+        "min": 0.98,
+        "max": 0.98
+      },
+      "time_seconds": {
+        "mean": 707.3,
+        "stddev": 16.4049,
+        "min": 695.7,
+        "max": 718.9
+      },
+      "tokens": {
+        "mean": 1725800.5,
+        "stddev": 180790.9405,
+        "min": 1597962,
+        "max": 1853639
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.99,
+        "stddev": 0.0141,
+        "min": 0.98,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 330.05,
+        "stddev": 16.7584,
+        "min": 318.2,
+        "max": 341.9
+      },
+      "tokens": {
+        "mean": 811062.0,
+        "stddev": 495704.481,
+        "min": 460546,
+        "max": 1161578
+      }
+    },
+    "delta": {
+      "pass_rate": "-0.01",
+      "time_seconds": "+377.2",
+      "tokens": "+914738"
+    }
+  },
+  "notes": [
+    "Task 7 build-component: a whole library and CLI built from a spec in a greenfield fixture, graded by 41 hidden acceptance tests run outside the fixture. All four runs passed 41/41; the only failed expectation anywhere is the environment check 'No tool call was denied' (all eleven denials are don't-ask-mode refusals, none from the fabflows guard).",
+    "Both with_skill leads routed the work to fabflows:build by the skill's own rule, unprompted. This is the first measured run of the build loop: an Opus builder implemented and committed, and in run 1 a fresh Fable reviewer re-ran the tests and returned ACCEPT with zero must-fix items.",
+    "Cost: $4.01 list mean with the skill against $2.62 without (+53%), and 707 s wall against 330 s (2.1x). The split moved: Fable output fell 43% (16,367 against 28,679) while an Opus builder produced most of the tokens. On a subscription the split may matter more than the total; the weighting is unpublished.",
+    "The loop's own mechanism is still unmeasured: every build passed its tests first time, so no rework round ran and the two-round cap was never approached.",
+    "Five plugin defects, all confirmed from the transcripts: the skill hands fabflows:build its args as a string and the workflow rejects it, costing both leads a turn; a builder report whose first line opens with the word 'Permission' is escalated as blocked even with status done and an empty blocker, which cost run 2 its review entirely; the escalation path tells the lead to read references/build-loop.md, which this user's settings make unreadable; refuter.md pins Opus while build.js defaults the reviewer to Fable; refuter.md says both that a denied command forces BLOCKED and that BLOCKED is only for an unrunnable diff or test command.",
+    "Closed in the plugin's favour: the guard hook does fire inside Workflow-tool agents, with a PreToolUse payload per builder and in-loop reviewer tool call and a SubagentStop each. build.js and the README both called this unverified.",
+    "Quality is a tie only on the hidden suite. The bare arm committed a source file containing a raw NUL byte (git records it as binary) in one run, and in the other made two of five commits that fail their own tests in isolation while reporting 'Each of the five Conventional Commits was checked green'. Neither fabflows run did either. Two runs per arm: a hypothesis with evidence, not a rate."
+  ]
+}

@@ -131,9 +131,8 @@ phase('Independent EDA')
 // Namespaced as 'data-analysis-review:<agent-name>' to match this plugin's own plugin.json
 // "name" field, mirroring the pattern observed in 4 independently-installed plugins in this
 // environment (each plugin's agents resolve as '<that plugin's own name>:<agent-name>'). Not
-// yet confirmed against a real install of THIS plugin -- carry that into the post-install smoke
-// test (see docs/superpowers/plans/2026-07-17-data-analysis-review-skill.md and
-// .superpowers/sdd/progress.md). If this plugin's agents turn out to resolve bare instead, a
+// yet confirmed against a real install of THIS plugin -- still listed under Deferred in
+// docs/specs/2026-09-22-data-analysis-review.md. If this plugin's agents turn out to resolve bare instead, a
 // wrong guess here fails loudly (every agent() call throws "agent type not found", zero agents
 // dispatched) rather than silently misrouting -- this was evaluated and accepted as the better
 // failure mode versus a bare reference risking a same-named agent from an unrelated plugin.
