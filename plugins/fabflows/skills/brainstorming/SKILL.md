@@ -34,7 +34,6 @@ the user has read the spec and said so. Brainstorming ends at the spec.
 3. **No spec without a Check line.** A behaviour nobody can check is not decided.
 4. **No handoff before the user has read the spec.** Approval of a round is not approval
    of the document.
-5. **A security gap blocks the spec.** It is not a question and not a note.
 
 ## 1. Size it
 
@@ -110,10 +109,9 @@ Format:
 **Q2. ...**
 ```
 
-Round one always carries the premise check (in the bounded tier it is a Decisions line, see
-Size it): should this exist at all,
-who is it for, and what is the simplest thing that gets them there. A "no" ends the skill
-with one paragraph saying why, and that is a good outcome.
+Round one always carries the premise check: should this exist at all, who is it for, and
+what is the simplest thing that gets them there (bounded: one Decisions line, see Size it).
+A "no" ends the skill with one paragraph saying why, and that is a good outcome.
 
 End every round with the only state the lead keeps:
 
@@ -150,15 +148,8 @@ not a promise.
 ## 5. Lens pass
 
 Before writing the spec, brief `fabflows:refuter` in spec mode with the draft (the cut
-version, in a scratch file or the chat block) and the code paths it names. Its lenses:
-
-1. failure modes
-2. scaling cliffs
-3. security gaps
-4. contradictions between decisions
-5. operations: deploy, rollback, observability
-6. data integrity: migrations, partial writes
-7. dependencies: new packages, external services
+version, in a scratch file or the chat block) and the code paths it names. The seven lenses
+it works are listed in its own definition.
 
 Verify its report per the fabflows gate: open one cited `path:line`. Surviving findings
 become the next round's questions. "None" is a valid finding on any lens.
