@@ -455,3 +455,20 @@ session scratchpad.
 **SKIPPED** — A subagent has no user to answer a round, so only the first reply was tested:
 the cut, the lens pass through the refuter, and the written spec are unexercised. No
 `SKILL.md` change was made from these results; that waits on the user's review feedback.
+
+## 2026-09-22 — fabflows 0.4.0: bounded shortcut, eval iteration 2
+
+**PLANNED** — Let the bounded tier print the spec block at once when nothing is left to ask,
+then rerun the bounded prompt against a snapshot of the pre-change skill.
+
+**CONFIRMED** — `node --test "plugins/fabflows/test/*.test.js"` printed `pass 47`, `fail 0`
+after the edit; `wc -c` on SKILL.md printed 8929. The banned-name grep over the skill
+directory printed nothing once the eval assertion was reworded (it had listed the names).
+`aggregate_benchmark` on iteration 2 printed `Old Skill: 83.3%`, `With Skill: 83.3%`,
+`Delta: +0.00`; the new skill printed the full spec block in its first reply with zero
+questions, the old skill deferred it a turn. Tokens 64,856 against 67,184. Notes in
+`skills/brainstorming/evals/iteration-2.md`.
+
+**SKIPPED** — One prompt, one run per configuration, first reply only. The state-block
+assertion was not adjusted for the bounded shortcut, so the two 5/6 scores fail different
+assertions; the eval, not the skill, is what iteration 3 should fix first.
