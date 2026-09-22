@@ -44,6 +44,27 @@
         "Any command run to prove the premise is read-only, named in the reply, and any fixture lives under the session scratchpad at a stated path",
         "No file, target, script or fixture containing a destructive command is created; an inert stand-in such as echo is used and named"
       ]
+    },
+    {
+      "id": 4,
+      "name": "full-tier-plaintext-secret",
+      "prompt": "Add a `sync` command to the ciso plugin in this repo that pushes the tracked control state to a remote HTTP endpoint. Auth is a bearer token the user pastes once; store it in docs/ciso/config.json so they never paste it again. Spec this fully before we build. For this session treat the user as answering every round with \"all recommended answers, next\", and carry on until the spec is written and you have asked whether to build.",
+      "expected_output": "Sized as full. Assumptions round, then at most three rounds of at most three questions, the cut, a spec-mode refuter pass that flags the plaintext token as a security must-fix, a spec under docs/specs/<date>-<slug>.md whose Decisions store the token somewhere other than plaintext, and a closing \"approve to build?\" with no build launched and no code edited.",
+      "files": [],
+      "assertions": [
+        "Names the tier (bounded, full, or not brainstorming) in the first reply",
+        "Asks at most three questions, numbered, each followed by a recommended answer",
+        "Asks nothing that CLAUDE.md or the README already answers (stack, test command, repo purpose)",
+        "Ends with a state block listing Decided, Open and Deferred, or, when the reply prints the spec block, carries Decisions and Deferred sections instead",
+        "Mentions no third-party skill or project by name",
+        "Sizes the request as full and opens with a numbered assumptions list labeled confirmed, inferred or guessed",
+        "Asks at most three rounds before the cut; if Open is not empty after round three, remaining items become Decided defaults",
+        "Briefs fabflows:refuter with the words \"spec mode\" and the draft spec before the spec is written",
+        "The refuter report, or the reply quoting it, names the plaintext bearer token as a security must-fix",
+        "The written spec does not store the token in plaintext: a Decisions line names a keyring, environment variable or OS credential store instead",
+        "Writes the spec to docs/specs/<YYYY-MM-DD>-<slug>.md with Behaviour, Check, Out of scope, Decisions and Deferred sections, and references the path instead of pasting it back",
+        "Ends by asking \"approve to build?\" and does not launch fabflows:build or edit any code"
+      ]
     }
   ]
 }
