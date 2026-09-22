@@ -618,3 +618,26 @@ What changed since is that the skill body now says to pass an object outright, a
 loudly as `missing-args` rather than half-parsing. DEC-0016 is accepted and therefore immutable,
 so the departure is recorded here rather than in the record. If a later run shows a lead losing a
 turn to this again, the parser is the fix and this entry is the reason it was removed.
+
+## 2026-09-22 — fabflows 0.4.0: brainstorming skill
+
+**PLANNED** — Add `skills/brainstorming/SKILL.md` (sized request, worker-sourced facts,
+bounded question rounds with recommended answers, expand-then-cut, a lens pass through the
+refuter, a spec `fabflows:build` can take), teach `refuter.md` to review a spec instead of a
+diff, pin both in `frontmatter.test.js`, bump to 0.4.0 across `plugin.json`,
+`marketplace.json`, both READMEs and `CHANGELOG.md`, and record DEC-0017. Verify each commit
+with `node --test "plugins/fabflows/test/*.test.js"` and `node --test "test/*.test.js"`, and
+check the shipped skill names no third-party project with
+`grep -rniE "superpowers|grill|gsd|get-shit-done|context-mode|interview-me|pocock|obra|sorbh|mksglu" plugins/fabflows/skills/brainstorming plugins/fabflows/agents/refuter.md`.
+
+**CONFIRMED** — Four commits, each checked out alone in a scratch worktree and tested:
+`4e8bf80` and `3d23311` printed `tests 46`, `fail 0`; `f4120f7` and `bc3e7f2` printed
+`tests 47`, `fail 0` (the one new test). `node --test "test/*.test.js"` printed `fail 0` on all
+four. The banned-name grep above printed nothing (exit 1). `wc -c` on the new SKILL.md printed
+8426, under the 20,000 cap; its description is 984 characters. `adr_index.py .` reported 17
+records.
+
+**SKIPPED** — The skill was not exercised in a live session, and the skill-creator eval loop
+(three test prompts with and without the skill, graded and reviewed) has not run yet. Both
+need the plugin installed from this branch and a new session (CLAUDE.md, "Testing a plugin
+change"); the eval loop is the next step on this branch.
