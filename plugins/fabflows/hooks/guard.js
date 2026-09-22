@@ -131,27 +131,20 @@ function isDangerousDelete(seg) {
 // script) is invisible to the shell rules once it is invoked by name: `make nuke` is just
 // a word. So the payload must not be written at all. Prose files are not checked, since a
 // README or a test can legitimately quote `rm -rf ~`.
-const RUNNER_FILE = /(^|[\\/])(makefile|justfile|package\.json|[^\\/]+\.(mk|sh|bash|zsh|ps1|cmd|bat))$/i;
-const RUNNER_REDIRECT = new RegExp(String.raw`(>>?|\|\s*tee(\s+-a)?)\s*["']?(\S*?(makefile|justfile|package\.json|\S+\.(mk|sh|bash|zsh|ps1|cmd|bat)))["']?(\s|$)`, 'i');
+const RUNNER_EXT = 'mk|sh|bash|zsh|ps1|cmd|bat';
+const RUNNER_FILE = new RegExp(String.raw`(^|[\\/])(makefile|justfile|package\.json|[^\\/]+\.(${RUNNER_EXT}))$`, 'i');
+const RUNNER_REDIRECT = new RegExp(String.raw`(>>?|\|\s*tee(\s+-a)?)\s*["']?(\S*?(makefile|justfile|package\.json|\S+\.(${RUNNER_EXT})))["']?(\s|$)`, 'i');
 
 function destructiveLine(content) {
   const text = String(content).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
-  for (const raw of text.split(/\r?\n/)) {
-    // A Makefile recipe line starts with a tab and maybe `@` or `-`; an npm script is a
-    // quoted JSON value; a printf/echo payload is quoted. Strip all of that, then anchor.
-    const line = raw
-      .replace(/^\s*(printf|echo)\s+(-\w+\s+)*/i, '')
-      .replace(/^[\s@-]+/, '')
-      .replace(/^"[^"]*"\s*:\s*/, '')
-      .replace(/^["']+/, '')
-      .trim()
-      .replace(/["',]+$/, '')
-      .trim();
-    // An npm script is a JSON string value on a line that may hold the whole object, so
-    // every quoted value is checked on its own as well.
-    const candidates = [line];
-    for (const m of raw.matchAll(/"((?:[^"\\]|\\.)*)"/g)) candidates.push(m[1].replace(/\\(.)/g, '$1').trim());
-    for (const c of candidates) {
+  // A Makefile recipe line starts with a tab and maybe `@` or `-`; an npm script is a
+  // quoted JSON value; a printf/echo payload is a quoted string that may span lines.
+  // Check every line, and every line of every quoted string.
+  const units = [text];
+  for (const m of text.matchAll(/"((?:[^"\\]|\\.)*)"|'([^']*)'/g)) units.push((m[1] ?? m[2]).replace(/\\(.)/g, '$1'));
+  for (const unit of units) {
+    for (const raw of unit.split(/\r?\n/)) {
+      const c = raw.replace(/^[\s@-]+/, '').trim();
       if (!c) continue;
       if (isDangerousDelete(c)) return c;
       for (const [re] of DESTRUCTIVE) if (re.test(c)) return c;
@@ -389,8 +382,8 @@ function preToolUse(input) {
     if (isSecretPath(target)) {
       deny('fabflows: writing to a credential-bearing file is blocked.');
     }
-    const content = ti.new_string || ti.content || ti.new_source;
-    if (typeof content === 'string' && RUNNER_FILE.test(String(target || ''))) {
+    const content = ti.new_string || ti.content;
+    if (typeof content === 'string' && RUNNER_FILE.test(target)) {
       const line = destructiveLine(content);
       if (line) denyRunnerPayload(line, target);
     }
