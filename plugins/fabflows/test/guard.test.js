@@ -76,6 +76,28 @@ test('blocks package installs across ecosystems, and only installs', () => {
   }
 });
 
+test('lets pypdf into a scratch --target through, and nothing else', () => {
+  const tmp = path.join(os.tmpdir(), 'x');
+  for (const cmd of [
+    `pip install --target ${tmp} pypdf`,
+    'python3 -m pip install -q --target /home/u/scratchpad/pylib pypdf==4.3.1',
+    `uv pip install --target "${tmp}" pypdf`,
+  ]) {
+    allows(shell(cmd), cmd);
+  }
+  for (const cmd of [
+    'pip install pypdf',
+    `pip install --target ${tmp} requests`,
+    `pip install --target ${tmp} pypdf requests`,
+    `pip install --target ${tmp} -r requirements.txt pypdf`,
+    'pip install --target /opt/lib pypdf',
+    'pip install --target ~/.claude/plugins/x pypdf',
+    'pip install --target $S/pylib pypdf',
+  ]) {
+    denies(shell(cmd), cmd);
+  }
+});
+
 test('anchors patterns at segment start, so quoted text is not a command', () => {
   allows(shell('echo "npm install"'), 'npm install inside an echo string');
   allows(shell('grep -r "pip install" docs/'), 'pip install inside a grep pattern');

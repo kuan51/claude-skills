@@ -1,5 +1,6 @@
 ---
 name: using-fabflows
+compatibility: Claude Code with the fabflows plugin enabled. Needs its namespaced worker agents, the Agent and Workflow tools, and the PreToolUse guard hook. Not portable to Claude.ai or the API.
 description: 'The single entrypoint for a fabflows session. Invoke it at the start of every conversation to put the session on fabflows discipline: the routing table, the delegation brief, the report contract and the verification gate load from the fabflows skill, and the lead prepares and launches fabflows:build itself for any spec-able change instead of asking for opt-in again. Triggers on "using fabflows", "start fabflows", "fabflows session", "/using-fabflows".'
 ---
 

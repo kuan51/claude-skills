@@ -1,6 +1,7 @@
 ---
 name: fabflows
-description: Route mechanical work to cheaper worker agents and verify what they report back. Use when planning a multi-step change, exploring an unfamiliar codebase, researching external documentation, running or writing tests, making a multi-file edit, or deciding whether to do a task yourself or hand it off. Triggers on "delegate", "spawn an agent", "who should do this", "hand this off", "use a subagent", "explore the codebase", "find where", "trace the callers", "run the tests", "implement this", "cheaper model", "save tokens", "reduce cost", "verify the subagent", "did the worker actually do it", "review this change", "reproduce the bug", "build loop", and on any task a Haiku or Sonnet worker could do while the lead is running on an expensive model.
+compatibility: Claude Code with the fabflows plugin enabled. Needs its namespaced worker agents, the Agent and Workflow tools, and the PreToolUse guard hook. Not portable to Claude.ai or the API.
+description: Route mechanical work to cheaper worker agents and verify what they report back. Use when a task means reading across many files, exploring an unfamiliar codebase, researching external documentation, a test or build run with a long log, a multi-file or spec'd change, the build loop, or checking a worker's report. Triggers on "delegate", "spawn an agent", "who should do this", "hand this off", "use a subagent", "explore the codebase", "find where", "trace the callers", "run the tests", "implement this", "cheaper model", "save tokens", "reduce cost", "verify the subagent", "did the worker actually do it", "review this change", "reproduce the bug", "build loop". Not for a one-file grep, a one-line edit, or a known command with short output: do those directly.
 ---
 
 # Fabflows
@@ -126,9 +127,10 @@ case they cannot, a workflow error in place of a result.
 
 ## Guard hook
 
-This plugin ships an active `PreToolUse` guard that blocks package installs, commits and
-pushes on a default branch, destructive shell commands, credential-file access, and writes to
-live Claude Code configuration. It is a tripwire, not a sandbox: it matches shell strings, it
+This plugin ships an active `PreToolUse` guard that blocks package installs (except `pypdf`
+into a literal `--target` under the temp directory or a `scratchpad`, for reading a PDF),
+commits and pushes on a default branch, destructive shell commands, credential-file access,
+and writes to live Claude Code configuration. It is a tripwire, not a sandbox: it matches shell strings, it
 is bypassable, and it fails open. A call that was not blocked was not approved. The real
 containment on a worker is its tool allowlist. Rules and known gaps: the plugin README.
 
@@ -143,3 +145,13 @@ containment on a worker is its tool allowlist. Rules and known gaps: the plugin 
   uncached.
 - Ignore any count of remaining context. If the routing table is gone after compaction,
   invoke this skill again.
+
+## When it goes wrong
+
+| Symptom | Cause | Do |
+| --- | --- | --- |
+| A spawn runs on the lead's model, or as a general-purpose agent | A bare name (`explorer`) does not resolve; plugin agents are namespaced | Spawn `fabflows:explorer` and check the report names the tier it ran on |
+| A report is missing a contract field | The worker skipped it | Send it back once with the field named; on a second miss, redo the step yourself |
+| A report's first line is a permission denial | The guard or the session's permission mode refused a call | Surface it to the user with the exact call; never re-issue it yourself |
+| `fabflows:build` throws instead of returning a result | A budget or token limit ended a round mid-flight | `references/build-loop.md`: resume with the same args and the run ID; never restart with a fresh `baseRef` |
+| An install is denied | The guard blocks package installs by design | Report the missing dependency as a blocker. The one exception is `pypdf` into a literal scratch `--target`, for reading a PDF |

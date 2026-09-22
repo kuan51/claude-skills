@@ -1,7 +1,7 @@
 ---
 id: DEC-0014
 title: 'Narrow when fabflows loads: volume and multi-step work, not short tasks'
-status: proposed
+status: accepted
 date: 2026-09-19
 deciders: [kuan51]
 supersedes: []

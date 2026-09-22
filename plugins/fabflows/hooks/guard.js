@@ -68,6 +68,29 @@ const INSTALL = [
   /^install-(module|package|script)\b/i,
 ];
 
+// The one install the guard lets through: pypdf, pure Python, into a `--target` under the
+// OS temp dir or a `scratchpad` directory. Nothing lands in site-packages, so nothing
+// outlives the session, and the lead can read a PDF without asking the user to install.
+// The target must be a literal path: a variable is not expanded, so it stays denied.
+const PIP = /^(?:pip3?|python3?\s+-m\s+pip|uv\s+pip)\s+install\s+(.*)$/i;
+const unquote = (s) => s.replace(/^(["'])(.*)\1$/, '$2');
+function isScratchPypdf(seg, cwd) {
+  const m = PIP.exec(seg);
+  if (!m) return false;
+  const args = m[1].match(/"[^"]*"|'[^']*'|\S+/g) || [];
+  let target = null;
+  let pkg = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = unquote(args[i]);
+    if (a === '--target') target = args[++i];
+    else if (/^pypdf(==[\d.]+)?$/i.test(a)) pkg = true;
+    else if (!/^(-q|--quiet)$/i.test(a)) return false;
+  }
+  if (!pkg || !target) return false;
+  const t = norm(path.resolve(cwd, unquote(target).replace(/^~(?=[\\/]|$)/, os.homedir())));
+  return under(t, norm(os.tmpdir())) || /(^|\/)scratchpad(\/|$)/.test(t);
+}
+
 // Secret-bearing paths. Accepts either separator so a Windows path matches too.
 const SECRET_PATH =
   /(^|[\s"'\\/])\.env($|[.\s"'\\/])|\.pem\b|\.key\b|\bid_rsa\b|\bid_ed25519\b|[\\/]\.aws[\\/]credentials|[\\/]\.ssh[\\/]|\.npmrc\b|\.pypirc\b/i;
@@ -297,7 +320,7 @@ function checkShell(command, cwd) {
     }
 
     for (const re of INSTALL) {
-      if (re.test(seg)) {
+      if (re.test(seg) && !isScratchPypdf(seg, effCwd)) {
         deny(
           `fabflows: package installs are blocked (${seg.slice(0, 60)}). Ask the user to install it themselves, or report the missing dependency as a blocker.`
         );
