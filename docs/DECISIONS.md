@@ -13,7 +13,7 @@ Why this repository is the way it is. Newest first.
 | [DEC-0017](decisions/DEC-0017-add-a-brainstorming-skill-to-fabflows-and-reuse-the-refuter.md) | Add a brainstorming skill to fabflows and reuse the refuter for design review | proposed | 2026-09-22 | - | - |
 | [DEC-0016](decisions/DEC-0016-harden-the-fabflows-build-loop-denial-classification-reviewe.md) | Harden the fabflows build loop: denial classification, reviewer model, and escalation guidance | accepted | 2026-09-21 | - | - |
 | [DEC-0015](decisions/DEC-0015-adopt-the-narrowed-trimmed-fabflows-skill.md) | Adopt the narrowed trimmed fabflows skill | accepted | 2026-09-19 | - | - |
-| [DEC-0014](decisions/DEC-0014-narrow-when-fabflows-loads-volume-and-multi-step-work-not-sh.md) | Narrow when fabflows loads: volume and multi-step work, not short tasks | proposed | 2026-09-19 | - | - |
+| [DEC-0014](decisions/DEC-0014-narrow-when-fabflows-loads-volume-and-multi-step-work-not-sh.md) | Narrow when fabflows loads: volume and multi-step work, not short tasks | accepted | 2026-09-19 | - | - |
 | [DEC-0013](decisions/DEC-0013-the-lead-keeps-the-session-effort-only-workers-pin-theirs.md) | The lead keeps the session effort; only workers pin theirs | proposed | 2026-09-17 | DEC-0012 | - |
 | [DEC-0012](decisions/DEC-0012-lead-runs-fable-at-medium-effort-delegate-on-context-volume.md) | Lead runs Fable at medium effort; delegate on context volume | proposed (superseded) | 2026-09-17 | - | DEC-0013 |
 | [DEC-0011](decisions/DEC-0011-invoking-using-fabflows-is-the-session-s-opt-in-to-the-build.md) | Invoking using-fabflows is the session's opt-in to the build loop | proposed | 2026-09-16 | - | - |
