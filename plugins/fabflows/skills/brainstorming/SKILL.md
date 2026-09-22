@@ -19,9 +19,9 @@ what is out of scope.
 questions with a recommended answer on each, cut the design to the smallest slice that
 ships, run it past a reviewer, and write the spec.
 
-**This skill will not:** write or edit code, spawn `fabflows:editor` or
-`fabflows:test-runner`, or start the build loop before the user has read the spec and
-said so. Brainstorming ends at the spec.
+**This skill will not:** write or edit code, write a fixture whose body is a destructive
+command, spawn `fabflows:editor` or `fabflows:test-runner`, or start the build loop before
+the user has read the spec and said so. Brainstorming ends at the spec.
 
 ## Non-negotiables
 
@@ -81,6 +81,15 @@ depend on a fact wait for it.
 numbered, each with its evidence and a **confirmed** / **inferred** / **guessed** label,
 and ask the user to confirm or correct. Most questions die here: a corrected assumption is
 cheaper than a question, and a confirmed one never needs asking.
+
+**Read-only spikes are allowed; destructive payloads never are.** A premise is confirmed
+by reading. When only running something would settle it and the command cannot change
+state (piping a fixture into a script, a dry run, a query), run it, keep any fixture under
+the session scratchpad, and say so in the reply with the command and the path. Anything
+that writes to the repo, installs, or touches git is a question, not a first-reply habit.
+Never create a file, target, script, or fixture whose body is a destructive command, even
+to prove a guard ignores it: use an inert stand-in such as `echo would-delete` and say what
+it stands for. A proof that leaves `rm -rf ~` on disk is worse than no proof.
 
 **Greenfield.** No code means the explorer is skipped and round one is stack, hosting and
 storage, with a recommended answer for each.
