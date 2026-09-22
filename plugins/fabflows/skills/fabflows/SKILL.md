@@ -126,9 +126,10 @@ case they cannot, a workflow error in place of a result.
 
 ## Guard hook
 
-This plugin ships an active `PreToolUse` guard that blocks package installs, commits and
-pushes on a default branch, destructive shell commands, credential-file access, and writes to
-live Claude Code configuration. It is a tripwire, not a sandbox: it matches shell strings, it
+This plugin ships an active `PreToolUse` guard that blocks package installs (except `pypdf`
+into a literal `--target` under the temp directory or a `scratchpad`, for reading a PDF),
+commits and pushes on a default branch, destructive shell commands, credential-file access,
+and writes to live Claude Code configuration. It is a tripwire, not a sandbox: it matches shell strings, it
 is bypassable, and it fails open. A call that was not blocked was not approved. The real
 containment on a worker is its tool allowlist. Rules and known gaps: the plugin README.
 
