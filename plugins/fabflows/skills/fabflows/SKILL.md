@@ -1,5 +1,6 @@
 ---
 name: fabflows
+compatibility: Claude Code with the fabflows plugin enabled. Needs its namespaced worker agents, the Agent and Workflow tools, and the PreToolUse guard hook. Not portable to Claude.ai or the API.
 description: Route mechanical work to cheaper worker agents and verify what they report back. Use when planning a multi-step change, exploring an unfamiliar codebase, researching external documentation, running or writing tests, making a multi-file edit, or deciding whether to do a task yourself or hand it off. Triggers on "delegate", "spawn an agent", "who should do this", "hand this off", "use a subagent", "explore the codebase", "find where", "trace the callers", "run the tests", "implement this", "cheaper model", "save tokens", "reduce cost", "verify the subagent", "did the worker actually do it", "review this change", "reproduce the bug", "build loop", and on any task a Haiku or Sonnet worker could do while the lead is running on an expensive model.
 ---
 

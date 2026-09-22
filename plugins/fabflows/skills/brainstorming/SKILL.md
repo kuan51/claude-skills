@@ -1,5 +1,6 @@
 ---
 name: brainstorming
+compatibility: Claude Code with the fabflows plugin enabled. Needs its namespaced worker agents, the Agent and Workflow tools, and the PreToolUse guard hook. Not portable to Claude.ai or the API.
 description: Turn a rough idea or an unshaped request into a spec that fabflows:build can take unchanged. The lead sizes the request (bounded, designed in chat; or full, with a written spec), has fabflows:explorer and fabflows:researcher read the codebase and the web instead of asking the user, runs rounds of at most three numbered questions each with a recommended answer until nothing is open, states the maximal version and cuts it to the smallest shippable slice, sends the draft through fabflows:refuter for a lens pass and blocks on any security gap it finds, then writes the spec (behaviour, check, out of scope, decisions, deferred) and hands off only after the user has read it. Use it whenever a request arrives without a spec, a way to check it, or a named scope, even if nobody says "brainstorm". Triggers on "brainstorm", "let's design", "spec this", "think this through", "before we build", "plan this feature", "I have an idea", "help me scope", "requirements", "is this the right approach".
 ---
 

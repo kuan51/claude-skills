@@ -67,6 +67,7 @@ const EXPECTED_NAMES = Object.keys(EXPECTED_TOOLS);
 const NAME_RE = /^[a-z0-9-]+$/;
 const MAX_NAME = 64;
 const MAX_DESCRIPTION = 1024;
+const MAX_COMPATIBILITY = 500;
 const RESERVED = ['anthropic', 'claude'];
 
 test('every expected agent exists with its scoped tool set and pinned model tier', () => {
@@ -153,6 +154,12 @@ test('every skill has valid frontmatter', () => {
     assert.ok(
       fields.description.length <= MAX_DESCRIPTION,
       `skills/${dir.name}/SKILL.md description exceeds ${MAX_DESCRIPTION} chars`
+    );
+    // Every skill here needs Claude Code (plugin agents, Workflow, the guard hook), and the
+    // Agent Skills spec caps the field that says so at 500 characters.
+    assert.ok(
+      fields.compatibility && fields.compatibility.length <= MAX_COMPATIBILITY,
+      `skills/${dir.name}/SKILL.md must declare compatibility in at most ${MAX_COMPATIBILITY} chars`
     );
   }
 });
