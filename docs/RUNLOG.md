@@ -508,3 +508,37 @@ were true when written. `node --test "plugins/fabflows/test/*.test.js"` printed 
 **SKIPPED** (departure worth naming) — The file move landed inside commit `43c9666`
 (the guard refactor) because `git mv` had staged it before that commit ran, so that commit
 mixes a refactor with a docs move. History is pushed, so it stays as is.
+
+## 2026-09-22 — fabflows 0.4.0: adversarial review of brainstorming against the alternatives
+
+**CONFIRMED** — Four researchers read the primary sources of the four alternatives the user
+named; the lead re-fetched the superpowers brainstorming SKILL.md and spec-reviewer prompt and
+the gsd-core discuss-phase page to verify the load-bearing claims. A refuter in spec mode then
+attacked the skill's value proposition with those facts. Verdict `REWORK`: four advertised
+differentiators (sizing tiers, assumptions with confidence labels, a recommended answer per
+question, facts before asking) already ship in the same form in superpowers, gsd-core or
+interview-me; the two that do not (a lens pass with a security hard block from a fresh
+context, and the spec handed to `fabflows:build`) had no evidence because iterations 1–3 graded
+a first reply only; the bounded tier scored level with no skill; three text contradictions
+(description said the refuter blocks, the security list was duplicated, iteration tables had
+inverted delta signs) and two rules where an alternative is safer (no round budget; the bounded
+shortcut self-certifies). context-mode has no planning feature and is not a competitor. See
+DEC-0017, whose gaps section already names round size and tiers as the first knobs.
+
+**PLANNED** — Three remedies chosen by the user: fix the text contradictions (two commits, no
+behaviour change); cap rounds at three and make the bounded spec block an explicit
+checkpoint; add eval 4 (full tier, scripted user, planted plaintext secret) and run it as
+iteration 4, new skill against a snapshot taken before the round cap.
+
+**CONFIRMED** — Commits `7d62183` (description and hard-block paragraph), `ab9d627` (delta
+signs in iterations 2 and 3, now new minus old), `6473e5e` (round budget, checkpoint sentence,
+CHANGELOG, one new test assertion) and the eval 4 commit. `node --test
+"plugins/fabflows/test/*.test.js"` printed `pass 48`, `fail 0` after each; root suite `pass 4`.
+Description 995 chars, SKILL.md 9,842 chars. Banned-name grep over the skill directory printed
+nothing.
+
+**PLANNED** — Iteration 4: two subagent runs on clean clones under the scratchpad
+(`iteration-4/repo-with_skill`, `repo-old_skill` with the pre-cap snapshot), same brief,
+graded on the twelve eval 4 assertions, aggregated, review page generated, notes in
+`plugins/fabflows/evals/brainstorming/iteration-4.md`. Post-run sweep for destructive runner
+files. One prompt, one run per arm, so it cannot settle the bounded question.
