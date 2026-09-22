@@ -313,3 +313,13 @@ $1.32 / 88 s, delegate $2.06 / 222 s, loop $1.32 / 117 s. Worker model proof:
 shows Fable, `claude-opus-5-5` and one Sonnet editor. Summarised with `summarize.js`, aggregated
 with skill-creator's `aggregate_benchmark` and `annotate_benchmark.py`; `generate_review.py` not
 run. Write-up in `plugins/fabflows/evals/RESULTS.md`.
+
+## 2026-09-22 — fabflows benchmark iteration 8: the hidden rule, two arms, five repeats
+
+**PLANNED** — Re-run task 8 after iteration 7 saturated. Changes: the spec no longer states the
+caret-on-zero rule and its example no longer reaches the defect (only the hidden test carries
+it); the `delegate` arm is dropped; the `loop` arm's prompt tells the lead to run `fabflows:build`;
+five interleaved repeats; two new informational expectations (build shipped the defect, review
+named it). Fable lead. Command:
+`node plugins/fabflows/evals/harness/run.js --iteration 8 --tasks 8 --parallel 3 --confirm`
+(CLI 2.1.280, OAuth session, Linux). Caps per run: 120 turns, $15 list, 30 minutes; ten runs.
