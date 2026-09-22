@@ -437,3 +437,21 @@ records.
 (three test prompts with and without the skill, graded and reviewed) has not run yet. Both
 need the plugin installed from this branch and a new session (CLAUDE.md, "Testing a plugin
 change"); the eval loop is the next step on this branch.
+
+## 2026-09-22 — fabflows 0.4.0: brainstorming eval, iteration 1
+
+**PLANNED** — Run the three prompts in `skills/brainstorming/evals/evals.json` with and
+without the skill as subagents, grade six assertions per run, aggregate with the
+skill-creator's `scripts.aggregate_benchmark`, and rotate the run log past its 500-line rule.
+
+**CONFIRMED** — Rotation: `wc -l docs/RUNLOG.md` printed 439 (from 643); 31 entry headings
+before and after (9 here, 22 in `docs/runlog/2026-Q3.md`). Evals: `aggregate_benchmark` printed
+`With Skill: 94.4% pass rate`, `Without Skill: 50.0% pass rate`, `Delta: +0.44`; per-eval grades
+6/6, 6/6, 5/6 with the skill against 2/6, 2/6, 5/6 without; mean tokens 62,244 against 56,007
+and mean time 45.8 s against 33.1 s. Summary and analyst notes are in
+`skills/brainstorming/evals/iteration-1.md`; the review page and raw outputs stayed in the
+session scratchpad.
+
+**SKIPPED** — A subagent has no user to answer a round, so only the first reply was tested:
+the cut, the lens pass through the refuter, and the written spec are unexercised. No
+`SKILL.md` change was made from these results; that waits on the user's review feedback.
