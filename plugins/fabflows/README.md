@@ -33,7 +33,7 @@ does its job:
 | `fabflows:researcher` | Haiku | none | Read, Grep, Glob, WebFetch, WebSearch | external docs and APIs, distilled with sources |
 | `fabflows:editor` | Sonnet | medium | Read, Edit, Write, Grep, Glob, Bash | scoped code changes |
 | `fabflows:test-runner` | Sonnet | low | Read, Grep, Glob, Bash, Write | writing and running tests, reporting real output |
-| `fabflows:refuter` | Opus | medium | Read, Grep, Glob, Bash | reviewing a finished change against its spec, re-running its tests |
+| `fabflows:refuter` | Opus | medium | Read, Grep, Glob, Bash | reviewing a finished change against its spec, re-running its tests; or a draft spec, lens by lens |
 | `fabflows:investigator` | Opus | high | Read, Grep, Glob, Bash | reproducing and narrowing a self-contained failure |
 
 Effort is pinned so a worker does not inherit the lead's session effort. Haiku 4.5 has
@@ -46,22 +46,83 @@ accepting anything; the `fabflows:build` workflow, described in
 [The build loop](#the-build-loop); and the `using-fabflows` entrypoint skill, which you
 invoke at the start of a conversation to run the whole session on that discipline.
 Invoking it authorizes the lead to launch the build loop, which commits to your feature
-branch, without asking again per task.
+branch, without asking again per task. The `brainstorming` skill sits in front of the loop
+for a request that arrives without a spec; see [Brainstorming](#brainstorming).
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 
 None of the workers can spawn a worker of its own. `Agent` is absent from every tool
 list. The delegation tree therefore remains one level deep, and the cost remains bounded.
 
+## Brainstorming
+
+`fabflows:brainstorming` turns a rough idea into the spec the build loop needs. The lead
+sizes the request first: bounded (one behaviour, a few files) is designed in chat, full
+(data, interfaces, auth, a feature) gets a spec written to `docs/specs/<date>-<slug>.md`.
+Facts come from `explorer` and `researcher`, never from the user; the conversation opens
+with an assumptions round, then runs rounds of at most three numbered questions, each with
+a recommended answer, until nothing is open. The lead states the maximal version, cuts it
+to the smallest shippable slice, and sends the draft to `refuter` in spec mode, which
+attacks it across seven lenses and blocks on a security gap. The user reads the spec before
+`fabflows:build` launches.
+
 ## The build loop
 
 `fabflows:build` takes one spec'd change through build and review: an Opus `editor`
 implements the spec on the checked-out feature branch and commits, a fresh `refuter`
-(Fable by default) reviews the diff and re-runs the tests, and after two rework rounds
-the loop hands back to the lead. It never merges, pushes, or reverts. The
-[skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
+(Opus by default, matching the pin in `agents/refuter.md`) reviews the diff and re-runs the
+tests, and after two rework rounds the loop hands back to the lead. It never merges, pushes,
+or reverts. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
 [DEC-0004](../../docs/decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md)
-records why.
+records the original design and
+[DEC-0016](../../docs/decisions/DEC-0016-harden-the-fabflows-build-loop-denial-classification-reviewe.md)
+records why the reviewer moved off the lead's tier. Pass `reviewerModel: 'fable'` to restore
+the old default.
+
+## Measured performance
+
+fabflows ships with a benchmark (`evals/`) that runs a headless Fable lead on the same task
+with and without the plugin and grades the result programmatically, never from what the lead
+said it did. Six iterations have run; every number below is a mean of two runs per arm from
+`evals/RESULTS.md`, which also carries the caveats.
+
+**The build loop, on the task fabflows is for** (iteration 6, 2026-09-22: a library and CLI
+built from a spec in an empty repository, graded by 41 hidden acceptance tests, Opus 5.5
+builder and reviewer):
+
+| | with fabflows | plain session | change |
+| --- | --- | --- | --- |
+| hidden tests passed | 41 / 41 | 41 / 41 | same |
+| list price per run | $2.92 | $3.55 | -18% |
+| wall clock | 414 s | 480 s | -14% |
+| lead output tokens (Fable) | 6,660 | 38,314 | -83% |
+| Fable list dollars | $1.69 | $3.55 | -52% |
+| lead final context | 61,714 | 85,905 | -28% |
+| tokens across every category | 1.01M | 1.80M | -44% |
+
+Both fabflows runs launched `fabflows:build` from the routing table without the prompt naming
+it, the reviewer ran inside the loop and returned ACCEPT, and the lead ran the gate itself. On a
+subscription the meter tracks the lead's model, so the Fable row is the one that binds.
+
+**What the earlier iterations showed.** On short tasks (a one-file edit, a version bump, a small
+test file) the skill is overhead: about +21% list price for identical results, because the lead
+loads the skill and deliberates instead of just doing it. On a large read (13 records, ~60k
+characters) the Haiku explorer came in 12% cheaper with a lead context 12k tokens smaller. On
+the same build task under Opus 5, with shell denials knocking the review out of the loop, the
+loop cost +53% (iteration 5); the fixes that followed (DEC-0016) and Opus 5.5 turned that into
+the table above. The `brainstorming` skill's own evals score 100% with the skill against 87.5%
+without on spec quality.
+
+**What the review does and does not catch** (iterations 7 and 8, a brownfield fixture with one
+planted bug). When the spec states the rule the bug breaks, every lead and builder fixes it before
+any review runs (9 of 9). When the spec is silent on it, the bug ships every time (10 of 10), and
+the loop's reviewer returns ACCEPT every time (5 of 5): it checks the diff against the spec, line
+by line, and does not audit baseline code the spec does not describe. So `fabflows:build` gets a
+spec'd change implemented and checked against its spec by a second model; it is not a bug hunt.
+On that small task the loop cost +31% list price and 1.65x wall clock over inline for the same
+result, while moving 40% of the lead's output onto Opus. Two runs to five per arm give direction,
+not significance. Delegate sizeable, spec'd work; do the small things yourself; write the rule
+into the spec if you need it enforced.
 
 ## Long sessions
 
@@ -88,7 +149,13 @@ replacement for it.
 A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
 
 - **Package installs** across npm, pnpm, yarn, bun, pip, uv, dotnet, cargo, go, gem,
-  apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`.
+  apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`. One exception:
+  `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
+  literal path with a `scratchpad` directory in it and outside the live configuration below,
+  so a session can read a PDF without anything landing in site-packages. `--isolated` is
+  required because it makes pip ignore `PIP_*` variables and user config, the two ways the
+  install could be pointed at another index. A variable in the path, a second package, an
+  index flag, or a `-r` file is still denied.
 - **Commits, pushes, merges and rebases on a default branch.** The default is read from
   `origin/HEAD` at runtime, falling back to `main` or `master`. Force-push is blocked
   only when it targets a default branch, so `--force-with-lease` on your own feature
@@ -103,6 +170,12 @@ A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
   (`.env.example`, `.env.sample`, `.env.template`) are exempt.
 - **Secrets in an edit.** AWS access key ids, GitHub tokens, Slack tokens, Google API
   keys, and private-key headers are blocked.
+- **Destructive commands written into a runner file.** A `Makefile`, `justfile`,
+  `package.json`, or shell or PowerShell script whose new content carries a dangerous
+  delete or any command in the destructive list above is blocked, whether it arrives by
+  `Write`, `Edit`, or a `printf`, `echo`, heredoc, or `tee` redirected into it. The shell
+  rules cannot see inside `make nuke` once the target exists, so the payload is stopped at
+  the point it is written. Prose files are not checked.
 - **Live configuration**: `~/.claude/settings.json`, `~/.claude/hooks/`,
   `~/.claude/plugins/`, and any `.git/hooks/`. This is what stops a worker from
   disarming the guard. Reading them and running a script that lives there is allowed.
@@ -130,6 +203,8 @@ be walked around:
   is a repository, and in the session directory when the guard cannot resolve it (a
   variable, `-`, a missing path). A real second repository on a feature branch is
   judged there, whatever branch the session is on.
+- The runner-file rule keys on the **file name**. A payload written to `notes.txt` and
+  then run with `bash notes.txt` is not caught, and neither is one assembled from pieces.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.

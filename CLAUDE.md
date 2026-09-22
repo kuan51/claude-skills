@@ -73,3 +73,35 @@ them. **Skills are loaded into the
 session at startup**, so a newly installed skill is not invocable until a new session begins. Plan
 for a restart rather than assuming a mid-session rescan. Revert by deleting the version directory,
 dropping its `installed_plugins.json` entry, and checking the marketplace clone back to `master`.
+
+## Maintaining documentation: use docs-warden
+
+`docs/` follows the docs-warden layout (`docs/CONVENTIONS.md` for current state, `docs/decisions/`
+for why, `docs/RUNLOG.md` for what happened outside git, `docs/GLOSSARY.md`, `docs/SECURITY.md`,
+`docs/specs/` for fabflows design records). `.docs-warden.yml` at the root drives it. The
+`docs-warden` plugin in this repo is also the installed tool: invoke the `docs-warden:docs-warden`
+skill and it picks the mode, or run its scripts directly from the installed plugin, never from a
+copy in this repo:
+
+```bash
+W=~/.claude/plugins/cache/claude-skills/docs-warden/<version>/skills/docs-warden/scripts
+python $W/audit.py .                 # scorecard; every fail or warn is offered as a fix, never applied silently
+python $W/adr_new.py . "<title>"     # scaffold the next DEC-NNNN, then fill it with the human
+python $W/adr_index.py .             # regenerate docs/DECISIONS.md and docs/decisions/README.md
+python $W/freshness.py .             # documents past review_by or older than the code they cite
+```
+
+Rules that bite here:
+
+- **Every PR updates the affected documents or says why not.** After a code change, grep `docs/`
+  and the plugin READMEs for the paths and symbols you touched (`maintain` mode), propose the
+  specific edits, then re-run `adr_index.py` and `audit.py`.
+- **A decision record only when all three are yes:** reversing it costs more than one PR, it
+  constrains work outside the component touched, and a rejected alternative exists. Otherwise the
+  reasoning goes in the PR description. Accepted records are never edited; supersede them.
+- **Generated files are never hand-edited:** `docs/DECISIONS.md`, `docs/decisions/README.md`,
+  `docs/architecture/domain-model.md` (see the table in `docs/CONVENTIONS.md`).
+- **Do not log documentation edits in `docs/RUNLOG.md`.** Git records those. The run log is for
+  operational actions and skipped checks, each as a `PLANNED` then `CONFIRMED` (or `SKIPPED`) pair.
+- **Nothing runs these checks in CI yet**, so run `audit.py` yourself before opening a PR that
+  touches `docs/`.

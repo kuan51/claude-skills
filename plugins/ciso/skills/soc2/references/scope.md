@@ -18,22 +18,24 @@ Ask with `AskUserQuestion`, one topic at a time. Nothing here is a control, so n
 
 ## Recording it
 
-```
+```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/soc2/lib/record-scope.js" <docs/ciso-dir> soc2 type2 '<jsonScope>'
 ```
+
 Writes only `tiers.type2.scope`; it never touches `controls`, `archivedControls` or `interviewSessions`, and merges into any scope already recorded. This makes it safe to run once per topic as the conversation goes. It rejects unknown field names outright rather than storing a typo somewhere nothing reads.
 
 ## Marking out-of-scope categories
 
 Once `tscCategories` is recorded, every entry whose `tscCategory` is **not** in that list should be marked `not_applicable`, with a justification that references the scope decision. Do this through the normal gate, one call per control, never by hand-editing `state.json`:
 
-```
+```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json soc2 type2 <controlId> '{"status":"not_applicable","justification":"Privacy category not in scope for this engagement (scope recorded <date>)."}'
 ```
 
 `not_applicable` controls are excluded from the compliance denominator but still counted in the total, so an org scoped to Security alone shows 33 in-scope criteria rather than appearing to fail the 18 it never selected.
 
 Then regenerate the dashboard and continue into [Interview](interview.md):
-```
+
+```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso-dir>
 ```

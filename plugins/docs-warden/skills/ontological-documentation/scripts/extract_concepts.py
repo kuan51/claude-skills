@@ -14,6 +14,7 @@ byte-identical and the generated document they feed produces an empty diff.
 import ast
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -296,10 +297,24 @@ HANDLERS = {"python": _python, "javascript": _js,
             "powershell": _powershell, "terraform": _terraform}
 
 
+def _candidate_files(root: Path):
+    """Tracked files when git can answer, so git-ignored and untracked scratch
+    (.claude/worktrees/, .superpowers/) is excluded the way audit.py's
+    _documentation_files excludes it. Falls back to a filesystem walk."""
+    if (root / ".git").exists():
+        try:
+            out = subprocess.run(["git", "-C", str(root), "ls-files", "-z"],
+                                 capture_output=True, text=True, check=True).stdout
+            return [root / name for name in out.split(chr(0)) if name]
+        except (OSError, subprocess.CalledProcessError):
+            pass
+    return list(root.rglob("*"))
+
+
 def source_files(root: Path):
     """(language, path, repo-relative posix path) for every readable source."""
     found = []
-    for path in root.rglob("*"):
+    for path in _candidate_files(root):
         rel = path.relative_to(root)
         language = LANGUAGE_BY_SUFFIX.get(path.suffix.lower())
         if language and path.is_file() and not any(p in SKIP_DIRS for p in rel.parts):

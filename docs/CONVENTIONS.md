@@ -29,8 +29,10 @@ yourself before running docs-warden's scripts locally).
   [CLAUDE.md](../CLAUDE.md)).
 - `test/`: root-level tests, currently just marketplace/plugin manifest
   consistency checks.
-- `docs/`: this document set, plus `docs/superpowers/` (implementation plans
-  and specs from past feature work, kept for historical reference).
+- `docs/`: this document set, plus `docs/specs/`: dated design records written
+  by `fabflows:brainstorming`, one per change (`<YYYY-MM-DD>-<slug>.md`), never
+  renamed or overwritten. A spec describes the behaviour, how to check it, what
+  is out of scope, the decisions taken and what was deferred.
 
 ## Branches and commits
 

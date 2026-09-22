@@ -33,7 +33,7 @@ function defaultMaturityDimension() {
 // `tierKey === 'r2'` seeds a five-dimension `maturity` object (Policy/Procedure/Implemented/
 // Measured/Managed, each independently assessable) instead of a flat status -- r2 is the only
 // HITRUST tier that scores multiple PRISMA maturity dimensions; e1/i1 keep the flat shape since
-// they are officially Implemented-only. See docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md.
+// they are officially Implemented-only. See docs/specs/2026-09-22-ciso-hitrust.md.
 function defaultControl(entry, sourceAuthority, tierKey, structureCodeVerifiedBy) {
   const assessment = tierKey === 'r2'
     ? {

@@ -15,6 +15,7 @@ You will be given:
 Read those files now. This is the first and only point in the review where you're allowed to see the project's own conclusions.
 
 Compare what the project claims to what the independent review actually found. Report:
+
 - The project's claim, quoted or closely paraphrased from the files. If the files simply don't address this topic, say so explicitly.
 - The independent finding, as given to you.
 - Any discrepancy between them: be specific about direction (the project overstates, understates, or misattributes the cause).
