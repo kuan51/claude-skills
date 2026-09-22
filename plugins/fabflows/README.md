@@ -114,7 +114,10 @@ the table above. The `brainstorming` skill's own evals score 100% with the skill
 without on spec quality.
 
 **What is not proven.** Quality has been a tie in every build run, so the reviewer has never
-been seen catching a defect and the rework path has never fired. Two runs per arm give
+been seen catching a defect and the rework path has never fired. Iteration 7 planted a bug in a
+brownfield fixture to change that, and every lead in every arm found and fixed it from the spec
+before any review ran; on that small task the leads that had the loop mostly sized the change
+as too small for it and were cheapest doing it inline, which is the skill's own rule. Two runs per arm give
 direction, not significance. Delegate sizeable, spec'd work; do the small things yourself.
 
 ## Long sessions

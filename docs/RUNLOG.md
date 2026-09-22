@@ -303,3 +303,13 @@ or Workflow; `delegate`: no Workflow; `loop`: both), three interleaved repeats, 
 outcome per run: the hidden `outdated` test on the spec's example, pass or fail. Command:
 `node plugins/fabflows/evals/harness/run.js --iteration 7 --tasks 8 --parallel 3 --confirm`
 (CLI 2.1.280, OAuth session, Linux). Caps per run: 120 turns, $15 list, 30 minutes; nine runs.
+
+**CONFIRMED** — Nine runs completed, none killed, no denied tool call, hidden suite 8/8 in every
+run: the planted defect was fixed in all nine before any review ran. `loop` launched
+`fabflows:build` in 1 of 3 runs (the `requireReview` expectation failed the other two, as
+designed); `delegate` ran an Opus editor and refuter by hand through Agent in 2 of 3. Means: inline
+$1.32 / 88 s, delegate $2.06 / 222 s, loop $1.32 / 117 s. Worker model proof:
+`grep -ho '"model":"claude-[a-z0-9-]*"' plugins/fabflows/evals/runs/iteration-7/eval-8-*/*/run-*/transcript.jsonl plugins/fabflows/evals/runs/iteration-7/eval-8-*/*/run-*/workflows/*/agent-*.jsonl | sort | uniq -c`
+shows Fable, `claude-opus-5-5` and one Sonnet editor. Summarised with `summarize.js`, aggregated
+with skill-creator's `aggregate_benchmark` and `annotate_benchmark.py`; `generate_review.py` not
+run. Write-up in `plugins/fabflows/evals/RESULTS.md`.

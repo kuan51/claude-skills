@@ -46,6 +46,12 @@ unambiguously, and it moves the meter slightly less than a plain session (a Fabl
 0.98) for the same graded result. Two-decimal readings and one pair per arm, so this is direction,
 not a measurement, but it is direction in the right currency and it was free to collect.
 
+**Iteration 7, the planted defect.** A task built to make quality vary did not: all nine runs in
+all three arms fixed the planted bug before any review ran, because the spec stated the rule and
+the failing example. It measured the lead's sizing instead: two of three `loop` leads declined
+the loop as too small and were cheapest; delegation cost +56% and 2.5x wall clock. The review
+question stays open until the defect is not derivable from the spec.
+
 **Iteration 6, on Opus 5.5 workers.** The same build task, re-run once the `opus` alias resolved
 to Opus 5.5 and on a machine where no shell call was denied: the loop ran end to end in both
 runs and came in 18% cheaper at list, 14% faster, with the lead writing 83% fewer output tokens
@@ -55,6 +61,90 @@ unexercised.
 
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
+
+## Iteration 7 (2026-09-22): the planted defect, and who found it
+
+**Bottom line.** The first task built to make the graded outcome vary did not vary: all nine
+runs, across all three arms, fixed the planted caret-on-zero defect and passed the whole hidden
+suite. The Fable lead, in every arm, read `SPEC.md`, probed `satisfies('0.3.0', '^0.2.3')` by hand
+before writing anything, and fixed the library before the feature. So no reviewer ever saw the
+defect ship, and the question the task was built to answer, whether the loop's review catches
+what a builder misses, is still open. What the nine runs did measure is the lead's own sizing
+judgement and the price of delegation on a small task, and both point the same way as iterations
+1 to 4: for a change this size the skill's own rule says do it yourself, and two of the three
+`loop` leads did exactly that.
+
+### Setup (confirmed)
+
+Task 8 `review-catch` (PR #55): a brownfield fixture (the reference resolver with one line
+changed at `src/index.js:90`, so `^0.2.3` accepts `0.3.0`), a `SPEC.md` asking for a
+`lockstep outdated` subcommand and stating the caret-on-zero rule with the failing case as its
+acceptance example, and a hidden suite of 8 tests proven against a separate solution. Three arms,
+all loading the shipped plugin and invoking `using-fabflows`: `inline` (Agent and Workflow
+removed), `delegate` (Workflow removed), `loop` (nothing removed). Three repeats, interleaved,
+three runs concurrent, Fable lead at medium effort, caps 120 turns, $15, 30 minutes. Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 7 --tasks 8 --parallel 3 --confirm
+```
+
+### Observed
+
+| arm | run | hidden | checks | defect fixed | turns | wall s | lead out | worker out | lead ctx | Fable $ | list $ | what ran |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| inline | 1 | 8/8 | 17/17 | yes | 19 | 81 | 6,509 | 0 | 56,865 | 1.58 | 1.58 | lead alone |
+| inline | 2 | 8/8 | 17/17 | yes | 18 | 93 | 6,946 | 0 | 56,406 | 1.18 | 1.18 | lead alone |
+| inline | 3 | 8/8 | 17/17 | yes | 21 | 91 | 7,009 | 0 | 58,944 | 1.20 | 1.20 | lead alone |
+| delegate | 1 | 8/8 | 17/17 | yes | 20 | 227 | 8,050 | 15,441 | 67,068 | 1.95 | 2.58 | Opus editor, then Opus refuter, both via Agent |
+| delegate | 2 | 8/8 | 17/17 | yes | 23 | 191 | 7,262 | 9,785 | 64,912 | 1.35 | 1.59 | Sonnet editor via Agent, no review |
+| delegate | 3 | 8/8 | 17/17 | yes | 21 | 247 | 9,638 | 12,951 | 63,868 | 1.48 | 2.01 | Opus editor, then Opus refuter, both via Agent |
+| loop | 1 | 8/8 | 18/18 | yes | 19 | 170 | 6,209 | 8,438 | 64,598 | 1.24 | 1.70 | `fabflows:build`: build:1, review:1 ACCEPT |
+| loop | 2 | 8/8 | 17/18 | yes | 17 | 90 | 6,849 | 0 | 56,267 | 1.10 | 1.10 | lead alone (sized it small) |
+| loop | 3 | 8/8 | 17/18 | yes | 18 | 91 | 6,769 | 0 | 58,477 | 1.16 | 1.16 | lead alone (sized it small) |
+
+Means: inline $1.32 and 88 s; delegate $2.06 and 222 s (+56%, 2.5x); loop $1.32 and 117 s over
+all three, or $1.70 and 170 s for the one run that launched the loop. Fable dollars: inline $1.32,
+delegate $1.59, loop $1.17. No tool call was denied in any run. Every worker that ran on the
+Opus tier ran on `claude-opus-5-5`.
+
+### What the runs showed (confirmed)
+
+1. **The defect was too discoverable.** `SPEC.md` states the rule and the failing example. Nine
+   of nine leads checked the example against the existing library before building, found it
+   wrong, and fixed it first. The primary outcome saturated at the ceiling in the other
+   direction from iterations 5 and 6: not because the task was easy to pass, but because the
+   spec handed the bug to the reader.
+2. **The `loop` arm launched the loop once in three.** Runs 2 and 3 sized the change ("about
+   25 CLI lines plus one test", run 3 said) as below the point where a build loop pays and did
+   it inline. The `requireReview` expectation caught both. This is the skill's own "do the task
+   yourself when it is one short dependent chain" rule winning over the standing rule that a
+   spec'd change goes to the loop. The two runs cost $1.10 and $1.16, the cheapest in the table.
+3. **The `delegate` arm reproduced the loop by hand.** Two of three leads invoked
+   `fabflows:build`, found no Workflow tool, and ran an Opus editor and an Opus refuter through
+   the Agent tool themselves, overriding the editor's Sonnet pin with `model: 'opus'`. The third
+   spawned the editor on its Sonnet pin and skipped review. So B minus A is not "delegation
+   without review"; two of its three runs carried a review too.
+4. **The one real loop run** cost $1.70 against an inline mean of $1.32, moved 58% of output
+   tokens to Opus, and its reviewer returned ACCEPT with nothing to fix, correctly, since the
+   builder had already fixed the defect.
+
+### What it means
+
+- The question is still open. A reviewer has never been shown a shipped defect. To get one, the
+  defect must not be derivable from the spec text: state only the feature, keep the rule out of
+  `SPEC.md`, and let the hidden test carry it; or plant it where the acceptance example does not
+  reach. That is a one-file change to the fixture, and the harness needs nothing new.
+- The tool-removal design worked: no denials, and the arms differed only in what the lead could
+  reach. But an arm defined by what is removed does not fix what the lead does with what is
+  left, so "delegate" needs its brief stated in the prompt if it is to mean "no review".
+- The sizing rule is doing its job. On a task this small, inline was cheapest in every
+  comparison, and the leads that had the loop available mostly declined it.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 7 --tasks 8 --parallel 3 --confirm
+```
 
 ## Iteration 6 (2026-09-22): the same build, with Opus 5.5 workers
 
