@@ -232,3 +232,6 @@ The three-round budget was never triggered: both arms emptied Open in three roun
 
 **CONFIRMED** — RUNLOG rotated: the 2026-09-17 and 2026-09-19 entries (0.3.4, 0.3.5, the
 guard.js review, token benchmark iterations 1, 2 and 5) moved to `docs/runlog/2026-Q3.md`.
+
+**CONFIRMED** (correction to the entry above) — The two eval 4 prompt commits are `0605fc7`
+(reword) and `d1d2ddb` (injection surface); the entry above left a placeholder for them.
