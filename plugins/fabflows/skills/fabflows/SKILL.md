@@ -151,7 +151,7 @@ containment on a worker is its tool allowlist. Rules and known gaps: the plugin 
 | Symptom | Cause | Do |
 | --- | --- | --- |
 | A spawn runs on the lead's model, or as a general-purpose agent | A bare name (`explorer`) does not resolve; plugin agents are namespaced | Spawn `fabflows:explorer` and check the report names the tier it ran on |
-| A report is missing a contract field | The worker skipped it, and the `SubagentStop` check only catches two or more missing | Send it back once with the field named; on a second miss, redo the step yourself |
+| A report is missing a contract field | The worker skipped it | Send it back once with the field named; on a second miss, redo the step yourself |
 | A report's first line is a permission denial | The guard or the session's permission mode refused a call | Surface it to the user with the exact call; never re-issue it yourself |
 | `fabflows:build` throws instead of returning a result | A budget or token limit ended a round mid-flight | `references/build-loop.md`: resume with the same args and the run ID; never restart with a fresh `baseRef` |
 | An install is denied | The guard blocks package installs by design | Report the missing dependency as a blocker. The one exception is `pypdf` into a literal scratch `--target`, for reading a PDF |
