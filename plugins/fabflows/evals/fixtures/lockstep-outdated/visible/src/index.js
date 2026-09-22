@@ -1,6 +1,5 @@
 'use strict';
-// Reference implementation of SPEC.md. It exists to prove the hidden acceptance suite is
-// satisfiable and consistent with the spec; it is never copied into a benchmark fixture.
+// Semver parsing, range matching and the flat resolver behind the lockstep CLI.
 
 const IDENT = /^[0-9A-Za-z-]+$/;
 const NUMERIC = /^\d+$/;

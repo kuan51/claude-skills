@@ -116,18 +116,22 @@ test("an arm's disallowedTools reach the claude argument list", () => {
   assert.deepEqual(byArm, { inline: 'PowerShell,Agent,Workflow', delegate: 'PowerShell,Workflow', loop: 'PowerShell' });
 });
 
-test('the visible fixture carries no benchmark context', () => {
-  // The lead builds from SPEC.md alone; a stray mention of the plugin or its vocabulary would
-  // prime one arm and not the other.
-  const visible = path.join(DEP_RESOLVER, 'visible');
-  const banned = /fabflows|delegate|subagent|worker|workflow|benchmark|refuter/i;
-  const files = fs.readdirSync(visible, { recursive: true })
-    .map((f) => path.join(visible, f))
-    .filter((f) => fs.statSync(f).isFile());
-  assert.ok(files.length > 0, 'the visible fixture is empty');
-  for (const f of files) {
-    const hit = fs.readFileSync(f, 'utf8').match(banned);
-    assert.equal(hit, null, `${path.relative(visible, f)} mentions "${hit && hit[0]}"`);
+test('every visible fixture carries no benchmark context', () => {
+  // The lead builds from SPEC.md alone; a stray mention of the plugin, its vocabulary or the
+  // hidden suite would prime one arm and not the other.
+  const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
+  const banned = /fabflows|delegate|subagent|worker|workflow|benchmark|refuter|hidden/i;
+  const fixtures = cfg.tasks.filter((t) => t.fixture && t.fixture.kind === 'dir').map((t) => path.join(EVALS, t.fixture.from));
+  assert.ok(fixtures.length > 0, 'no dir fixture to check');
+  for (const visible of fixtures) {
+    const files = fs.readdirSync(visible, { recursive: true })
+      .map((f) => path.join(visible, f))
+      .filter((f) => fs.statSync(f).isFile());
+    assert.ok(files.length > 0, `${visible} is empty`);
+    for (const f of files) {
+      const hit = fs.readFileSync(f, 'utf8').match(banned);
+      assert.equal(hit, null, `${path.relative(EVALS, f)} mentions "${hit && hit[0]}"`);
+    }
   }
 });
 
