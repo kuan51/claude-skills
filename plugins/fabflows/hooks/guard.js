@@ -262,11 +262,11 @@ function checkShell(command, cwd) {
   }
 
   // `printf 'nuke:\\n\\trm -rf ~' > Makefile` starts its only segment with printf, so the
-  // anchored rules below never see the payload. When a redirect targets a runner file,
-  // scan what is being written.
+  // anchored rules below never see the payload. When any redirect targets a runner file,
+  // scan the whole command: a later `>> Makefile` carries a payload too.
   const redirect = RUNNER_REDIRECT.exec(command);
   if (redirect) {
-    const line = destructiveLine(command.slice(0, redirect.index));
+    const line = destructiveLine(command);
     if (line) denyRunnerPayload(line, redirect[3]);
   }
 

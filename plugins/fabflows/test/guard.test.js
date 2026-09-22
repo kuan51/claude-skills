@@ -148,6 +148,7 @@ test('blocks a destructive command written into a runner file, not into prose', 
   denies(shell("printf 'nuke:\\n\\trm -rf ~' > Makefile"), 'printf payload redirected into a Makefile');
   denies(shell('echo "rm -rf ~" | tee -a scripts/x.sh'), 'echo payload teed into a script');
   denies(shell("cat > Makefile <<'EOF'\nnuke:\n\trm -rf ~\nEOF"), 'heredoc payload into a Makefile');
+  denies(shell("echo ok > Makefile && printf 'all:\\n\\trm -rf ~' >> Makefile"), 'payload behind a second redirect');
   allows(write('Makefile', 'clean:\n\trm -rf ./build'), 'Makefile deleting its own build dir');
   allows(write('Makefile', 'nuke:\n\techo would-delete'), 'Makefile with an inert stand-in');
   allows(write('README.md', 'never run `rm -rf ~` by hand'), 'prose quoting the command');
