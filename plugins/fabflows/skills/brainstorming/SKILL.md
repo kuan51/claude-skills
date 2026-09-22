@@ -42,12 +42,18 @@ Say the tier out loud in the first reply, then hold to it.
 
 | Tier | When | What happens |
 | --- | --- | --- |
-| **Bounded** | One behaviour, a few files, no data, interface, or auth change | Design in chat; the spec block goes in chat; no file |
+| **Bounded** | One behaviour, a few files, no data, interface, or auth change | Read, then print the spec block in chat at once; a question only where a choice is real. No file |
 | **Full** | Anything touching data, interfaces, auth, more than a few files, or that the user calls a feature | Every section below; spec written to disk |
 | **Not brainstorming** | A feasibility question ("can X do Y?") | Answer it, delegating the reading. No rounds |
 
 When unsure, bounded, and upgrade the moment a round reveals a data or interface change.
 A full pass on a bounded change is the main way this skill wastes tokens.
+
+**Bounded goes straight to the spec.** When the reading confirms every assumption and the
+premise is not in doubt, skip the rounds: print the spec block with each would-be question
+written into Decisions as a default with its reason, so the user vetoes instead of answering.
+Ask only a question whose answer would change the Check line. Full tier keeps the rounds;
+for bounded, the premise check is one Decisions line.
 
 Rationalizations that do not hold:
 
@@ -95,7 +101,8 @@ Format:
 **Q2. ...**
 ```
 
-Round one always carries the premise check, whatever the tier: should this exist at all,
+Round one always carries the premise check (in the bounded tier it is a Decisions line, see
+Size it): should this exist at all,
 who is it for, and what is the simplest thing that gets them there. A "no" ends the skill
 with one paragraph saying why, and that is a good outcome.
 

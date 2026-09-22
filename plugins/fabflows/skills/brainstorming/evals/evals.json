@@ -11,7 +11,7 @@
         "Asks at most three questions, numbered, each followed by a recommended answer",
         "Asks nothing that CLAUDE.md or the README already answers (stack, test command, repo purpose)",
         "Ends with a state block listing Decided, Open and Deferred",
-        "Mentions no third-party skill or project by name (superpowers, grill-me, GSD, context-mode, interview-me)",
+        "Mentions no third-party skill or project by name",
         "Opens with a numbered assumptions list, each labeled confirmed, inferred or guessed"
       ]
     },
@@ -25,7 +25,7 @@
         "Asks at most three questions, numbered, each followed by a recommended answer",
         "Asks nothing that CLAUDE.md or the README already answers (stack, test command, repo purpose)",
         "Ends with a state block listing Decided, Open and Deferred",
-        "Mentions no third-party skill or project by name (superpowers, grill-me, GSD, context-mode, interview-me)",
+        "Mentions no third-party skill or project by name",
         "Round one covers stack, hosting and storage, plus whether the tool should exist at all"
       ]
     },
@@ -39,7 +39,7 @@
         "Asks at most three questions, numbered, each followed by a recommended answer",
         "Asks nothing that CLAUDE.md or the README already answers (stack, test command, repo purpose)",
         "Ends with a state block listing Decided, Open and Deferred",
-        "Mentions no third-party skill or project by name (superpowers, grill-me, GSD, context-mode, interview-me)",
+        "Mentions no third-party skill or project by name",
         "Sizes the request as bounded and prints the spec block (Behaviour, Check, Out of scope, Decisions, Deferred) in chat, with no file written under docs/specs"
       ]
     }
