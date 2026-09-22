@@ -16,7 +16,9 @@ per-plugin history until entries are recorded here going forward.
   and cuts it to the smallest shippable slice, and hands off only after the user has read the
   spec. `refuter` gains a spec mode: given a draft instead of a diff, it attacks it across seven
   lenses and blocks the spec on a security gap. DEC-0017 records why the refuter was reused
-  rather than a new agent added.
+  rather than a new agent added. The guard gains a rule: a destructive command written into a
+  Makefile, justfile, npm script or shell script is blocked at the point it is written,
+  since the shell rules cannot see inside `make nuke` once the target exists.
 - **fabflows 0.1.0** -- a new plugin for sessions whose lead runs on an expensive model.
   Ships four worker agents pinned to cheaper tiers, each scoped to the smallest tool set
   that does its job and none able to spawn workers of its own, plus a skill carrying the
