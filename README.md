@@ -53,7 +53,9 @@ so it picks up the newly installed plugin.
   the draft before it is written. Includes an
   **active guard hook** that blocks package installs, default-branch commits,
   destructive commands, and credential reads and writes. Read that plugin's README
-  before installing, including its "Known gaps" section.
+  before installing, including its "Known gaps" section. Benchmarked: on a spec'd build with
+  Opus 5.5 workers it matched a plain Fable session on 41 hidden tests at 18% lower list price
+  and 83% fewer lead output tokens (see that README's "Measured performance").
 
 ## Adding a new plugin
 

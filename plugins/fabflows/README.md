@@ -79,6 +79,44 @@ records the original design and
 records why the reviewer moved off the lead's tier. Pass `reviewerModel: 'fable'` to restore
 the old default.
 
+## Measured performance
+
+fabflows ships with a benchmark (`evals/`) that runs a headless Fable lead on the same task
+with and without the plugin and grades the result programmatically, never from what the lead
+said it did. Six iterations have run; every number below is a mean of two runs per arm from
+`evals/RESULTS.md`, which also carries the caveats.
+
+**The build loop, on the task fabflows is for** (iteration 6, 2026-09-22: a library and CLI
+built from a spec in an empty repository, graded by 41 hidden acceptance tests, Opus 5.5
+builder and reviewer):
+
+| | with fabflows | plain session | change |
+| --- | --- | --- | --- |
+| hidden tests passed | 41 / 41 | 41 / 41 | same |
+| list price per run | $2.92 | $3.55 | -18% |
+| wall clock | 414 s | 480 s | -14% |
+| lead output tokens (Fable) | 6,660 | 38,314 | -83% |
+| Fable list dollars | $1.69 | $3.55 | -52% |
+| lead final context | 61,714 | 85,905 | -28% |
+| tokens across every category | 1.01M | 1.80M | -44% |
+
+Both fabflows runs launched `fabflows:build` from the routing table without the prompt naming
+it, the reviewer ran inside the loop and returned ACCEPT, and the lead ran the gate itself. On a
+subscription the meter tracks the lead's model, so the Fable row is the one that binds.
+
+**What the earlier iterations showed.** On short tasks (a one-file edit, a version bump, a small
+test file) the skill is overhead: about +21% list price for identical results, because the lead
+loads the skill and deliberates instead of just doing it. On a large read (13 records, ~60k
+characters) the Haiku explorer came in 12% cheaper with a lead context 12k tokens smaller. On
+the same build task under Opus 5, with shell denials knocking the review out of the loop, the
+loop cost +53% (iteration 5); the fixes that followed (DEC-0016) and Opus 5.5 turned that into
+the table above. The `brainstorming` skill's own evals score 100% with the skill against 87.5%
+without on spec quality.
+
+**What is not proven.** Quality has been a tie in every build run, so the reviewer has never
+been seen catching a defect and the rework path has never fired. Two runs per arm give
+direction, not significance. Delegate sizeable, spec'd work; do the small things yourself.
+
 ## Long sessions
 
 The [skill](skills/fabflows/SKILL.md) carries the long-session habits. The lead runs at
