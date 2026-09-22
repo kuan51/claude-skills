@@ -1,5 +1,5 @@
 ---
-id: DEC-0014
+id: DEC-0022
 title: Benchmark plugins with claude plugin eval, not a ported harness
 status: proposed
 date: 2026-09-19
@@ -8,7 +8,7 @@ supersedes: []
 tags: []
 ---
 
-# DEC-0014: Benchmark plugins with claude plugin eval, not a ported harness
+# DEC-0022: Benchmark plugins with claude plugin eval, not a ported harness
 
 ## Context and problem statement
 
@@ -86,7 +86,7 @@ fabflows branch.
   skill would need option 2 or a future runner feature.
 - The `lint: skipped` graders assume no linters exist in the sandbox. If the WSL2
   image gains vale or markdownlint, those graders must change.
-- The fabflows branch carries its own uncommitted DEC-0014 and DEC-0015; whichever
+- The fabflows branch carries its own uncommitted DEC-0022 and DEC-0015; whichever
   branch merges second renumbers.
 
 ## Links

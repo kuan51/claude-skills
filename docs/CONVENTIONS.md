@@ -67,7 +67,7 @@ Behavioral evals for a plugin's skills live in `plugins/<name>/evals/` in
 `graders/*.md` and, when the case needs a seeded repository, `case.yaml` plus
 `fixture.sh`. They spend tokens and never run under the unit tests; each plugin's
 `evals/README.md` gives the command and its prerequisites. `docs-warden` has the
-first suite (DEC-0014).
+first suite (DEC-0022).
 
 ## Documentation
 

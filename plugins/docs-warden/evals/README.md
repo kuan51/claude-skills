@@ -7,7 +7,7 @@ plugin beat baseline Claude on the same prompt, and what does a run cost.
 
 It spends real tokens and never runs under `python3 test/test_scripts.py` or
 `node --test`. Run it on demand, and before a release that touches `SKILL.md`.
-The choice of runner is recorded in the repository's DEC-0014.
+The choice of runner is recorded in the repository's DEC-0022.
 
 ## Layout
 
