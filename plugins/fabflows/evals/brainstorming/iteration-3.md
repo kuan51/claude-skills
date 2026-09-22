@@ -8,9 +8,9 @@
 
 | Metric | Old Skill | With Skill | Delta |
 |--------|------------|---------------|-------|
-| Pass Rate | 88% ± 0% | 100% ± 0% | -0.12 |
-| Time | 58.0s ± 0.0s | 60.0s ± 0.0s | -2.0s |
-| Tokens | 63751 ± 0 | 65683 ± 0 | -1932 |
+| Pass Rate | 88% ± 0% | 100% ± 0% | +0.12 |
+| Time | 58.0s ± 0.0s | 60.0s ± 0.0s | +2.0s |
+| Tokens | 63751 ± 0 | 65683 ± 0 | +1932 |
 ## What changed
 
 After iteration 2 left a Makefile with a live `rm -rf ~` target on disk, three layers went
