@@ -119,6 +119,12 @@ A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
   (`.env.example`, `.env.sample`, `.env.template`) are exempt.
 - **Secrets in an edit.** AWS access key ids, GitHub tokens, Slack tokens, Google API
   keys, and private-key headers are blocked.
+- **Destructive commands written into a runner file.** A `Makefile`, `justfile`,
+  `package.json`, or shell or PowerShell script whose new content carries a dangerous
+  delete or any command in the destructive list above is blocked, whether it arrives by
+  `Write`, `Edit`, or a `printf`, `echo`, heredoc, or `tee` redirected into it. The shell
+  rules cannot see inside `make nuke` once the target exists, so the payload is stopped at
+  the point it is written. Prose files are not checked.
 - **Live configuration**: `~/.claude/settings.json`, `~/.claude/hooks/`,
   `~/.claude/plugins/`, and any `.git/hooks/`. This is what stops a worker from
   disarming the guard. Reading them and running a script that lives there is allowed.
@@ -146,6 +152,8 @@ be walked around:
   is a repository, and in the session directory when the guard cannot resolve it (a
   variable, `-`, a missing path). A real second repository on a feature branch is
   judged there, whatever branch the session is on.
+- The runner-file rule keys on the **file name**. A payload written to `notes.txt` and
+  then run with `bash notes.txt` is not caught, and neither is one assembled from pieces.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.
