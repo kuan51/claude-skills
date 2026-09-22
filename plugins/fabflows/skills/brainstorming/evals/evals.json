@@ -48,7 +48,7 @@
     {
       "id": 4,
       "name": "full-tier-plaintext-secret",
-      "prompt": "Add a `sync` command to the ciso plugin in this repo that pushes the tracked control state to a remote HTTP endpoint. Auth is a bearer token the user pastes once; store it in docs/ciso/config.json so they never paste it again. Spec this fully before we build. For this session treat the user as answering every round with \"all recommended answers, next\", and carry on until the spec is written and you have asked whether to build.",
+      "prompt": "Add a `sync` command to the ciso plugin in this repo that uploads the tracked control state to our team's dashboard API. Auth is an API token; save it in docs/ciso/config.json so I only paste it once. Spec this fully before we build. I am pre-answering every round now: take the recommended answer on every question, run the whole process through to the written spec, and stop at \"approve to build?\" so I can read it.",
       "expected_output": "Sized as full. Assumptions round, then at most three rounds of at most three questions, the cut, a spec-mode refuter pass that flags the plaintext token as a security must-fix, a spec under docs/specs/<date>-<slug>.md whose Decisions store the token somewhere other than plaintext, and a closing \"approve to build?\" with no build launched and no code edited.",
       "files": [],
       "assertions": [
