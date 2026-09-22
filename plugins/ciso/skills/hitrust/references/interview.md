@@ -25,20 +25,26 @@ Resumable, chunked by `domainKey` (the modern 19-domain numbering, `01`-`19`, ev
 **First, drain any finished background roadmap.** If a background vendor-research task (see [Roadmap](roadmap.md)) has completed since you were last in normal mode, merge its result now. Do it before the steps below, never while plan mode is still active (it's read-only). To drain: capture the workflow's returned `{ budgetTier, results }` and write it to a scratchpad JSON file. Run `merge-roadmap.js` ([Roadmap](roadmap.md) step 3) and regenerate the dashboard. Then clear those control ids from your in-flight set. This is a checkpoint the interview loop passes through every 4-6 controls, so a completion that landed several sub-batches ago still gets merged deterministically rather than relying on remembered intent. Writes are serialized (one `node` call at a time), so this merge and the `apply-assessment.js` calls below never race over `state.json`, and no locking is needed.
 
 6. For every control processed in this sub-batch, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json hitrust <tier> <controlId> '<jsonPayload>'
    ```
+
    where `<jsonPayload>` is `{"status": "...", "justification": "...", "currentState": "...", "estimatedCloseness": "..."}` (only the fields relevant to the status need be non-null). For **r2 only**, `<jsonPayload>` also includes `"dimension": "implemented"` for this default pass. See the note below explaining why r2's default pass covers only the `implemented` dimension (and [r2-maturity.md](r2-maturity.md) to go deeper). e1/i1 payloads never include a `dimension` field. This is the mechanical backstop, not just prose. It throws and doesn't change the file if `status` is `"met"` without a justification, or `"in_progress"` without both `currentState` and `estimatedCloseness`. This way, a rule "known" only in this document can't be silently skipped. It always stamps the relevant `assessedAt` (the control's own for e1/i1, or the targeted dimension's for r2), including for a deferred control (stored as `not_assessed`, same as an untouched one, but `assessedAt` is what distinguishes "asked but deferred" from "never touched").
 7. Regenerate the dashboard now, after this sub-batch, not only once the whole category finishes:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso-dir>
    ```
+
    This is what actually bounds the value an interruption can cost: after every sub-batch commit, the dashboard pages on disk reflect real assessed progress, not just `state.json`. One run regenerates both `dashboard.html` (the cross-certification index) and `cert-hitrust.html` (where these controls actually appear). There's no separate command for the per-certification page.
 8. If controls remain unprocessed in the chosen category, report a brief sub-batch summary (controls processed this sub-batch, statuses captured, sub-batches remaining), call `EnterPlanMode` again, and repeat step 4's sub-batch loop for the next 4-6 controls in the same category. There's no need to re-run Part 1 steps 2-3 unless the user wants to switch to a different category before this one is finished.
 9. Once every control in the category has been applied across however many sub-batches it took, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json hitrust <tier> <domainKey>
    ```
+
    This throws if any control in that group still has `assessedAt: null` (something was missed, or an earlier sub-batch is still pending: this is a hard stop that never skips silently). On success it moves the group from `domainsRemaining` to `domainsCompleted` and updates `lastUpdatedAt`. It also flips the session to `"completed"` once `domainsRemaining` is empty.
 10. **Check for un-researched gaps right now, not just at full-tier completion.** Look at every control in `domainsCompleted` so far (the category that just finished, plus any earlier ones from this or a prior session) for `assessment.status` in `gap`/`in_progress` with `roadmap.status` still `not_started` or `researching` (for r2, check `assessment.maturity.implemented.status` instead. The top-level `assessment.status` is only ever `null` or `not_applicable` for r2). If any exist, tell the user how many and offer [Roadmap](roadmap.md) right now. If they accept, it launches in the **background** (see [Roadmap](roadmap.md)) and you continue interviewing immediately. Researching and interviewing are no longer mutually exclusive. Exclude any controls already dispatched to a still-running background roadmap this session, so they aren't re-researched. They can also decline and keep interviewing, or stop for now. Roadmap remains optional until the tier is fully interviewed.
 11. Regenerate the dashboard once more (step 7 already reflects this sub-batch; this pass also picks up the category moving to `domainsCompleted` from step 9), then report a full category-completion summary to the user, covering counts of met/gap/in-progress/deferred across the whole category and categories remaining, plus the dashboard path.
@@ -55,4 +61,4 @@ If a session is interrupted mid-sub-batch (before that sub-batch's `ExitPlanMode
 
 ## r2: Default pass is Implemented-only
 
-r2 is the only tier that scores five PRISMA maturity dimensions per control (Policy, Procedure, Implemented, Measured, Managed) instead of one flat status. See `docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md`. To keep the default interview exactly as cheap as e1/i1 (one question per control), Part 1 step 4 and Part 2 step 6 above target **only the `implemented` dimension** by default for r2. Every `apply-assessment.js` call in the default interview pass for r2 includes `"dimension": "implemented"` in its payload. The other four dimensions (`policy`, `procedure`, `measured`, `managed`) are left `not_assessed` unless the user explicitly asks to deepen a control. See [r2-maturity.md](r2-maturity.md).
+r2 is the only tier that scores five PRISMA maturity dimensions per control (Policy, Procedure, Implemented, Measured, Managed) instead of one flat status. See `docs/specs/2026-09-22-ciso-hitrust.md`. To keep the default interview exactly as cheap as e1/i1 (one question per control), Part 1 step 4 and Part 2 step 6 above target **only the `implemented` dimension** by default for r2. Every `apply-assessment.js` call in the default interview pass for r2 includes `"dimension": "implemented"` in its payload. The other four dimensions (`policy`, `procedure`, `measured`, `managed`) are left `not_assessed` unless the user explicitly asks to deepen a control. See [r2-maturity.md](r2-maturity.md).

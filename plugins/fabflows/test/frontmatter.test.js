@@ -154,6 +154,12 @@ test('every skill has valid frontmatter', () => {
       fields.description.length <= MAX_DESCRIPTION,
       `skills/${dir.name}/SKILL.md description exceeds ${MAX_DESCRIPTION} chars`
     );
+    // Every skill here needs Claude Code (plugin agents, Workflow, the guard hook), and the
+    // Agent Skills spec caps the field that says so at 500 characters.
+    assert.ok(
+      fields.compatibility && fields.compatibility.length <= 500,
+      `skills/${dir.name}/SKILL.md must declare compatibility in at most 500 chars`
+    );
   }
 });
 
@@ -178,6 +184,20 @@ test('the entrypoint skill points at the fabflows skill and the build loop', () 
   }
   const main = fs.readFileSync(path.join(SKILLS_DIR, 'fabflows', 'SKILL.md'), 'utf8');
   assert.ok(main.includes('using-fabflows'), 'fabflows/SKILL.md must name using-fabflows as a way the build loop starts');
+});
+
+test('the brainstorming skill is routed to and only reads', () => {
+  const main = fs.readFileSync(path.join(SKILLS_DIR, 'fabflows', 'SKILL.md'), 'utf8');
+  assert.ok(main.includes('fabflows:brainstorming'), 'fabflows/SKILL.md must route unshaped requests to fabflows:brainstorming');
+  const skill = fs.readFileSync(path.join(SKILLS_DIR, 'brainstorming', 'SKILL.md'), 'utf8');
+  for (const ref of ['fabflows:explorer', 'fabflows:researcher', 'fabflows:refuter', 'fabflows:build']) {
+    assert.ok(skill.includes(ref), `brainstorming/SKILL.md must name ${ref}`);
+  }
+  // The skill ends at the spec: it never edits, so the build cannot start before the user reads it.
+  assert.ok(skill.includes('will not:** write or edit code'), 'brainstorming/SKILL.md must forbid edits');
+  assert.ok(skill.includes('Budget: three rounds'), 'brainstorming/SKILL.md must cap the rounds, or the interview has no end');
+  const refuter = fs.readFileSync(path.join(AGENTS_DIR, 'refuter.md'), 'utf8');
+  assert.match(refuter, /\*\*Spec mode\.\*\*/, 'refuter.md must carry the spec-mode paragraph the brainstorming skill relies on');
 });
 
 test('every skill fits the post-compaction re-injection cap', () => {

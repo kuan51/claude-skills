@@ -10,7 +10,7 @@ Claude Code, including the CLI, the desktop app, and the web app (claude.ai/code
 
 Add this repo as a marketplace, then install whichever plugins you want:
 
-```
+```text
 /plugin marketplace add kuan51/claude-skills
 /plugin install data-analysis-review
 /plugin install ciso
@@ -48,10 +48,15 @@ so it picks up the newly installed plugin.
   skill that makes the lead write a proper delegation brief and re-verify what comes
   back instead of trusting it; `fabflows:build`, a deterministic build-and-review
   loop for a spec'd change; and `using-fabflows`, the entrypoint skill you invoke at the
-  start of a conversation to put the whole session on that discipline. Includes an
-  **active guard hook** that blocks package installs, default-branch commits,
+  start of a conversation to put the whole session on that discipline; and `brainstorming`,
+  which turns a rough idea into a spec the build loop can take, with the refuter attacking
+  the draft before it is written. Includes an
+  **active guard hook** that blocks package installs (one exception: `pypdf` into a
+  literal scratchpad `--target` with `--isolated`), default-branch commits,
   destructive commands, and credential reads and writes. Read that plugin's README
-  before installing, including its "Known gaps" section.
+  before installing, including its "Known gaps" section. Benchmarked: on a spec'd build with
+  Opus 5.5 workers it matched a plain Fable session on 41 hidden tests at 18% lower list price
+  and 83% fewer lead output tokens (see that README's "Measured performance").
 
 ## Adding a new plugin
 

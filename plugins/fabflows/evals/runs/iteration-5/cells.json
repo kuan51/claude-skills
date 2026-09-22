@@ -1,0 +1,123 @@
+[
+ {
+  "task": "build-component",
+  "arm": "with_skill",
+  "run": "run-1",
+  "quality": 1,
+  "denials": 3,
+  "turns": 18,
+  "lead_out": 5562,
+  "lead_think": 386,
+  "lead_msgs": 13,
+  "lead_cache_read": 612163,
+  "lead_cache_write": 36679,
+  "first_ctx": 36221,
+  "final_ctx": 62919,
+  "worker_out": 51153,
+  "worker_in": 892165,
+  "workers": {
+   "fabflows:editor": 1,
+   "fabflows:refuter": 1
+  },
+  "cost": 4.1192925,
+  "sec": 695.729,
+  "verification_runs": 1,
+  "hook_payloads": 48,
+  "tools": {
+   "Skill": 3,
+   "Read": 1,
+   "Bash": 3,
+   "Workflow": 2,
+   "Grep": 3
+  }
+ },
+ {
+  "task": "build-component",
+  "arm": "with_skill",
+  "run": "run-2",
+  "quality": 1,
+  "denials": 7,
+  "turns": 25,
+  "lead_out": 13122,
+  "lead_think": 1659,
+  "lead_msgs": 17,
+  "lead_cache_read": 880302,
+  "lead_cache_write": 46298,
+  "first_ctx": 36219,
+  "final_ctx": 72538,
+  "worker_out": 45329,
+  "worker_in": 868220,
+  "workers": {
+   "fabflows:refuter": 1,
+   "fabflows:editor": 1
+  },
+  "cost": 3.8941850000000002,
+  "sec": 718.919,
+  "verification_runs": 1,
+  "hook_payloads": 48,
+  "tools": {
+   "Skill": 3,
+   "Read": 3,
+   "Bash": 7,
+   "Workflow": 2,
+   "Grep": 1,
+   "Agent": 1,
+   "Write": 2
+  }
+ },
+ {
+  "task": "build-component",
+  "arm": "without_skill",
+  "run": "run-1",
+  "quality": 1,
+  "denials": 1,
+  "turns": 19,
+  "lead_out": 28848,
+  "lead_think": 5794,
+  "lead_msgs": 8,
+  "lead_cache_read": 381703,
+  "lead_cache_write": 49769,
+  "first_ctx": 34953,
+  "final_ctx": 72620,
+  "worker_out": 0,
+  "worker_in": 0,
+  "workers": {},
+  "cost": 2.5354657499999997,
+  "sec": 318.157,
+  "verification_runs": 0,
+  "hook_payloads": 0,
+  "tools": {
+   "Read": 4,
+   "Bash": 4,
+   "Glob": 1,
+   "Write": 9
+  }
+ },
+ {
+  "task": "build-component",
+  "arm": "without_skill",
+  "run": "run-2",
+  "quality": 1,
+  "denials": 0,
+  "turns": 19,
+  "lead_out": 28510,
+  "lead_think": 5223,
+  "lead_msgs": 19,
+  "lead_cache_read": 1082666,
+  "lead_cache_write": 49824,
+  "first_ctx": 34960,
+  "final_ctx": 72675,
+  "worker_out": 0,
+  "worker_in": 0,
+  "workers": {},
+  "cost": 2.6984264999999996,
+  "sec": 341.888,
+  "verification_runs": 0,
+  "hook_payloads": 0,
+  "tools": {
+   "Bash": 5,
+   "Write": 12,
+   "Edit": 1
+  }
+ }
+]

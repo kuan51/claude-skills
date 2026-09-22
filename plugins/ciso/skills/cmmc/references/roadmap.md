@@ -39,9 +39,11 @@ The roadmap workflow is certification-agnostic core (see `ADDING-A-CERTIFICATION
    For an in-interview run that is the drain checkpoint at the top of the next
    [Interview](interview.md) Part 2 block. To drain, capture the workflow's returned
    `{ budgetTier, results }`. Write it to a scratchpad JSON file. Then run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/roadmap/merge-roadmap.js" <docs/ciso-dir>/state.json <result.json path>
    ```
+
    `merge-roadmap.js` is keyed by control id and works across any certification. Then clear those ids
    from your in-flight set.
 4. Regenerate the dashboard, then present a **brief, non-blocking** summary: call out any

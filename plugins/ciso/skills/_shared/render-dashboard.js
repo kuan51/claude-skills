@@ -58,7 +58,7 @@ function emptyStatusCounts() {
 // r2 controls carry assessment.maturity instead of a flat assessment.status. For rollup purposes
 // (gauges, byStatus counts), the "effective" status/assessedAt is always the Implemented
 // dimension -- the one dimension e1/i1 also solely measure -- so e1/i1/r2 domain gauges stay
-// directly comparable. See docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md.
+// directly comparable. See docs/specs/2026-09-22-ciso-hitrust.md.
 function effectiveStatus(assessment) {
   if (assessment && assessment.maturity) {
     return (assessment.maturity.implemented && assessment.maturity.implemented.status) || 'not_assessed';

@@ -62,13 +62,16 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
    - Copy the entire project directory to a fresh temporary directory outside the project (such as your scratchpad, or the system temp directory). Every agent in the analysis engine, including any Bash execution the `reproducibility-auditor` performs, must only ever see paths inside this copy.
    - Record the resulting sandbox directory path (you'll pass it as `sandboxRoot` in step 9).
    - Then rewrite every path destined for `args` (below) from the original project root to the copy root:
-     ```
+
+     ```bash
      node "${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/lib/sandbox-paths.js" <project-root> <sandbox-root> <path1> [path2 ...]
      ```
+
      This prints the rewritten paths as a JSON array, in the same order given. Use the rewritten paths (never the originals) for every entry in `fixedRolePaths`, `extras[].paths`, and `conclusionPaths` below. The Workflow itself (step 9) will refuse to run if any path it receives isn't inside `sandboxRoot`, so a skipped or incomplete rewrite stops the run instead of silently reaching the original project.
    - Keep the temporary copy until after the report is presented (step 12), since findings' evidence may reference paths inside it. Then delete it.
 
 9. **Run the Workflow.** Read `${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/workflow.js` and pass its contents as the `script` parameter to the `Workflow` tool, with `args` set to:
+
    ```js
    {
      thesis: "<confirmed thesis and goals text>",
@@ -95,7 +98,8 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
     - Write the Workflow's result to a JSON file in the scratchpad directory, adding these fields before running the builder: `projectName`, `reviewDate`, `thesis`, `scope` (roster used, skills loaded, execution limitations hit), and your own written verdicts for `verdictAccuracy`, `verdictCohesiveness`, and `verdictRationale`, each a qualitative verdict plus the evidence from `reconciled`/`crossCompare` that supports it. Add `recommendations` if there are any non-blocking follow-ups worth flagging. The report builder marks each finding as verified (empirically recomputed) or unverified (inferred / static review only) from the `verified` flag. Unverified findings are flagged so the reader can see which conclusions are empirically backed.
     - Findings' `evidence` fields may reference paths inside the step-8 sandbox copy (such as `<sandbox-root>/data/sales.csv`). Rewrite these back to the equivalent path under the real project root before presenting, so the report doesn't cite a location that's about to be deleted.
     - Then run:
-      ```
+
+      ```bash
       node "${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/lib/report-builder.js" "${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/references/report-template.md" <path-to-result.json>
       ```
 

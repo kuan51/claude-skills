@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: trigger-pos-stale-docs-casual
+context:
+  scaffold_script: fixture.sh

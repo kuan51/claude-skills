@@ -28,6 +28,9 @@ const { execFileSync } = require('node:child_process');
 // table passes on all three platforms.
 const norm = (p) => path.resolve(p).replace(/\\/g, '/').toLowerCase();
 const under = (p, base) => p === base || p.startsWith(base + '/');
+// One home expansion and one unquote for every site that takes a path from a shell string.
+const expandHome = (p) => p.replace(/^~(?=[\\/]|$)/, os.homedir());
+const unquote = (s) => s.replace(/^(["'])(.*)\1$/, '$2');
 
 // ---------------------------------------------------------------- decisions
 function deny(reason) {
@@ -67,6 +70,33 @@ const INSTALL = [
   /^(brew|winget|choco|scoop)\s+install\b/i,
   /^install-(module|package|script)\b/i,
 ];
+
+// The one install the guard lets through: pypdf, pure Python, into a `--target` with a
+// `scratchpad` directory in its path. Nothing lands in site-packages, so nothing outlives
+// the session, and the lead can read a PDF without asking the user to install. `--isolated`
+// is required because it makes pip ignore PIP_* environment variables and user config, the
+// two ways a `pypdf` install could be pointed at another index. The target must be a literal
+// path (no `$`, backtick or `%`), and never live config, which the scratchpad name alone
+// cannot rule out.
+const PIP = /^(?:pip3?|python3?\s+-m\s+pip)\s+install\s+(.*)$/i;
+function isScratchPypdf(seg, cwd) {
+  const m = PIP.exec(seg);
+  if (!m) return false;
+  const args = m[1].match(/"[^"]*"|'[^']*'|\S+/g) || [];
+  let target = null;
+  let pkg = false;
+  let isolated = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = unquote(args[i]);
+    if (a === '--target') target = unquote(args[++i] || '');
+    else if (a === '--isolated') isolated = true;
+    else if (/^pypdf(==[\d.]+)?$/i.test(a)) pkg = true;
+    else if (!/^(-q|--quiet)$/i.test(a)) return false;
+  }
+  if (!pkg || !isolated || !target || /[$`%]/.test(target)) return false;
+  const t = norm(path.resolve(cwd, expandHome(target)));
+  return /(^|\/)scratchpad(\/|$)/.test(t) && !isProtectedPath(t);
+}
 
 // Secret-bearing paths. Accepts either separator so a Windows path matches too.
 const SECRET_PATH =
@@ -127,6 +157,38 @@ function isDangerousDelete(seg) {
   return RM_DANGER.test(seg);
 }
 
+// A destructive command written into a runner file (Makefile target, npm script, shell
+// script) is invisible to the shell rules once it is invoked by name: `make nuke` is just
+// a word. So the payload must not be written at all. Prose files are not checked, since a
+// README or a test can legitimately quote `rm -rf ~`.
+const RUNNER_EXT = 'mk|sh|bash|zsh|ps1|cmd|bat';
+const RUNNER_FILE = new RegExp(String.raw`(^|[\\/])(makefile|justfile|package\.json|[^\\/]+\.(${RUNNER_EXT}))$`, 'i');
+const RUNNER_REDIRECT = new RegExp(String.raw`(>>?|\|\s*tee(\s+-a)?)\s*["']?(\S*?(makefile|justfile|package\.json|\S+\.(${RUNNER_EXT})))["']?(\s|$)`, 'i');
+
+function destructiveLine(content) {
+  const text = String(content).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+  // A Makefile recipe line starts with a tab and maybe `@` or `-`; an npm script is a
+  // quoted JSON value; a printf/echo payload is a quoted string that may span lines.
+  // Check every line, and every line of every quoted string.
+  const units = [text];
+  for (const m of text.matchAll(/"((?:[^"\\]|\\.)*)"|'([^']*)'/g)) units.push((m[1] ?? m[2]).replace(/\\(.)/g, '$1'));
+  for (const unit of units) {
+    for (const raw of unit.split(/\r?\n/)) {
+      const c = raw.replace(/^[\s@-]+/, '').trim();
+      if (!c) continue;
+      if (isDangerousDelete(c)) return c;
+      for (const [re] of DESTRUCTIVE) if (re.test(c)) return c;
+    }
+  }
+  return null;
+}
+
+function denyRunnerPayload(line, target) {
+  deny(
+    `fabflows: this puts a destructive command (${line.slice(0, 40)}) into a runner file (${target}). The guard cannot see inside a Makefile target or script once it is invoked by name, so the payload must not be written at all. Use an inert stand-in such as echo.`
+  );
+}
+
 // ---------------------------------------------------------------- live config
 // Narrow on purpose. Only genuinely live configuration is protected -- the hook
 // registry, user-level hook scripts, the installed plugin cache, and git's own hooks.
@@ -139,7 +201,7 @@ const PROTECTED_ROOTS = ['settings.json', 'settings.local.json', 'hooks', 'plugi
 
 function isProtectedPath(p) {
   if (!p) return false;
-  const n = norm(p.replace(/^~(?=[\\/])/, os.homedir()));
+  const n = norm(expandHome(p));
   if (/(^|\/)\.git\/hooks(\/|$)/.test(n)) return true;
   return PROTECTED_ROOTS.some((root) => under(n, root));
 }
@@ -229,6 +291,15 @@ function checkShell(command, cwd) {
     }
   }
 
+  // `printf 'nuke:\\n\\trm -rf ~' > Makefile` starts its only segment with printf, so the
+  // anchored rules below never see the payload. When any redirect targets a runner file,
+  // scan the whole command: a later `>> Makefile` carries a payload too.
+  const redirect = RUNNER_REDIRECT.exec(command);
+  if (redirect) {
+    const line = destructiveLine(command);
+    if (line) denyRunnerPayload(line, redirect[3]);
+  }
+
   // Split on shell separators, then anchor every pattern at segment start. That is what
   // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
   // to parse quoting. Newlines and `&` separate too, a leading `(` is dropped, and a
@@ -251,12 +322,11 @@ function checkShell(command, cwd) {
   for (const seg of segments) {
     const cd = /^cd\s+(.+)$/.exec(seg);
     if (cd) {
-      const arg = cd[1].trim().replace(/^(["'])(.*)\1$/, '$2');
-      effCwd = path.resolve(effCwd, arg.replace(/^~(?=\/|$)/, os.homedir()));
+      effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
     }
 
     for (const re of INSTALL) {
-      if (re.test(seg)) {
+      if (re.test(seg) && !isScratchPypdf(seg, effCwd)) {
         deny(
           `fabflows: package installs are blocked (${seg.slice(0, 60)}). Ask the user to install it themselves, or report the missing dependency as a blocker.`
         );
@@ -342,6 +412,10 @@ function preToolUse(input) {
       deny('fabflows: writing to a credential-bearing file is blocked.');
     }
     const content = ti.new_string || ti.content;
+    if (typeof content === 'string' && RUNNER_FILE.test(target)) {
+      const line = destructiveLine(content);
+      if (line) denyRunnerPayload(line, target);
+    }
     if (typeof content === 'string' && SECRET_CONTENT.test(content)) {
       deny(`fabflows: this edit introduces a string matching a known secret format into ${target}. Use an environment variable or a secret store.`);
     }
