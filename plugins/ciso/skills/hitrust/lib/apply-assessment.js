@@ -35,7 +35,7 @@ function validatePayloadShape(status, justification, currentState, estimatedClos
 }
 
 // r2 controls store a `maturity` object (one entry per PRISMA dimension) instead of e1/i1's flat
-// `assessment.status` -- see docs/superpowers/specs/2026-07-19-ciso-r2-maturity-architecture-design.md.
+// `assessment.status` -- see docs/specs/2026-09-22-ciso-hitrust.md.
 // `payload.dimension` selects which of the 5 dimensions this call targets; omitting it is a
 // whole-control call, which only accepts status "not_applicable" (engage -- short-circuits all 5
 // dimensions to not_applicable) or "not_assessed" (reverse -- clears the whole-control state back
