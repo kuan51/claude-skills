@@ -67,6 +67,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **docs** -- retired `docs/superpowers/` (nine specs and seven plans from the previous
+  toolchain, all of whose work had shipped). Four fabflows-format specs under `docs/specs/`
+  now record the shipped behaviour of data-analysis-review, the ciso HITRUST module,
+  ciso sync-tasks and ciso CMMC, and DEC-0018 to DEC-0021 record the hard-to-reverse
+  decisions those documents carried. Code comments that cited the old paths point at the
+  new specs.
 - **fabflows 0.3.5** -- the lead's verification gate reads the diff instead of every
   changed file and caps command output to its tail, and the build loop's report schema
   and review brief ask for summaries and failing lines rather than whole logs, matching
