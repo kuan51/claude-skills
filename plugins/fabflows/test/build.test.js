@@ -207,7 +207,7 @@ test('escalates a builder reply the lead cannot act on, but reviews one that rec
   const silent = await run(ARGS, [{ status: 'blocked', report: 'r' }]);
   assert.equal(silent.result.reason, 'unexplained', 'blocked with no blocker gives the lead no reason');
   const quoted = await run(ARGS, [{ status: 'blocked', report: '\nPermission to use Bash has been denied.\nr' }]);
-  assert.equal(quoted.result.reason, 'blocked', 'a denial on the first non-blank line is the reason');
+  assert.equal(quoted.result.reason, 'unexplained', 'only the blocker field names a reason; prose is left to the lead');
 
   assert.match(silent.calls[0].prompt, /start report with `Permission denied:`/);
   assert.match(silent.calls[0].prompt, /A denial you worked around is not a blocker/);
@@ -247,7 +247,7 @@ test('every escalation carries status, baseRef, the last verdict, and what to do
   const cases = [
     [[blocked], 'blocked', null],
     [[{ ...built, blocker: 'could not run tests' }], 'blocked', null],
-    [[{ status: 'blocked', report: 'Permission denied: npm test' }], 'blocked', null],
+    [[{ status: 'blocked', report: 'Permission denied: npm test' }], 'unexplained', null],
     [[{ ...built, report: '' }], 'unexplained', null],
     [[{ status: 'blocked', report: 'r' }], 'unexplained', null],
     [[built, rework, { ...built, report: ' ' }], 'unexplained', 'REWORK'],

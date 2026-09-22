@@ -58,21 +58,14 @@ const cols = [
   ['cost', 'cost$', (v) => v.toFixed(2)], ['sec', 'sec', (v) => v.toFixed(0)],
   ['verification_runs', 'verif', (v) => v.toFixed(1)], ['hook_payloads', 'hooks', (v) => v.toFixed(0)],
 ];
-const tasks = [...new Set(rows.map((r) => r.task))];
+const tasks = [...new Set(rows.map((r) => r.task)), 'ALL'];
 const arms = [...new Set(rows.map((r) => r.arm))];
-const header = ['task', 'arm', 'n', ...cols.map((c) => c[1])];
-const table = [header];
+const table = [];
 for (const task of tasks) for (const arm of arms) {
-  const rs = rows.filter((r) => r.task === task && r.arm === arm);
-  if (!rs.length) continue;
-  table.push([task, arm, String(rs.length), ...cols.map(([k, , f]) => f(mean(rs.map((r) => r[k]))))]);
+  const rs = rows.filter((r) => (task === 'ALL' || r.task === task) && r.arm === arm);
+  if (rs.length) table.push({ task, arm, n: rs.length, ...Object.fromEntries(cols.map(([k, h, f]) => [h, f(mean(rs.map((r) => r[k])))])) });
 }
-for (const arm of arms) {
-  const rs = rows.filter((r) => r.arm === arm);
-  table.push(['ALL', arm, String(rs.length), ...cols.map(([k, , f]) => f(mean(rs.map((r) => r[k]))))]);
-}
-const widths = header.map((_, i) => Math.max(...table.map((r) => r[i].length)));
-console.log(table.map((r) => r.map((c, i) => c.padStart(widths[i])).join('  ')).join('\n'));
+console.table(table);
 console.log('\nworkers spawned (with_skill):');
 for (const r of rows.filter((r) => r.arm === 'with_skill')) console.log(`  ${r.task}/${r.run}: ${JSON.stringify(r.workers)}  lead tools ${JSON.stringify(r.tools)}`);
 console.log('\nlead tools (without_skill):');

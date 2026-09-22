@@ -140,6 +140,22 @@ test('blocks staging a credential file', () => {
   allows(shell('git add src/index.js'), 'git add a source file');
 });
 
+test('blocks a destructive command written into a runner file, not into prose', () => {
+  denies(write('Makefile', 'nuke:\n\trm -rf ~'), 'Makefile target running rm -rf ~');
+  denies(write('scripts/x.sh', '#!/bin/sh\ngit reset --hard'), 'shell script running git reset --hard');
+  denies(write('package.json', '{"scripts":{"nuke":"rm -rf /"}}'), 'npm script running rm -rf /');
+  denies(write('build.ps1', 'Remove-Item -Recurse -Force ~'), 'PowerShell script deleting home');
+  denies(shell("printf 'nuke:\\n\\trm -rf ~' > Makefile"), 'printf payload redirected into a Makefile');
+  denies(shell('echo "rm -rf ~" | tee -a scripts/x.sh'), 'echo payload teed into a script');
+  denies(shell("cat > Makefile <<'EOF'\nnuke:\n\trm -rf ~\nEOF"), 'heredoc payload into a Makefile');
+  denies(shell("echo ok > Makefile && printf 'all:\\n\\trm -rf ~' >> Makefile"), 'payload behind a second redirect');
+  allows(write('Makefile', 'clean:\n\trm -rf ./build'), 'Makefile deleting its own build dir');
+  allows(write('Makefile', 'nuke:\n\techo would-delete'), 'Makefile with an inert stand-in');
+  allows(write('README.md', 'never run `rm -rf ~` by hand'), 'prose quoting the command');
+  allows(write('notes.txt', 'rm -rf ~'), 'a prose-named file (documented gap)');
+  allows(shell("printf 'nuke:\\n\\techo would-delete' > Makefile"), 'inert payload redirected into a Makefile');
+});
+
 test('blocks writes that introduce a secret', () => {
   denies(write('config.js', 'const k = "AKIAIOSFODNN7EXAMPLE";'), 'AWS access key id');
   denies(write('a.txt', '-----BEGIN RSA PRIVATE KEY-----'), 'private key header');

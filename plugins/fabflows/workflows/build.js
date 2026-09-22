@@ -98,18 +98,6 @@ const VERDICT = {
 // data, and a tag inside a finding cannot open or close that fence.
 const unfence = (s) => s.replace(/<\s*\/?\s*must-fix\s*>/gi, '')
 
-// The report contract puts any permission denial on the first line, and the brief has the
-// builder start it with `Permission denied:`. Only a first line that starts with a denial counts,
-// so a path or feature name mentioning one does not, and it is exempt only when it says none.
-// ponytail: still prose, so a denial worded otherwise or placed lower gets through; the
-// builder quoting it in blocker is the real signal.
-function saysDenied(report) {
-  const first = (report.split('\n').find((l) => l.trim()) || '').trim()
-  const starts = /^\W*(?:(?:permissions?|denied|denials?|blocked)\b|fabflows:)/i.test(first)
-  const saysNone = /^\W*no\b|:\s*(?:none|no|0)\W*$/i.test(first)
-  return starts && !saysNone
-}
-
 // Every brief carries the four labelled parts: fabflows workers stop on a brief missing one.
 function buildBrief(round, mustFix) {
   const rework = mustFix
@@ -193,12 +181,11 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
   // The structured fields decide, not the prose. A builder that hit a denial, worked around it
   // and finished has status done and an empty blocker, and its review is the point of the loop;
   // benchmark iteration 5 lost one to a report that merely opened with the word "Permission".
-  // saysDenied still classifies the reason once a reply has failed on its own fields.
   const blocker = (build.blocker || '').trim()
   const report = (build.report || '').trim()
   if (build.status !== 'done' || blocker || !report) {
     rounds.push({ round, build, review: null })
-    const reason = blocker || saysDenied(report) ? 'blocked' : 'unexplained'
+    const reason = blocker ? 'blocked' : 'unexplained'
     log(`round ${round}: the builder's reply is ${reason} -- escalating to the lead`)
     return escalate(reason)
   }

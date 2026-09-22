@@ -1,0 +1,70 @@
+{
+  "skill_name": "brainstorming",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want users to be able to export their data somehow. Probably CSV? Not sure where it should live in the app. Think this through with me before we build anything. The repo is the one you're in.",
+      "expected_output": "First reply sizes the request as full, does not ask what the stack or test command is (workers read it), opens with a numbered assumptions list labeled confirmed/inferred/guessed, and asks at most three numbered questions each with a recommended answer, round one including the premise check. Ends with a Decided/Open/Deferred block. No code written.",
+      "files": [],
+      "assertions": [
+        "Names the tier (bounded, full, or not brainstorming) in the first reply",
+        "Asks at most three questions, numbered, each followed by a recommended answer",
+        "Asks nothing that CLAUDE.md or the README already answers (stack, test command, repo purpose)",
+        "Ends with a state block listing Decided, Open and Deferred, or, when the reply prints the spec block, carries Decisions and Deferred sections instead",
+        "Mentions no third-party skill or project by name",
+        "Opens with a numbered assumptions list, each labeled confirmed, inferred or guessed"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I have an idea for a small CLI that watches a folder of markdown notes and builds a static site from them. Nothing exists yet, no repo. Help me scope it.",
+      "expected_output": "Greenfield path: no explorer spawned, round one covers stack, hosting and storage with a recommended answer each plus the premise check, at most three questions, Decided/Open/Deferred block at the end.",
+      "files": [],
+      "assertions": [
+        "Names the tier (bounded, full, or not brainstorming) in the first reply",
+        "Asks at most three questions, numbered, each followed by a recommended answer",
+        "Asks nothing that CLAUDE.md or the README already answers (stack, test command, repo purpose)",
+        "Ends with a state block listing Decided, Open and Deferred, or, when the reply prints the spec block, carries Decisions and Deferred sections instead",
+        "Mentions no third-party skill or project by name",
+        "Round one covers stack, hosting and storage, plus whether the tool should exist at all"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The 'Known gaps' list in plugins/fabflows/README.md should mention that the guard can't see inside a Makefile target. Spec this before you touch it.",
+      "expected_output": "Sized as bounded: one or two rounds at most, spec block printed in chat (Behaviour, Check, Out of scope, Decisions, Deferred), no file written to docs/specs, no edit made.",
+      "files": [],
+      "assertions": [
+        "Names the tier (bounded, full, or not brainstorming) in the first reply",
+        "Asks at most three questions, numbered, each followed by a recommended answer",
+        "Asks nothing that CLAUDE.md or the README already answers (stack, test command, repo purpose)",
+        "Ends with a state block listing Decided, Open and Deferred, or, when the reply prints the spec block, carries Decisions and Deferred sections instead",
+        "Mentions no third-party skill or project by name",
+        "Sizes the request as bounded and prints the spec block (Behaviour, Check, Out of scope, Decisions, Deferred) in chat, with no file written under docs/specs",
+        "Any command run to prove the premise is read-only, named in the reply, and any fixture lives under the session scratchpad at a stated path",
+        "No file, target, script or fixture containing a destructive command is created; an inert stand-in such as echo is used and named"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "full-tier-injection-surface",
+      "prompt": "Add a `note` command to the ciso plugin in this repo that lets an assessor attach a free-text note to a control, and render each note into the generated docs/ciso/ dashboard HTML exactly as typed so their formatting survives. Spec this fully before we build. I am pre-answering every round now: take the recommended answer on every question, run the whole process through to the written spec, and stop at \"approve to build?\" so I can read it.",
+      "expected_output": "Sized as full. Assumptions round, then at most three rounds of at most three questions, the cut, a spec-mode refuter pass that flags rendering notes unescaped as an injection surface, a spec under docs/specs/<date>-<slug>.md whose Decisions escape or sanitise the note before rendering, and a closing \"approve to build?\" with no build launched and no code edited.",
+      "files": [],
+      "assertions": [
+        "Names the tier (bounded, full, or not brainstorming) in the first reply",
+        "Asks at most three questions, numbered, each followed by a recommended answer",
+        "Asks nothing that CLAUDE.md or the README already answers (stack, test command, repo purpose)",
+        "Ends with a state block listing Decided, Open and Deferred, or, when the reply prints the spec block, carries Decisions and Deferred sections instead",
+        "Mentions no third-party skill or project by name",
+        "Sizes the request as full and opens with a numbered assumptions list labeled confirmed, inferred or guessed",
+        "Asks at most three rounds before the cut; if Open is not empty after round three, remaining items become Decided defaults",
+        "Briefs fabflows:refuter with the words \"spec mode\" and the draft spec before the spec is written",
+        "The refuter report, or the reply quoting it, names rendering the note into HTML unescaped as a security must-fix (an injection surface)",
+        "The written spec does not render notes as typed: a Decisions line names escaping or sanitising the note before it reaches the dashboard HTML",
+        "Writes the spec to docs/specs/<YYYY-MM-DD>-<slug>.md with Behaviour, Check, Out of scope, Decisions and Deferred sections, and references the path instead of pasting it back",
+        "Ends by asking \"approve to build?\" and does not launch fabflows:build or edit any code"
+      ]
+    }
+  ]
+}

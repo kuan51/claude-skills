@@ -8,6 +8,17 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.4.0** -- `brainstorming`, a design skill that turns a rough idea into the
+  spec `fabflows:build` needs. The lead sizes the request (bounded, in chat; or full, with a
+  spec written to `docs/specs/`), sends `explorer` and `researcher` for the facts instead of
+  asking the user, opens with an assumptions round, then asks rounds of at most three numbered
+  questions each with a recommended answer, at most three rounds, states the maximal version
+  and cuts it to the smallest shippable slice, and hands off only after the user has read the
+  spec. `refuter` gains a spec mode: given a draft instead of a diff, it attacks it across seven
+  lenses and blocks the spec on a security gap. DEC-0017 records why the refuter was reused
+  rather than a new agent added. The guard gains a rule: a destructive command written into a
+  Makefile, justfile, npm script or shell script is blocked at the point it is written,
+  since the shell rules cannot see inside `make nuke` once the target exists.
 - **fabflows 0.1.0** -- a new plugin for sessions whose lead runs on an expensive model.
   Ships four worker agents pinned to cheaper tiers, each scoped to the smallest tool set
   that does its job and none able to spawn workers of its own, plus a skill carrying the

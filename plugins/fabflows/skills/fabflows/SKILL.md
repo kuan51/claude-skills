@@ -37,7 +37,8 @@ tools is already evidence; do not re-run it to confirm it.
 | research web or docs, distil a source | `fabflows:researcher` | Haiku, read-only |
 | edit, implement, multi-file change | `fabflows:editor` | Sonnet |
 | write or run tests | `fabflows:test-runner` | Sonnet |
-| review a finished change against its spec, re-running its tests | `fabflows:refuter` | Opus, read-only + Bash |
+| review a finished change against its spec, re-running its tests; or a draft spec, lens by lens | `fabflows:refuter` | Opus, read-only + Bash |
+| shape a rough idea or an unshaped request into a spec | `fabflows:brainstorming` | the lead asks; explorer, researcher and refuter read |
 | reproduce and narrow a self-contained failure | `fabflows:investigator` | Opus, read-only + Bash |
 | root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | none |
 | a spec'd, sizeable change | `fabflows:build` | Opus builder, Opus reviewer |
@@ -109,7 +110,8 @@ the diff against the spec and re-runs the tests; REWORK sends the must-fix list 
 builder, up to two rework rounds. Offer it, or launch it when the session opened with
 `using-fabflows`. It never merges, pushes, or reverts.
 
-Before starting: write the spec (the behaviour, how to check it, what is out of scope);
+Before starting: write the spec (the behaviour, how to check it, what is out of scope),
+or take the one `fabflows:brainstorming` wrote when the request arrived unshaped;
 confirm `git status --porcelain` prints nothing and `git rev-parse --abbrev-ref HEAD` prints
 the feature branch, never the default branch; pass `spec`, `branch`, `baseRef` (from
 `git rev-parse HEAD`) and `testCommand`, and optionally `reviewerModel`. Pass these as an

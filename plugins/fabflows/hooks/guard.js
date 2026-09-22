@@ -127,6 +127,38 @@ function isDangerousDelete(seg) {
   return RM_DANGER.test(seg);
 }
 
+// A destructive command written into a runner file (Makefile target, npm script, shell
+// script) is invisible to the shell rules once it is invoked by name: `make nuke` is just
+// a word. So the payload must not be written at all. Prose files are not checked, since a
+// README or a test can legitimately quote `rm -rf ~`.
+const RUNNER_EXT = 'mk|sh|bash|zsh|ps1|cmd|bat';
+const RUNNER_FILE = new RegExp(String.raw`(^|[\\/])(makefile|justfile|package\.json|[^\\/]+\.(${RUNNER_EXT}))$`, 'i');
+const RUNNER_REDIRECT = new RegExp(String.raw`(>>?|\|\s*tee(\s+-a)?)\s*["']?(\S*?(makefile|justfile|package\.json|\S+\.(${RUNNER_EXT})))["']?(\s|$)`, 'i');
+
+function destructiveLine(content) {
+  const text = String(content).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+  // A Makefile recipe line starts with a tab and maybe `@` or `-`; an npm script is a
+  // quoted JSON value; a printf/echo payload is a quoted string that may span lines.
+  // Check every line, and every line of every quoted string.
+  const units = [text];
+  for (const m of text.matchAll(/"((?:[^"\\]|\\.)*)"|'([^']*)'/g)) units.push((m[1] ?? m[2]).replace(/\\(.)/g, '$1'));
+  for (const unit of units) {
+    for (const raw of unit.split(/\r?\n/)) {
+      const c = raw.replace(/^[\s@-]+/, '').trim();
+      if (!c) continue;
+      if (isDangerousDelete(c)) return c;
+      for (const [re] of DESTRUCTIVE) if (re.test(c)) return c;
+    }
+  }
+  return null;
+}
+
+function denyRunnerPayload(line, target) {
+  deny(
+    `fabflows: this puts a destructive command (${line.slice(0, 40)}) into a runner file (${target}). The guard cannot see inside a Makefile target or script once it is invoked by name, so the payload must not be written at all. Use an inert stand-in such as echo.`
+  );
+}
+
 // ---------------------------------------------------------------- live config
 // Narrow on purpose. Only genuinely live configuration is protected -- the hook
 // registry, user-level hook scripts, the installed plugin cache, and git's own hooks.
@@ -227,6 +259,15 @@ function checkShell(command, cwd) {
     if (re.test(command)) {
       deny('fabflows: piping a download straight into a shell is blocked. Download it, read it, then run it.');
     }
+  }
+
+  // `printf 'nuke:\\n\\trm -rf ~' > Makefile` starts its only segment with printf, so the
+  // anchored rules below never see the payload. When any redirect targets a runner file,
+  // scan the whole command: a later `>> Makefile` carries a payload too.
+  const redirect = RUNNER_REDIRECT.exec(command);
+  if (redirect) {
+    const line = destructiveLine(command);
+    if (line) denyRunnerPayload(line, redirect[3]);
   }
 
   // Split on shell separators, then anchor every pattern at segment start. That is what
@@ -342,6 +383,10 @@ function preToolUse(input) {
       deny('fabflows: writing to a credential-bearing file is blocked.');
     }
     const content = ti.new_string || ti.content;
+    if (typeof content === 'string' && RUNNER_FILE.test(target)) {
+      const line = destructiveLine(content);
+      if (line) denyRunnerPayload(line, target);
+    }
     if (typeof content === 'string' && SECRET_CONTENT.test(content)) {
       deny(`fabflows: this edit introduces a string matching a known secret format into ${target}. Use an environment variable or a secret store.`);
     }

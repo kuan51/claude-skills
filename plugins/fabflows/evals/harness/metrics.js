@@ -79,15 +79,10 @@ function summarizeProbe(probeText) {
   return counts;
 }
 
-// The `<usage>subagent_tokens: 11749\ntool_uses: 1\nduration_ms: 6945</usage>` block appended
-// to an Agent call's tool_result.
+// The `<usage>subagent_tokens: 11749 ...</usage>` block appended to an Agent call's tool_result.
 function parseSubagentUsage(content) {
-  const text = typeof content === 'string' ? content : JSON.stringify(content || '');
-  const m = text.match(/subagent_tokens:\s*(\d+)/);
-  if (!m) return null;
-  const tools = text.match(/tool_uses:\s*(\d+)/);
-  const dur = text.match(/duration_ms:\s*(\d+)/);
-  return { tokens: Number(m[1]), toolUses: tools ? Number(tools[1]) : null, durationMs: dur ? Number(dur[1]) : null };
+  const m = (typeof content === 'string' ? content : JSON.stringify(content || '')).match(/subagent_tokens:\s*(\d+)/);
+  return m ? Number(m[1]) : null;
 }
 
 // Plain text of a tool_result, whether the stream sent a string or content blocks. Paths in a
@@ -205,10 +200,10 @@ function computeMetrics(events, opts = {}) {
           continue;
         }
         if (!spawns[b.tool_use_id]) continue;
-        const u = parseSubagentUsage(b.content);
-        if (!u) continue;
+        const tokens = parseSubagentUsage(b.content);
+        if (tokens == null) continue;
         const w = workerFor(b.tool_use_id);
-        w.reportedTokens += u.tokens;
+        w.reportedTokens += tokens;
         w.reportedSpawns += 1;
       }
       continue;
@@ -381,15 +376,4 @@ function metricsFromFiles(transcriptPath, opts = {}) {
   return metrics;
 }
 
-module.exports = { parseTranscript, computeMetrics, summarizeProbe, parseSubagentUsage, metricsFromFiles };
-
-if (require.main === module) {
-  const [transcript, probe, testCommand] = process.argv.slice(2);
-  if (!transcript) {
-    console.error('usage: node metrics.js <transcript.jsonl> [probe.jsonl] [testCommand]');
-    process.exit(1);
-  }
-  const m = metricsFromFiles(transcript, { probePath: probe, testCommand });
-  delete m.result.result_text;
-  console.log(JSON.stringify(m, null, 2));
-}
+module.exports = { parseTranscript, computeMetrics, summarizeProbe, metricsFromFiles, textOf };
