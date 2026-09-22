@@ -286,3 +286,11 @@ every Opus-tier pin is the `opus` alias, which the CLI documents as "the latest 
 on Fable; task 7 only; both arms; two repeats. Command:
 `node plugins/fabflows/evals/harness/run.js --iteration 6 --tasks 7 --repeats 2 --parallel 2 --confirm`
 (CLI 2.1.280, OAuth session, Linux). Caps per run: 200 turns, $60 list, 120 minutes.
+
+**CONFIRMED** — Four runs completed, none killed, no denied tool call. All four graded 50/50
+(41/41 hidden tests). Worker model proof: `grep -ho '"model":"claude-[a-z0-9-]*"' plugins/fabflows/evals/runs/iteration-6/eval-7-*/*/run-*/workflows/*/agent-*.jsonl | sort | uniq -c`
+prints 76 messages on `claude-opus-5-5` and nothing else. Means, with_skill against without:
+list $2.92 vs $3.55, wall 414 s vs 480 s, Fable output 6,660 vs 38,314. Both loops ran build:1
+then review:1 ACCEPT with an empty must-fix list (`workflows/*/journal.jsonl`). Summarised with
+`summarize.js`, aggregated with skill-creator's `aggregate_benchmark` and `annotate_benchmark.py`;
+`generate_review.py` (the HTML viewer) was not run. Write-up in `plugins/fabflows/evals/RESULTS.md`.

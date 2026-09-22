@@ -46,8 +46,92 @@ unambiguously, and it moves the meter slightly less than a plain session (a Fabl
 0.98) for the same graded result. Two-decimal readings and one pair per arm, so this is direction,
 not a measurement, but it is direction in the right currency and it was free to collect.
 
+**Iteration 6, on Opus 5.5 workers.** The same build task, re-run once the `opus` alias resolved
+to Opus 5.5 and on a machine where no shell call was denied: the loop ran end to end in both
+runs and came in 18% cheaper at list, 14% faster, with the lead writing 83% fewer output tokens
+and Fable list dollars down 52%, for the same 41 of 41. The first iteration where the loop beat
+inline work on every cost axis. Quality is still a ceiling and the rework path is still
+unexercised.
+
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
+
+## Iteration 6 (2026-09-22): the same build, with Opus 5.5 workers
+
+**Bottom line.** On the same task as iteration 5, and for the first time, the loop was cheaper
+than doing the work inline: $2.92 against $3.55 at list price (-18%), 414 s against 480 s wall
+clock (-14%), for the same graded result, 41 of 41 hidden tests and 50 of 50 checks in all four
+runs. The build loop ran cleanly in both fabflows runs: an Opus 5.5 builder, then an Opus 5.5
+reviewer inside the loop that returned ACCEPT with an empty must-fix list, then the lead's gate.
+No tool call was denied anywhere. The lead's own output fell from 38,314 tokens to 6,660 (-83%),
+and its final context from 85,905 to 61,714 (-28%). Fable list dollars, the meter that binds a
+subscription, fell from $3.55 to $1.69 (-52%).
+
+### Setup (confirmed)
+
+Task 7 `build-component` unchanged from iteration 5. Lead Fable at medium effort; `with_skill`
+loaded the shipped `plugins/fabflows` at 0.4.1 (no snapshot, no patch); two runs per arm, each
+pair concurrent, on Linux (Claude Code 2.1.280, OAuth). The plugin's Opus-tier pins are the
+`opus` alias, which the CLI documents as the latest model. Every builder and reviewer message in
+the workflow transcripts records `claude-opus-5-5` (76 messages, none on another id), so the
+alias resolved to Opus 5.5 without any change to the plugin. Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 6 --tasks 7 --repeats 2 --parallel 2 --confirm
+```
+
+### Observed
+
+| run | hidden | checks | turns | wall s | lead out | worker out | lead ctx | Fable out | Opus out | list $ | denials | loop |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| with_skill r1 | 41/41 | 50/50 | 17 | 419 | 6,737 | 38,979 | 62,697 | 6,737 | 38,979 | 2.97 | 0 | build:1, review:1 ACCEPT |
+| with_skill r2 | 41/41 | 50/50 | 11 | 408 | 6,583 | 36,714 | 60,731 | 6,583 | 36,714 | 2.87 | 0 | build:1, review:1 ACCEPT |
+| without_skill r1 | 41/41 | 50/50 | 36 | 600 | 42,867 | 0 | 92,537 | 42,867 | 0 | 4.09 | 0 | none |
+| without_skill r2 | 41/41 | 50/50 | 19 | 360 | 33,761 | 0 | 79,272 | 33,761 | 0 | 3.01 | 0 | none |
+
+Worker output is exact: both workflow agents' own transcripts were copied and read, so nothing
+here is a residual. Means: list $2.92 against $3.55 (-18%); wall 414 s against 480 s (-14%);
+Fable output 6,660 against 38,314 (-83%); total output 44,507 against 38,314 (+16%); total
+tokens across every category 1.01M against 1.80M (-44%), almost all of it Fable cache reads
+(467k against 1.81M), because a lead that writes the code itself re-reads its growing context on
+every one of its 27 turns, while a lead that launched a workflow took 14 turns and its builder
+re-read a smaller context of its own. Lead context 61,714 against 85,905 (-28%).
+
+Against iteration 5, where the same treatment cost +53% list and 2.1x wall clock, three things
+changed and each pushes the same way:
+
+1. **The loop ran as designed.** No denial fired, so no builder was escalated out of the loop
+   and no lead re-created a review by hand. Both reviews ran inside the loop on the pinned tier.
+   Iteration 5's one clean run cost $4.12; both runs here cost under $3.
+2. **Opus 5.5 is cheaper per token than Opus 5** ($4/$20 per MTok against $5/$25) and the
+   builder wrote less: 26k to 30k output tokens against 37k in iteration 5 for the same passing
+   result.
+3. **The bare lead did more ungraded work.** Both bare runs wrote `docs/CONVENTIONS.md`,
+   `docs/DECISIONS.md` and `docs/RUNLOG.md` because the user's global `CLAUDE.md` asks for them
+   (13 and 12 files changed against 6 in each fabflows run). In iteration 5 only one bare run did
+   that. The builder, briefed with the spec alone, did not. That is a real effect of the brief,
+   not noise, but it is one the grader does not see.
+
+### What it means, and what it does not
+
+- **The efficiency claim now has a measurement behind it, in the right direction.** For a
+  spec'd component built from scratch, fabflows spends fewer list dollars, less wall clock and
+  half the Fable tokens of an inline build, at the same graded quality.
+- **The quality claim is still a ceiling.** 41 of 41 in all eight runs across two iterations.
+  The task cannot show the reviewer catching anything; both reviews returned ACCEPT with nothing
+  to fix, so the rework path remains unexercised. The planted-defect design under "What
+  iteration 6 should do instead" below is still the way to measure that.
+- **Two runs per arm on one task.** Direction, not significance. The bare arm's own two runs
+  differ by $1.08 and 240 s.
+- **Platform changed.** Iterations 1 to 5 ran on Windows under the don't-ask-mode denials
+  documented in `README.md`; this one ran on Linux with none. Wall-clock and denial counts are
+  not comparable across that line; the token and dollar figures are.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 6 --tasks 7 --repeats 2 --parallel 2 --confirm
+```
 
 ## Iteration 5 (2026-09-21): a complex build, and the build loop at last
 
