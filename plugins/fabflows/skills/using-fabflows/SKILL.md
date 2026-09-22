@@ -18,5 +18,7 @@ verification gate. They are not duplicated here; read them there.
 Invoking this skill is the user's opt-in to the Workflow tool and to `fabflows:build` for
 the rest of the session. Do not ask for permission again per task. Route every task per
 the fabflows routing table; a spec'd, sizeable change goes to `fabflows:build`, prepared
-and launched per that skill's build-loop section.
+and launched per that skill's build-loop section. A request that arrives without a spec
+goes through `fabflows:brainstorming` first, and the user reads the spec it writes before
+the loop launches.
 
