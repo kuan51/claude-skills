@@ -243,3 +243,36 @@ the browser closed the block there. Fixed in the scratchpad only: regenerated th
 replaced `</script>` with `<\/script>` on the `EMBEDDED_DATA` line. `grep -c '</script>'`
 went from 3 to 2 and the embedded JSON still parses. The generator is the synced skill, not
 this repo, so the post-process is the fix until it escapes the tag itself.
+
+## 2026-09-22 — corrections to the 2026-09-21 ponytail review entry
+
+**CONFIRMED** (correction) — The earlier entry logs "59 lines net removed across four files, 109
+deleted against 50 added, measured with `git diff --stat 332ab25..HEAD`". The numbers are right and
+the command is not: at the time of writing, `HEAD` was `cb7175c`, but once that entry was committed
+the same range also counts its own commit and reports 5 files with 78 insertions and 109 deletions.
+The range that reproduces the logged figures is `git diff --stat 332ab25..cb7175c`, confirmed here
+as `4 files changed, 50 insertions(+), 109 deletions(-)`. The earlier entry is left as written,
+since this log is append-only; this is the correction of record.
+
+**CONFIRMED** (gap the same review opened) — Removing the `|| <generic>` fallback from `escalate()`
+in `c2ab499` left `next: NEXT[reason]` guarded only by `assert.equal(nexts.size, 8)`, a literal that
+derives from nothing in `build.js`. A verification agent proved the gap by patching an in-memory
+copy so a call site used a reason absent from `NEXT`: the loop returned `next: undefined` and the
+suite still passed. The guard now reads the `NEXT` block and the `escalate('...')` literals out of
+`build.js` itself and asserts every called reason has an entry and that the table covers exactly
+those keys. Verified the same way it was found: rewriting `escalate('rework-cap')` to
+`escalate('spec-rejected')` takes `node --test "plugins/fabflows/test/build.test.js"` from 18 pass 0
+fail to 16 pass 2 fail, and restoring the file returns it to 18 pass 0 fail.
+
+**CONFIRMED** (checked, no action) — A verification agent reported as high severity that the four
+review commits changed plugin behaviour without a version bump while 0.3.7 was already published.
+That reading came from the agent running across the merge of pull request #45: the release commit
+and the four cuts landed in that one merge, so the published 0.3.7 has always included them, which
+is the repository's own one-bump-per-pull-request rule working. `master` has since moved to 0.4.1.
+No bump was made for this entry's change either, which touches a test and this log only.
+
+**NOT DONE, with reason** — The same agent noted that the repository reverses an accepted decision
+record by writing a new record carrying `supersedes:`, and that narrowing DEC-0016's args parser was
+recorded only in this log. No superseding record was written: DEC-0016's three decisions all stand,
+and the parser is listed there under consequences rather than as a decision. If that reading is
+wrong, the fix is a new record superseding DEC-0016, not an edit to it.
