@@ -12,7 +12,7 @@ per-plugin history until entries are recorded here going forward.
   spec `fabflows:build` needs. The lead sizes the request (bounded, in chat; or full, with a
   spec written to `docs/specs/`), sends `explorer` and `researcher` for the facts instead of
   asking the user, opens with an assumptions round, then asks rounds of at most three numbered
-  questions each with a recommended answer until nothing is open, states the maximal version
+  questions each with a recommended answer, at most three rounds, states the maximal version
   and cuts it to the smallest shippable slice, and hands off only after the user has read the
   spec. `refuter` gains a spec mode: given a draft instead of a diff, it attacks it across seven
   lenses and blocks the spec on a security gap. DEC-0017 records why the refuter was reused

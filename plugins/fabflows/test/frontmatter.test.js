@@ -189,6 +189,7 @@ test('the brainstorming skill is routed to and only reads', () => {
   }
   // The skill ends at the spec: it never edits, so the build cannot start before the user reads it.
   assert.ok(skill.includes('will not:** write or edit code'), 'brainstorming/SKILL.md must forbid edits');
+  assert.ok(skill.includes('Budget: three rounds'), 'brainstorming/SKILL.md must cap the rounds, or the interview has no end');
   const refuter = fs.readFileSync(path.join(AGENTS_DIR, 'refuter.md'), 'utf8');
   assert.match(refuter, /\*\*Spec mode\.\*\*/, 'refuter.md must carry the spec-mode paragraph the brainstorming skill relies on');
 });

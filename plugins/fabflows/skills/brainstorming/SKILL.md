@@ -28,7 +28,8 @@ the user has read the spec and said so. Brainstorming ends at the spec.
 1. **Never ask what the repository or the web can answer.** Stack, test command, existing
    patterns, library limits: those are worker questions, and asking the user for them is
    how the user stops reading.
-2. **At most three questions per round, each with a recommended answer.** The user should
+2. **At most three questions per round, each with a recommended answer, and at most three
+   rounds.** The user should
    be able to reply "1 yes, 2 no, rest defaults". A dozen questions at once is not
    thoroughness, it is a form.
 3. **No spec without a Check line.** A behaviour nobody can check is not decided.
@@ -51,8 +52,10 @@ A full pass on a bounded change is the main way this skill wastes tokens.
 **Bounded goes straight to the spec.** When the reading confirms every assumption and the
 premise is not in doubt, skip the rounds: print the spec block with each would-be question
 written into Decisions as a default with its reason, so the user vetoes instead of answering.
-Ask only a question whose answer would change the Check line. Full tier keeps the rounds;
-for bounded, the premise check is one Decisions line.
+Ask only a question whose answer would change the Check line. The spec block is the
+checkpoint: nothing in it is decided until the user's reply, and "approve to build?" is that
+reply's question. Full tier keeps the rounds; for bounded, the premise check is one
+Decisions line.
 
 Rationalizations that do not hold:
 
@@ -135,6 +138,10 @@ result.
 
 Done when Open is empty. Nothing is silently assumed: a question you chose not to ask
 becomes a Decided line with its default named, so the user can veto it.
+
+**Budget: three rounds.** If Open is not empty after round three, stop asking: write every
+remaining item into Decided with its recommended answer as the default, mark the block
+`defaults taken`, and go to the cut. The user vetoes in the spec, not in a fourth round.
 
 ## 4. Expand, then cut
 
