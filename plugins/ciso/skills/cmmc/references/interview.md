@@ -74,9 +74,11 @@ answers "met" and the justification describes a plan, a purchase, or a roadmap i
 plan mode was still active.
 
 6. For every requirement processed in this sub-batch, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json cmmc <tier> <controlId> '<jsonPayload>'
    ```
+
    where `<jsonPayload>` is `{"status": "...", "justification": "...", "currentState": "...",
    "estimatedCloseness": "..."}` (only the fields relevant to the status need be non-null).
    `apply-assessment.js` is certification-agnostic core; CMMC uses its flat status path exactly as
@@ -90,17 +92,21 @@ plan mode was still active.
    prefixes (`cmmc-l1-`, `cmmc-l2-`, `cmmc-l3-`) precisely because `3.1.2` names a Level 2
    requirement and `3.1.2e` a Level 3 one.
 7. Regenerate the dashboard now, after this sub-batch, not only once the whole domain finishes:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso-dir>
    ```
+
    One run regenerates both `dashboard.html` (the cross-certification index) and `cert-cmmc.html`.
    This is what bounds the value an interruption can cost.
 8. If requirements remain in the chosen domain, report a brief sub-batch summary, call
    `EnterPlanMode` again, and repeat step 4's loop.
 9. Once every requirement in the domain has been applied, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json cmmc <tier> <domainKey>
    ```
+
    (four arguments, not five: this marks the domain complete in the interview session).
 10. If the completed domain turned up any `gap` or `in_progress` requirements whose `roadmap.status`
     is still `not_started`, offer [Roadmap](roadmap.md): it runs in the background and never blocks

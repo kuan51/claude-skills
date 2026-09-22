@@ -10,7 +10,7 @@ Claude Code, including the CLI, the desktop app, and the web app (claude.ai/code
 
 Add this repo as a marketplace, then install whichever plugins you want:
 
-```
+```text
 /plugin marketplace add kuan51/claude-skills
 /plugin install data-analysis-review
 /plugin install ciso

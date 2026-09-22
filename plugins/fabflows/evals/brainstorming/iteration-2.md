@@ -11,6 +11,7 @@
 | Pass Rate | 83% ± 0% | 83% ± 0% | +0.00 |
 | Time | 60.5s ± 0.0s | 59.9s ± 0.0s | -0.6s |
 | Tokens | 67184 ± 0 | 64856 ± 0 | -2328 |
+
 ## What changed
 
 The bounded tier now prints the spec block at once when the reading confirms every

@@ -44,7 +44,7 @@ be a valid version string, otherwise `TypeError`.
 
 ### Grammar
 
-```
+```text
 range      := set ( "||" set )*             alternatives are ORed
 set        := "" | "*" | hyphen | comparator ( " " comparator )*     comparators are ANDed
 comparator := ( "=" | "<" | "<=" | ">" | ">=" | "~" | "^" )? partial
@@ -97,7 +97,7 @@ without a prerelease are unaffected. Each `||` alternative is judged on its own.
 
 `resolve(manifest, registry)` takes
 
-```
+```text
 manifest := { name: string, version: string, dependencies?: { [name]: range } }
 registry := { [name]: { [version]: { dependencies?: { [name]: range } } } }
 ```
@@ -140,7 +140,7 @@ name for the whole graph). The result must satisfy:
 
 The lockfile has exactly this shape:
 
-```
+```json
 {
   "lockfileVersion": 1,
   "root": { "name": <manifest.name>, "version": <manifest.version>,
@@ -175,7 +175,7 @@ Exit codes, the same for every subcommand:
 - `1`: usage or input error: missing or unknown subcommand, missing arguments, an unreadable
   file, invalid JSON, or an invalid version or range. A message goes to stderr.
 - `2`: valid input with a negative outcome: `resolve` hit a `ResolutionError`, or `check` printed
-  `false`. For `resolve`, stderr carries a line starting with `error: ` followed by the message.
+  `false`. For `resolve`, stderr carries a line starting with `error:` followed by the message.
 
 ## 5. Tests
 

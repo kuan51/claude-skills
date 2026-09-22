@@ -27,20 +27,26 @@ Resumable, chunked by `domainKey` (the criteria family: `CC1`-`CC9`, `A1`, `C1`,
 **First, drain any finished background roadmap**: see [Roadmap](roadmap.md) step 3. Never while plan mode was still active.
 
 6. For every criterion processed in this sub-batch, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json soc2 type2 <controlId> '<jsonPayload>'
    ```
+
    where `<jsonPayload>` is `{"status": "...", "justification": "...", "currentState": "...", "estimatedCloseness": "..."}` (only the fields relevant to the status need be non-null). `apply-assessment.js` is certification-agnostic core. It lives under `skills/hitrust/lib/` for historical reasons only, and SOC 2 uses its flat status path exactly as e1/i1 do; never pass a `dimension` field, which is HITRUST r2's PRISMA maturity model and does not apply here. This is the mechanical backstop, not just prose: it throws and doesn't make any changes if `status` is `"met"` without a justification, or `"in_progress"` without both `currentState` and `estimatedCloseness`.
 7. Regenerate the dashboard now, after this sub-batch, not only once the whole family finishes:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/_shared/render-dashboard.js" <docs/ciso-dir>
    ```
+
    One run regenerates both `dashboard.html` (the cross-certification index) and `cert-soc2.html`. This is what bounds the value an interruption can cost.
 8. If criteria remain in the chosen family, report a brief sub-batch summary, call `EnterPlanMode` again, and repeat step 4's loop.
 9. Once every criterion in the family has been applied, run:
-   ```
+
+   ```bash
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json soc2 type2 <domainKey>
    ```
+
    (four arguments, not five -- this marks the family complete in the interview session).
 10. If the completed family turned up any `gap` or `in_progress` criteria whose `roadmap.status` is still `not_started`, offer [Roadmap](roadmap.md): it runs in the background and never blocks the next family.
 

@@ -274,7 +274,14 @@ test('every escalation carries status, baseRef, the last verdict, and what to do
     assert.ok(typeof result.next === 'string' && result.next.trim().length > 20, `${reason} must carry an actionable next`);
     nexts.set(reason, result.next);
   }
-  assert.equal(nexts.size, 8, 'every escalation reason must appear in this table');
+  // Derived from build.js, not a literal count: escalate() has no fallback, so a reason added
+  // there without a NEXT entry would hand the lead `next: undefined` silently.
+  const block = (source.match(/const NEXT = \{[\s\S]*?^\}/m) || [''])[0];
+  const keys = [...block.matchAll(/^  '?([a-z-]+)'?:/gm)].map((m) => m[1]);
+  for (const reason of new Set([...source.matchAll(/escalate\('([a-z-]+)'\)/g)].map((m) => m[1]))) {
+    assert.ok(keys.includes(reason), `escalate('${reason}') has no NEXT entry, so next would be undefined`);
+  }
+  assert.deepEqual([...nexts.keys()].sort(), [...keys].sort(), 'this table must cover exactly the NEXT keys');
   assert.equal(new Set(nexts.values()).size, nexts.size, 'each reason needs its own next action, not one generic line');
 });
 

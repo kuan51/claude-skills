@@ -6,6 +6,10 @@ Why this repository is the way it is. Newest first.
 
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
+| [DEC-0021](decisions/DEC-0021-a-regulation-that-incorporates-a-standard-by-reference-binds.md) | A regulation that incorporates a standard by reference binds the cited edition | proposed | 2026-09-22 | - | - |
+| [DEC-0020](decisions/DEC-0020-commit-the-ciso-interview-in-4-6-control-sub-batches-instead.md) | Commit the ciso interview in 4-6 control sub-batches instead of whole domains | proposed | 2026-09-22 | - | - |
+| [DEC-0019](decisions/DEC-0019-vendor-research-receives-a-control-s-subject-fields-only-nev.md) | Vendor research receives a control's subject fields only, never posture prose | proposed | 2026-09-22 | - | - |
+| [DEC-0018](decisions/DEC-0018-enforce-data-analysis-review-s-non-mutation-guarantee-twice.md) | Enforce data-analysis-review's non-mutation guarantee twice: sandbox copy plus workflow path assertion | proposed | 2026-09-22 | - | - |
 | [DEC-0017](decisions/DEC-0017-add-a-brainstorming-skill-to-fabflows-and-reuse-the-refuter.md) | Add a brainstorming skill to fabflows and reuse the refuter for design review | proposed | 2026-09-22 | - | - |
 | [DEC-0016](decisions/DEC-0016-harden-the-fabflows-build-loop-denial-classification-reviewe.md) | Harden the fabflows build loop: denial classification, reviewer model, and escalation guidance | accepted | 2026-09-21 | - | - |
 | [DEC-0015](decisions/DEC-0015-adopt-the-narrowed-trimmed-fabflows-skill.md) | Adopt the narrowed trimmed fabflows skill | accepted | 2026-09-19 | - | - |

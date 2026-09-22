@@ -105,7 +105,7 @@ round, not this one.
 
 Format:
 
-```
+```text
 **Q1. <title>**: <question, with choices where they exist>
 → Recommended: <answer>. <one line of why>
 
@@ -118,7 +118,7 @@ A "no" ends the skill with one paragraph saying why, and that is a good outcome.
 
 End every round with the only state the lead keeps:
 
-```
+```text
 Decided: <item> (<reason>) ...
 Open: <item> ...
 Deferred: <item> ...
@@ -167,7 +167,7 @@ and why.
 
 ## 6. Spec and handoff
 
-```
+```markdown
 # <title>
 
 ## Behaviour

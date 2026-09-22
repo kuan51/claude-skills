@@ -67,6 +67,21 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **docs-warden 0.4.2** -- the concept extractor reads tracked files when the repository is a
+  git checkout, so untracked worktrees and scratch under `.claude/` no longer leak into
+  `docs/architecture/domain-model.md` and trip the `ontology` check.
+- **lint** -- markdownlint ignores session scratch, other checkouts' worktrees, accepted
+  decision records and the append-only run logs, and no longer enforces ordered-list
+  numbering (a "Part 2" that continues at step 6 is valid and the prose cross-references
+  depend on it). Every fence in plugin docs now names its language, and the remaining
+  structural findings are fixed, so the audit's blocking lint tool runs clean.
+
+- **docs** -- retired `docs/superpowers/` (nine specs and seven plans from the previous
+  toolchain, all of whose work had shipped). Four fabflows-format specs under `docs/specs/`
+  now record the shipped behaviour of data-analysis-review, the ciso HITRUST module,
+  ciso sync-tasks and ciso CMMC, and DEC-0018 to DEC-0021 record the hard-to-reverse
+  decisions those documents carried. Code comments that cited the old paths point at the
+  new specs.
 - **fabflows 0.3.5** -- the lead's verification gate reads the diff instead of every
   changed file and caps command output to its tail, and the build loop's report schema
   and review brief ask for summaries and failing lines rather than whole logs, matching
