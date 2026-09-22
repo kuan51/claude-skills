@@ -13,8 +13,9 @@ const { parseTranscript, computeMetrics, summarizeProbe } = require('../evals/ha
 const EVALS = path.join(__dirname, '..', 'evals');
 const FIXTURE = path.join(__dirname, 'fixtures', 'transcript-sample.jsonl');
 const DEP_RESOLVER = path.join(EVALS, 'fixtures', 'dep-resolver');
+const OUTDATED = path.join(EVALS, 'fixtures', 'lockstep-outdated');
 
-test('tasks.json is well formed: unique ids, both arms, a prompt and a grade kind per task', () => {
+test('tasks.json is well formed: unique ids, both arms or per-task arms, a prompt and a grade kind per task', () => {
   const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
   assert.deepEqual(Object.keys(cfg.arms).sort(), ['with_skill', 'without_skill']);
   assert.ok(cfg.arms.with_skill.pluginDir, 'with_skill must name the plugin directory to load');
@@ -40,6 +41,12 @@ test('tasks.json is well formed: unique ids, both arms, a prompt and a grade kin
       }
     }
     for (const [k, v] of Object.entries(t.caps || {})) assert.ok(typeof v === 'number' && v > 0, `task ${t.id} cap ${k} must be a positive number`);
+    // A task's own arms replace the global pair; each one names its tools to remove as a list.
+    for (const [name, arm] of Object.entries(t.arms || {})) {
+      assert.equal(typeof arm.promptPrefix, 'string', `task ${t.id} arm ${name} needs a promptPrefix`);
+      if (arm.disallowedTools) assert.ok(Array.isArray(arm.disallowedTools) && arm.disallowedTools.every((x) => typeof x === 'string'), `task ${t.id} arm ${name} disallowedTools must be a list of tool names`);
+    }
+    if (t.repeats !== undefined) assert.ok(Number.isInteger(t.repeats) && t.repeats > 0, `task ${t.id} repeats must be a positive integer`);
   }
 });
 
@@ -56,6 +63,57 @@ test('the hidden acceptance suite passes against the reference implementation', 
     encoding: 'utf8',
   });
   assert.equal(r.status, 0, `hidden suite failed against the reference:\n${(r.stdout || '').slice(-2000)}\n${(r.stderr || '').slice(-2000)}`);
+});
+
+// Runs a hidden suite against a project root and returns node's exit status and the names of
+// the failing tests, read from the TAP reporter.
+// NODE_TEST_CONTEXT is dropped so the child reports as a standalone run, not to this runner.
+function runHidden(hiddenDir, rootDir) {
+  const files = fs.readdirSync(hiddenDir).filter((f) => f.endsWith('.test.js'));
+  assert.ok(files.length > 0, 'the hidden suite has no test files');
+  const env = { ...process.env, LOCKSTEP_ROOT: rootDir };
+  delete env.NODE_TEST_CONTEXT;
+  const r = spawnSync(process.execPath, ['--test', '--test-reporter=tap', ...files], {
+    cwd: hiddenDir,
+    env,
+    timeout: 120000,
+    encoding: 'utf8',
+  });
+  const failed = [...(r.stdout || '').matchAll(/^not ok \d+ - (.+?)(?: # .*)?$/gm)].map((m) => m[1]).filter((n) => !files.includes(n));
+  return { status: r.status, failed, out: `${(r.stdout || '').slice(-2000)}\n${(r.stderr || '').slice(-2000)}` };
+}
+
+test('the review-catch hidden suite passes against its solution', () => {
+  const r = runHidden(path.join(OUTDATED, 'hidden'), path.join(OUTDATED, 'solution'));
+  assert.equal(r.status, 0, `hidden suite failed against the solution:\n${r.out}`);
+});
+
+test('the review-catch fixture, defect in place, fails only the caret-on-zero tests', () => {
+  // `outdated` is absent from the fixture, so its tests fail too; everything else must pass,
+  // or the planted defect is not the only thing wrong with the baseline.
+  const r = runHidden(path.join(OUTDATED, 'hidden'), path.join(OUTDATED, 'visible'));
+  assert.notEqual(r.status, 0);
+  assert.ok(r.failed.includes("caret-on-zero: satisfies('0.3.0', '^0.2.3') is false"), `the satisfies case must fail on the fixture:\n${r.out}`);
+  const other = r.failed.filter((n) => !n.startsWith('outdated:') && !n.startsWith('caret-on-zero:'));
+  assert.deepEqual(other, [], 'no other hidden test may fail on the fixture');
+});
+
+test('cells interleave by repeat then arm, and a task sets its own repeats unless --repeats is given', () => {
+  const { buildCells } = require('../evals/harness/run.js');
+  const labels = buildCells({ tasks: [8], arms: null, repeats: null }).map((c) => `${c.arm}-${c.run}`);
+  assert.deepEqual(labels, ['inline-1', 'delegate-1', 'loop-1', 'inline-2', 'delegate-2', 'loop-2', 'inline-3', 'delegate-3', 'loop-3']);
+  assert.equal(buildCells({ tasks: [8], arms: null, repeats: 1 }).length, 3, 'the flag overrides the task');
+  assert.equal(buildCells({ tasks: [7], arms: null, repeats: null }).length, 4, 'a task without repeats falls back to 2');
+});
+
+test("an arm's disallowedTools reach the claude argument list", () => {
+  const { buildCells, claudeArgs } = require('../evals/harness/run.js');
+  const a = { tasks: [8], arms: null, repeats: 1, model: 'fable', effort: 'medium', stagedPluginDir: '/staged' };
+  const byArm = Object.fromEntries(buildCells(a).map((c) => {
+    const args = claudeArgs(a, c, '/run', '/settings.json');
+    return [c.arm, args[args.indexOf('--disallowedTools') + 1]];
+  }));
+  assert.deepEqual(byArm, { inline: 'PowerShell,Agent,Workflow', delegate: 'PowerShell,Workflow', loop: 'PowerShell' });
 });
 
 test('the visible fixture carries no benchmark context', () => {

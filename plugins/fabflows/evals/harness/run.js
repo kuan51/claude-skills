@@ -28,12 +28,12 @@ function parseArgs(argv) {
   const s = { type: 'string' };
   const { values: v } = parseArgv({ args: argv, strict: true, options: {
     confirm: { type: 'boolean', default: false }, regrade: { type: 'boolean', default: false },
-    iteration: { ...s, default: '1' }, repeats: { ...s, default: '2' }, parallel: { ...s, default: '1' },
+    iteration: { ...s, default: '1' }, repeats: s, parallel: { ...s, default: '1' },
     tasks: s, arms: s, 'plugin-dir': s, model: { ...s, default: CONFIG.lead.model }, effort: { ...s, default: CONFIG.lead.effort },
   } });
   return {
     confirm: v.confirm, regrade: v.regrade, model: v.model, effort: v.effort,
-    iteration: Number(v.iteration), repeats: Number(v.repeats), parallel: Number(v.parallel),
+    iteration: Number(v.iteration), repeats: v.repeats ? Number(v.repeats) : null, parallel: Number(v.parallel),
     tasks: v.tasks ? v.tasks.split(',').map(Number) : null, arms: v.arms ? v.arms.split(',') : null,
     pluginDir: v['plugin-dir'] ? path.resolve(v['plugin-dir']) : null,
   };
@@ -60,11 +60,20 @@ function capsFor(task) {
   return { ...CONFIG.caps, ...(task.caps || {}) };
 }
 
+// A task's own `arms` replace the global set for that task.
+const armsFor = (task) => task.arms || CONFIG.arms;
+
+// Interleaved by repeat, then arm (inline-1 delegate-1 loop-1 inline-2 ...), so drift over a
+// long run (rate limits, model load) falls on every arm alike. --repeats overrides the task's
+// own `repeats`; 2 is the fallback.
 function buildCells(a) {
   const tasks = CONFIG.tasks.filter((t) => !a.tasks || a.tasks.includes(t.id));
-  const arms = Object.keys(CONFIG.arms).filter((x) => !a.arms || a.arms.includes(x));
   const cells = [];
-  for (const task of tasks) for (const arm of arms) for (let run = 1; run <= a.repeats; run++) cells.push({ task, arm, run });
+  for (const task of tasks) {
+    const arms = Object.keys(armsFor(task)).filter((x) => !a.arms || a.arms.includes(x));
+    const repeats = a.repeats || task.repeats || 2;
+    for (let run = 1; run <= repeats; run++) for (const arm of arms) cells.push({ task, arm, run });
+  }
   return cells;
 }
 
@@ -83,7 +92,7 @@ function fixtureDirFor(a, cell) {
 }
 
 function claudeArgs(a, cell, runDir, settingsPath) {
-  const armCfg = CONFIG.arms[cell.arm];
+  const armCfg = armsFor(cell.task)[cell.arm];
   const caps = capsFor(cell.task);
   const prompt = `${armCfg.promptPrefix || ''}${cell.task.prompt}`;
   const args = [
@@ -97,7 +106,8 @@ function claudeArgs(a, cell, runDir, settingsPath) {
     // Workflow is offered to both arms so the tool surface is equal; a bare lead has no reason
     // to use it, the fabflows arm is expected to launch fabflows:build on the spec'd task.
     '--allowedTools', 'Read,Edit,Write,Grep,Glob,Bash,Agent,Skill,Workflow,TaskCreate,TaskGet,TaskList,TaskUpdate,TaskOutput,TaskStop,NotebookEdit',
-    '--disallowedTools', 'PowerShell',
+    // An arm's disallowedTools remove the tool from the session, so it is absent, not denied.
+    '--disallowedTools', ['PowerShell', ...(armCfg.disallowedTools || [])].join(','),
     // 'project' is needed for the fixture's CLAUDE.md (the environment note) to load at all;
     // 'user' alone drops it. The repo tracks no .claude/ settings, so nothing else comes in.
     '--setting-sources', 'user,project',
@@ -143,6 +153,7 @@ const ENV_NOTE = [
   'changed from inside this session, so if a command is denied, rewrite it without the `cd` and',
   'run it again rather than editing settings. Use the Bash tool for shell commands, never the',
   'PowerShell tool.',
+  'Add no project documentation beyond what `SPEC.md` asks for.',
   '',
 ].join('\n');
 
@@ -284,7 +295,9 @@ function measureAndGrade(a, cell, runDir, fixture) {
   timing.total_duration_seconds = Number((timing.duration_ms / 1000).toFixed(1));
   writeJson(timingPath, timing);
 
-  const grading = grade({ task: cell.task, fixture, metrics, timing, maxTurns: capsFor(cell.task).maxTurns });
+  // An arm may add grade options (task 8's loop arm sets requireReview).
+  const task = { ...cell.task, grade: { ...cell.task.grade, ...(armsFor(cell.task)[cell.arm].grade || {}) } };
+  const grading = grade({ task, fixture, metrics, timing, maxTurns: capsFor(cell.task).maxTurns, workflowDir });
   writeJson(path.join(runDir, 'grading.json'), grading);
   const slim = { ...metrics, result: { ...metrics.result } };
   delete slim.result.result_text;
@@ -362,7 +375,7 @@ async function main() {
   const cells = buildCells(a);
   const iterDir = path.join(EVALS, 'runs', `iteration-${a.iteration}`);
   console.log(`fabflows benchmark, iteration ${a.iteration}: ${cells.length} runs`);
-  console.log(`  lead ${a.model} @ ${a.effort}; arms: ${[...new Set(cells.map((c) => c.arm))].join(', ')}; repeats: ${a.repeats}`);
+  console.log(`  lead ${a.model} @ ${a.effort}; arms: ${[...new Set(cells.map((c) => c.arm))].join(', ')}; repeats: ${a.repeats || 'per task'}`);
   for (const task of new Set(cells.map((c) => c.task))) {
     const caps = capsFor(task);
     console.log(`  task ${task.id} ${task.name}: caps ${caps.maxTurns} turns, $${caps.maxBudgetUsd} list-price per run, ${caps.runTimeoutMinutes} min`);
@@ -376,7 +389,7 @@ async function main() {
   const settingsPath = path.join(iterDir, 'settings.json');
   writeJson(settingsPath, cleanRoomSettings());
   // Staged once per invocation, and not on --regrade: that copy records what the runs loaded.
-  const pluginArm = cells.map((c) => CONFIG.arms[c.arm]).find((x) => x.pluginDir);
+  const pluginArm = cells.map((c) => armsFor(c.task)[c.arm]).find((x) => x.pluginDir);
   if (pluginArm && !a.regrade) a.stagedPluginDir = stagePlugin(a.pluginDir || path.join(REPO, pluginArm.pluginDir), path.join(iterDir, 'plugin'));
 
   await pool(cells, a.parallel, async (cell) => {
@@ -391,7 +404,7 @@ async function main() {
   spawnSync(process.execPath, [path.join(HARNESS, 'summarize.js'), iterDir], { stdio: 'inherit' });
 }
 
-module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin };
+module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, buildCells, claudeArgs };
 
 if (require.main === module) {
   main().catch((e) => {

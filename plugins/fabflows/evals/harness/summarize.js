@@ -21,7 +21,7 @@ for (const evalDir of fs.readdirSync(iterDir).filter((d) => d.startsWith('eval-'
       const events = fs.readFileSync(path.join(dir, 'transcript.jsonl'), 'utf8').split(/\r?\n/).filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return {}; } });
       const first = events.find((e) => e.type === 'assistant' && !e.parent_tool_use_id);
       const fu = (first && first.message.usage) || {};
-      const substantive = g.expectations.filter((e) => e.text !== 'No tool call was denied');
+      const substantive = g.expectations.filter((e) => e.text !== 'No tool call was denied' && !e.informational);
       const wb = m.workersByModel || {};
       rows.push({
         task, arm, run,
@@ -66,7 +66,7 @@ for (const task of tasks) for (const arm of arms) {
   if (rs.length) table.push({ task, arm, n: rs.length, ...Object.fromEntries(cols.map(([k, h, f]) => [h, f(mean(rs.map((r) => r[k])))])) });
 }
 console.table(table);
-console.log('\nworkers spawned (with_skill):');
-for (const r of rows.filter((r) => r.arm === 'with_skill')) console.log(`  ${r.task}/${r.run}: ${JSON.stringify(r.workers)}  lead tools ${JSON.stringify(r.tools)}`);
-console.log('\nlead tools (without_skill):');
-for (const r of rows.filter((r) => r.arm === 'without_skill')) console.log(`  ${r.task}/${r.run}: ${JSON.stringify(r.tools)}`);
+for (const arm of arms) {
+  console.log(`\nworkers spawned and lead tools (${arm}):`);
+  for (const r of rows.filter((r) => r.arm === arm)) console.log(`  ${r.task}/${r.run}: ${JSON.stringify(r.workers)}  lead tools ${JSON.stringify(r.tools)}`);
+}

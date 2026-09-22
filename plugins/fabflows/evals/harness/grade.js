@@ -312,7 +312,7 @@ function gradeDigest(exp, fixture, resultText) {
 // makes node print one column-0 `ok`/`not ok` per test. A project that fails to load instead
 // yields one file-level `not ok <file>` per test file; those are set aside so a broken project
 // reads as "could not run" rather than as N named failures.
-function gradeHiddenTests(exp, spec, fixture, metrics) {
+function gradeHiddenTests(exp, spec, fixture, metrics, workflowDir) {
   // Status is read before anything runs in the fixture, so a test that writes a scratch file
   // cannot dirty the tree the lead left.
   const status = gitStatus(fixture);
@@ -364,6 +364,36 @@ function gradeHiddenTests(exp, spec, fixture, metrics) {
     passed: workflows.every((w) => w.completed),
     evidence: workflows.length ? workflows.map((w) => `${w.name}: ${w.completed ? 'completed' : 'unfinished'}`).join('; ') : 'no workflow launched',
   });
+
+  if (spec.requireReview) {
+    const types = workflows.flatMap((w) => (w.agents || []).map((a) => a.agentType));
+    exp.push({
+      text: 'A review round ran inside a workflow',
+      passed: types.includes('fabflows:refuter'),
+      evidence: types.length ? `workflow agents: ${types.join(', ')}` : 'no workflow agent',
+    });
+    // Verdicts come from the copied journals' result rows; REWORK on any round counts.
+    const verdicts = [];
+    const dirs = workflowDir && fs.existsSync(workflowDir) ? fs.readdirSync(workflowDir) : [];
+    for (const d of dirs) {
+      const journal = path.join(workflowDir, d, 'journal.jsonl');
+      if (!fs.existsSync(journal)) continue;
+      for (const line of fs.readFileSync(journal, 'utf8').split(/\r?\n/)) {
+        try {
+          const row = JSON.parse(line);
+          if (row.type === 'result' && row.result && row.result.verdict) verdicts.push(row.result.verdict);
+        } catch {
+          // A blank or truncated line carries no verdict.
+        }
+      }
+    }
+    exp.push({
+      text: 'The review returned REWORK on any round',
+      informational: true,
+      passed: verdicts.includes('REWORK'),
+      evidence: verdicts.length ? `verdicts: ${verdicts.join(', ')}` : 'no review verdict in any journal',
+    });
+  }
 
   const hiddenDir = path.resolve(__dirname, '..', spec.hidden);
   const files = fs.readdirSync(hiddenDir).filter((f) => f.endsWith('.test.js')).sort();
@@ -418,7 +448,7 @@ function gradeHiddenTests(exp, spec, fixture, metrics) {
   });
 }
 
-function grade({ task, fixture, metrics, timing, maxTurns }) {
+function grade({ task, fixture, metrics, timing, maxTurns, workflowDir }) {
   const exp = [];
   const r = metrics.result || {};
   exp.push({
@@ -443,10 +473,12 @@ function grade({ task, fixture, metrics, timing, maxTurns }) {
   else if (spec.kind === 'new-tests') gradeNewTests(exp, spec, fixture);
   else if (spec.kind === 'test-triage') gradeTriage(exp, spec, fixture, r.result_text || '');
   else if (spec.kind === 'decision-digest') gradeDigest(exp, fixture, r.result_text || '');
-  else if (spec.kind === 'hidden-tests') gradeHiddenTests(exp, spec, fixture, metrics);
+  else if (spec.kind === 'hidden-tests') gradeHiddenTests(exp, spec, fixture, metrics, workflowDir);
   else throw new Error(`unknown grade kind ${spec.kind}`);
 
-  const passed = exp.filter((e) => e.passed).length;
+  // Informational expectations are reported but never scored.
+  const scored = exp.filter((e) => !e.informational);
+  const passed = scored.filter((e) => e.passed).length;
   const workerSpawns = Object.entries(metrics.workers || {}).map(([k, v]) => `${k} x${v.spawns} (${v.model})`);
   const leadOut = metrics.lead.output || 0;
   const totalOut = metrics.totals.output || 0;
@@ -455,7 +487,7 @@ function grade({ task, fixture, metrics, timing, maxTurns }) {
 
   return {
     expectations: exp,
-    summary: { passed, failed: exp.length - passed, total: exp.length, pass_rate: exp.length ? Number((passed / exp.length).toFixed(4)) : 0 },
+    summary: { passed, failed: scored.length - passed, total: scored.length, pass_rate: scored.length ? Number((passed / scored.length).toFixed(4)) : 0 },
     execution_metrics: {
       total_tool_calls:
         Object.values(metrics.lead.toolCalls || {}).reduce((a, b) => a + b, 0) +
