@@ -243,3 +243,16 @@ the browser closed the block there. Fixed in the scratchpad only: regenerated th
 replaced `</script>` with `<\/script>` on the `EMBEDDED_DATA` line. `grep -c '</script>'`
 went from 3 to 2 and the embedded JSON still parses. The generator is the synced skill, not
 this repo, so the post-process is the fix until it escapes the tag itself.
+
+**INTENT** (guard runner-redirect bypass) — Reproduce the `/code-review` finding that
+`guard.js` scans only the text before the first runner-file redirect, so a payload behind a
+second `>> Makefile` is never checked, before fixing it.
+
+**CONFIRMED** — Piped `{"tool_name":"Bash","tool_input":{"command":"echo ok > Makefile &&
+printf 'all:\n\trm -rf ~' >> Makefile"}}` into `node hooks/guard.js` on `skill/fabflows-brainstorming`:
+empty stdout, exit 0, so the append was allowed. After the fix (scan the whole command once any
+runner redirect is present) the same payload returns a deny naming `rm -rf ~` and `Makefile`.
+`node --test plugins/fabflows/test/*.test.js test/*.test.js` 52 pass, 0 fail, on every commit of
+`claude/blissful-turing-jqsa4i`. The ponytail pass applied on the same branch left one finding
+unapplied: the `FABFLOWS_PROBE` block stays in `guard.js`, since the harness reads it and a
+wrapper would not be shorter.
