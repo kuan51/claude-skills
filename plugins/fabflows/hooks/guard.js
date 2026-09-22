@@ -28,6 +28,9 @@ const { execFileSync } = require('node:child_process');
 // table passes on all three platforms.
 const norm = (p) => path.resolve(p).replace(/\\/g, '/').toLowerCase();
 const under = (p, base) => p === base || p.startsWith(base + '/');
+// One home expansion and one unquote for every site that takes a path from a shell string.
+const expandHome = (p) => p.replace(/^~(?=[\\/]|$)/, os.homedir());
+const unquote = (s) => s.replace(/^(["'])(.*)\1$/, '$2');
 
 // ---------------------------------------------------------------- decisions
 function deny(reason) {
@@ -76,7 +79,6 @@ const INSTALL = [
 // path (no `$`, backtick or `%`), and never live config, which the scratchpad name alone
 // cannot rule out.
 const PIP = /^(?:pip3?|python3?\s+-m\s+pip)\s+install\s+(.*)$/i;
-const unquote = (s) => s.replace(/^(["'])(.*)\1$/, '$2');
 function isScratchPypdf(seg, cwd) {
   const m = PIP.exec(seg);
   if (!m) return false;
@@ -92,7 +94,7 @@ function isScratchPypdf(seg, cwd) {
     else if (!/^(-q|--quiet)$/i.test(a)) return false;
   }
   if (!pkg || !isolated || !target || /[$`%]/.test(target)) return false;
-  const t = norm(path.resolve(cwd, target.replace(/^~(?=[\\/]|$)/, os.homedir())));
+  const t = norm(path.resolve(cwd, expandHome(target)));
   return /(^|\/)scratchpad(\/|$)/.test(t) && !isProtectedPath(t);
 }
 
@@ -199,7 +201,7 @@ const PROTECTED_ROOTS = ['settings.json', 'settings.local.json', 'hooks', 'plugi
 
 function isProtectedPath(p) {
   if (!p) return false;
-  const n = norm(p.replace(/^~(?=[\\/])/, os.homedir()));
+  const n = norm(expandHome(p));
   if (/(^|\/)\.git\/hooks(\/|$)/.test(n)) return true;
   return PROTECTED_ROOTS.some((root) => under(n, root));
 }
@@ -320,8 +322,7 @@ function checkShell(command, cwd) {
   for (const seg of segments) {
     const cd = /^cd\s+(.+)$/.exec(seg);
     if (cd) {
-      const arg = cd[1].trim().replace(/^(["'])(.*)\1$/, '$2');
-      effCwd = path.resolve(effCwd, arg.replace(/^~(?=\/|$)/, os.homedir()));
+      effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
     }
 
     for (const re of INSTALL) {
