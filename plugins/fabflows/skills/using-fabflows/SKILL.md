@@ -1,6 +1,6 @@
 ---
 name: using-fabflows
-description: The single entrypoint for a fabflows session. Invoke it at the start of every conversation to put the session on fabflows discipline: the routing table, the delegation brief, the report contract and the verification gate load from the fabflows skill, and the lead prepares and launches fabflows:build itself for any spec-able change instead of asking for opt-in again. Triggers on "using fabflows", "start fabflows", "fabflows session", "/using-fabflows".
+description: 'The single entrypoint for a fabflows session. Invoke it at the start of every conversation to put the session on fabflows discipline: the routing table, the delegation brief, the report contract and the verification gate load from the fabflows skill, and the lead prepares and launches fabflows:build itself for any spec-able change instead of asking for opt-in again. Triggers on "using fabflows", "start fabflows", "fabflows session", "/using-fabflows".'
 ---
 
 # Using fabflows
@@ -21,4 +21,3 @@ the fabflows routing table; a spec'd, sizeable change goes to `fabflows:build`, 
 and launched per that skill's build-loop section. A request that arrives without a spec
 goes through `fabflows:brainstorming` first, and the user reads the spec it writes before
 the loop launches.
-
