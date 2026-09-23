@@ -1,0 +1,63 @@
+[
+ {
+  "task": "build-component",
+  "arm": "with_skill",
+  "run": "run-1",
+  "quality": 1,
+  "denials": 0,
+  "turns": 12,
+  "lead_out": 5969,
+  "lead_think": 660,
+  "lead_msgs": 10,
+  "lead_cache_read": 479434,
+  "lead_cache_write": 34831,
+  "first_ctx": 39728,
+  "final_ctx": 62201,
+  "worker_out": 65974,
+  "worker_in": 1128163,
+  "workers": {
+   "fabflows:editor": 1,
+   "fabflows:refuter": 1
+  },
+  "cost": 3.1929373000000005,
+  "sec": 676.037,
+  "verification_runs": 1,
+  "hook_payloads": 51,
+  "tools": {
+   "Skill": 2,
+   "Bash": 5,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "build-component",
+  "arm": "with_skill",
+  "run": "run-2",
+  "quality": 0.9795918367346939,
+  "denials": 0,
+  "turns": 11,
+  "lead_out": 1612,
+  "lead_think": 104,
+  "lead_msgs": 7,
+  "lead_cache_read": 295716,
+  "lead_cache_write": 24412,
+  "first_ctx": 39733,
+  "final_ctx": 51782,
+  "worker_out": 60790,
+  "worker_in": 824352,
+  "workers": {
+   "fabflows:editor": 1,
+   "fabflows:refuter": 1
+  },
+  "cost": 2.5813566,
+  "sec": 629.256,
+  "verification_runs": 0,
+  "hook_payloads": 44,
+  "tools": {
+   "Skill": 2,
+   "Bash": 2,
+   "Read": 3,
+   "Workflow": 1
+  }
+ }
+]

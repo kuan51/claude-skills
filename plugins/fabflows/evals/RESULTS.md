@@ -68,6 +68,80 @@ unexercised.
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
 
+## Iteration 10 (2026-09-23): the raised effort pins on the large build
+
+**Bottom line.** Task 7 (the greenfield resolver, 41 hidden tests) with fabflows 0.5.1's pins
+(builder `high`, reviewer `xhigh`) against iteration 6's two runs at `medium`: quality was
+41/41 in both runs, as it was in every earlier run, so the pins had no graded effect. What they
+did change is time. Worker output rose 66%, almost all of it thinking, and the loop's wall clock
+rose from about 410 s to about 650 s. That crossed a limit iteration 6 never met: `claude -p`
+terminates background tasks after 600 s, and run 2's reviewer was killed mid-review with no
+verdict. The builder had already committed, so the grade held; the loop did not finish.
+
+### Setup (confirmed)
+
+Task 7 as in iteration 6, `with_skill` arm only, two repeats concurrent, Fable lead at medium
+effort, caps 200 turns, $60, 120 minutes. Plugin staged at 0.5.1 with the pins named in
+iteration 9. Run in a remote cloud session. Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 7 --arms with_skill --repeats 2 --parallel 2 --confirm
+```
+
+### Observed
+
+| run | hidden | checks | turns | wall s | lead out | build out (think) | review out (think) | verdict | Fable $ | Opus $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 41/41 | 50/50 | 12 | 676 | 5,969 | 37,681 (13,974) | 28,276 (23,861) | ACCEPT, no must-fix | 1.12 | 2.07 | 3.19 |
+| 2 | 41/41 | 49/50 | 11 | 629 | 1,612 | 36,847 (13,379) | 23,935 (22,402) | none: killed at 600 s | 0.64 | 1.94 | 2.58 |
+
+Against iteration 6's `with_skill` runs (41/41 both; $2.97 and $2.87; 419 s and 408 s; worker
+output 38,979 and 36,714; build:1 review:1 ACCEPT both):
+
+| | iteration 6 (medium/medium) | iteration 10 (high/xhigh) | delta |
+| --- | --- | --- | --- |
+| hidden tests | 41/41, 41/41 | 41/41, 41/41 | none |
+| review verdict | ACCEPT, ACCEPT | ACCEPT, killed | one lost review |
+| worker output tokens | 37,847 | 63,370 | +66% |
+| wall clock s | 414 | 653 | +58% |
+| list $ | 2.92 | 2.89 | flat |
+
+List dollars are flat only because run 2's lead never ran its post-accept gate (its Fable spend
+is half of run 1's). Run 1 alone, the one complete loop, cost $3.19 against $2.92, +9%.
+
+### What the runs showed
+
+1. **No graded gain, again (confirmed).** The task was at ceiling before the pins and stays
+   there. Neither reviewer returned REWORK, so the rework path is still unexercised after
+   thirteen loop runs.
+2. **The reviewer's thinking is the cost (confirmed).** Review thinking was 22k to 24k tokens
+   per run at xhigh; its visible output was under 5k. Builder thinking was about 14k at high.
+   Iteration 6 did not split thinking out, but its whole worker output per run was under what
+   this reviewer thinks alone.
+3. **The loop now runs into the CLI's background ceiling (confirmed).** Run 2's `stderr.txt`:
+   "Background tasks still running after 600s; terminating." The review agent's last event is
+   two seconds before the run ended. Iteration 6's loops finished with about three minutes to
+   spare; the pins consumed that margin. The lead had ended its turn to wait for the workflow,
+   so it never ran the gate, and the grader's "every launched workflow finished" row failed.
+4. **Two runs (confirmed).** Direction only.
+
+### What it means
+
+- On the two tasks measured (this one and iteration 9's), the raised pins bought no graded
+  quality and cost 58% to 73% more wall clock. On the large build they also make the loop
+  overrun a headless `claude -p` session's 600 s background limit, which is the harness's own
+  setting (`CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`) and not a limit an interactive session has,
+  but it is the difference between a loop that returns and one that does not.
+- The benchmark cannot show the pins helping until a task produces a REWORK at medium. Until
+  one does, the measured case for `medium` on both workers stands, and the pins are a cost
+  without a measured return.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 7 --arms with_skill --repeats 2 --parallel 2 --confirm
+```
+
 ## Iteration 9 (2026-09-23): the raised effort pins, on the same shipped defect
 
 **Bottom line.** fabflows 0.5.1 (PR #60) pins the build-loop builder at `high` and the refuter
