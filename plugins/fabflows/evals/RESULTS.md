@@ -207,7 +207,7 @@ tool call was denied. Means against iteration 8's loop arm (n=5):
 
 - The two pins cost about $0.25 of Opus and 75 s per loop round on a task this size, and on
   this fixture returned nothing. Whether they pay on a harder build (task 7's 41-test suite,
-  where iteration 5 saw REWORK rounds) is unmeasured, and that arm costs about $4 a run.
+  which has never produced a REWORK either) is unmeasured, and that arm costs about $4 a run.
 - The lever iteration 8 named still stands: brief the refuter to probe an input family the
   spec leaves unstated, or to read the functions the diff newly depends on. Effort alone does
   not make it do either.
