@@ -140,10 +140,12 @@ def test_a_known_archetype_still_demands_its_own_documents():
             f"it-tooling's own document should still be required: {entry['reason']}"
 
 
-def _universal_repo(repo, archetype):
+def _universal_repo(repo, archetype, omit=()):
     """A repo carrying every universal file, so required-files turns on the
     archetype's contribution alone. Derived from UNIVERSAL_FILES rather than
     retyped, so a change to that set cannot quietly make these assert nothing.
+    `omit` names the paths a caller wants absent, so the gap it asserts on is
+    stated rather than created and then deleted.
     """
     common = _table("_common")
     # The default forge's paths too: they left the universal set when forge
@@ -156,6 +158,8 @@ def _universal_repo(repo, archetype):
                 + list(_table("archetypes").ARCHETYPES[archetype]["files"]))
     for rel in expected:
         rel = rel[0] if isinstance(rel, tuple) else rel
+        if rel in omit:
+            continue
         target = repo / rel
         if rel.endswith("/"):
             target.mkdir(parents=True, exist_ok=True)
@@ -176,8 +180,8 @@ def test_an_empty_required_directory_is_not_a_present_document():
     description" -- so the audit answered one question two ways depending on
     which check asked it."""
     with tempfile.TemporaryDirectory() as tmp:
-        repo = _universal_repo(Path(tmp), "firmware")
-        (repo / "docs" / "architecture" / "Default.md").unlink()
+        repo = _universal_repo(Path(tmp), "firmware", omit=("docs/architecture/",))
+        (repo / "docs" / "architecture").mkdir()
         entry = _audit_check(repo, "required-files")
         assert entry["state"] == "fail", \
             f"an empty directory should not satisfy the archetype: {entry}"
@@ -237,10 +241,7 @@ def test_runlog_is_required_only_by_the_operational_archetypes():
     for archetype, state in (("library", "pass"), ("service", "pass"),
                              ("it-tooling", "fail"), ("firmware", "fail")):
         with tempfile.TemporaryDirectory() as tmp:
-            repo = _universal_repo(Path(tmp), archetype)
-            runlog = repo / "docs" / "RUNLOG.md"
-            if runlog.exists():
-                runlog.unlink()
+            repo = _universal_repo(Path(tmp), archetype, omit=("docs/RUNLOG.md",))
             entry = _audit_check(repo, "required-files")
             assert entry["state"] == state, (archetype, entry)
             if state == "fail":
@@ -516,8 +517,7 @@ def test_a_waiver_keeps_the_finding_visible_and_is_not_a_pass():
     visible: waived is its own state, never pass, and the reason the check gave
     is kept alongside the excuse."""
     with tempfile.TemporaryDirectory() as tmp:
-        repo = _universal_repo(Path(tmp), "it-tooling")
-        (repo / "docs" / "runbook.md").unlink()
+        repo = _universal_repo(Path(tmp), "it-tooling", omit=("docs/runbook.md",))
         (repo / ".docs-warden.yml").write_text(
             "archetype: it-tooling" + NL + "waivers:" + NL
             + '  required-files: "runbook lives in the ops wiki"' + NL,

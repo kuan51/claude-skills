@@ -31,7 +31,7 @@ from _common import (
     read_front_matter,
     review_date,
 )
-from archetypes import ARCHETYPES
+from archetypes import ARCHETYPES, required_files
 
 RUNLOG_ROTATE_LINES = 500
 RUNLOG_ENTRY_MAX_LINES = 12
@@ -64,20 +64,20 @@ def runlog_shape_warnings(text: str):
         while lines and not lines[-1].strip():
             lines.pop()
         where = f"{RUNLOG}: entry '{heading}'"
-        outcome = next((i for i, l in enumerate(lines)
-                        if RUNLOG_OUTCOME_RE.match(l)), None)
+        outcome = next(((i, m) for i, l in enumerate(lines)
+                        if (m := RUNLOG_OUTCOME_RE.match(l))), None)
         if outcome is None:
             warnings.append(f"{where} has no CONFIRMED, FAILED or SKIPPED line")
         else:
-            block = [lines[outcome]]
-            for line in lines[outcome + 1:]:
+            i, match = outcome
+            block = [lines[i]]
+            for line in lines[i + 1:]:
                 if not line[:1].isspace() or not line.strip():
                     break
                 block.append(line)
             if not any(BACKTICK_SPAN_RE.search(l) for l in block):
-                warnings.append(
-                    f"{where}: its {RUNLOG_OUTCOME_RE.match(lines[outcome]).group(2)} "
-                    f"line names no command or check in backticks")
+                warnings.append(f"{where}: its {match.group(2)} line names "
+                                f"no command or check in backticks")
         if len(lines) > RUNLOG_ENTRY_MAX_LINES:
             warnings.append(f"{where} is {len(lines)} lines, over the "
                             f"{RUNLOG_ENTRY_MAX_LINES} line limit")
@@ -149,30 +149,29 @@ def main() -> int:
                 warnings.append(f"{rel}: references `{ref}`, which changed {days} day(s) later")
 
     runlog = repo / RUNLOG
-    # Required only where the archetype's files or the manifest's extra_files
-    # name it -- the same inputs audit.py's required-files reads, so the two
-    # cannot disagree. No manifest or an unknown archetype: old behaviour.
+    # required_files is the same answer audit.py's required-files uses, so the
+    # two cannot disagree. No manifest or an unknown archetype: old behaviour.
     archetype = config.get("archetype")
-    known = isinstance(archetype, str) and archetype in ARCHETYPES
-    extra = config.get("extra_files")
-    required = known and (RUNLOG in ARCHETYPES[archetype]["files"]
-                          or (isinstance(extra, list) and RUNLOG in extra))
-    if runlog.is_file() and known and not required:
-        warnings.append(
-            f"{RUNLOG} is not required for the {archetype} archetype; its "
-            f"contents belong in the PR description or a decision record. "
-            f"Consider removing it.")
-    elif runlog.is_file():
-        text = runlog.read_text(encoding="utf-8", errors="replace")
-        if required:
-            warnings.extend(runlog_shape_warnings(text))
-        lines = len(text.splitlines())
-        if lines > RUNLOG_ROTATE_LINES:
+    known = archetype in ARCHETYPES
+    required = known and RUNLOG in required_files(config)
+    if runlog.is_file():
+        if known and not required:
             warnings.append(
-                f"{RUNLOG}: {lines} lines, past the {RUNLOG_ROTATE_LINES} line rotation point. "
-                f"Move the oldest entries into {RUNLOG_ARCHIVE_DIR}/YYYY-QN.md, by the "
-                f"quarter each falls in, until it is back under the limit."
-            )
+                f"{RUNLOG} is not required for the {archetype} archetype; its "
+                f"contents belong in the PR description or a decision record. "
+                f"Consider removing it.")
+        else:
+            text = runlog.read_text(encoding="utf-8", errors="replace")
+            if required:
+                warnings.extend(runlog_shape_warnings(text))
+            lines = len(text.splitlines())
+            if lines > RUNLOG_ROTATE_LINES:
+                warnings.append(
+                    f"{RUNLOG}: {lines} lines, past the {RUNLOG_ROTATE_LINES} line "
+                    f"rotation point. Move the oldest entries into "
+                    f"{RUNLOG_ARCHIVE_DIR}/YYYY-QN.md, by the quarter each falls in, "
+                    f"until it is back under the limit."
+                )
 
     if cadence:
         print(f"review cadence: {cadence} days\n")
