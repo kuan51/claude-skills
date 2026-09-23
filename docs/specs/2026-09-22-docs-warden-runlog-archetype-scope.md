@@ -13,7 +13,7 @@
    (line ~152) builds fixtures from `UNIVERSAL_FILES`; it must also write the archetype's
    own `files` so the tests at lines ~185, ~209, ~391, ~542 keep passing.
 2. **Entry shape** (`freshness.py`, only when RUNLOG is required). Split the log into
-   entries on `## ` headings, ignoring text before the first heading and any `## ` line
+   entries on `##` headings, ignoring text before the first heading and any `##` line
    inside a fenced code block. Warn, never fail, on an entry that: (a) has no line
    starting with `- CONFIRMED`, `- FAILED` or `- SKIPPED` (after optional `**`), or (b)
    has such a line but neither it nor its indented continuation lines contain a backtick
@@ -43,7 +43,7 @@
 
 ## Check
 
-```
+```text
 python plugins/docs-warden/test/test_scripts.py
 node --test "test/*.test.js"
 ```
@@ -52,7 +52,7 @@ New tests in `plugins/docs-warden/test/test_scripts.py`:
 
 - library and service fixtures without RUNLOG pass `required-files`; it-tooling and firmware fixtures without it fail.
 - freshness on an it-tooling fixture: entries missing a CONFIRMED line, missing a backtick
-  span, and over 12 lines each warn; the reference example does not; a `## ` inside a
+  span, and over 12 lines each warn; the reference example does not; a `##` inside a
   fence does not start an entry.
 - freshness on a library fixture with a stray `docs/RUNLOG.md` of 600 lines warns exactly
   once (stray only, no rotation warning).
