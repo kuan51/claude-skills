@@ -170,7 +170,7 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     phase: 'Build',
     agentType: 'fabflows:editor',
     model: 'opus',
-    effort: 'medium',
+    effort: 'high',
     schema: BUILD,
   })
   if (!build) {
@@ -195,7 +195,7 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     phase: 'Review',
     agentType: 'fabflows:refuter',
     model: reviewerModel,
-    effort: 'medium',
+    effort: 'xhigh',
     schema: VERDICT,
   })
   rounds.push({ round, build, review })
