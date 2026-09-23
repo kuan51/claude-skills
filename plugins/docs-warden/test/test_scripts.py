@@ -280,7 +280,8 @@ def test_freshness_warns_on_a_runlog_entry_of_the_wrong_shape():
                + ["## Too long", "", "- CONFIRMED: `ok`"]
                + ["  more"] * 11 + [""]
                + ["## Fenced", "", "```text", "## not a heading", "```",
-                  "- **SKIPPED**: `pytest` not installed"])
+                  "- **SKIPPED**: `pytest` not installed", ""]
+               + ["## Skipped plain", "", "- SKIPPED: hub offline, deferred"])
         (repo / "docs" / "RUNLOG.md").write_text(NL.join(log) + NL,
                                                  encoding="utf-8")
         warns = _runlog_warnings(repo)
@@ -290,7 +291,7 @@ def test_freshness_warns_on_a_runlog_entry_of_the_wrong_shape():
         assert "'No command'" in text and "backticks" in text, text
         assert "'Too long'" in text and "12 line" in text, text
         assert "Rotate" not in text and "not a heading" not in text \
-            and "Fenced" not in text, text
+            and "Fenced" not in text and "Skipped plain" not in text, text
 
 
 def test_a_stray_runlog_gets_one_warning_and_no_rotation_warning():
@@ -304,6 +305,19 @@ def test_a_stray_runlog_gets_one_warning_and_no_rotation_warning():
         warns = _runlog_warnings(repo)
         assert len(warns) == 1, warns
         assert "not required for the library archetype" in warns[0], warns
+
+
+def test_freshness_reports_a_list_valued_archetype_instead_of_crashing():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: [it-tooling]" + NL, encoding="utf-8")
+        (repo / "docs" / "RUNLOG.md").write_text("## x" + NL, encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "freshness.py"), str(repo)],
+            capture_output=True, text=True, check=False)
+        assert "Traceback" not in result.stderr, result.stderr
 
 
 def test_freshness_skips_the_runlog_checks_without_a_manifest():

@@ -75,7 +75,9 @@ def runlog_shape_warnings(text: str):
                 if not line[:1].isspace() or not line.strip():
                     break
                 block.append(line)
-            if not any(BACKTICK_SPAN_RE.search(l) for l in block):
+            # A skipped check has no command to cite; the other two must.
+            if match.group(2) != "SKIPPED" and \
+                    not any(BACKTICK_SPAN_RE.search(l) for l in block):
                 warnings.append(f"{where}: its {match.group(2)} line names "
                                 f"no command or check in backticks")
         if len(lines) > RUNLOG_ENTRY_MAX_LINES:
@@ -152,7 +154,7 @@ def main() -> int:
     # required_files is the same answer audit.py's required-files uses, so the
     # two cannot disagree. No manifest or an unknown archetype: old behaviour.
     archetype = config.get("archetype")
-    known = archetype in ARCHETYPES
+    known = isinstance(archetype, str) and archetype in ARCHETYPES
     required = known and RUNLOG in required_files(config)
     if runlog.is_file():
         if known and not required:

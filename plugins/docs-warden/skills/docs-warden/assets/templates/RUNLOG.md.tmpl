@@ -15,8 +15,8 @@ A skipped check gets its own `SKIPPED` entry — a silent gap is worse than an
 admitted one.
 
 Each level-two (`##`) heading starts an entry. Keep every entry to 12 lines or fewer, with a
-line starting `- CONFIRMED`, `- FAILED` or `- SKIPPED` that names the command or
-check in backticks. `freshness.py` warns on an entry that breaks any of these.
+line starting `- CONFIRMED`, `- FAILED` or `- SKIPPED`; the first two name the
+command or check in backticks. `freshness.py` warns on an entry that breaks any of these.
 
 Past 500 lines, move the oldest entries into `docs/runlog/YYYY-QN.md` -- the
 archive for the quarter each entry falls in -- until the log is back under the

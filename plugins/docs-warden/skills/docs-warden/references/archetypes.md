@@ -117,8 +117,9 @@ than an admitted one.
 
 **The entry rule.** Each level-two (`##`) heading starts an entry. `freshness.py` warns on
 an entry that has no line starting `- CONFIRMED`, `- FAILED` or `- SKIPPED`,
-whose outcome line (with its indented continuation) names no command or check in
-backticks, or that runs past 12 lines. The example above passes all three.
+whose `CONFIRMED` or `FAILED` line (with its indented continuation) names no command
+or check in backticks, or that runs past 12 lines. A `SKIPPED` line is exempt: it
+records a check that did not run. The example above passes all three.
 
 Rotation: `freshness.py` warns past 500 lines. Move the oldest entries into
 `docs/runlog/YYYY-QN.md` (the archive for the quarter each entry falls in) until
