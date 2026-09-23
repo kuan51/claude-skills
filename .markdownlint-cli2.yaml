@@ -51,7 +51,5 @@ ignores:
   # structural finding in one cannot be fixed without editing history. Same
   # reasoning as .vale.ini's relaxed list.
   - docs/decisions/**
-  - docs/RUNLOG.md
-  - docs/runlog/**
   - .venv/**
   - styles/**

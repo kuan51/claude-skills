@@ -41,7 +41,8 @@ function parseArgs(argv) {
 
 // Clean room: every installed plugin off (fabflows comes back only through --plugin-dir in the
 // with_skill arm) and the advisor tool removed, so the two arms differ by fabflows alone.
-// The probe runs behind this choice are logged in docs/RUNLOG.md.
+// The probe runs behind this choice were logged in the since-deleted run log:
+// `git show 735ea1d:docs/RUNLOG.md`.
 function cleanRoomSettings() {
   const userSettings = path.join(os.homedir(), '.claude', 'settings.json');
   let enabled = {};
