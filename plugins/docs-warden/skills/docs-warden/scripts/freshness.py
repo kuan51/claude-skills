@@ -31,11 +31,57 @@ from _common import (
     read_front_matter,
     review_date,
 )
+from archetypes import ARCHETYPES
 
 RUNLOG_ROTATE_LINES = 500
+RUNLOG_ENTRY_MAX_LINES = 12
+RUNLOG_OUTCOME_RE = re.compile(r"- (\*\*)?(CONFIRMED|FAILED|SKIPPED)")
+BACKTICK_SPAN_RE = re.compile(r"`[^`\n]+`")
 
 # Backticked things that look like a path into the repo.
 PATH_REF_RE = re.compile(r"`([\w./-]+\.[A-Za-z0-9]{1,6})`")
+
+
+def runlog_entries(text: str):
+    """(heading, lines) per `## ` entry. Text before the first heading is
+    preamble, and a `## ` inside a fenced block is sample text, not an entry."""
+    entries, fenced = [], False
+    for line in text.splitlines():
+        if line.lstrip().startswith(("```", "~~~")):
+            fenced = not fenced
+        if not fenced and line.startswith("## "):
+            entries.append((line[3:].strip(), [line]))
+        elif entries:
+            entries[-1][1].append(line)
+    return entries
+
+
+def runlog_shape_warnings(text: str):
+    """Warn on an entry with no outcome line, an outcome with no command in
+    backticks, or one too long to read at a glance."""
+    warnings = []
+    for heading, lines in runlog_entries(text):
+        while lines and not lines[-1].strip():
+            lines.pop()
+        where = f"{RUNLOG}: entry '{heading}'"
+        outcome = next((i for i, l in enumerate(lines)
+                        if RUNLOG_OUTCOME_RE.match(l)), None)
+        if outcome is None:
+            warnings.append(f"{where} has no CONFIRMED, FAILED or SKIPPED line")
+        else:
+            block = [lines[outcome]]
+            for line in lines[outcome + 1:]:
+                if not line[:1].isspace() or not line.strip():
+                    break
+                block.append(line)
+            if not any(BACKTICK_SPAN_RE.search(l) for l in block):
+                warnings.append(
+                    f"{where}: its {RUNLOG_OUTCOME_RE.match(lines[outcome]).group(2)} "
+                    f"line names no command or check in backticks")
+        if len(lines) > RUNLOG_ENTRY_MAX_LINES:
+            warnings.append(f"{where} is {len(lines)} lines, over the "
+                            f"{RUNLOG_ENTRY_MAX_LINES} line limit")
+    return warnings
 
 
 def last_commit_epoch(repo: Path, rel: str):
@@ -103,9 +149,24 @@ def main() -> int:
                 warnings.append(f"{rel}: references `{ref}`, which changed {days} day(s) later")
 
     runlog = repo / RUNLOG
-    if runlog.is_file():
-        lines = len(runlog.read_text(
-            encoding="utf-8", errors="replace").splitlines())
+    # Required only where the archetype's files or the manifest's extra_files
+    # name it -- the same inputs audit.py's required-files reads, so the two
+    # cannot disagree. No manifest or an unknown archetype: old behaviour.
+    archetype = config.get("archetype")
+    known = isinstance(archetype, str) and archetype in ARCHETYPES
+    extra = config.get("extra_files")
+    required = known and (RUNLOG in ARCHETYPES[archetype]["files"]
+                          or (isinstance(extra, list) and RUNLOG in extra))
+    if runlog.is_file() and known and not required:
+        warnings.append(
+            f"{RUNLOG} is not required for the {archetype} archetype; its "
+            f"contents belong in the PR description or a decision record. "
+            f"Consider removing it.")
+    elif runlog.is_file():
+        text = runlog.read_text(encoding="utf-8", errors="replace")
+        if required:
+            warnings.extend(runlog_shape_warnings(text))
+        lines = len(text.splitlines())
         if lines > RUNLOG_ROTATE_LINES:
             warnings.append(
                 f"{RUNLOG}: {lines} lines, past the {RUNLOG_ROTATE_LINES} line rotation point. "

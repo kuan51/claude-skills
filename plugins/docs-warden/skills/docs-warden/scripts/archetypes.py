@@ -18,7 +18,7 @@ See references/archetypes.md before adding one.
 
 ARCHETYPES = {
     "it-tooling": {
-        "files": ["docs/runbook.md"],
+        "files": ["docs/runbook.md", "docs/RUNLOG.md"],
         "unchecked": [
             "a generated command reference (PowerShell comment-based help "
             "export, or terraform-docs)",
@@ -42,7 +42,7 @@ ARCHETYPES = {
         ],
     },
     "firmware": {
-        "files": ["docs/architecture/"],
+        "files": ["docs/architecture/", "docs/RUNLOG.md"],
         "unchecked": [
             "a hardware interface (ICD) section within docs/architecture/",
             "a build-and-flash runbook",

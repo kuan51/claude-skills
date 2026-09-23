@@ -149,8 +149,11 @@ def _universal_repo(repo, archetype):
     # The default forge's paths too: they left the universal set when forge
     # became declarable, and a helper that stopped writing them would make
     # every caller assert against a required-files failure it did not mean.
+    # The archetype's own files as well: docs/RUNLOG.md left the universal set
+    # for it-tooling and firmware, and callers here assert on other gaps.
     expected = (list(common.UNIVERSAL_FILES)
-                + list(common.FORGES[common.FORGE_DEFAULT]))
+                + list(common.FORGES[common.FORGE_DEFAULT])
+                + list(_table("archetypes").ARCHETYPES[archetype]["files"]))
     for rel in expected:
         rel = rel[0] if isinstance(rel, tuple) else rel
         target = repo / rel
@@ -174,7 +177,7 @@ def test_an_empty_required_directory_is_not_a_present_document():
     which check asked it."""
     with tempfile.TemporaryDirectory() as tmp:
         repo = _universal_repo(Path(tmp), "firmware")
-        (repo / "docs" / "architecture").mkdir(parents=True, exist_ok=True)
+        (repo / "docs" / "architecture" / "Default.md").unlink()
         entry = _audit_check(repo, "required-files")
         assert entry["state"] == "fail", \
             f"an empty directory should not satisfy the archetype: {entry}"
@@ -226,6 +229,89 @@ def test_an_unknown_forge_fails_rather_than_requiring_nothing():
 # Newline as a name, because a literal escape inside a manifest written
 # by these tests is a backslash this shell mangles on the way in.
 NL = chr(10)
+
+
+def test_runlog_is_required_only_by_the_operational_archetypes():
+    """RUNLOG left the universal set: a library or service repo has nothing
+    git cannot see, so only it-tooling and firmware are asked for one."""
+    for archetype, state in (("library", "pass"), ("service", "pass"),
+                             ("it-tooling", "fail"), ("firmware", "fail")):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = _universal_repo(Path(tmp), archetype)
+            runlog = repo / "docs" / "RUNLOG.md"
+            if runlog.exists():
+                runlog.unlink()
+            entry = _audit_check(repo, "required-files")
+            assert entry["state"] == state, (archetype, entry)
+            if state == "fail":
+                assert "docs/RUNLOG.md" in entry["reason"], (archetype, entry)
+
+
+def _runlog_warnings(repo):
+    result = subprocess.run(
+        [sys.executable, str(SCRIPTS / "freshness.py"), str(repo)],
+        capture_output=True, text=True, check=False)
+    return [l for l in result.stdout.splitlines()
+            if l.startswith("WARN") and "RUNLOG" in l]
+
+
+# The reference example in references/archetypes.md, verbatim.
+RUNLOG_GOOD = [
+    "## 2026-09-01 — Rotate the hub service account credential",
+    "",
+    "- PLANNED: rotate via `az ad app credential reset --id <app-id>`; expect the",
+    "  15:00 UTC health check to stay green.",
+    "- CONFIRMED: rotated 14:41 UTC. Verified with",
+    "  `curl -sf https://hub.internal/healthz` -> 200. Health check green at 15:00.",
+]
+
+
+def test_freshness_warns_on_a_runlog_entry_of_the_wrong_shape():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: it-tooling" + NL, encoding="utf-8")
+        log = (["# Run log", "", "- CONFIRMED: preamble, not an entry", ""]
+               + RUNLOG_GOOD + [""]
+               + ["## No outcome", "", "- PLANNED: `do it`", ""]
+               + ["## No command", "", "- CONFIRMED: it worked, trust me", ""]
+               + ["## Too long", "", "- CONFIRMED: `ok`"]
+               + ["  more"] * 11 + [""]
+               + ["## Fenced", "", "```text", "## not a heading", "```",
+                  "- **SKIPPED**: `pytest` not installed"])
+        (repo / "docs" / "RUNLOG.md").write_text(NL.join(log) + NL,
+                                                 encoding="utf-8")
+        warns = _runlog_warnings(repo)
+        text = NL.join(warns)
+        assert len(warns) == 3, text
+        assert "'No outcome'" in text and "no CONFIRMED" in text, text
+        assert "'No command'" in text and "backticks" in text, text
+        assert "'Too long'" in text and "12 line" in text, text
+        assert "Rotate" not in text and "not a heading" not in text \
+            and "Fenced" not in text, text
+
+
+def test_a_stray_runlog_gets_one_warning_and_no_rotation_warning():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / ".docs-warden.yml").write_text(
+            "archetype: library" + NL, encoding="utf-8")
+        (repo / "docs" / "RUNLOG.md").write_text(
+            ("## x" + NL) * 600, encoding="utf-8")
+        warns = _runlog_warnings(repo)
+        assert len(warns) == 1, warns
+        assert "not required for the library archetype" in warns[0], warns
+
+
+def test_freshness_skips_the_runlog_checks_without_a_manifest():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "docs").mkdir()
+        (repo / "docs" / "RUNLOG.md").write_text(
+            "## No outcome" + NL + NL + "- PLANNED: x" + NL, encoding="utf-8")
+        assert _runlog_warnings(repo) == []
 
 
 def test_a_review_date_beyond_the_cadence_is_reported():
@@ -431,6 +517,7 @@ def test_a_waiver_keeps_the_finding_visible_and_is_not_a_pass():
     is kept alongside the excuse."""
     with tempfile.TemporaryDirectory() as tmp:
         repo = _universal_repo(Path(tmp), "it-tooling")
+        (repo / "docs" / "runbook.md").unlink()
         (repo / ".docs-warden.yml").write_text(
             "archetype: it-tooling" + NL + "waivers:" + NL
             + '  required-files: "runbook lives in the ops wiki"' + NL,
