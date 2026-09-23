@@ -1,0 +1,96 @@
+[
+ {
+  "task": "review-catch",
+  "arm": "loop",
+  "run": "run-1",
+  "quality": 0.8333333333333334,
+  "denials": 0,
+  "turns": 13,
+  "lead_out": 2894,
+  "lead_think": 133,
+  "lead_msgs": 10,
+  "lead_cache_read": 413577,
+  "lead_cache_write": 55098,
+  "first_ctx": 39773,
+  "final_ctx": 55130,
+  "worker_out": 12645,
+  "worker_in": 283917,
+  "workers": {
+   "fabflows:editor": 1,
+   "fabflows:refuter": 1
+  },
+  "cost": 1.89067825,
+  "sec": 169.099,
+  "verification_runs": 1,
+  "hook_payloads": 30,
+  "tools": {
+   "Skill": 3,
+   "Bash": 3,
+   "Read": 1,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "loop",
+  "run": "run-2",
+  "quality": 0.8333333333333334,
+  "denials": 0,
+  "turns": 16,
+  "lead_out": 4425,
+  "lead_think": 238,
+  "lead_msgs": 11,
+  "lead_cache_read": 472525,
+  "lead_cache_write": 57802,
+  "first_ctx": 39773,
+  "final_ctx": 57834,
+  "worker_out": 12956,
+  "worker_in": 298317,
+  "workers": {
+   "fabflows:editor": 1,
+   "fabflows:refuter": 1
+  },
+  "cost": 2.03691165,
+  "sec": 182.85,
+  "verification_runs": 1,
+  "hook_payloads": 31,
+  "tools": {
+   "Skill": 3,
+   "Read": 1,
+   "Bash": 5,
+   "Grep": 1,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "loop",
+  "run": "run-3",
+  "quality": 0.8333333333333334,
+  "denials": 0,
+  "turns": 12,
+  "lead_out": 2190,
+  "lead_think": 0,
+  "lead_msgs": 9,
+  "lead_cache_read": 367255,
+  "lead_cache_write": 53598,
+  "first_ctx": 39773,
+  "final_ctx": 53630,
+  "worker_out": 14049,
+  "worker_in": 353222,
+  "workers": {
+   "fabflows:editor": 1,
+   "fabflows:refuter": 1
+  },
+  "cost": 1.88949675,
+  "sec": 173.142,
+  "verification_runs": 1,
+  "hook_payloads": 31,
+  "tools": {
+   "Skill": 3,
+   "Bash": 2,
+   "Workflow": 1,
+   "Read": 1
+  }
+ }
+]

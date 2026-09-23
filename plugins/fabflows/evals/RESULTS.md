@@ -68,6 +68,82 @@ unexercised.
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
 
+## Iteration 9 (2026-09-23): the raised effort pins, on the same shipped defect
+
+**Bottom line.** fabflows 0.5.1 (PR #60) pins the build-loop builder at `high` and the refuter
+at `xhigh`, both previously `medium`. Three loop runs of task 8 against iteration 8's five loop
+runs at the old pins: the review still returned ACCEPT with no must-fix items in every run and
+none named the defect (0/3, against 0/5), while worker output tokens nearly doubled, Opus
+dollars rose about 80%, and wall clock rose 73%. On this fixture the raised pins bought nothing
+the grader can see. That is consistent with iteration 8's reading that the miss is a briefing
+gap, not an effort gap: every reviewer opened `src/index.js`, the file that holds the defect,
+and still checked only what the spec names.
+
+### Setup (confirmed)
+
+Task 8 exactly as in iteration 8, `loop` arm only, three repeats, three runs concurrent, Fable
+lead at medium effort, caps 120 turns, $15, 30 minutes. The plugin staged from this checkout at
+0.5.1: `agents/refuter.md` `effort: xhigh`, `workflows/build.js` builder `effort: 'high'` and
+reviewer `effort: 'xhigh'`. Run in a remote cloud session, not the usual desktop. Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --repeats 3 --parallel 3 --confirm
+```
+
+### Observed
+
+| run | hidden | defect shipped | review named it | verdict | turns | wall s | lead out | build out (think) | review out (think) | Fable $ | Opus $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 7/9 | yes | no | ACCEPT | 13 | 169 | 2,894 | 5,886 (1,277) | 6,744 (3,671) | 1.35 | 0.54 | 1.89 |
+| 2 | 7/9 | yes | no | ACCEPT | 16 | 183 | 4,425 | 5,300 (600) | 7,641 (4,621) | 1.50 | 0.54 | 2.04 |
+| 3 | 7/9 | yes | no | ACCEPT | 12 | 173 | 2,190 | 6,552 (1,167) | 7,482 (3,828) | 1.27 | 0.61 | 1.89 |
+
+Same two hidden failures as iteration 8 in every run. Every worker ran on `claude-opus-5-5`; no
+tool call was denied. Means against iteration 8's loop arm (n=5):
+
+| | iteration 8 (medium/medium) | iteration 9 (high/xhigh) | delta |
+| --- | --- | --- | --- |
+| review named the defect | 0/5 | 0/3 | none |
+| worker output tokens | 6,847 | 13,217 | +93% |
+| Opus $ (list minus Fable) | 0.31 | 0.56 | +80% |
+| wall clock s | 101 | 175 | +73% |
+| lead output tokens | 2,933 | 3,170 | +8% |
+| Fable $ | 0.80 | 1.37 | +71%, see below |
+| list $ | 1.11 | 1.94 | +75% |
+
+### What the runs showed
+
+1. **No quality change the grader can see (confirmed).** Three ACCEPT verdicts with empty
+   must-fix lists. The xhigh reviewers wrote longer reports, with two to four notes each on
+   edge cases the spec does not name (an unnamed dependency in an error message, a usage-text
+   change), and each note was placed below must-fix on purpose. None probed `satisfies` on a
+   caret-on-zero range.
+2. **The refuter's thinking is where the tokens went (confirmed).** Review thinking was 3,671
+   to 4,621 tokens per run; iteration 8's whole loop-arm lead-plus-worker thinking was under
+   that. Builder output rose less.
+3. **The Fable delta is a cache artifact, not the pins (inferred).** Lead cache writes were
+   55,499 against 27,558: this run's three sessions started in the same second and each wrote
+   the ~39.7k system prompt, where iteration 8's ten runs shared it. 39.7k at the Fable
+   cache-write rate is about $0.50, which is the whole of the Fable gap. The pins do not touch
+   the lead.
+4. **Three runs on a 0/3 outcome (confirmed).** Enough to say the direction of cost; not
+   enough to put a rate on anything.
+
+### What it means
+
+- The two pins cost about $0.25 of Opus and 75 s per loop round on a task this size, and on
+  this fixture returned nothing. Whether they pay on a harder build (task 7's 41-test suite,
+  where iteration 5 saw REWORK rounds) is unmeasured, and that arm costs about $4 a run.
+- The lever iteration 8 named still stands: brief the refuter to probe an input family the
+  spec leaves unstated, or to read the functions the diff newly depends on. Effort alone does
+  not make it do either.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --repeats 3 --parallel 3 --confirm
+```
+
 ## Iteration 8 (2026-09-22): the hidden rule, and what the review does not catch
 
 **Bottom line.** With the caret-on-zero rule removed from `SPEC.md` and its example moved to a
