@@ -64,6 +64,9 @@ Triggered by "scaffold docs," "set up documentation," "document this repo."
 3. Write `.docs-warden.yml`.
 4. Create only the **missing** files from `assets/templates/`. Never overwrite an
    existing document. List what you skipped and why.
+   - **`it-tooling` and `firmware` only:** create `docs/RUNLOG.md` from
+     `RUNLOG.md.tmpl`, and add a row for it ("What was done outside git") to
+     the README's documentation table. Other archetypes get neither.
    - **For every standard confirmed in step 2, also create its missing artifacts**
      from `assets/standards/<id>/`. Without this the audit in step 6 reports every
      overlay artifact as missing. A path two standards share has one template, in
@@ -189,7 +192,7 @@ Every repo, both worlds, gets these. Full specification in
 | `docs/decisions/README.md` | **Generated** signpost pointing at the index, with only a link. |
 | `docs/decisions/archive/` | The oldest records, moved here unchanged by `compact` mode. A digest record in the parent folder records their outcomes. |
 | `docs/DECISIONS.md` | **Generated** index of those records. Never hand-edited. |
-| `docs/RUNLOG.md` | What happened outside git. Append-only, `PLANNED` then `CONFIRMED`. |
+| `docs/RUNLOG.md` | **Archetype-scoped:** `it-tooling` and `firmware` only (see `references/archetypes.md`). What happened outside git. Append-only, `PLANNED` then `CONFIRMED`. |
 | `docs/GLOSSARY.md` | Each approved term has exactly one meaning. |
 | `docs/SECURITY.md` | Reporting route and posture. GitHub reads it from `docs/` as well as the root. |
 | a change template | Forces docs into the same PR. Path depends on `forge:`. |
@@ -210,7 +213,7 @@ generated files:
 
 ```bash
 mkdir -p docs
-git mv CONVENTIONS.md DECISIONS.md GLOSSARY.md RUNLOG.md SECURITY.md docs/
+git mv CONVENTIONS.md DECISIONS.md GLOSSARY.md SECURITY.md docs/
 python3 scripts/adr_index.py .
 ```
 

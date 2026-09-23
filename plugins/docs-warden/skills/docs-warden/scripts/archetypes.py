@@ -16,9 +16,19 @@ Each entry has:
 See references/archetypes.md before adding one.
 """
 
+
+def required_files(config):
+    """The archetype's files plus the manifest's string extra_files, in that
+    order. The one answer to "what does this manifest require beyond the
+    universal set", so audit.py and freshness.py cannot drift apart."""
+    config = config or {}
+    spec = ARCHETYPES.get(config.get("archetype"), {})
+    extra = config.get("extra_files") or []
+    return list(spec.get("files", ())) + [e for e in extra if isinstance(e, str)]
+
 ARCHETYPES = {
     "it-tooling": {
-        "files": ["docs/runbook.md"],
+        "files": ["docs/runbook.md", "docs/RUNLOG.md"],
         "unchecked": [
             "a generated command reference (PowerShell comment-based help "
             "export, or terraform-docs)",
@@ -42,7 +52,7 @@ ARCHETYPES = {
         ],
     },
     "firmware": {
-        "files": ["docs/architecture/"],
+        "files": ["docs/architecture/", "docs/RUNLOG.md"],
         "unchecked": [
             "a hardware interface (ICD) section within docs/architecture/",
             "a build-and-flash runbook",

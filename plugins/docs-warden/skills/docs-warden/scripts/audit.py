@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-from archetypes import ARCHETYPES
+from archetypes import ARCHETYPES, required_files
 from standards import STANDARDS
 from _common import (
     DECISIONS,
@@ -232,10 +232,8 @@ def check_required_files(repo, config):
     # extra_files last: a repository's own additions, validated by
     # check_manifest so a malformed list is reported there rather than
     # silently requiring nothing here.
-    extra = (config or {}).get("extra_files") or []
     expected = (list(UNIVERSAL_FILES) + list(FORGES[forge])
-                + list(spec.get("files", ()))
-                + [e for e in extra if isinstance(e, str)])
+                + required_files(config))
     # _artifact_satisfied, not a second path test: this one accepted a bare
     # is_dir(), so firmware's docs/architecture/ was satisfied by an empty
     # directory while check_standards refused exactly that ("an empty

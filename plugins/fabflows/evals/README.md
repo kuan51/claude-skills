@@ -121,7 +121,7 @@ wrong `satisfies` in the project cannot vouch for its own lockfile). The referen
 whole suite, and `test/evals-harness.test.js` keeps it that way for free, so a hidden assertion
 that stopped following from the spec would fail the suite before it could grade a run. The spec
 and suite were reviewed adversarially before iteration 5 (four lenses, two refuters per finding,
-`docs/RUNLOG.md`); the defects that survived were fixed in the spec text.
+`git show 735ea1d:docs/RUNLOG.md`); the defects that survived were fixed in the spec text.
 
 ## Fixtures are blind
 

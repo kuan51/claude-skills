@@ -69,45 +69,6 @@ At 50 records, `adr_compact.py` moves the 25 oldest unchanged into
 **Generated** by `adr_index.py`. First line is the generated marker. The audit
 regenerates it and fails on a non-empty diff, so a hand edit is always caught.
 
-## docs/RUNLOG.md
-
-Append-only. The narrowest scope of any file here, and the one most often abused.
-
-**In scope:** operational actions whose effect doesn't leave a commit behind:
-deploys, data migrations, credential rotations, scripts run against live systems,
-manual verification steps, and checks that were skipped.
-
-**Out of scope:** code edits, documentation edits, refactors, dependency bumps.
-Git already records those, and the PR already explains them. Writing them here
-twice just makes the file too long to read.
-
-Every action is **two entries**, not one:
-
-```text
-## 2026-09-01 — Rotate the hub service account credential
-
-- PLANNED: rotate via `az ad app credential reset --id <app-id>`; expect the
-  15:00 UTC health check to stay green.
-- CONFIRMED: rotated 14:41 UTC. Verified with
-  `curl -sf https://hub.internal/healthz` -> 200. Health check green at 15:00.
-```
-
-The second entry is `CONFIRMED`, `FAILED`, or `SKIPPED`, and it specifies the exact
-command or check used, not just the outcome. An entry nobody can re-run later is
-not evidence. A skipped check gets its own `SKIPPED` entry; a silent gap is worse
-than an admitted one.
-
-Rotation: `freshness.py` warns past 500 lines. Move the oldest entries into
-`docs/runlog/YYYY-QN.md` (the archive for the quarter each entry falls in) until
-the log is back under the limit, and leave a one-line pointer behind. Whole entries
-only. Never split one.
-
-The line count is the whole trigger, deliberately. This rule once also required an
-entry to be older than 90 days, and both halves had to hold: a repository that wrote
-674 lines in five days tripped the line count with nothing old enough to move, so the
-rule selected nothing and the warning stood forever. Recency is what the archive is
-for, not age.
-
 ## docs/GLOSSARY.md
 
 Each glossary term has exactly one meaning. A four-column table:

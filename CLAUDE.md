@@ -77,7 +77,7 @@ dropping its `installed_plugins.json` entry, and checking the marketplace clone 
 ## Maintaining documentation: use docs-warden
 
 `docs/` follows the docs-warden layout (`docs/CONVENTIONS.md` for current state, `docs/decisions/`
-for why, `docs/RUNLOG.md` for what happened outside git, `docs/GLOSSARY.md`, `docs/SECURITY.md`,
+for why, `docs/GLOSSARY.md`, `docs/SECURITY.md`,
 `docs/specs/` for fabflows design records). `.docs-warden.yml` at the root drives it. The
 `docs-warden` plugin in this repo is also the installed tool: invoke the `docs-warden:docs-warden`
 skill and it picks the mode, or run its scripts directly from the installed plugin, never from a
@@ -101,7 +101,8 @@ Rules that bite here:
   reasoning goes in the PR description. Accepted records are never edited; supersede them.
 - **Generated files are never hand-edited:** `docs/DECISIONS.md`, `docs/decisions/README.md`,
   `docs/architecture/domain-model.md` (see the table in `docs/CONVENTIONS.md`).
-- **Do not log documentation edits in `docs/RUNLOG.md`.** Git records those. The run log is for
-  operational actions and skipped checks, each as a `PLANNED` then `CONFIRMED` (or `SKIPPED`) pair.
+- **This repo keeps no run log** (its archetype is `library`). Operational narrative, such as
+  commands run and checks skipped, goes in the PR description; durable conclusions go in a
+  decision record or spec.
 - **Nothing runs these checks in CI yet**, so run `audit.py` yourself before opening a PR that
   touches `docs/`.

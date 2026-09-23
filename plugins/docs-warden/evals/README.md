@@ -153,7 +153,8 @@ replies with PASS/FAIL rubrics.
 
 Written 2026-09-19. Tier 1 was run in full on 2026-09-21 (Sonnet 5, 3 runs per case,
 33 runs, $5.04, 9 minutes, no run errors). Tier 2 has never been run, pending the WSL2
-setup above. Commands and dates are in the repository's `docs/RUNLOG.md`.
+setup above. Commands and dates are in the repository's since-deleted run log:
+`git show 735ea1d:docs/RUNLOG.md`.
 
 ### Tier 1, 2026-09-21
 

@@ -83,7 +83,7 @@ The loop cost +31% list and 1.65x wall clock over inline for the same graded res
 
 ### Setup (confirmed)
 
-Task 8 as in iteration 7 with three changes (`docs/RUNLOG.md`, this branch): `SPEC.md` no longer
+Task 8 as in iteration 7 with three changes (`git show 735ea1d:docs/RUNLOG.md`, this branch): `SPEC.md` no longer
 states the caret-on-zero rule and its acceptance example is `^1.2.3` locked at `2.0.0`, so only
 the hidden test carries the rule; the `delegate` arm is dropped; the `loop` arm's prompt tells
 the lead to run `fabflows:build` on `SPEC.md`. Two arms, five interleaved repeats, three runs
