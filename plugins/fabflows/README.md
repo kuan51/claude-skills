@@ -33,7 +33,7 @@ does its job:
 | `fabflows:researcher` | Haiku | none | Read, Grep, Glob, WebFetch, WebSearch | external docs and APIs, distilled with sources |
 | `fabflows:editor` | Sonnet | medium | Read, Edit, Write, Grep, Glob, Bash | scoped code changes |
 | `fabflows:test-runner` | Sonnet | low | Read, Grep, Glob, Bash, Write | writing and running tests, reporting real output |
-| `fabflows:refuter` | Opus | medium | Read, Grep, Glob, Bash | reviewing a finished change against its spec, re-running its tests; or a draft spec, lens by lens |
+| `fabflows:refuter` | Opus | xhigh | Read, Grep, Glob, Bash | reviewing a finished change against its spec, re-running its tests; or a draft spec, lens by lens |
 | `fabflows:investigator` | Opus | high | Read, Grep, Glob, Bash | reproducing and narrowing a self-contained failure |
 
 Effort is pinned so a worker does not inherit the lead's session effort. Haiku 4.5 has

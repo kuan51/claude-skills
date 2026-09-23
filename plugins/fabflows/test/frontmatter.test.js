@@ -30,7 +30,8 @@ const FORBIDDEN_TOOLS = ['Agent'];
 //   - test-runner: Sonnet for coverage judgement. Write is for creating test files only;
 //                  the agent body forbids editing production code.
 //   - refuter:     Opus, because review is judgement with little output -- the cheap place
-//                  for a stronger model -- and Opus 5 review stays accurate at medium effort.
+//                  for a stronger model -- at xhigh effort, because refuting means weighing
+//                  alternatives the diff did not take, which needs more thinking than typing.
 //                  Bash runs the diff and the tests; no Edit or Write, so it cannot fix what
 //                  it is judging.
 //   - investigator: Opus at high effort for hypothesis-driven narrowing. Same tools as the
@@ -59,7 +60,7 @@ const EXPECTED_MODEL = {
 const EXPECTED_EFFORT = {
   editor: 'medium',
   'test-runner': 'low',
-  refuter: 'medium',
+  refuter: 'xhigh',
   investigator: 'high',
 };
 const EXPECTED_NAMES = Object.keys(EXPECTED_TOOLS);
