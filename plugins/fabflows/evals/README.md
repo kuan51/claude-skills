@@ -62,6 +62,9 @@ room drops the system prompt to about 37k tokens and leaves fabflows as the only
 between the arms. `--bare` would be cleaner still but requires an API key, and `--safe-mode`
 drops `--plugin-dir` plugins too.
 
+From iteration 11 every run sets `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` (recorded in `run.json`), so
+runs no longer have the 600 s ceiling on waiting for background work in print mode.
+
 Both arms still load the user's global `CLAUDE.md`. It is the same in both, so it inflates
 absolute numbers without touching the delta.
 
@@ -101,6 +104,7 @@ several events that repeat its usage) and reports:
 | 5 | `deep-read` | explorer, volume: 13 decision records, ~60k chars of prose | Every record listed with its id, title, status and chosen option (from frontmatter and the outcome section); a 20+ word row each; no invented id; repo unchanged. |
 | 6 | `triage-failures` | test-runner, volume: a ~200-line suite log with 3 planted failures | Every failing test and file named (truth from a TAP re-run); no invented or falsely failing file; repo unchanged. The three breaks are applied and committed by the task's `setup` before the session starts. |
 | 7 | `build-component` | `fabflows:build` (a spec'd, sizeable change) | A greenfield project (`fixtures/dep-resolver/visible`: a spec for a semver range parser, a flat backtracking resolver and a CLI, plus `package.json`). Graded by a hidden 41-test acceptance suite (`fixtures/dep-resolver/hidden`) run against the fixture at grade time, plus: `npm test` passes, the tree is clean and committed, no dependency added, every launched workflow finished. Caps 200 turns, $60, 120 min. |
+| 9 | `update-minimal` | `fabflows:build` loop arm only, `repeats: 3` | A brownfield fixture (`fixtures/lockstep-update/visible`: the `dep-resolver` reference plus a spec for `lockstep update`, a minimal-change re-resolution with a unique answer under rules U1 to U3). Graded by a hidden suite (`fixtures/lockstep-update/hidden`) against a brute-force oracle on small registries and a hand-checked 16-package case with a 10 s timeout, plus `resolve` and `check` regression cases. No planted defect: the review's REWORK row is the signal. Caps 120 turns, $15, 30 min. |
 
 Tasks 1 to 4 are short chains, added in iteration 1. Tasks 5 and 6 were added for iteration 2
 because iteration 1 showed the lead never delegating on short work: they carry evidence large

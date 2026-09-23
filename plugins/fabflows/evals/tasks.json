@@ -121,6 +121,24 @@
         "rootEnv": "LOCKSTEP_ROOT",
         "defectPattern": "caret-on-zero|satisfies|src/index\\.js"
       }
+    },
+    {
+      "id": 9,
+      "name": "update-minimal",
+      "routing": "fabflows:build (a spec'd minimal-change optimisation on a brownfield project)",
+      "fixture": { "kind": "dir", "from": "fixtures/lockstep-update/visible" },
+      "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 30 },
+      "repeats": 3,
+      "arms": {
+        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself.\n\n", "grade": { "requireReview": true } }
+      },
+      "prompt": "Add the `lockstep update` command specified in SPEC.md to this repository. Write its tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
+      "grade": {
+        "kind": "hidden-tests",
+        "testCommand": "npm test",
+        "hidden": "fixtures/lockstep-update/hidden",
+        "rootEnv": "LOCKSTEP_ROOT"
+      }
     }
   ]
 }
