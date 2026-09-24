@@ -166,8 +166,8 @@ offer to split it into one file per entry, preserving IDs and dates. Ask first.
 Triggered by the plugin's hook (`hooks/decisions_check.py`), which runs at session
 start and after an edit in `docs/decisions/`, and prints a line once
 `docs/decisions/` holds 50 or more archivable records (not proposed, not a
-digest), or by
-"compact decisions," "too many decision records."
+digest), or once 50 records exist but some are still proposed. Also triggered
+by "compact decisions," "too many decision records."
 
 1. `scripts/adr_compact.py <repo> --dry-run` and show the human the mapping: the
    25 oldest non-proposed records that move to `docs/decisions/archive/`, and the
@@ -180,9 +180,13 @@ digest), or by
    branch, do not stash or switch it: use a separate worktree
    (`git worktree add`) or ask the human when. The script refuses a working tree
    that is not clean.
-3. Run it without `--dry-run`. Files move with `git mv`, bytes untouched;
-   the digest is a new accepted record carrying each archived record's outcome
-   and gaps verbatim. The history still reads from `docs/decisions/` alone.
+3. In that branch, run `scripts/adr_compact.py <repo> --dry-run` again. If the
+   mapping differs from the one the human agreed to, because the default branch
+   holds different records, show the new one and ask again. Then run
+   `scripts/adr_compact.py <repo>` without `--dry-run`. Files move with `git mv`,
+   bytes untouched; the digest is a new accepted record carrying each archived
+   record's outcome and gaps verbatim. The history still reads from
+   `docs/decisions/` alone.
 4. Re-run `scripts/adr_index.py`, then `audit.py`.
 5. Commit the moves, the digest and the index as one commit. Offer to push it and
    open it as its own pull request (merge request on GitLab). Never fold it into
