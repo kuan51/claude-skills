@@ -473,6 +473,12 @@ test('PR titles must carry the key', () => {
     assert.equal(shell(r.dir, 'gh pr create --body "run with -t ABC-1" --title "no key"').decision, 'deny', 'the body is not the title');
     assert.equal(shell(r.dir, 'gh pr create --title=ABC-1:x').decision, 'allow', '--title=');
     assert.equal(shell(r.dir, 'gh pr create --title "ABC-1" --title "no key"').decision, 'deny', 'every --title');
+    for (const cmd of ['gh pr create -t "ABC-1 x" -t"no key"', 'gh pr create -t "ABC-1 x" -t=nokey', 'gh pr create -dt "no key"']) {
+      assert.equal(shell(r.dir, cmd).decision, 'deny', `attached -t: ${cmd}`);
+    }
+    for (const cmd of ['gh pr create -t"ABC-1 x"', 'gh pr create -dt "ABC-1 x"', 'gh pr create -t=ABC-1']) {
+      assert.equal(shell(r.dir, cmd).decision, 'allow', `attached -t: ${cmd}`);
+    }
     assert.equal(shell(r.dir, 'url=$(gh pr create --title "no key" --body x)').decision, 'deny', 'inside $(...)');
     assert.equal(shell(r.dir, '# then gh pr create\nls x#y').decision, 'allow', 'a comment is not a command');
     for (const cmd of ['x=$(echo a)#b; gh pr create --fill', 'echo a\\;#b; gh pr create --fill', 'echo a\\ #b; gh pr create --fill']) {

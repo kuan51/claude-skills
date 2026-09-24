@@ -479,13 +479,17 @@ function ghArgs(words, verb) {
   const k = words.findIndex((w, j) => /(^|[/\\])gh(\.exe)?$/.test(w) && words[j + 1] === 'pr' && words[j + 2] === verb);
   return k < 0 ? null : words.slice(k + 3);
 }
-// The titles a `gh pr create` passes: each word after --title or -t, and the rest of each
-// --title=. Every one must carry the key, so which one gh keeps doesn't matter.
+// The titles a `gh pr create` passes, in every form gh's flag parser takes: --title v,
+// --title=v, -t v, -tv, -t=v, and -t after boolean shorthands (-dt v). Every one must carry
+// the key, so which one gh keeps doesn't matter.
 function prTitles(args) {
   const titles = [];
   for (let k = 0; k < args.length; k++) {
-    if (args[k] === '--title' || args[k] === '-t') titles.push(args[k + 1] ?? '');
-    else if (args[k].startsWith('--title=')) titles.push(args[k].slice(8));
+    const w = args[k];
+    const short = /^-[defw]*t(.*)$/s.exec(w);
+    if (w === '--title' || (short && short[1] === '')) titles.push(args[++k] ?? '');
+    else if (w.startsWith('--title=')) titles.push(w.slice(8));
+    else if (short) titles.push(short[1].replace(/^=/, ''));
   }
   return titles;
 }
