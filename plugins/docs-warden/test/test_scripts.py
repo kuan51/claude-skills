@@ -1992,6 +1992,34 @@ def test_adr_compact_refuses_a_dirty_tree():
             assert result.returncode == 0, (dirty, result.stderr)
 
 
+def test_adr_compact_outside_a_git_repository():
+    """The clean-tree check is the only git call on the compaction path, so
+    outside a repository --check and --dry-run still answer, and compaction
+    refuses rather than moving files git cannot account for."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = repo / "docs" / "decisions"
+        decisions.mkdir(parents=True)
+        for n in range(1, 51):
+            (decisions / f"DEC-{n:04d}-x.md").write_text("---\nid: x\nstatus: accepted\n---\n")
+        # Stop git from finding a repository above the temp dir.
+        env = dict(os.environ, GIT_CEILING_DIRECTORIES=str(repo.parent))
+
+        def run(*flags):
+            return subprocess.run([sys.executable, str(SCRIPTS / "adr_compact.py"), str(repo), *flags],
+                                  capture_output=True, text=True, env=env, check=False)
+
+        check = run("--check")
+        assert check.returncode == 0 and "ready to archive" in check.stdout, check
+        dry = run("--dry-run")
+        assert dry.returncode == 0 and "digest:" in dry.stdout, dry
+        result = run()
+        assert result.returncode == 1, result
+        assert "compaction must land as its own commit" in result.stderr, result.stderr
+        assert not (decisions / "archive").exists(), "moved files outside git"
+        assert len(list(decisions.glob("DEC-*.md"))) == 50
+
+
 def test_adr_compact_section_ignores_headings_inside_code_fences():
     sys.path.insert(0, str(SCRIPTS))
     try:
