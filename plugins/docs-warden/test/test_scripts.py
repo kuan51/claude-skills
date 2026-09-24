@@ -1813,17 +1813,20 @@ def test_run_generators_skips_a_package_runner():
     real_which, real_run = audit.shutil.which, audit.subprocess.run
     audit.shutil.which = lambda name, *a, **k: f"/usr/bin/{name}"
     audit.subprocess.run = lambda argv, **k: calls.append(argv)
+    runners = [["npx", "x"], ["npm", "create", "vite"], ["yarn", "create", "x"],
+               ["pnpm", "create", "x"], ["bun", "create", "x"], ["npm", "init", "vite"],
+               ["uv", "tool", "run", "foo"], ["uv", "run", "--with", "foo", "x.py"]]
     try:
-        with tempfile.TemporaryDirectory() as tmp:
-            config = {"generated_docs": [{"path": "x.md", "command": ["npx", "x"]}]}
-            entry = audit.check_generated_docs(Path(tmp), config, True)
+        for command in runners:
+            with tempfile.TemporaryDirectory() as tmp:
+                config = {"generated_docs": [{"path": "x.md", "command": command}]}
+                entry = audit.check_generated_docs(Path(tmp), config, True)
+            assert calls == [], f"check_generated_docs spawned {calls}"
+            assert entry["state"] == "skipped", \
+                f"{command}: expected skipped, got {entry['state']}: {entry['reason']}"
+            assert "package runner; ask the user to run it" in entry["reason"], entry["reason"]
     finally:
         audit.shutil.which, audit.subprocess.run = real_which, real_run
-
-    assert calls == [], f"check_generated_docs spawned {calls}"
-    assert entry["state"] == "skipped", \
-        f"expected skipped, got {entry['state']}: {entry['reason']}"
-    assert "package runner; ask the user to run it" in entry["reason"], entry["reason"]
 
 
 def _decisions_repo(repo: Path, count: int, proposed=()):

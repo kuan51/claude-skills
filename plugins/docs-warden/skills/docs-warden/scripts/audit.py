@@ -517,15 +517,22 @@ GENERATED_DOCS_FIX = ("Give generated_docs as a list of entries, each a mapping 
 
 
 PACKAGE_RUNNERS = {"npx", "pnpx", "bunx", "uvx", "pipx"}
+# `npm init <initializer>` is `npm exec create-<initializer>`; a flag-only `npm init`
+# is caught too, which errs toward skipping.
 PACKAGE_RUNNER_PAIRS = {("pnpm", "dlx"), ("yarn", "dlx"), ("npm", "exec"),
-                        ("npm", "x"), ("bun", "x")}
+                        ("npm", "x"), ("bun", "x"), ("npm", "create"),
+                        ("yarn", "create"), ("pnpm", "create"), ("bun", "create"),
+                        ("npm", "init"), ("uv", "tool")}
 
 
 def _is_package_runner(command):
     """True when a generator command would fetch a package to run it."""
     first = re.sub(r"\.(cmd|exe)$", "", Path(str(command[0])).name.lower())
     second = str(command[1]).lower() if len(command) > 1 else ""
-    return first in PACKAGE_RUNNERS or (first, second) in PACKAGE_RUNNER_PAIRS
+    uv_with = (first, second) == ("uv", "run") and any(
+        str(a).startswith("--with") for a in command[2:])
+    return (first in PACKAGE_RUNNERS or (first, second) in PACKAGE_RUNNER_PAIRS
+            or uv_with)
 
 
 def check_generated_docs(repo, config, run_generators):
