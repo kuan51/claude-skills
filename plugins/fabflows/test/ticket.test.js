@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { spawnSync, execFileSync } = require('node:child_process');
 
 const TICKET = path.join(__dirname, '..', 'hooks', 'ticket.js');
@@ -37,8 +38,9 @@ function repo(originHead = true) {
     git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
   }
   git('checkout', '-q', '-b', 'feature');
-  const state = path.join(dir, '.git', 'fabflows', 'ticket');
-  return { dir, git, state, done: () => fs.rmSync(dir, { recursive: true, force: true }) };
+  const stateOf = (branch) =>
+    path.join(dir, '.git', 'fabflows', 'tickets', crypto.createHash('sha256').update(branch).digest('hex').slice(0, 16) + '.json');
+  return { dir, git, state: stateOf('feature'), stateOf, done: () => fs.rmSync(dir, { recursive: true, force: true }) };
 }
 
 const URL = 'https://tracker.example/browse/ABC-1';
@@ -87,6 +89,14 @@ test('approve then check passes on the same text and fails on changed text', () 
     const changed = cli(r.dir, ['check'], 'spec\nother');
     assert.equal(changed.status, 1, 'changed text');
     assert.ok(changed.stderr.includes(specHash), 'names the approved hash');
+    const approved = r.state.replace(/\.json$/, '.approved.md');
+    assert.equal(fs.readFileSync(approved, 'utf8'), 'spec\ntext\n', 'approve writes the normalized text');
+    assert.ok(changed.stderr.includes(approved), 'check prints the approved file');
+    fs.writeFileSync(approved, 'spec\nedited\n');
+    const tampered = cli(r.dir, ['check'], 'spec\nother');
+    assert.equal(tampered.status, 1);
+    assert.match(tampered.stderr, /tampered/);
+    assert.ok(!tampered.stderr.includes(approved), 'a tampered file is never offered for a diff');
     assert.equal(cli(r.dir, ['normalize'], 'a  \r\nb').stdout, 'a\nb\n');
   } finally {
     r.done();
@@ -152,10 +162,10 @@ test('linking: other branch, Refs trailers with and without origin/HEAD', () => 
       assert.equal(cli(r.dir, ['link', 'ABC-1', URL, 'jira']).status, 0);
       r.git('checkout', '-q', '-b', 'other');
       assert.equal(shell(r.dir, 'git commit -m x').decision, 'allow', 'a state file for another branch is unlinked');
-      assert.match(start(r.dir), /is for branch feature, not other/);
+      assert.equal(start(r.dir), undefined, "another branch's link prints nothing");
 
       r.git('commit', '-q', '--allow-empty', '-m', 'bad\n\nRefs: abc-1;rm');
-      assert.match(start(r.dir), /is for branch feature/, 'an invalid trailer is ignored');
+      assert.equal(start(r.dir), undefined, 'an invalid trailer is ignored');
       r.git('commit', '-q', '--allow-empty', '-m', 'x\n\nRefs: ABC-9');
       r.git('commit', '-q', '--allow-empty', '-m', 'bad again\n\nRefs: $(echo x)');
       assert.equal(
@@ -169,6 +179,54 @@ test('linking: other branch, Refs trailers with and without origin/HEAD', () => 
     } finally {
       r.done();
     }
+  }
+});
+
+test('links are per branch', () => {
+  const r = repo();
+  const PR = 'https://github.com/o/r/pull/3';
+  try {
+    fs.mkdirSync(path.join(r.dir, '.git', 'fabflows'), { recursive: true });
+    fs.writeFileSync(
+      path.join(r.dir, '.git', 'fabflows', 'ticket'),
+      JSON.stringify({ key: 'OLD-1', url: URL, tracker: 'jira', branch: 'feat-a', specHash: null, pr: null })
+    );
+    r.git('checkout', '-q', '-b', 'feat-a');
+    assert.equal(cli(r.dir, ['status']).status, 1, 'unlinked, and the old-layout file is ignored');
+    assert.equal(shell(r.dir, 'git commit -m x').decision, 'allow', 'the old-layout file is ignored');
+    assert.equal(cli(r.dir, ['link', 'ABC-1', URL, 'jira']).status, 0);
+    assert.equal(cli(r.dir, ['approve'], 'spec a').status, 0);
+    const { specHash } = JSON.parse(fs.readFileSync(r.stateOf('feat-a'), 'utf8'));
+    assert.deepEqual(JSON.parse(cli(r.dir, ['status']).stdout), { key: 'ABC-1', specHash, pr: null });
+
+    r.git('checkout', '-q', '-b', 'feat-b');
+    assert.equal(cli(r.dir, ['link', 'ABC-2', URL, 'jira']).status, 0);
+    assert.equal(cli(r.dir, ['pr', PR]).status, 0);
+    r.git('checkout', '-q', 'feat-a');
+    assert.equal(cli(r.dir, ['check'], 'spec a').status, 0, 'feat-b did not overwrite feat-a');
+    assert.equal(shell(r.dir, 'git commit -m x').decision, 'deny', 'feat-a still needs Refs: ABC-1');
+
+    const outputs = [
+      start(r.dir),
+      shell(r.dir, 'git commit -m x').reason,
+      after(r.dir, 'Bash', { command: 'git push' }).context,
+      after(r.dir, 'Bash', { command: 'gh pr merge 3' }).context,
+    ];
+    for (const o of outputs) assert.ok(o && !o.includes('feat-a'), `no branch name in: ${o}`);
+
+    r.git('checkout', '-q', 'feat-b');
+    assert.equal(cli(r.dir, ['clear']).status, 0);
+    assert.ok(!fs.existsSync(r.stateOf('feat-b')));
+    assert.ok(fs.existsSync(r.stateOf('feat-a')), 'clear on feat-b leaves feat-a');
+
+    r.git('checkout', '-q', 'feat-a');
+    assert.equal(cli(r.dir, ['pr', PR]).status, 0);
+    r.git('checkout', '-q', 'main');
+    assert.equal(cli(r.dir, ['clear', '--pr', PR]).status, 0);
+    assert.ok(!fs.existsSync(r.stateOf('feat-a')), 'clear --pr removes the matching file');
+    assert.ok(!fs.existsSync(r.stateOf('feat-a').replace(/\.json$/, '.approved.md')), 'and its approved text');
+  } finally {
+    r.done();
   }
 });
 

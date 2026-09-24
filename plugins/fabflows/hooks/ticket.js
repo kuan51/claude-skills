@@ -5,11 +5,15 @@
 //
 // CLI (the ticket skill runs these):
 //   link <key> <url> <tracker>   record the ticket for the current branch
-//   approve < spec               store the fingerprint of the approved spec
+//   approve < spec               store the fingerprint and the normalized approved spec
 //   check < spec                 exit 0 when the spec still matches that fingerprint
 //   normalize < spec             print the text the fingerprint is taken over
 //   pr <url>                     record the pull request
-//   clear                        forget the link
+//   status                       print this branch's confirmed link as JSON, or exit 1
+//   clear [--pr <url>]           forget this branch's link, or the link with that PR
+//
+// State is one file per branch, fabflows/tickets/<h>.json in the git dir, where <h> is the
+// first 16 hex characters of sha256(branch); approve adds <h>.approved.md beside it.
 //
 // Every value is validated on every read and write: the state file, commit trailers and
 // the git dir can hold any text, and what this prints reaches Claude's context.
@@ -93,7 +97,8 @@ function normalize(text) {
   return out.split('\n').map((l) => l.replace(/\s+$/u, '')).join('\n').replace(/\s+$/u, '');
 }
 
-const fingerprint = (text) => 'sha256:' + crypto.createHash('sha256').update(normalize(text), 'utf8').digest('hex');
+const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
+const fingerprint = (text) => 'sha256:' + sha(normalize(text));
 
 // ---------------------------------------------------------------- git and state
 function git(args, cwd) {
@@ -112,24 +117,44 @@ function currentBranch(cwd) {
   return b && b !== 'HEAD' && valid.branch(b) ? b : null;
 }
 
-const statePath = (cwd) => path.resolve(cwd, git(['rev-parse', '--git-path', 'fabflows/ticket'], cwd));
+const stateDir = (cwd) => path.resolve(cwd, git(['rev-parse', '--git-path', 'fabflows/tickets'], cwd));
+const statePath = (cwd, branch) => path.join(stateDir(cwd), sha(branch).slice(0, 16) + '.json');
+const approvedPath = (p) => p.replace(/\.json$/, '.approved.md');
 
-function readState(cwd) {
+function readFile(p) {
   try {
-    const s = JSON.parse(fs.readFileSync(statePath(cwd), 'utf8'));
-    return validState(s) ? s : null;
+    const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+    return validState(s) && path.basename(p) === sha(s.branch).slice(0, 16) + '.json' ? s : null;
   } catch {
     return null;
   }
+}
+const readState = (cwd, branch) => readFile(statePath(cwd, branch));
+
+// Every valid state file, for a lookup by PR after the branch may be gone.
+function allStates(cwd) {
+  let dir, names;
+  try {
+    dir = stateDir(cwd);
+    names = fs.readdirSync(dir).filter((n) => n.endsWith('.json'));
+  } catch {
+    return [];
+  }
+  return names.map((n) => ({ file: path.join(dir, n), s: readFile(path.join(dir, n)) })).filter((e) => e.s);
 }
 
 function writeState(cwd, s) {
   if (!validState(s)) throw new Error('invalid ticket state');
   const { key, url, tracker, branch, specHash = null, pr = null } = s;
-  const p = statePath(cwd);
+  const p = statePath(cwd, branch);
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, JSON.stringify({ key, url, tracker, branch, specHash, pr }) + '\n');
 }
+
+const removeState = (file) => {
+  fs.rmSync(file, { force: true });
+  fs.rmSync(approvedPath(file), { force: true });
+};
 
 // Same base as guard.js: origin/HEAD, else main or master.
 function base(cwd) {
@@ -144,13 +169,12 @@ function base(cwd) {
 function linked(cwd) {
   const branch = currentBranch(cwd);
   if (!branch) return null;
-  const state = readState(cwd);
-  if (state && state.branch === branch) return { ...state, confirmed: true };
+  const state = readState(cwd, branch);
+  if (state) return { ...state, confirmed: true };
   const b = base(cwd);
   const log = b && tryGit(['log', '-n', '200', '--format=%(trailers:key=Refs,valueonly)%x1e', `${b}..HEAD`], cwd);
   const key = (log || '').split(/[\x1e\n]/).map((s) => s.trim()).find(valid.key);
-  if (key) return { key, confirmed: false };
-  return state ? { otherBranch: state, branch } : null;
+  return key ? { key, confirmed: false } : null;
 }
 
 // ---------------------------------------------------------------- CLI
@@ -177,18 +201,47 @@ function cli(cmd, args) {
     for (const k of ['key', 'url', 'tracker', 'branch']) if (!valid[k](s[k])) fail(`invalid ${k}`);
     writeState(cwd, s);
   } else if (cmd === 'approve') {
-    writeState(cwd, { ...state(confirmed()), specHash: fingerprint(stdin()) });
+    const l = confirmed();
+    const text = normalize(stdin());
+    fs.writeFileSync(approvedPath(statePath(cwd, l.branch)), text + '\n');
+    writeState(cwd, { ...state(l), specHash: 'sha256:' + sha(text) });
   } else if (cmd === 'check') {
     const l = confirmed();
     const got = fingerprint(stdin());
-    if (got !== l.specHash) fail(`spec changed: approved ${l.specHash || 'none'}, now ${got}`);
+    if (got !== l.specHash) {
+      const msg = `spec changed: approved ${l.specHash || 'none'}, now ${got}`;
+      if (!l.specHash) fail(msg);
+      const p = approvedPath(statePath(cwd, l.branch));
+      let approved = null;
+      try {
+        approved = fs.readFileSync(p, 'utf8').replace(/\n$/, '');
+      } catch {
+        // missing: reported as tampered below
+      }
+      if (approved === null || 'sha256:' + sha(approved) !== l.specHash) {
+        fail(`${msg}; the approved text was tampered with or is missing, so there is nothing to diff against`);
+      }
+      if (/[\p{Cc}\p{Cf}]/u.test(p)) fail(`${msg}; the approved text's path holds control characters`);
+      fail(`${msg}; approved text: ${p}`);
+    }
   } else if (cmd === 'pr') {
     if (!valid.pr(args[0])) fail('invalid pr url');
     writeState(cwd, { ...state(confirmed()), pr: args[0] });
+  } else if (cmd === 'status') {
+    const l = linked(cwd);
+    if (!l || !l.confirmed) process.exit(1);
+    process.stdout.write(JSON.stringify({ key: l.key, specHash: l.specHash, pr: l.pr }) + '\n');
   } else if (cmd === 'clear') {
-    fs.rmSync(statePath(cwd), { force: true });
+    if (args[0] === '--pr') {
+      if (!valid.pr(args[1])) fail('invalid pr url');
+      for (const e of allStates(cwd)) if (e.s.pr === args[1]) removeState(e.file);
+    } else {
+      const branch = currentBranch(cwd);
+      if (!branch) fail('not on a branch; use clear --pr <url>');
+      removeState(statePath(cwd, branch));
+    }
   } else {
-    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, pr or clear`);
+    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, pr, status or clear`);
   }
   process.exit(0);
 }
@@ -221,12 +274,6 @@ function sessionStart(cwd) {
   }
   if (l && l.key) {
     return context('SessionStart', `fabflows: ticket ${l.key} found in commit trailers, not confirmed: ask the user before editing it.`);
-  }
-  if (l && l.otherBranch) {
-    return context(
-      'SessionStart',
-      `fabflows: the ticket link (${l.otherBranch.key}) is for branch ${l.otherBranch.branch}, not ${l.branch}; this branch has no linked ticket.`
-    );
   }
   const branch = currentBranch(cwd);
   const top = branch && tryGit(['rev-parse', '--show-toplevel'], cwd);
