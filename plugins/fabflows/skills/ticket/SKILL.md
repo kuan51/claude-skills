@@ -21,7 +21,7 @@ MCP tool names carry a server prefix (`mcp__<server>__issue_read`), so match on 
 
 | Tracker | Read | Create / edit | Status | Comment |
 | --- | --- | --- | --- | --- |
-| GitHub Issues | `issue_read` | `issue_write` | `issue_write` (open, closed) | `add_issue_comment` |
+| GitHub Issues | `issue_read` | `issue_write`, `sub_issue_write` | `issue_write` (open, closed) | `add_issue_comment` |
 | Jira | `getJiraIssue` | `createJiraIssue`, `editJiraIssue` | `getTransitionsForJiraIssue`, then `transitionJiraIssue` | `addCommentToJiraIssue` (v2 servers: `addOrEditJiraIssueComment`) |
 | Linear (untested) | `get_issue` | `save_issue` | `save_issue` | `save_comment` |
 
@@ -45,6 +45,20 @@ node "${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js" link '<key>' '<url>' '<tracker>'
 
 `<key>` is `#12` or `owner/repo#12` for GitHub, `ABC-12` for Jira and Linear. `<url>` is the
 ticket's `https://` address. `<tracker>` is the `tracker` value from `.claude/fabflows.json`.
+
+## Parent
+
+When `.claude/fabflows.json` has a non-empty `parent`, file every ticket you create under it:
+
+- Jira: pass it as `parent` to `createJiraIssue`. Under an epic, use Task or Story; under a
+  story or task, use the project's sub-task type, the only type Jira nests there.
+- GitHub: create with `issue_write`, then `sub_issue_write` method `add`, with the parent's
+  number as `issue_number` and the new issue's ID (not its number) as `sub_issue_id`.
+- Linear (untested): set the parent on `save_issue`.
+
+This applies only to tickets you create: linking an existing ticket never re-parents it, and
+the parent ticket itself is never edited. If the tracker refuses the parent, say so and ask
+before creating the ticket without it.
 
 ## Body template
 

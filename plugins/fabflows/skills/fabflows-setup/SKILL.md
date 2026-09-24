@@ -1,7 +1,7 @@
 ---
 name: fabflows-setup
 compatibility: Claude Code with the fabflows plugin enabled. Needs the AskUserQuestion and ToolSearch tools and, for a tracker, that tracker's MCP server. Not portable to Claude.ai or the API.
-description: 'Choose where this repository keeps its specs: a GitHub Issues, Jira or Linear ticket, or docs/specs/ as before. Asks one question, checks that the tracker''s MCP tools are connected, asks for the project, and writes .claude/fabflows.json for fabflows:ticket and fabflows:brainstorming to read. Never connects a server and never handles a secret. Triggers on "/fabflows-setup", "set up fabflows", "connect fabflows to Jira", "use GitHub issues for specs", "configure the tracker", "where should specs live".'
+description: 'Choose where this repository keeps its specs: a GitHub Issues, Jira or Linear ticket, or docs/specs/ as before. Asks one question, checks that the tracker''s MCP tools are connected, asks for the project and an optional parent epic or story, and writes .claude/fabflows.json for fabflows:ticket and fabflows:brainstorming to read. Never connects a server and never handles a secret. Triggers on "/fabflows-setup", "set up fabflows", "connect fabflows to Jira", "use GitHub issues for specs", "configure the tracker", "where should specs live", "file tickets under an epic".'
 ---
 
 # fabflows setup
@@ -40,16 +40,21 @@ reads or stores a token, key or password: a secret typed into chat stays in the 
 | Linear | team key | none |
 | Other | whatever names the project in that tracker | none |
 
+Then ask whether new tickets should be filed under a parent: an epic or story (`ABC-7`) for
+Jira and Linear, an issue (`#7`) for GitHub. It is optional; offer "none" first. When given,
+read it once with the tracker's read tool from `fabflows:ticket`'s tool table. Not found:
+say so, then ask again or go on without one.
+
 ## 4. Write and commit
 
 Write `.claude/fabflows.json` with the Write tool:
 
 ```json
-{"tracker": "jira", "project": "ABC", "site": "example.atlassian.net"}
+{"tracker": "jira", "project": "ABC", "site": "example.atlassian.net", "parent": "ABC-7"}
 ```
 
 `tracker` is `github`, `jira`, `linear`, or the Other name in lowercase with dashes.
-`site` is `""` when there is none.
+`site` and `parent` are `""` when there is none.
 
 Tell the user the file will be committed, so in a public repository the site name becomes
 public. Offer to commit it on the current branch (never the default branch). Then point
