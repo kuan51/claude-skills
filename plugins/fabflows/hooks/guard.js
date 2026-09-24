@@ -188,8 +188,11 @@ function isLocalRun(seg, cwd) {
 }
 
 // Secret-bearing paths. Accepts either separator so a Windows path matches too.
+// A `.env` directory is a Python virtualenv, not a secret. `.pem` or `.key` followed by a
+// source or prose extension is a file about keys; `json` is left out, since a `*.key.json`
+// can be a real service-account key.
 const SECRET_PATH =
-  /(^|[\s"'\\/])\.env($|[.\s"'\\/])|\.pem\b|\.key\b|\bid_rsa\b|\bid_ed25519\b|[\\/]\.aws[\\/]credentials|[\\/]\.ssh[\\/]|\.npmrc\b|\.pypirc\b/i;
+  /(^|[\s"'\\/])\.env($|[.\s"'])|\.(pem|key)\b(?!\.(md|mdx|txt|html|js|jsx|mjs|cjs|ts|tsx|py|go|rs|java|cs|rb)\b)|\bid_rsa\b|\bid_ed25519\b|[\\/]\.aws[\\/]credentials|[\\/]\.ssh[\\/]|\.npmrc\b|\.pypirc\b/i;
 
 // .env.example and friends are committed scaffolding that agents legitimately read and
 // edit in most repos. Blocking them would be a false positive on nearly every project.

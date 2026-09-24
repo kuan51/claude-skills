@@ -405,6 +405,15 @@ test('blocks reads of credential files but not their committed examples', () => 
   allows(read(path.join('src', 'index.js')), 'Read of source');
 });
 
+test('a key or pem name in source or prose, and a .env directory, are not secrets', () => {
+  for (const p of ['docs/monkey.pem.md', 'src/api.key.ts', 'tls.pem.md', '.env/lib/python3.11/site.py', '.env\\Scripts\\activate.bat']) {
+    allows(read(p), `Read of ${p}`);
+  }
+  for (const p of ['server.key', '.env', '.env.local', 'config/.env.production', 'id_rsa', 'sa.key.json', 'server.pem']) {
+    denies(read(p), `Read of ${p}`);
+  }
+});
+
 test('blocks staging a credential file', () => {
   denies(shell('git add .env'), 'git add .env');
   allows(shell('git add src/index.js'), 'git add a source file');
