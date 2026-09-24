@@ -114,7 +114,7 @@ function buildBrief(round, mustFix) {
     '</spec>',
     ...fence,
     '',
-    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a blocked reply must name its reason there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec. A permission denial that stopped you is a blocker: quote it in blocker, and start report with `Permission denied:` and the same quote. A denial you worked around is not a blocker: leave blocker empty, report done, and say what you did instead further down the report.',
+    '**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- a blocked reply must name its reason there; leave blocker out when done) and report -- your usual report contract in prose, including the commits you made and any deviation from the spec. A permission denial that stopped you is a blocker: quote it in blocker, and start report with `Permission denied:` and the same quote. A denial you worked around is not a blocker: leave blocker empty, report done, and say what you did instead further down the report. The exception is a denied package install or package runner: that is always a blocker, so quote it and never work around it.',
     '',
     `**Tools and paths:** Read, Edit, Write, Grep, Glob, and Bash in this repository. Run \`${a.testCommand}\` to prove the change.`,
     '',
