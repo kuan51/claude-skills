@@ -84,9 +84,10 @@ per-plugin history until entries are recorded here going forward.
   `default`, `acceptEdits` and `auto` modes; a worker, `plan`, `bypassPermissions`,
   `dontAsk`, or a missing mode still gets `deny`, and every decision tells Claude to stop.
   The ask is emitted only after every other rule has passed, and an install aimed at live
-  config (by `cd`, session directory, `VAR=` prefix or `--prefix=`) is always denied. A
-  bin already in `node_modules/.bin`, or a runner with `--no`/`--offline`, is not a
-  download, so `npx vitest run` still works. Prefixes such as `time`, `env` and `xargs` no
+  config (by `cd`, `pushd`, `Set-Location`, session directory, `VAR=` prefix or
+  `--prefix=`) is always denied. An `npx` or `npm exec` of a bin already in the project's
+  `node_modules/.bin` is not a download, so `npx vitest run` still works; `pnpx` and
+  `bunx` always count as downloads. Prefixes such as `time`, `env` and `xargs` no
   longer hide a command, and the `Monitor` tool is guarded like Bash. The build brief makes
   a denied install a blocker. The skill tells Claude to name the package and ask before
   trying any other route. DEC-0023 supersedes DEC-0002's "no installs regardless of model

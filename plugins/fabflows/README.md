@@ -4,7 +4,8 @@ Routes mechanical work from an expensive lead model down to cheaper workers, and
 the lead prove what those workers claim.
 
 > **This plugin installs an active hook.** Once enabled, a `PreToolUse` hook runs on
-> every `Bash`, `PowerShell`, `Read`, `Grep`, `Edit`, and `Write` call in your session
+> every `Bash`, `PowerShell`, `Monitor`, `Read`, `Grep`, `Edit`, `Write`, and `NotebookEdit`
+> call in your session
 > and can block it. It asks before package installs and package runners, and blocks commits and pushes on a default branch,
 > destructive shell commands, reads and writes of credential files, and writes to live
 > Claude Code configuration. Read [Guard rules](#guard-rules) before you install it,
@@ -160,12 +161,14 @@ rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alik
   so an install next to a denied segment is still denied. A worker, and any other mode
   (`plan`, `bypassPermissions`, `dontAsk`, missing), gets `deny`; in a mode that cannot
   prompt, Claude asks you to run the command yourself. An install aimed at live
-  configuration (a `cd` or session directory there, a `VAR=` prefix or a `--prefix=` /
-  `--target=` naming it) is always denied. A local bin is not a download: `npx`, `pnpx`,
-  `bunx`, `npm exec`/`npm x` and `bun x` pass when they carry `--no`, `--no-install` or
-  `--offline` before the bin name and no `--yes`/`-y`, or when they name a plain bin (no `@`, `/` or `:`, no `-p`/`--package`)
-  found in `node_modules/.bin` in the working directory or a parent. So `npx vitest run`
-  works in a project that has vitest installed. One more exception:
+  configuration (the session directory there, or a command that names it anywhere: `cd`,
+  `pushd`, `Set-Location`, a `VAR=` prefix, a `--prefix=` or `--target=`) is always
+  denied. A local bin is not a download: `npx` and `npm exec`/`npm x` pass when they name
+  a plain bin (no `@`, `/` or `:`, and no `-p`/`--package` or `-c`/`--call` before it)
+  found in `node_modules/.bin` of the nearest directory with a `package.json` or
+  `node_modules`, which is where npm looks. So `npx vitest run` and `npx tsc -p x.json`
+  work in a project that has them installed. `pnpx`, `bunx` and `bun x` always count as
+  downloads. One more exception:
   `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
   literal path with a `scratchpad` directory in it and outside the live configuration below,
   so a session can read a PDF without anything landing in site-packages. `--isolated` is
@@ -210,9 +213,10 @@ be walked around:
 - Base64, variable expansion (`X=rm; $X -rf ~`), command substitution (`$(...)`),
   heredocs, `bash -c`, `python -c`, and full binary paths all evade it. Newlines, `&`, a
   leading `(`, a `VAR=value` prefix, and the prefixes `time`, `exec`, `nohup`, `command`,
-  `!`, `{`, `env` and `xargs` do not: each segment is anchored separately. Only flags
-  without a separate value are stripped, so `xargs -n 1 npx foo`, `xargs -I {} npx {}`
-  and `env -i npx foo` still evade it.
+  `!`, `{`, `env` and `xargs`, with their flags, do not: each segment is anchored
+  separately. A prefix flag whose value is a separate word is stripped only when the
+  guard knows it takes one (`xargs -n 1`, `xargs -I {}`, `env -u VAR`, `exec -a name`);
+  an unlisted one hides the command after it.
 - Any binary whose basename is an interpreter name (`./x/python.exe`) is trusted to run a
   script from the plugin cache.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
