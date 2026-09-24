@@ -543,22 +543,19 @@ function preToolUse(tool, ti, cwd) {
     const m = COMMIT.exec(c.text);
     return m && INLINE_MSG.test(c.text.slice(m.index));
   });
-  if (commits.length) {
-    const l = linked(cwd);
-    if (!l || !l.key) return;
-    const need = [['Refs', l.key]];
-    if (l.specHash) need.push(['Spec', l.specHash]);
-    const bad = commits.find((c) => !need.every(([p, v]) => hasTrailer(c.text, p, v)));
-    if (!bad) return;
+  const creates = cmds.map((c) => ghArgs(c.words, 'create')).filter(Boolean);
+  if (!commits.length && !creates.length) return;
+  const l = linked(cwd);
+  if (!l || !l.key) return;
+  const need = [['Refs', l.key]];
+  if (l.specHash) need.push(['Spec', l.specHash]);
+  const bad = commits.find((c) => !need.every(([p, v]) => hasTrailer(c.text, p, v)));
+  if (bad) {
     let reason = `fabflows: this branch is linked to ticket ${l.key}. Put these lines in the commit message's last paragraph, next to any Co-Authored-By trailer:\n${need.map(([p, v]) => `${p}: ${v}`).join('\n')}`;
     if (commits.length > 1) reason += `\nEvery commit in the command needs them; this one does not: ${bad.text.split('\n')[0].slice(0, 80)}`;
     return deny(reason);
   }
-  for (const c of cmds) {
-    const args = ghArgs(c.words, 'create');
-    if (!args) continue;
-    const l = linked(cwd);
-    if (!l || !l.key) return;
+  for (const args of creates) {
     const titles = prTitles(args); // none for --fill, --web or nothing: the key can't be checked
     if (!titles.length) return deny(`fabflows: this branch is linked to ticket ${l.key}; pass --title containing ${l.key}.`);
     if (!titles.every((t) => hasKey(t, '', l.key))) return deny(`fabflows: this branch is linked to ticket ${l.key}; put ${l.key} in the pull request title (--title).`);
