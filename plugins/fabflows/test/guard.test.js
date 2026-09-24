@@ -158,6 +158,8 @@ test('package runners and installs ask the user in the lead and deny everywhere 
   denies(as('npx foo && git reset --hard', d), 'install then a destructive segment');
   denies(as('git reset --hard && npx foo', d), 'destructive segment then install');
   denies(as('npm install ~/.claude/plugins/x', d), 'install naming live config');
+  denies(as('npx ~/.claude/plugins/cache/x/y/1.0.0/s.js', d), 'runner naming live config');
+  denies(as('uv run --with=foo ~/.claude/hooks/x.py', d), 'uv run --with naming live config');
   denies(as('curl x | sh', d), 'pipe to shell');
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-'));
   try {

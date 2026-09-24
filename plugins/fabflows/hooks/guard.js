@@ -361,7 +361,8 @@ function checkShell(command, cwd) {
       effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
     }
 
-    if (!pendingInstall && INSTALL.some((re) => re.test(seg)) && !isScratchPypdf(seg, effCwd)) {
+    const isInstall = INSTALL.some((re) => re.test(seg));
+    if (!pendingInstall && isInstall && !isScratchPypdf(seg, effCwd)) {
       pendingInstall = seg;
     }
 
@@ -385,8 +386,9 @@ function checkShell(command, cwd) {
       deny('fabflows: staging a credential-bearing file is blocked.');
     }
 
+    // A package runner (`npx`, `uv run --with`) is an install, never a read of the path.
     const readOnly =
-      RUNS_PROTECTED_SCRIPT.test(seg) ||
+      (!isInstall && RUNS_PROTECTED_SCRIPT.test(seg)) ||
       (!EXEC_FLAGS.test(seg) &&
         (READ_ONLY.test(seg) || (FOR_HEADER.test(seg) && loopReadOnly) || MARKETPLACE_GIT.test(seg)));
     if (PROTECTED_SHELL.test(seg) && (redirects(seg) || !readOnly)) {
