@@ -951,6 +951,25 @@ test('trace --enrich ignores every value of the wrong shape', () => {
   }
 });
 
+test('trace --json ignores log.showSignature, so no signature text reaches a row', () => {
+  const h = history();
+  try {
+    // A commit carrying a signature, which git checks and reports on stdout; no key needed.
+    const [head, body] = h.g('cat-file', 'commit', 'HEAD').split('\n\n');
+    const sig = 'gpgsig -----BEGIN PGP SIGNATURE-----\n \n iQEzBAABCAAdFiEE\n -----END PGP SIGNATURE-----';
+    const signed = execFileSync('git', ['hash-object', '-t', 'commit', '-w', '--stdin'], { cwd: h.r.dir, input: `${head}\n${sig}\n\n${body}\n`, encoding: 'utf8' }).trim();
+    h.g('update-ref', 'refs/heads/main', signed);
+    h.g('config', 'log.showSignature', 'true');
+    const out = cli(h.r.dir, ['trace', h.from, '--json']);
+    assert.equal(out.status, 0, out.stderr);
+    const rows = JSON.parse(out.stdout);
+    assert.equal(rows.length, Object.keys(h.sha).length); // the signed commit replaces HEAD
+    assert.ok(rows.every((r) => /^[0-9a-f]{40,64}$/.test(r.sha)), out.stdout);
+  } finally {
+    h.r.done();
+  }
+});
+
 test('trace --out writes only outside the repo, never over a file', () => {
   const h = history();
   const inRepo = path.join(h.r.dir, 'out');

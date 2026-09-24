@@ -334,6 +334,7 @@ const MERGE_PR = /^Merge pull request #([0-9]{1,9})\b/;
 const TRAILING_PR = /\s*\(#([0-9]{1,9})\)\s*$/;
 const AI = /noreply@anthropic\.com|claude|copilot/i;
 const uniq = (a) => [...new Set(a)];
+const HEX = /^[0-9a-f]{40,64}$/;
 
 // One commit of LOG_FORMAT output. Every field is validated where it is used, so a unit
 // separator inside commit text can shift fields but never put free text in a row.
@@ -345,10 +346,12 @@ function parseCommit(rec) {
 
 function traceRows(from, to, cwd) {
   const records = (out) => out.split('\0').filter((r) => r.trim()).map(parseCommit);
-  return records(traceGit(['log', '--first-parent', '-z', `--format=${LOG_FORMAT}`, `${from}..${to}`], cwd)).map((c) => {
+  // --no-show-signature: with log.showSignature set, git prints signature checks, a signer's
+  // name among them, into stdout ahead of each record.
+  return records(traceGit(['log', '--first-parent', '--no-show-signature', '-z', `--format=${LOG_FORMAT}`, `${from}..${to}`], cwd)).map((c) => {
     // Every commit a merge brought in, from each parent after the first.
     const merged =
-      c.parents.length > 1 && /^[0-9a-f]{40,64}$/.test(c.sha)
+      c.parents.length > 1 && HEX.test(c.sha)
         ? records(traceGit(['rev-list', '--no-commit-header', `--format=${LOG_FORMAT}%x00`, `${c.sha}^1..${c.sha}`], cwd)).filter((m) => m.sha !== c.sha)
         : [];
     const own = c.refs.filter(valid.key);
@@ -356,7 +359,7 @@ function traceRows(from, to, cwd) {
     const subject = c.parents.length < 2 ? (c.subject.replace(TRAILING_PR, '').match(SUBJECT_KEY) || []).filter(valid.key) : [];
     const pr = MERGE_PR.exec(c.subject) || TRAILING_PR.exec(c.subject);
     return {
-      sha: c.sha,
+      sha: HEX.test(c.sha) ? c.sha : null,
       date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}(Z|[+-][0-9]{2}:[0-9]{2})$/.test(c.date) ? c.date : null,
       pr: pr ? Number(pr[1]) : null,
       keys: uniq([...own, ...brought, ...subject]),
