@@ -970,6 +970,27 @@ test('trace --json ignores log.showSignature, so no signature text reaches a row
   }
 });
 
+test('trace --enrich never blocks on a bodyFile that is a FIFO', { skip: process.platform === 'win32' }, () => {
+  const h = history();
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-trace-'));
+  try {
+    for (const [name, v] of Object.entries(FILES)) fs.writeFileSync(path.join(tmp, name), v);
+    execFileSync('mkfifo', [path.join(tmp, 'fifo.md')]);
+    const e = clean();
+    e.tickets['ABC-1'].bodyFile = 'fifo.md';
+    fs.writeFileSync(path.join(tmp, 'enrich.json'), JSON.stringify(e));
+    const args = [TICKET, 'trace', h.from, '--out', path.join(tmp, 'out'), '--enrich', path.join(tmp, 'enrich.json')];
+    const res = spawnSync(process.execPath, args, { cwd: h.r.dir, encoding: 'utf8', timeout: 10000 });
+    assert.equal(res.error, undefined, 'trace hung on the FIFO');
+    assert.equal(res.status, 0, res.stderr);
+    const row = parseCsv(fs.readFileSync(path.join(tmp, 'out', 'trace.csv'), 'utf8')).find((r) => r[0].startsWith(h.sha[MERGE5] + ' '));
+    assert.deepEqual(row[17].split('; ').filter(Boolean), ['not-enriched']);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    h.r.done();
+  }
+});
+
 test('trace --out writes only outside the repo, never over a file', () => {
   const h = history();
   const inRepo = path.join(h.r.dir, 'out');

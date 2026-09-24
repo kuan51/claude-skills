@@ -383,7 +383,8 @@ const shortList = (v) => Array.isArray(v) && v.every(short);
 function readSmall(file, max, flags = 0) {
   let fd;
   try {
-    fd = fs.openSync(file, fs.constants.O_RDONLY | flags);
+    // O_NONBLOCK, so a FIFO fails the isFile check instead of blocking the open forever.
+    fd = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NONBLOCK || 0) | flags);
     const st = fs.fstatSync(fd);
     return st.isFile() && st.size <= max ? fs.readFileSync(fd, 'utf8') : null;
   } catch {
