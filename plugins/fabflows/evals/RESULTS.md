@@ -68,6 +68,99 @@ unexercised.
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
 
+## Iterations 11 and 12 (2026-09-24): task 9, medium pins against the raised pins
+
+**Bottom line.** Task 9 (`update-minimal`, a minimal-change re-resolution with a hidden oracle
+and a 16-package case that defeats brute force) is the first task where the loop's outcome
+varies at medium: one run passed clean, one needed two rework rounds, one hit the 30-minute cap
+mid-build with one hidden test failing. So the raised pins finally had something to move, and
+iteration 12 ran the same three runs at 0.5.1's builder `high` and reviewer `xhigh`. They did
+not move the graded outcome upward: two of three builders were still working at the 30-minute
+cap and never committed, and the one complete run needed two rework rounds and cost $5.04.
+Where the raised pins showed a difference is in what the reviewer found: at xhigh both rework
+rounds named real defects (a self-dependency that breaks R1, an exponential minimality proof),
+where at medium one of the two rework rounds was a commit-trailer nit. Three runs per arm; the
+cap, not the pins, decided two of six outcomes.
+
+### Setup (confirmed)
+
+Task 9 as specified in `docs/specs/2026-09-23-fabflows-benchmark-update-minimal.md` (built by
+`fabflows:build`, one round, `5550518`). `loop` arm only, three repeats concurrent, Fable lead
+at medium effort, caps 120 turns, $15, 30 minutes. The harness now sets
+`CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`, so the `claude -p` 600 s background limit from
+iteration 10 no longer applies; the 30-minute `runTimeoutMinutes` cap does. Iteration 11 loaded
+a `git archive 7dc5335 plugins/fabflows` snapshot (0.5.0, all pins medium) via `--plugin-dir`;
+iteration 12 loaded this checkout (0.5.1). Remote cloud session. Commands:
+
+```bash
+git archive 7dc5335 plugins/fabflows | tar -x -C <snapshot>
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 9 --parallel 3 --plugin-dir <snapshot>/plugins/fabflows --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 12 --tasks 9 --parallel 3 --confirm
+```
+
+### Observed
+
+| iter, pins | run | hidden | loop finished | rounds | build:1 s | review s (each) | verdicts | wall s | Fable $ | Opus $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 11, medium | 1 | 20/21 | no, killed at cap mid build:1, nothing committed | 0 | 1,782+ | n/a | none | 1,802 | 1.09 | 1.84 | 2.94 |
+| 11, medium | 2 | 21/21 | yes | 3 | 675 | 79, 76 | REWORK, REWORK, ACCEPT | 1,146 | 1.84 | 1.99 | 3.84 |
+| 11, medium | 3 | 21/21 | yes | 1 | 896 | 59 | ACCEPT | 1,006 | 1.38 | 1.29 | 2.67 |
+| 12, high/xhigh | 1 | 21/21 | no, killed at cap mid build:1, nothing committed | 0 | 1,775+ | n/a | none | 1,802 | 0.57 | 1.69 | 2.26 |
+| 12, high/xhigh | 2 | 21/21 | yes | 3 | 518 | 181, 249, 261 | REWORK, REWORK, ACCEPT | 1,483 | 1.04 | 3.99 | 5.04 |
+| 12, high/xhigh | 3 | 21/21 | no, killed at cap mid build:1, nothing committed | 0 | 1,759+ | n/a | none | 1,803 | 0.70 | 1.90 | 2.60 |
+
+The hidden score of a killed run is graded on the uncommitted working tree. In iteration 11
+run 1 the failing test was the U2 tie-break; in both iteration 12 kills the tree already passed
+21/21 and the builder was still running probes (its last tool call was a Bash of a `node -e`
+script against its own `src/index.js`, 42 and 48 tool calls in). No tool call was denied.
+
+Rework findings, from the workflow journals (confirmed):
+
+| iter | round | reviewer must-fix |
+| --- | --- | --- |
+| 11 | review:1 | `while (!search(new Map(), k)) k++` re-runs a full search for every k below the answer: exponential, will miss the 10 s bound at spec scale |
+| 11 | review:2 | commit trailer names Opus 5.5, the brief said Fable 5.1 |
+| 12 | review:1 | `update` never checks a package's dependency on itself, so it can return a lockfile that breaks R1 and an answer where `resolve` throws, breaking U3 |
+| 12 | review:2 | minimality proof `search(k - 1, ...)` is exponential when every change is forced but found one at a time, as in a dependency chain |
+
+### What the runs showed
+
+1. **Task 9 discriminates (confirmed).** Six loop runs, four distinct outcomes: clean ACCEPT,
+   two-round rework, cap kill with a failing test, cap kill with a passing tree. No earlier task
+   produced anything but clean ACCEPT in thirteen runs.
+2. **The raised builder pin did not make the build converge faster (confirmed).** At medium,
+   two of three build:1 rounds finished (675 s, 896 s); at high, one of three (518 s). The two
+   high builders that were killed had thought 14k and 23k tokens and had correct code in the
+   tree for some time before the cap; they were still probing rather than committing. Whether
+   they would have committed at 35 or 60 minutes is unmeasured: the cap truncates the arm.
+3. **The xhigh reviewer found more, and different, things (confirmed, n=1 complete run per
+   arm).** Both of its rework rounds named correctness or complexity defects in the search
+   itself. The medium reviewer found one such defect and one attribution nit. The xhigh reviews
+   took 181 to 261 s and 14k to 21k thinking tokens each, against 59 to 79 s and 3k to 5k.
+4. **Cost, on the one complete run per arm (confirmed).** $5.04 against $3.84 list, of which Opus
+   $3.99 against $1.99; three xhigh reviews are most of the difference.
+5. **Three runs per arm, two of them truncated (confirmed).** This is a direction on the
+   reviewer and no verdict on the builder.
+
+### What it means
+
+- The reviewer pin is where the raised effort showed up: at xhigh the review reads the search
+  for correctness and complexity, not only the diff against the spec. That is the behaviour
+  the pin was raised for, and it costs about $0.65 and 200 s a round on this task.
+- The builder pin bought nothing measurable and may have cost two runs, because a high-effort
+  builder on an open-ended search problem keeps probing. The 30-minute cap is now the binding
+  constraint on task 9 in both arms, and it should be raised (60 minutes) before the next
+  comparison, or the builder brief should say when to stop probing and commit.
+- The next measurement worth paying for: task 9 at a 60-minute cap, builder medium and reviewer
+  xhigh (the split the evidence points at), three runs, against these six.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 9 --parallel 3 --plugin-dir <0.5.0 snapshot>/plugins/fabflows --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 12 --tasks 9 --parallel 3 --confirm
+```
+
 ## Iteration 10 (2026-09-23): the raised effort pins on the large build
 
 **Bottom line.** Task 7 (the greenfield resolver, 41 hidden tests) with fabflows 0.5.1's pins
