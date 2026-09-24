@@ -2019,6 +2019,36 @@ def test_audit_front_matter_ignores_the_decisions_archive():
         assert not [p for p in paths if "decisions/" in p], paths
 
 
+def test_check_says_why_compaction_waits():
+    """Fifty records with fewer than fifty decided used to give silence, which
+    reads as a broken hook. Now --check says what compaction is waiting for."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _decisions_repo(repo, 50, proposed={50})
+        out = _compact(repo, "--check").stdout
+        assert "49 decided and 1 still proposed" in out, out
+        assert "ready to archive" not in out, out
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _decisions_repo(repo, 49, proposed=set(range(41, 50)))
+        out = _compact(repo, "--check").stdout
+        assert out == "", out
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 49, proposed={49})
+        (decisions / "DEC-0901-d.md").write_text(
+            "---\nid: d\nstatus: accepted\ntags: [compaction]\n---\n")
+        out = _compact(repo, "--check").stdout
+        assert out == "", out
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 50)
+        out = _compact(repo, "--check").stdout
+        assert "ready to archive" in out and "still proposed" not in out, out
+        assert not (decisions / "archive").exists(), "--check archived"
+        assert len(list(decisions.glob("DEC-*.md"))) == 50
+
+
 def test_decisions_check_hook_speaks_only_at_50():
     hook = SCRIPTS.parent.parent.parent / "hooks" / "decisions_check.py"
     for count, expect in ((49, False), (50, True)):
@@ -2030,7 +2060,8 @@ def test_decisions_check_hook_speaks_only_at_50():
                 (decisions / f"DEC-{n:04d}-x.md").write_text(
                     "---\nid: x\nstatus: accepted\n---\n")
             (decisions / "README.md").write_text("pointer\n")
-            # Neither of these is archivable, so neither counts.
+            # Neither of these is archivable, so neither counts as decided; the
+            # proposed one makes 50 records at 49, which gives the waiting line.
             (decisions / "DEC-0900-p.md").write_text("---\nid: p\nstatus: proposed\n---\n")
             (decisions / "DEC-0901-d.md").write_text(
                 "---\nid: d\nstatus: accepted\ntags: [compaction]\n---\n")
@@ -2038,7 +2069,8 @@ def test_decisions_check_hook_speaks_only_at_50():
                 [sys.executable, str(hook)], input=json.dumps({"cwd": str(repo)}),
                 capture_output=True, text=True, check=False)
             assert result.returncode == 0, result.stderr
-            assert ("compact" in result.stdout) is expect, (count, result.stdout)
+            assert ("ready to archive" in result.stdout) is expect, (count, result.stdout)
+            assert ("still proposed" in result.stdout) is not expect, (count, result.stdout)
     # Garbage stdin must not break session start.
     result = subprocess.run([sys.executable, str(hook)], input="not json",
                             capture_output=True, text=True, check=False)

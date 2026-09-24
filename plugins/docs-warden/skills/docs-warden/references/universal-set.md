@@ -60,7 +60,7 @@ Alongside them, `adr_index.py` writes a generated `docs/decisions/README.md`: a
 heading, one sentence, and a link up to the index. It is a signpost for anyone
 browsing the folder, not a second copy of the table.
 
-At 50 records, `adr_compact.py` moves the 25 oldest unchanged into
+At 50 decided records, `adr_compact.py` moves the 25 oldest unchanged into
 `docs/decisions/archive/` and writes one digest record in their place; see
 `adr-format.md`, "Compaction."
 

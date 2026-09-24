@@ -13,8 +13,9 @@ from docs/decisions/ alone. Context, drivers and rejected options stay in the
 archive, bytes untouched, so the immutability rule holds. Digests are never
 archived, so what they carry stays at the top level.
 
-Below the threshold the script does nothing. Re-run adr_index.py afterwards.
---check prints one line when compaction is due and nothing otherwise; the
+The script archives nothing below 50 decided. Re-run adr_index.py afterwards.
+--check prints one line when compaction is due, or when 50 records exist but
+too many are still proposed, and nothing otherwise; the
 SessionStart hook runs it so "due" is defined in exactly one place.
 """
 import argparse
@@ -94,9 +95,16 @@ def main() -> int:
         return 1
 
     # Archivable: decided, and not a digest.
-    candidates = [r for r in load_adrs(repo)
-                  if r["status"] != "proposed" and DIGEST_TAG not in r["tags"]]
+    records = [r for r in load_adrs(repo) if DIGEST_TAG not in r["tags"]]
+    candidates = [r for r in records if r["status"] != "proposed"]
     if len(candidates) < COMPACT_AT:
+        if args.check and len(records) >= COMPACT_AT:
+            # Counts and fixed text only: this line enters Claude's context.
+            print(f"docs-warden: {len(records)} decision records in {DECISIONS_DIR}, "
+                  f"{len(candidates)} decided and {len(records) - len(candidates)} still "
+                  f"proposed. Compaction archives decided records only and starts at "
+                  f"{COMPACT_AT}. Run the docs-warden skill's compact mode to review the "
+                  f"proposed ones.")
         if not args.check:
             print(f"{len(candidates)} eligible record(s), below the compaction point of {COMPACT_AT}")
         return 0

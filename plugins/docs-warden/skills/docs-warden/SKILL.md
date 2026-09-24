@@ -19,7 +19,7 @@ Repositories fall into two worlds and both are in scope:
 
 **This skill will:** propose and scaffold a document set, audit a repo against the
 standard, regenerate generated documents, scaffold and index decision records,
-archive the oldest of them into a digest once there are fifty, and flag documents
+archive the oldest of them into a digest once fifty are decided, and flag documents
 that have drifted from the code they describe.
 
 **This skill will not:** invent regulatory content, write clinical or legal claims,
@@ -176,7 +176,12 @@ proposed, not a digest), or by
    and gaps verbatim. The history still reads from `docs/decisions/` alone.
 3. Re-run `scripts/adr_index.py`, then `audit.py`.
 
-Below 50 records the script does nothing. Never edit the digest or the archived
+If the line instead says 50 records exist but some are still proposed, nothing is
+due yet: list the proposed records oldest first and ask the human to accept or
+reject each. Never change a status without their word. Then re-run
+`scripts/adr_compact.py <repo> --check`.
+
+The script archives nothing below 50 decided. Never edit the digest or the archived
 files. They are accepted records like any other.
 
 ## The universal set
