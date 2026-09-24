@@ -547,11 +547,8 @@ function mergeTarget(tool, ti) {
     const repo = [ti.owner, ti.repo].every((v) => str(v) && /^[A-Za-z0-9_.-]+$/.test(v)) ? `/${ti.owner}/${ti.repo}` : '';
     return { suffix: `${repo}/pull/${n}` };
   }
-  const cmd = str(ti.command) ? ti.command : '';
-  const m = GH_PR('merge').exec(cmd);
-  if (!m) return null;
-  const rest = cmd.slice(m.index + m[0].length).split(/[;&|\n]/)[0];
-  const tokens = (rest.match(/"(?:[^"\\]|\\.)*"|'[^']*'|\S+/g) || []).map((t) => t.replace(/^(["'])([\s\S]*)\1$/, '$2'));
+  const tokens = str(ti.command) && split(ti.command).map((c) => ghArgs(c.words, 'merge')).find(Boolean);
+  if (!tokens) return null;
   if (tokens.includes('--auto') || tokens.includes('--disable-auto')) return null;
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];

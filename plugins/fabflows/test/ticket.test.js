@@ -510,6 +510,7 @@ test('the merge reminder finds the ticket by PR, only after a real merge', () =>
     assert.equal(after(r.dir, 'mcp__github__merge_pull_request', { owner: 'o', repo: 'r', pullNumber: 3 }).context, text, 'MCP with repo');
     assert.equal(after(r.dir, 'mcp__github__merge_pull_request', { owner: 'x', repo: 'r', pullNumber: 3 }).context, undefined, 'other repo');
     assert.equal(merge(`gh pr merge ${PR} --squash`), text, 'by URL');
+    assert.equal(merge('gh pr merge --subject "a; b" 3'), text, 'a quoted ; is not the end of the command');
     assert.equal(merge('gh pr merge 9'), undefined, 'a number that matches nothing');
     assert.equal(merge('gh pr merge https://github.com/o/r/pull/9'), undefined, 'a URL that matches nothing');
 
