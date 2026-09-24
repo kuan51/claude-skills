@@ -98,8 +98,22 @@ const INSTALL = [
   /^uv\s+run\s+(-\S+\s+([^-\s]\S*\s+)?)*--with(-requirements|-editable)?(\s|=)/i,
   /^pipx\s+(run|install)\b/i,
   /^(npm|yarn|pnpm|bun)\s+create\b/i,
-  /^npm\s+init\s+[^-\s]/i,
+  // `npm init <initializer>` runs `npm exec create-<initializer>`, whatever flags come first.
+  { test: (seg) => npmInitializer(seg) },
 ];
+
+// Flags of `npm init` whose value is a separate word, so the value is not an initializer.
+const NPM_INIT_VALUE_FLAG = /^(-w|--workspace|--scope|--init-[\w-]+)$/i;
+function npmInitializer(seg) {
+  const m = /^npm\s+init(\s+.*)?$/i.exec(seg);
+  if (!m) return false;
+  const args = (m[1] || '').match(/"[^"]*"|'[^']*'|\S+/g) || [];
+  for (let i = 0; i < args.length; i++) {
+    if (NPM_INIT_VALUE_FLAG.test(args[i])) i++;
+    else if (!args[i].startsWith('-')) return true;
+  }
+  return false;
+}
 
 // The one install the guard lets through: pypdf, pure Python, into a `--target` with a
 // `scratchpad` directory in its path. Nothing lands in site-packages, so nothing outlives
@@ -128,33 +142,35 @@ function isScratchPypdf(seg, cwd) {
   return /(^|\/)scratchpad(\/|$)/.test(t) && !isProtectedPath(t);
 }
 
-// npx and its kin run a bin from node_modules/.bin before they download anything, so a
-// plain bin name that is already installed, or a run that cannot download, is not an install.
+// npm's own runner (npx, npm exec) runs a bin from the project's node_modules/.bin before it
+// downloads anything, so a plain bin name already installed there is not an install. Only
+// npm: pnpx is `pnpm dlx` and always fetches, and bunx and `bun x` are not trusted to.
 // Only the runner's own flags (before the bin name) count; anything after belongs to the bin.
-const LOCAL_RUNNER = /^(?:npx|pnpx|bunx|npm\s+(?:exec|x)|bun\s+x)(?:\s+(.*))?$/i;
+const LOCAL_RUNNER = /^(?:npx|npm\s+(?:exec|x))(?:\s+(.*))?$/i;
 function isLocalRun(seg, cwd) {
   const m = LOCAL_RUNNER.exec(seg);
   if (!m) return false;
-  if (/(^|\s)(-p|--package)(\s|=|$)/i.test(seg)) return false;
   let bin = null;
-  let offline = false;
-  let yes = false; // a --yes or -y turns downloading back on, so it voids --no
   for (const a of (m[1] || '').split(/\s+/).filter(Boolean)) {
     if (a === '--') continue;
-    if (/^(--no|--no-install|--offline)$/i.test(a)) offline = true;
-    else if (/^(--yes|-y)(=.*)?$/i.test(a)) yes = true;
+    // -p names a package to fetch; -c runs a shell string, which could be anything
+    if (/^(-p|--package|-c|--call)(=.*)?$/i.test(a)) return false;
     if (a.startsWith('-')) continue;
     bin = a;
     break;
   }
-  if (offline && !yes) return true;
   // no @, / or :, so no version or package spec; `.` and `..` are directory specs, not bins
   if (!bin || !/^[\w.-]+$/.test(bin) || /^\.+$/.test(bin)) return false;
+  const exists = (p) => fs.existsSync(p);
   const isFile = (p) => fs.statSync(p, { throwIfNoEntry: false })?.isFile() === true;
   try {
+    // npm's project root is the nearest directory with a package.json or node_modules;
+    // it looks for the bin there and nowhere above.
     for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
-      const b = path.join(dir, 'node_modules', '.bin', bin);
-      if (isFile(b) || isFile(b + '.cmd')) return true;
+      if (exists(path.join(dir, 'package.json')) || exists(path.join(dir, 'node_modules'))) {
+        const b = path.join(dir, 'node_modules', '.bin', bin);
+        return isFile(b) || isFile(b + '.cmd');
+      }
       if (path.dirname(dir) === dir) return false;
     }
   } catch {
@@ -288,9 +304,12 @@ const INERT = /^(done|fi|esac)$/i;
 // a redirect in the value is not swallowed: `X=1>file` truncates file, so the value stops
 // at a redirect and the segment is judged whole.
 const VAR_PREFIX = /^(\w+=(\$\(|[^\s<>]*(\s+|$)))+/;
-// Prefixes that run the command after them: `time npx foo` is judged as `npx foo`. `env`
-// leaves its `VAR=value` pairs to VAR_PREFIX, and `xargs` drops its flags.
-const TRANSPARENT = /^((time|exec|nohup|command|env)\s+|!\s*|\{\s+|xargs(\s+-\S+)*\s+)/i;
+// Prefixes that run the command after them: `time npx foo` is judged as `npx foo`. Their
+// flags go too, including the value of a flag that takes one as a separate word
+// (`xargs -n 1`, `xargs -I {}`, `env -u VAR`, `exec -a name`). `env` leaves its
+// `VAR=value` pairs to VAR_PREFIX. Case-sensitive: `-P` and `-p` differ for xargs.
+const TRANSPARENT =
+  /^((time|nohup|command)(\s+-\S+)*\s+|exec(\s+(-a\s+\S+|-\S+))*\s+|env(\s+(-[uCS]\s*\S+|-\S+))*\s+|xargs(\s+(-[nILPsdEa]\s*\S+|-\S+))*\s+|!\s*|\{\s+)/;
 const stripPrefixes = (s) => {
   for (let prev; prev !== s; ) {
     prev = s;
@@ -306,7 +325,7 @@ const redirects = (s) => s.replace(/"[^"]*"|'[^']*'/g, '').includes('>');
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
 const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;
-const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)`, 'i');
+const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s;|&)]|$))|[\\/]\.git[\\/]hooks([\\/"'\s;|&)]|$)`, 'i');
 // Discarding or merging a stream (`2>/dev/null`, `2>&1`) is not a write. Stripped from the
 // raw command before the split, because `2>&1` would otherwise be cut on its `&`. A digit
 // is required after `>&`, so `cat x >& file` still counts as a redirect.
@@ -381,14 +400,12 @@ function checkShell(command, cwd) {
   // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
   // to parse quoting. Newlines and `&` separate too, and a leading `(`, a shell keyword, a
   // `VAR=value` prefix (even when it is the whole segment) and a transparent prefix such
-  // as `time` are stripped, so none of them hides a command from the anchor. The raw
-  // segment is kept, because `NPM_CONFIG_PREFIX=<path> npm i` names its target there.
-  const parts = command
+  // as `time` are stripped, so none of them hides a command from the anchor.
+  const segments = command
     .replace(HARMLESS_REDIRECT, '')
     .split(/&&|\|\||[;|&\r\n]/)
-    .map((raw) => [raw.trim(), stripPrefixes(raw)])
-    .filter(([, s]) => s);
-  const segments = parts.map(([, s]) => s);
+    .map(stripPrefixes)
+    .filter(Boolean);
 
   // `for d in ~/.claude/plugins; do rm -rf "$d"; done` must not pass on its header alone.
   const loopReadOnly = segments.every(
@@ -398,7 +415,7 @@ function checkShell(command, cwd) {
   // `cd x && git commit` is judged in x, not in the session cwd, so a command that
   // moves into a worktree is checked against that worktree's branch.
   let effCwd = cwd;
-  for (const [raw, seg] of parts) {
+  for (const seg of segments) {
     const cd = /^cd\s+(.+)$/.exec(seg);
     if (cd) {
       effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
@@ -407,8 +424,10 @@ function checkShell(command, cwd) {
     const isInstall =
       INSTALL.some((re) => re.test(seg)) && !isLocalRun(seg, effCwd) && !isScratchPypdf(seg, effCwd);
     if (isInstall) {
-      // Aimed at live config, by cwd, by a VAR= prefix or by a flag: never askable.
-      if (isProtectedPath(effCwd) || PROTECTED_SHELL.test(raw)) {
+      // Aimed at live config, by cwd, by a VAR= prefix or by a flag: never askable. The
+      // whole command is checked, not only this segment, because `cd $HOME/...`, `pushd`
+      // and `Set-Location` move into live config in a way effCwd cannot follow.
+      if (isProtectedPath(effCwd) || PROTECTED_SHELL.test(command)) {
         deny(`fabflows: this install lands in live Claude Code configuration (${seg.slice(0, 60)}), which is blocked. That is what stops a worker from disarming this guard. Stop and report it; do not work around it.`);
       }
       pendingInstall = pendingInstall || seg;

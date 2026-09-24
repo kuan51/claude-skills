@@ -196,6 +196,10 @@ test('an install aimed at live config is denied, not asked', () => {
     'PIP_TARGET=~/.claude/hooks pip install foo',
     'pip install --target=$HOME/.claude/hooks x',
     'npm install --prefix=$HOME/.claude/plugins/cache/x foo',
+    'cd $HOME/.claude/plugins/cache/x && npm install foo',
+    'cd "$HOME/.claude/hooks" && pip install foo',
+    'pushd ~/.claude/plugins && npm i foo',
+    'Set-Location ~/.claude/plugins; npm i foo',
   ]) {
     denies(as(cmd), cmd);
   }
@@ -212,11 +216,18 @@ test('a locally installed bin is not a download', () => {
     fs.mkdirSync(path.join(proj, 'node_modules', '.bin'), { recursive: true });
     fs.writeFileSync(path.join(proj, 'node_modules', '.bin', 'vitest'), 'echo inert stand-in\n');
     fs.mkdirSync(path.join(proj, 'node_modules', '.bin', 'adir'));
+    fs.writeFileSync(path.join(proj, 'node_modules', '.bin', 'tsc'), 'echo inert stand-in\n');
     const sub = path.join(proj, 'src');
     fs.mkdirSync(sub);
-    for (const cmd of ['npx vitest run', 'npm exec -- vitest', 'npx --no eslint .']) allows(as(cmd, proj, w), cmd);
+    // A nested package with no node_modules of its own: npm stops there and would download.
+    const nested = path.join(proj, 'pkg');
+    fs.mkdirSync(nested);
+    fs.writeFileSync(path.join(nested, 'package.json'), '{}\n');
+    for (const cmd of ['npx vitest run', 'npm exec -- vitest', 'npx --no vitest', 'npx tsc -p tsconfig.build.json']) allows(as(cmd, proj, w), cmd);
     allows(as('npx vitest run', sub, w), 'a bin found in a parent directory');
-    for (const cmd of ['npx vitest@1 run', 'npx -p vitest vitest', 'npx notinstalled', 'npx --no --yes notinstalled', 'npx --no -y notinstalled', 'npx -y --offline notinstalled', 'npx ..', 'npx .', 'npm exec ..', 'bunx .', 'npx adir']) {
+    denies(as('npx vitest run', nested, w), 'a bin above the nearest package.json');
+    for (const cmd of ['npx vitest@1 run', 'npx -p vitest vitest', 'npx notinstalled', 'npx --no --yes notinstalled', 'npx --no -y notinstalled', 'npx -y --offline notinstalled', 'npx ..', 'npx .', 'npm exec ..', 'bunx .', 'npx adir',
+      'npx --no eslint .', 'npx --no -c "npm install evil"', 'npx -c vitest', 'npx --call vitest', 'pnpx vitest', 'pnpx --no evilpkg', 'bunx --no evilpkg', 'bunx vitest', 'bun x vitest']) {
       denies(as(cmd, proj, w), `${cmd} in a worker`);
       assert.equal(as(cmd, proj, d).decision, 'ask', `${cmd} in the lead`);
     }
@@ -232,15 +243,17 @@ test('quoted alternations and uv or npm init flags are not installs', () => {
   const as = (command) => run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: '.', ...w });
   allows(as('rg "npx|bunx" docs'), 'rg with a quoted alternation');
   allows(as('grep -E "foo|npx" README.md'), 'grep with a quoted alternation');
-  for (const cmd of ['uv run pytest --with-coverage', 'uv run script.py --with foo', 'npm init -w packages/a', 'npm init --scope myorg']) {
+  for (const cmd of ['uv run pytest --with-coverage', 'uv run script.py --with foo', 'npm init -w packages/a', 'npm init --scope myorg', 'npm init --init-author-name "A B"', 'npm init -y']) {
     const r = as(cmd);
     assert.ok(!r.reason || !/package/.test(r.reason), `${cmd} must not be judged an install (got: ${r.reason})`);
   }
+  for (const cmd of ['npm init vite', 'npm init -y create-evil', 'npm init --yes vite', 'npm init -w packages/a vite']) denies(as(cmd), cmd);
 });
 
 test('transparent prefixes do not hide a runner or installer', () => {
   const w = { agent_id: 'a1', permission_mode: 'default' };
-  for (const command of ['time npx foo', 'exec npx foo', 'xargs -n1 npx foo', '! npx foo', '{ npx foo; }', 'env FOO=1 npm install x', 'command npm install x']) {
+  for (const command of ['time npx foo', 'exec npx foo', 'xargs -n1 npx foo', '! npx foo', '{ npx foo; }', 'env FOO=1 npm install x', 'command npm install x',
+    'time -p npx foo', 'command -p npx foo', 'exec -a name npx foo', 'nohup -- npx foo', 'env -i npx foo', 'env -u HOME npx foo', 'xargs -n 1 npx foo', 'xargs -I {} npx {}', 'xargs -0 -n 1 npx foo']) {
     denies(run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: '.', ...w }), command);
   }
 });
