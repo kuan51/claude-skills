@@ -12,7 +12,7 @@ Once per repository. The answer lands in a committed `.claude/fabflows.json`: pl
 ## 1. Ask
 
 Run this in the main thread, never in a worker: a worker cannot ask the user. Ask one
-AskUserQuestion question, "Where should specs for this repository live?", with four
+AskUserQuestion question, "Where should specs for this repository live?" with four
 options: **GitHub Issues**, **Jira**, **Linear**, **None (keep `docs/specs/`)**. The
 built-in "Other" answer takes a free-text tracker name.
 

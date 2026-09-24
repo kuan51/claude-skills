@@ -17,7 +17,7 @@ tracker.
 
 ## Tools
 
-MCP tool names carry a server prefix (`mcp__<server>__issue_read`); match on the suffix.
+MCP tool names carry a server prefix (`mcp__<server>__issue_read`), so match on the suffix.
 
 | Tracker | Read | Create / edit | Status | Comment |
 | --- | --- | --- | --- | --- |
