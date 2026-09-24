@@ -436,7 +436,8 @@ const COPY = /^(cp|copy-item)(\s|$)/i;
 const COPY_INTO_DIR = new RegExp(String.raw`^${HOME_SPELLINGS}([\\/]\.claude)?[\\/]?$|(^|[\\/])\.git([\\/]|$)`, 'i');
 function isReadCopy(seg, cwd) {
   if (!COPY.test(seg)) return false;
-  const args = (seg.replace(COPY, '').match(/"[^"]*"|'[^']*'|\S+/g) || []).map(unquote);
+  // A word may join quoted and bare parts (`"$HOME"/.claude`), so match it whole.
+  const args = (seg.replace(COPY, '').match(/(?:"[^"]*"|'[^']*'|[^\s"'])+/g) || []).map((a) => a.replace(/["']/g, ''));
   if (/^cp/i.test(seg) && args.some((a) => /^(-[a-zA-Z]*t|--target-directory)/.test(a))) return false;
   const d = args.findIndex((a) => /^-destination$/i.test(a));
   let dest = args[d + 1];
@@ -446,7 +447,8 @@ function isReadCopy(seg, cwd) {
     dest = args[args.length - 1];
   }
   if (!dest) return false;
-  const abs = norm(path.resolve(cwd, expandHome(dest)));
+  // Every home variable resolves to the real home, so `$HOME/.claude/.` is `~/.claude` below.
+  const abs = norm(path.resolve(cwd, expandHome(dest.replace(/^(\$HOME|\$\{HOME\}|\$env:USERPROFILE)(?=[\\/]|$)/i, '~'))));
   const home = norm(os.homedir());
   return (
     !PROTECTED_SHELL.test(dest) && !COPY_INTO_DIR.test(dest) && !isProtectedPath(abs) &&
