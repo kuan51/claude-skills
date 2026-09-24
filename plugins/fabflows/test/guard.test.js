@@ -814,6 +814,19 @@ test('SubagentStop blocks a report missing its contract fields', () => {
   }
 });
 
+test('a root followed by a glob is the root', () => {
+  for (const t of ['/*', '/.*', '"/"*', '/**', '/*/', '//*', '/.', '/?*', '/*?', "'/'?*", "'/'", '"/"', 'C:\\*', 'C:/*']) {
+    denies(shell(`rm -rf ${t}`), `rm -rf ${t}`);
+  }
+  denies(shell('Remove-Item -Recurse -Force C:\\*', 'PowerShell'), 'Remove-Item C:\\*');
+  // Already denied, unchanged.
+  for (const t of ['/', 'C:\\', 'C:']) denies(shell(`rm -rf ${t}`), `rm -rf ${t}`);
+  for (const t of ['./*', 'build/*', '/tmp/x/*', './build', '*.log', '/tmp', "'/tmp'", 'C:*', 'C:.*']) {
+    allows(shell(`rm -rf ${t}`), `rm -rf ${t}`);
+  }
+  denies(write('package.json', '{"scripts":{"nuke":"rm -rf /*"}}'), 'npm script running rm -rf /*');
+});
+
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
   // Only the guard's own entries; ticket.js has its own wiring test.
