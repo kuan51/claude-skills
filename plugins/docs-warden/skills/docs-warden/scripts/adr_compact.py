@@ -85,12 +85,11 @@ def render(record_id: str, records) -> str:
 
 
 def is_digest(record) -> bool:
-    """Tagged as a digest, in any case. Whole tags only: a string tag such as
-    "no-compaction-needed" is one tag, not a list to search inside."""
+    """Carries the tag render() writes, exactly and whole. Exact, because
+    `Compaction` is also an ordinary topic tag; whole, because a string tag
+    such as "no-compaction-needed" is one tag, not a list to search inside."""
     tags = record["tags"]
-    if not isinstance(tags, list):
-        tags = [tags]
-    return DIGEST_TAG in (str(tag).strip().lower() for tag in tags)
+    return DIGEST_TAG in (tags if isinstance(tags, list) else [tags])
 
 
 def split(repo: Path):

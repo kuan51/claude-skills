@@ -113,7 +113,9 @@ run, and CI relies on that to detect a hand edit.
 `docs/decisions/` only ever grows, so at 50 archivable records (`accepted` or
 `rejected`, not a digest) `adr_compact.py` moves the 25 oldest into `docs/decisions/archive/` with `git mv` and
 writes one new digest record, `DEC-NNNN-compaction-of-dec-0001-to-dec-0026.md`,
-`status: accepted`, `tags: [compaction]`.
+`status: accepted`, `tags: [compaction]`. That lowercase tag marks a digest, so
+never give it to an ordinary record: a record carrying it is never counted or
+archived. `Compaction` or any other spelling is an ordinary tag.
 
 Per archived record the digest records id, title, status, date, what it
 supersedes and what superseded it, a link into `archive/`, and the **Decision outcome** and **Gaps

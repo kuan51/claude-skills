@@ -2166,15 +2166,18 @@ def test_status_matches_in_any_case_and_spacing():
         assert "50 decision records" in out and "ready to archive" in out, out
 
 
-def test_digest_tag_matches_in_any_case_and_only_whole():
-    """The digest test was `"compaction" in tags`: exact case, so a digest
-    tagged [Compaction] counted as an archivable record, and a substring test
-    when tags is a string, so "no-compaction-needed" hid a record."""
+def test_digest_tag_matches_only_the_whole_tag_render_writes():
+    """A digest is what render() writes: the whole tag `compaction`, exactly.
+    A substring test on a string tag hid "no-compaction-needed" from the
+    count, and matching in any case hid an ordinary record about log
+    compaction tagged [Compaction]."""
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
-        decisions = _decisions_repo(repo, 49)
+        decisions = _decisions_repo(repo, 48)
         (decisions / "DEC-0901-d.md").write_text(
-            "---\nid: d\nstatus: accepted\ntags: [Compaction]\n---\n")
+            "---\nid: d\nstatus: accepted\ntags: [compaction]\n---\n")
+        (decisions / "DEC-0049-x.md").write_text(
+            "---\nid: x\nstatus: accepted\ntags: [Kafka, Compaction]\n---\n")
         assert _compact(repo, "--check").stdout == ""
         (decisions / "DEC-0050-x.md").write_text(
             "---\nid: x\nstatus: accepted\ntags: no-compaction-needed\n---\n")
