@@ -25,13 +25,14 @@ import re
 import sys
 from pathlib import Path
 
-from _common import DECISIONS_ARCHIVE_DIR, DECISIONS_DIR, git, load_adrs
+from _common import DECISIONS_ARCHIVE_DIR, DECISIONS_DIR, adr_status, git, load_adrs
 from adr_new import next_id, slugify
 
 # ponytail: constants; make them .docs-warden.yml keys when a repo needs others.
 COMPACT_AT = 50
 COMPACT_BATCH = 25
 DIGEST_TAG = "compaction"
+DECIDED = ("accepted", "rejected")  # in any case, through adr_status
 KEEP_SECTIONS = ("Decision outcome", "Gaps accepted")
 
 
@@ -95,9 +96,11 @@ def main() -> int:
         print(f"error: {repo} is not a directory", file=sys.stderr)
         return 1
 
-    # Archivable: decided, and not a digest.
+    # Archivable: decided, and not a digest. Decided is a closed list, not
+    # "anything but proposed": a draft, a "Proposed" or front matter that did
+    # not parse is no decision, and the digest would freeze it as one.
     records = [r for r in load_adrs(repo) if DIGEST_TAG not in r["tags"]]
-    candidates = [r for r in records if r["status"] != "proposed"]
+    candidates = [r for r in records if adr_status(r) in DECIDED]
     if len(candidates) < COMPACT_AT:
         if args.check and len(records) >= COMPACT_AT:
             # Counts and fixed text only: this line enters Claude's context.

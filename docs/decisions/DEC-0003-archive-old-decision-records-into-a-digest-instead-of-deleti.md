@@ -30,7 +30,7 @@ and to have a hook notice when that point is reached.
 
 ## Considered options
 
-1. **Archive plus digest** — `git mv` the 25 oldest non-proposed records into
+1. **Archive plus digest** — `git mv` the 25 oldest accepted or rejected records into
    `docs/decisions/archive/` unchanged, and write one new accepted digest record
    carrying each one's id, title, status, date, supersedes, and its Decision
    outcome and Gaps accepted sections verbatim.
@@ -49,7 +49,7 @@ result is deterministic and testable.
 
 The trigger is a hook, run at session start and after an edit in
 `docs/decisions/`, that counts the archivable records in `docs/decisions/`
-(not proposed, not a digest) and prints one line at 50 or more, the same count
+(accepted or rejected, not a digest) and prints one line at 50 or more, the same count
 the script uses. When 50 records exist but fewer than 50 are decided, it prints
 a line saying how many are still proposed instead. A hook cannot run the
 compaction itself; it tells the session to run the skill's `compact` mode,

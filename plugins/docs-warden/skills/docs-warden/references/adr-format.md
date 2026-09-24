@@ -109,8 +109,8 @@ run, and CI relies on that to detect a hand edit.
 
 ## Compaction
 
-`docs/decisions/` only ever grows, so at 50 archivable records (not `proposed`,
-not a digest) `adr_compact.py` moves the 25 oldest into `docs/decisions/archive/` with `git mv` and
+`docs/decisions/` only ever grows, so at 50 archivable records (`accepted` or
+`rejected`, not a digest) `adr_compact.py` moves the 25 oldest into `docs/decisions/archive/` with `git mv` and
 writes one new digest record, `DEC-NNNN-compaction-of-dec-0001-to-dec-0026.md`,
 `status: accepted`, `tags: [compaction]`.
 
