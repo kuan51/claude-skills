@@ -84,12 +84,21 @@ def render(record_id: str, records) -> str:
     return "\n".join(lines)
 
 
+def is_digest(record) -> bool:
+    """Tagged as a digest, in any case. Whole tags only: a string tag such as
+    "no-compaction-needed" is one tag, not a list to search inside."""
+    tags = record["tags"]
+    if not isinstance(tags, list):
+        tags = [tags]
+    return DIGEST_TAG in (str(tag).strip().lower() for tag in tags)
+
+
 def split(repo: Path):
     """Top-level records that are not digests, and the decided ones among them.
     Decided is a closed list, not "anything but proposed": a draft, a "Proposed"
     or front matter that did not parse is no decision, and the digest would
     freeze it as one."""
-    records = [r for r in load_adrs(repo) if DIGEST_TAG not in r["tags"]]
+    records = [r for r in load_adrs(repo) if not is_digest(r)]
     return records, [r for r in records if adr_status(r) in DECIDED]
 
 
