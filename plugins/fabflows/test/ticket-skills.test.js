@@ -42,6 +42,14 @@ test('brainstorming and ticket show the user raw ticket text', () => {
   has(afterMerge, ['Refs-only', 'clear --pr'], 'ticket/SKILL.md after-merge paragraph');
 });
 
+test('trace enriches through MCP, reports flags only and keeps the report out of the repo', () => {
+  const needles = [
+    'ticket.js trace', '--enrich', 'get_reviews', 'never commits', 'Write tool', 'newest tag',
+    '--unshallow', 'Delete the scratch directory', 'outside the repo', 'SHA, PR, key and flags',
+  ];
+  has(read(PLUGIN, 'skills', 'trace', 'SKILL.md'), needles, 'trace/SKILL.md');
+});
+
 test('no skill or README names the old single state file', () => {
   const files = [
     ['README.md'],

@@ -1,6 +1,6 @@
 {
-  "about": "Trigger-accuracy corpus for the fabflows plugin's five skills. Same shape as plugins/ciso/evals/trigger-corpus.json and run by the same manual procedure (plugins/ciso/evals/RUNBOOK.md). `fabflows` should load on work that pays for delegation (volume, a multi-file or spec'd change, verifying a worker) and not on a short task; `using-fabflows` only at the top of a session; `brainstorming` on a request that arrives without a spec, not on a feasibility question; `fabflows-setup` when choosing where specs live; `ticket` when linking, updating or closing a tracker ticket. The negatives share the trigger vocabulary (delegate, spawn, explore, run the tests, review, reduce cost) with an intent no fabflows skill serves.",
-  "expectedValues": ["fabflows", "using-fabflows", "brainstorming", "fabflows-setup", "ticket", null],
+  "about": "Trigger-accuracy corpus for the fabflows plugin's six skills. Same shape as plugins/ciso/evals/trigger-corpus.json and run by the same manual procedure (plugins/ciso/evals/RUNBOOK.md). `fabflows` should load on work that pays for delegation (volume, a multi-file or spec'd change, verifying a worker) and not on a short task; `using-fabflows` only at the top of a session; `brainstorming` on a request that arrives without a spec, not on a feasibility question; `fabflows-setup` when choosing where specs live; `ticket` when linking, updating or closing a tracker ticket; `trace` when tracing merged changes to tickets, specs and approvals for an audit. The negatives share the trigger vocabulary (delegate, spawn, explore, run the tests, review, reduce cost) with an intent no fabflows skill serves.",
+  "expectedValues": ["fabflows", "using-fabflows", "brainstorming", "fabflows-setup", "ticket", "trace", null],
   "categories": ["explicit", "implicit", "contextual", "disambiguation", "negative"],
   "queries": [
     { "query": "Delegate the search for every caller of parseToken to a worker agent", "expected": "fabflows", "category": "explicit" },
@@ -43,6 +43,10 @@
     { "query": "The PR merged but issue #58 is still open, close it out", "expected": "ticket", "category": "contextual" },
     { "query": "Add the PR link to the ticket and move it to in review", "expected": "ticket", "category": "implicit" },
     { "query": "We agreed to drop the CSV export, update the ticket's out of scope section", "expected": "ticket", "category": "disambiguation" },
+    { "query": "/fabflows:trace from v1.4.0 to HEAD", "expected": "trace", "category": "explicit" },
+    { "query": "The SOC 2 auditor wants every merged change since the last release with its ticket and approver", "expected": "trace", "category": "implicit" },
+    { "query": "Which merges since the last tag have no ticket or were self-approved?", "expected": "trace", "category": "contextual" },
+    { "query": "Not the ticket for this branch: I need a report tracing every merged PR to its approved spec", "expected": "trace", "category": "disambiguation" },
     { "query": "Here is the finished spec for the retry policy in docs/specs/retry.md. Build it.", "expected": "fabflows", "category": "disambiguation" },
     { "query": "We're already mid-session, just delegate this test run to a worker", "expected": "fabflows", "category": "disambiguation" },
     { "query": "Before anything else this session, load the delegation discipline", "expected": "using-fabflows", "category": "disambiguation" },

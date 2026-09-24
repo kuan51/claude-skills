@@ -17,7 +17,7 @@ const ADJACENT_STEMS = [
 ];
 
 test('every entry is well-formed and uses declared values', () => {
-  assert.deepEqual(corpus.expectedValues, ['fabflows', 'using-fabflows', 'brainstorming', 'fabflows-setup', 'ticket', null]);
+  assert.deepEqual(corpus.expectedValues, ['fabflows', 'using-fabflows', 'brainstorming', 'fabflows-setup', 'ticket', 'trace', null]);
   assert.ok(corpus.queries.length >= 20, 'expected at least 20 queries');
   const seen = new Set();
   for (const entry of corpus.queries) {
