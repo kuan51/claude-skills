@@ -12,7 +12,7 @@ per-plugin history until entries are recorded here going forward.
   decision records exist but fewer than fifty are decided, `adr_compact.py --check` now says
   how many are still proposed instead of staying silent, and compact mode walks the human
   through accepting or rejecting them. The decisions hook also runs after an `Edit` or
-  `Write` in `docs/decisions/` (a `PostToolUse` entry with an `if` rule), passing the line to
+  `Write` in `docs/decisions/` (one `PostToolUse` handler per tool, each with an `if` rule), passing the line to
   Claude as `additionalContext`, not only at session start. Compaction now lands as its own
   pull request: `adr_compact.py` refuses to archive on a working tree that is not clean, and
   compact mode starts a new branch or a separate worktree off the default branch and offers
