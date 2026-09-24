@@ -34,8 +34,9 @@ nothing to do with it.
    `{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"<line, stripped>"}}`.
    Any other file, a quiet `--check`, a missing `tool_input`, bad JSON, or any error gives
    no output and exit 0.
-3. **Registration.** `hooks/hooks.json` adds `PostToolUse`: matcher `Edit|Write`, one
-   command handler with `"if": "Edit(//**/docs/decisions/*)"`, the same
+3. **Registration.** `hooks/hooks.json` adds two `PostToolUse` entries, one per tool:
+   matcher `Edit` with `"if": "Edit(//**/docs/decisions/*)"`, and matcher `Write` with
+   `"if": "Write(//**/docs/decisions/*)"`, each running the same
    `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/decisions_check.py"` command, timeout 5. The
    `SessionStart` entry is unchanged. `//**/` matches anywhere and across drives; a bare
    `**/` would match only under the session's working directory (Claude Code
@@ -113,8 +114,9 @@ Tests in `plugins/docs-warden/test/test_scripts.py`:
   nothing and `<repo>/docs/decisions/archive/DEC-0001-x.md` gives nothing. 49 accepted and
   none proposed gives nothing. No `tool_input` gives nothing and exit 0. The payload
   `{"hook_event_name":"SessionStart","cwd":<repo>}` gives plain, non-JSON stdout containing
-  "ready to archive". `hooks.json` holds the PostToolUse entry with matcher `Edit|Write`
-  and `if` `Edit(//**/docs/decisions/*)`.
+  "ready to archive". `hooks.json` holds exactly two PostToolUse entries: matcher `Edit`
+  with `if` `Edit(//**/docs/decisions/*)`, and matcher `Write` with `if`
+  `Write(//**/docs/decisions/*)`.
 - **New** `test_adr_compact_refuses_a_dirty_tree`: `_decisions_repo(repo, 50)` plus an
   untracked file makes `_compact(repo)` exit 1 with the reason on stderr, no `archive/`,
   no digest, and all 50 records in place; the same with a modified tracked file instead;
@@ -130,11 +132,13 @@ Tests in `plugins/docs-warden/test/test_scripts.py`:
 Run by the lead after the build: the installed `adr_index.py .` leaves no diff, and the
 installed `audit.py .` reports no new fail or warn against the base.
 
-Pre-merge live check, run by the user with the branch installed and a new session: in a
-scratch repo with 50 accepted records, (a) Edit one record from a session opened at the
-repo root, (b) Write one record, (c) Edit one record from a session opened in a different
-folder. Claude receives the line each time. If any case misses, drop `if`, accept the
-Python start on every edit, and re-run.
+Pre-merge live check, in fresh sessions that load the branch's plugin with
+`claude -p --plugin-dir plugins/docs-warden`: in a scratch repo holding 49 accepted
+records, (a) Write a 50th record from a session opened at the repo root, (b) Edit a
+record, (c) Write a file outside `docs/decisions/`, (d) Edit and Write a record from a
+session opened in a different folder. The session transcript's hook attachments show
+whether `decisions_check.py` ran: it must run and deliver the line for (a), (b) and (d),
+and must not start for (c).
 
 ## Out of scope
 
@@ -161,10 +165,15 @@ Python start on every edit, and re-run.
   not be reproduced here. Consequence accepted: in a repository like this one it shows at
   every session start and every record edit once 50 records exist, with no dismiss, until
   the proposals are decided.
-- The `if` rule keeps unrelated edits from starting Python, which took 320 to 470 ms per
-  start on the test machine. `Edit` rules cover all file-editing tools in permission
-  rules; that `if` anchors the same way is inferred, hence the live check. The script
-  re-checks the path regardless.
+- The `if` rules keep unrelated edits from starting Python, which took 320 to 470 ms per
+  start on the test machine. The script re-checks the path regardless.
+- One handler per tool. The first build used a single `Edit|Write` handler with an
+  `Edit(...)` rule, on the inference that `Edit` rules cover every file-editing tool, as
+  they do in permission rules. The live check disproved that for hooks: a Write into
+  `docs/decisions/` never started the hook. With a `Write(...)` handler added, headless
+  sessions loading the branch with `--plugin-dir` showed the hook running after a Write
+  and after an Edit in `docs/decisions/`, and after an Edit made from a session opened in
+  another folder, while a Write outside `docs/decisions/` did not start it.
 - Check the repository that holds the edited record, as an absolute path, not the
   session's working directory.
 - One script. "Due" and "waiting" are defined only in `adr_compact.py --check`.
