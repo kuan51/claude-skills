@@ -215,7 +215,11 @@ replacement for it.
 ## Guard rules
 
 A `hooks/guard.js` file (Node, no dependencies) implements every rule below. The shell
-rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alike:
+rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alike. A
+command is split into segments on `&&`, `||`, `;`, `|`, `&` and line breaks outside
+quotes, and each rule is anchored at the start of a segment. A commit message, a PR body or
+a `grep` pattern that mentions `npx`, `sudo` or `git push` is text, not a command. A command
+with a quote still open at the end is split everywhere, which errs toward deny.
 
 - **Package installs and package runners** across npm, pnpm, yarn, bun, pip, uv (including
   `uv sync`), dotnet,
@@ -237,8 +241,9 @@ rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alik
   not turn an install into a deny. A local bin is not a download: `npx` and `npm exec`/`npm x` pass when they name
   a plain bin (no `@`, `/` or `:`) as the first word, with no runner flag before it
   found in `node_modules/.bin` of the nearest directory with a `package.json` or
-  `node_modules`, which is where npm looks. That lets `npx vitest run` and `npx tsc -p x.json`
-  work in a project that has them installed. `pnpx`, `bunx` and `bun x` always count as
+  `node_modules`, or of any directory above it, which is where npm looks. That lets
+  `npx vitest run` and `npx tsc -p x.json` work in a project that has them installed, and in
+  a workspace package whose bins are hoisted to the monorepo root. `pnpx`, `bunx` and `bun x` always count as
   downloads. One more exception:
   `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
   literal path with a `scratchpad` directory in it and outside the live configuration below,
@@ -247,17 +252,34 @@ rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alik
   install could be pointed at another index. A variable in the path, a second package, an
   index flag, or a `-r` file is still denied.
 - **Commits, pushes, merges and rebases on a default branch.** The default is read from
-  `origin/HEAD` at runtime, falling back to `main` or `master`. Force-push is blocked
-  only when it targets a default branch, so `--force-with-lease` on your own feature
-  branch still works. The branch is read from the directory a `cd` earlier in the same
-  command moves into, so `cd <worktree> && git commit` is judged against that worktree.
+  `origin/HEAD` at runtime, falling back to `main` or `master`. The branch is read from the
+  directory a `cd`, `pushd`, `chdir`, `Set-Location`, `sl` or `Push-Location` earlier in the
+  same command moves into, so `cd <worktree> && git commit` is judged against that
+  worktree. A branch the same command creates or switches to (`git checkout -b`,
+  `git switch -c`, `git switch <name>`) is the one a later commit, merge or rebase is judged
+  on, so `git checkout -b fix && git commit` passes on main. A bare `git checkout <x>` is
+  not followed, because `<x>` can be a file. `git merge-base`, `git commit-graph` and other
+  subcommands that only share a prefix pass, and so do `git merge --abort` and
+  `git rebase --quit`. A push is judged by the branch it writes to. Each refspec's
+  destination is checked (`HEAD:main` and `+feat:main` push to main), and with no refspec
+  the current branch is. `git push origin feat` from main passes, `git push --all` and
+  `--mirror` are denied, and force-push is blocked only when it targets a default branch,
+  so `--force-with-lease` on your own feature branch still works.
 - **Destructive commands**: `rm -rf` and `Remove-Item -Recurse -Force` at a home,
   root, parent, or `.git` target; `git reset --hard`; `git clean -fd`; `git branch -D`
   (but not `-d`); `sudo`; `chmod 777`; `dd of=`; `mkfs`; `Set-ExecutionPolicy`; and
-  piping a download straight into a shell.
+  piping a download straight into a shell. Under home, a delete is blocked at home itself
+  in any spelling (`~`, `$HOME`, `/root`, `/home/<user>`, `C:\Users\<user>`), at `~/*`,
+  at a direct child such as `~/projects`, anywhere under `.ssh`, `.claude`, `.aws`,
+  `.config` or `.gnupg`, and at any target with a `..` segment, which can climb back to
+  home. A deeper path such as `rm -rf ~/.cache/pip` passes. A dry run (`git clean -nd`)
+  passes too.
 - **Credential files**: reading, staging, or writing `.env`, `*.pem`, `*.key`,
   `id_rsa`, `~/.ssh/`, `~/.aws/credentials`, `.npmrc`, `.pypirc`. Committed examples
-  (`.env.example`, `.env.sample`, `.env.template`) are exempt.
+  (`.env.example`, `.env.sample`, `.env.template`) are exempt. A `.pem` or `.key` name
+  followed by a source or prose extension (`monkey.pem.md`, `api.key.ts`) is not a secret,
+  but `sa.key.json` still is. A `.env` directory, such as a Python virtual environment, is
+  not a secret either.
 - **Secrets in an edit.** AWS access key ids, GitHub tokens, Slack tokens, Google API
   keys, and private-key headers are blocked.
 - **Destructive commands written into a runner file.** A `Makefile`, `justfile`,
@@ -265,16 +287,26 @@ rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alik
   delete or any command in the destructive list above is blocked, whether it arrives by
   `Write`, `Edit`, or a `printf`, `echo`, heredoc, or `tee` redirected into it. The shell
   rules cannot see inside `make nuke` once the target exists, so the payload is stopped at
-  the point it is written. Prose files are not checked.
-- **Live configuration**: `~/.claude/settings.json`, `~/.claude/hooks/`,
-  `~/.claude/plugins/`, and any `.git/hooks/`. This is what stops a worker from
-  disarming the guard. Reading them and running a script that lives there is allowed.
-  Only writes and redirects to a file are blocked, including copying files into the plugin
-  cache; merging or discarding a stream (`2>&1`, `2>/dev/null`) does not count.
+  the point it is written. Prose files are not checked. A quoted string on a comment line,
+  or on an `echo`, `printf`, `Write-Host` or `Write-Output` line with no redirect and no
+  `| tee`, is a message and is not checked either.
+- **Live configuration**: `~/.claude/settings.json`, `~/.claude/settings.local.json`,
+  `~/.claude/hooks/`, `~/.claude/plugins/`, and any `.git/hooks/`. This is what stops a
+  worker from disarming the guard. Reading them and running a script that lives there is
+  allowed. A shell command that names one of these paths counts as a write unless it is on
+  a short read-only list, which includes `cat`, `bat`, `grep` and `sed` without `-i` or
+  `--in-place`. Running a script under `~/.claude/plugins/` or `~/.claude/hooks/`, directly
+  or through an interpreter, counts as a read of it. A `cp` or `Copy-Item` out of live
+  configuration is a read when its destination (the `-Destination` value, else the last
+  word) is not live configuration, and not home, `~/.claude` itself or a `.git` directory.
+  A `cp -t` is never a read. Writes and redirects to a file are blocked, including copying
+  files into the plugin cache. Merging or discarding a stream (`2>&1`, `2>/dev/null`) does
+  not count, and a backup name such as `settings.json.bak` is not live configuration.
   Everything else under `~/.claude/` stays writable.
 
 A `SubagentStop` hook checks that a worker's final report actually includes its contract
-fields, and sends it back to be re-emitted if two or more are missing.
+fields, and sends it back to be re-emitted if two or more are missing. A researcher's
+searches and fetches, and an `exit status`, count as its commands.
 
 ### Known gaps
 
@@ -295,7 +327,6 @@ be walked around:
   script from the plugin cache.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
   repository the command targets.
-- `git push origin HEAD:master` from a feature branch is not caught.
 - `cd elsewhere && git commit`: the second segment is judged in `elsewhere` when that
   is a repository, and in the session directory when the guard cannot resolve it (a
   variable, `-`, a missing path). A real second repository on a feature branch is
@@ -308,8 +339,9 @@ be walked around:
   hook sees it.
 - `npm.cmd` and flags before the subcommand (`npm --global install`) evade the install
   rules, just as full binary paths do.
-- A multi-line `git commit -m` body with a line that starts with a runner is judged as a
-  command. That errs toward ask or deny.
+- A command inside quotes, including a quoted `$(...)`, is text. `git commit -m "$(npm i x)"`
+  runs the install unseen, as `bash -c` already does.
+- `sed` without `-i` counts as a read, though its `w` command can write a file.
 - An `ask` can be answered with no human looking: a `PermissionRequest` hook, an SDK
   `canUseTool` callback, or `--permission-prompt-tool` can approve it automatically.
 - Workers are told apart by the `agent_id` field. Whether agent-team teammates carry it
