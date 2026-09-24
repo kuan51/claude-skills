@@ -519,20 +519,30 @@ GENERATED_DOCS_FIX = ("Give generated_docs as a list of entries, each a mapping 
 PACKAGE_RUNNERS = {"npx", "pnpx", "bunx", "uvx", "pipx"}
 # `npm init <initializer>` is `npm exec create-<initializer>`; a flag-only `npm init`
 # is caught too, which errs toward skipping.
+# Installers download too: `npm ci`, `pip install -r`, `uv sync`.
 PACKAGE_RUNNER_PAIRS = {("pnpm", "dlx"), ("yarn", "dlx"), ("npm", "exec"),
                         ("npm", "x"), ("bun", "x"), ("npm", "create"),
                         ("yarn", "create"), ("pnpm", "create"), ("bun", "create"),
-                        ("npm", "init"), ("uv", "tool")}
+                        ("npm", "init"), ("npm", "install"), ("npm", "i"),
+                        ("npm", "ci"), ("npm", "add"), ("pnpm", "install"),
+                        ("pnpm", "i"), ("pnpm", "add"), ("yarn", "install"),
+                        ("yarn", "add"), ("bun", "install"), ("bun", "i"),
+                        ("bun", "add"), ("pip", "install"), ("pip3", "install"),
+                        ("uv", "add"), ("uv", "sync"), ("uv", "pip")}
 
 
 def _is_package_runner(command):
-    """True when a generator command would fetch a package to run it."""
-    first = re.sub(r"\.(cmd|exe)$", "", Path(str(command[0])).name.lower())
-    second = str(command[1]).lower() if len(command) > 1 else ""
+    """True when a generator command would fetch a package, to run or to install."""
+    words = [str(a).lower() for a in command]
+    first = re.sub(r"\.(cmd|exe)$", "", Path(words[0]).name)
+    second = words[1] if len(words) > 1 else ""
+    third = words[2] if len(words) > 2 else ""
     uv_with = (first, second) == ("uv", "run") and any(
-        str(a).startswith("--with") for a in command[2:])
-    return (first in PACKAGE_RUNNERS or (first, second) in PACKAGE_RUNNER_PAIRS
-            or uv_with)
+        a.startswith("--with") for a in words[2:])
+    uv_tool = (first, second) == ("uv", "tool") and third in ("run", "install")
+    pip_module = re.match(r"python\d*(\.\d+)?$", first) and words[1:4] == ["-m", "pip", "install"]
+    return bool(first in PACKAGE_RUNNERS or (first, second) in PACKAGE_RUNNER_PAIRS
+                or uv_with or uv_tool or pip_module)
 
 
 def check_generated_docs(repo, config, run_generators):
@@ -596,7 +606,7 @@ def check_generated_docs(repo, config, run_generators):
         # A package runner downloads from a registry, and a subprocess spawn is
         # invisible to any shell-string hook, so the user runs it, not the audit.
         if _is_package_runner(command):
-            skipped.append(f"{path} (package runner; ask the user to run it)")
+            skipped.append(f"{path} (downloads a package; ask the user to run it)")
             continue
         # Same reason _lint_runner resolves the tool: a bare name that which()
         # found is still unrunnable on Windows, where the tool itself is a .CMD

@@ -1815,7 +1815,10 @@ def test_run_generators_skips_a_package_runner():
     audit.subprocess.run = lambda argv, **k: calls.append(argv)
     runners = [["npx", "x"], ["npm", "create", "vite"], ["yarn", "create", "x"],
                ["pnpm", "create", "x"], ["bun", "create", "x"], ["npm", "init", "vite"],
-               ["uv", "tool", "run", "foo"], ["uv", "run", "--with", "foo", "x.py"]]
+               ["uv", "tool", "run", "foo"], ["uv", "run", "--with", "foo", "x.py"],
+               ["npm", "ci"], ["npm", "install"], ["pip", "install", "-r", "req.txt"],
+               ["python3", "-m", "pip", "install", "x"], ["uv", "sync"], ["uv", "add", "x"],
+               ["yarn", "install"]]
     try:
         for command in runners:
             with tempfile.TemporaryDirectory() as tmp:
@@ -1824,9 +1827,12 @@ def test_run_generators_skips_a_package_runner():
             assert calls == [], f"check_generated_docs spawned {calls}"
             assert entry["state"] == "skipped", \
                 f"{command}: expected skipped, got {entry['state']}: {entry['reason']}"
-            assert "package runner; ask the user to run it" in entry["reason"], entry["reason"]
+            assert "downloads a package; ask the user to run it" in entry["reason"], entry["reason"]
     finally:
         audit.shutil.which, audit.subprocess.run = real_which, real_run
+    # Read-only uv tool subcommands and plain local runs are not downloads.
+    for command in (["uv", "tool", "list"], ["uv", "tool", "dir"], ["npm", "run", "docs"]):
+        assert not audit._is_package_runner(command), command
 
 
 def _decisions_repo(repo: Path, count: int, proposed=()):
