@@ -102,6 +102,8 @@ forgets a link after its branch is gone.
 diff of what Claude wrote against what the tracker holds, or the full raw text when Claude
 did not write it. `ticket.js normalize` removes only HTML comments outside fences, invisible
 and control characters, and the Links section, so the build gets exactly the text approved.
+A `<!--` inside inline code is kept. An unclosed `<!--` removes everything after it, as a
+renderer hides it, so `ticket.js approve` refuses that text and names the line.
 The approval fingerprint (`ticket.js approve`) and the `Spec:` trailer on every commit tie
 the build to that text: `ticket.js check` fails if the ticket changed since, and names the
 stored approved text so Claude can show the raw diff.

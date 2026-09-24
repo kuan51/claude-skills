@@ -47,11 +47,33 @@ function validState(s) {
 // The text the fingerprint is taken over, and the text the user approves and the build
 // gets: the ticket as written, minus HTML comments outside fences, invisible and control
 // characters, and the Links section. Nothing is rendered, so nothing a renderer does can
-// change it. A comment inside 4-space indented code (not fenced) is still removed.
+// change it. A `<!--` inside an inline code span on its line is text. A comment inside
+// 4-space indented code (not fenced) is still removed.
 const INVISIBLE = /[\p{Cf}\uFE00-\uFE0F\u{E0100}-\u{E01EF}]|(?![\n\t])\p{Cc}/gu;
 const LINKS = /^ {0,3}(?:#{1,6}[ \t]+Links:?|\*\*Links(?::\*\*|\*\*:?))[ \t]*$/;
 
-function normalize(text) {
+// Inline code spans on t[from, to): a run of N backticks closed by the next run of exactly N.
+function codeSpans(t, from, to) {
+  const runs = [...t.slice(from, to).matchAll(/`+/g)].map((m) => [from + m.index, m[0].length]);
+  const next = []; // the next run of the same length, found right to left so this stays linear
+  const seen = new Map();
+  for (let a = runs.length - 1; a >= 0; a--) {
+    next[a] = seen.get(runs[a][1]);
+    seen.set(runs[a][1], a);
+  }
+  const spans = [];
+  for (let a = 0; a < runs.length; a++) {
+    const b = next[a];
+    if (b === undefined) continue;
+    spans.push([runs[a][0], runs[b][0] + runs[b][1]]);
+    a = b;
+  }
+  return spans;
+}
+
+// { text, unclosedAt }: unclosedAt is the line of a `<!--` that never closes, which removes
+// everything after it, as a renderer hides it; approve refuses such text.
+function normalizeInfo(text) {
   const t = String(text).replace(/\r\n/g, '\n');
   const strip = (s) => s.replace(INVISIBLE, '');
   let out = '';
@@ -59,6 +81,8 @@ function normalize(text) {
   let i = 0;
   let lineStart = true;
   let open = -1; // the next `<!--` at or after i, found once: searching per line is quadratic
+  let spans = [], spansEnd = -1, sp = 0; // this line's code spans, and the first not yet passed
+  let unclosedAt = null;
   while (i < t.length) {
     const nl = t.indexOf('\n', i);
     const lineEnd = nl < 0 ? t.length : nl + 1;
@@ -88,6 +112,13 @@ function normalize(text) {
       open = t.indexOf('<!--', i);
       if (open < 0) open = Infinity;
     }
+    if (open < lineEnd && spansEnd !== lineEnd) [spans, spansEnd, sp] = [codeSpans(t, i, lineEnd), lineEnd, 0];
+    while (open < lineEnd) {
+      while (sp < spans.length && spans[sp][1] <= open) sp++;
+      if (sp === spans.length || spans[sp][0] > open) break;
+      open = t.indexOf('<!--', spans[sp][1]); // this one is code
+      if (open < 0) open = Infinity;
+    }
     if (open >= lineEnd) {
       out += strip(t.slice(i, lineEnd));
       i = lineEnd;
@@ -96,6 +127,7 @@ function normalize(text) {
     }
     out += strip(t.slice(i, open));
     const shut = t.indexOf('-->', open + 4);
+    if (shut < 0) unclosedAt = (t.slice(0, open).match(/\n/g) || []).length + 1;
     i = shut < 0 ? t.length : shut + 3; // an unclosed comment removes the rest
     lineStart = false;
   }
@@ -110,8 +142,10 @@ function normalize(text) {
     o = nl + 1;
   }
   if (cut >= 0) out = out.slice(0, cut);
-  return out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd();
+  return { text: out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd(), unclosedAt };
 }
+const normalize = (text) => normalizeInfo(text).text;
+const unclosed = (line) => `line ${line}: a <!-- is never closed, so it removes everything after it; close it with --> or put it in code`;
 
 const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 const fingerprint = (text) => 'sha256:' + sha(normalize(text));
@@ -210,7 +244,9 @@ function cli(cmd, args) {
   const state = ({ key, url, tracker, branch, specHash, pr }) => ({ key, url, tracker, branch, specHash, pr });
 
   if (cmd === 'normalize') {
-    process.stdout.write(normalize(stdin()) + '\n');
+    const { text, unclosedAt } = normalizeInfo(stdin());
+    if (unclosedAt) process.stderr.write(`ticket.js: warning: ${unclosed(unclosedAt)}\n`);
+    process.stdout.write(text + '\n');
   } else if (cmd === 'link') {
     const [key, url, tracker] = args;
     const branch = currentBranch(cwd);
@@ -219,7 +255,8 @@ function cli(cmd, args) {
     writeState(cwd, s);
   } else if (cmd === 'approve') {
     const l = confirmed();
-    const text = normalize(stdin());
+    const { text, unclosedAt } = normalizeInfo(stdin());
+    if (unclosedAt) fail(`${unclosed(unclosedAt)}, then ask the user to approve again`);
     fs.writeFileSync(approvedPath(statePath(cwd, l.branch)), text + '\n');
     writeState(cwd, { ...state(l), specHash: 'sha256:' + sha(text) });
   } else if (cmd === 'check') {
@@ -427,7 +464,7 @@ function hook() {
   else if (input.hook_event_name === 'PostToolUse') postToolUse(input.tool_name, ti, cwd);
 }
 
-module.exports = { normalize, fingerprint, valid };
+module.exports = { normalize, normalizeInfo, fingerprint, valid };
 
 if (require.main === module) {
   if (process.argv[2]) {

@@ -46,7 +46,7 @@ function repo(originHead = true) {
 const URL = 'https://tracker.example/browse/ABC-1';
 
 test('normalize removes comments, invisible characters and Links, and nothing else', () => {
-  const { normalize } = require(TICKET);
+  const { normalize, normalizeInfo } = require(TICKET);
   const kept = [
     '```js\ngrid[x] = 1\n```',
     'a `a[x]` b',
@@ -59,11 +59,17 @@ test('normalize removes comments, invisible characters and Links, and nothing el
     'Behaviour\nLinks open in new tab.\nMust validate input.',
     '- item\n      ```\n      <!-- keep -->\n      ```',
     '````\n<!-- keep -->\n```\nstill code\n`````',
+    'Use `<!--` to start\n## Behaviour\n- keep me',
+    '``a <!-- b``\nnext',
   ];
   for (const text of kept) assert.equal(normalize(text), text, text);
 
   assert.equal(normalize('a <!-- hidden --> b'), 'a  b', 'a comment outside a fence');
   assert.equal(normalize('a\n<!-- open\nsecret\n```\nx\n```'), 'a', 'an unclosed comment removes the rest');
+  assert.equal(normalize('`<!--` a <!-- b --> c'), '`<!--` a  c', 'a comment after a code span');
+  assert.deepEqual(normalizeInfo('a <!-- open\nsecret'), { text: 'a', unclosedAt: 1 });
+  assert.deepEqual(normalizeInfo('x\ny ` <!-- z'), { text: 'x\ny `', unclosedAt: 2 }, 'an unmatched backtick opens no span');
+  assert.equal(normalizeInfo('a <!-- b --> c').unclosedAt, null);
   assert.equal(normalize('wo\u200Brd\uFE0F a\rb c\x1b[2Kd'), 'word ab c[2Kd', 'invisible and control characters');
   assert.equal(normalize('a\tb\r\nc'), 'a\tb\nc', 'CRLF becomes LF, a tab stays');
   assert.equal(normalize('x  \ny\n\n'), 'x\ny', 'trailing whitespace');
@@ -78,7 +84,7 @@ test('normalize removes comments, invisible characters and Links, and nothing el
   }
 
   // Ticket text is attacker-controlled: none of these may go quadratic.
-  for (const big of ['[a\n'.repeat(64 * 1024 / 3), ' '.repeat(64 * 1024) + 'x', '\n'.repeat(64 * 1024) + 'b']) {
+  for (const big of ['[a\n'.repeat(64 * 1024 / 3), ' '.repeat(64 * 1024) + 'x', '\n'.repeat(64 * 1024) + 'b', '`<!--` '.repeat(64 * 1024 / 7)]) {
     const t0 = Date.now();
     normalize(big);
     assert.ok(Date.now() - t0 < 500, `64 KB took ${Date.now() - t0} ms`);
@@ -97,6 +103,13 @@ test('approve then check passes on the same text and fails on changed text', () 
     assert.equal(cli(r.dir, ['approve'], 'spec\r\ntext').status, 0);
     const { specHash } = JSON.parse(fs.readFileSync(r.state, 'utf8'));
     assert.match(specHash, /^sha256:[0-9a-f]{64}$/);
+    const refused = cli(r.dir, ['approve'], 'spec\n<!-- open\ntext');
+    assert.equal(refused.status, 1, 'an unclosed comment');
+    assert.match(refused.stderr, /line 2: a <!-- is never closed/);
+    assert.equal(JSON.parse(fs.readFileSync(r.state, 'utf8')).specHash, specHash, 'a refused approve writes nothing');
+    const warned = cli(r.dir, ['normalize'], 'a <!-- b');
+    assert.equal(warned.stdout, 'a\n');
+    assert.match(warned.stderr, /warning: line 1/);
     assert.equal(cli(r.dir, ['check'], 'spec\ntext  ').status, 0, 'same text');
     const changed = cli(r.dir, ['check'], 'spec\nother');
     assert.equal(changed.status, 1, 'changed text');
