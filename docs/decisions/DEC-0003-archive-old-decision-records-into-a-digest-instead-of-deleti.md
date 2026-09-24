@@ -30,14 +30,14 @@ and to have a hook notice when that point is reached.
 
 ## Considered options
 
-1. **Archive plus digest** — `git mv` the 25 oldest non-proposed records into
+1. **Archive plus digest**: `git mv` the 25 oldest accepted or rejected records into
    `docs/decisions/archive/` unchanged, and write one new accepted digest record
    carrying each one's id, title, status, date, supersedes, and its Decision
    outcome and Gaps accepted sections verbatim.
-2. **Merge and delete** — write one summary record and delete the 25 originals.
+2. **Merge and delete**: write one summary record and delete the 25 originals.
    Smallest folder, but it deletes accepted records, so the immutability check
    has to be weakened and every cross-reference into the deleted ids breaks.
-3. **Digest only** — write the digest and move nothing. Keeps everything but the
+3. **Digest only**: write the digest and move nothing. Keeps everything but the
    folder never shrinks, which was the whole point.
 
 ## Decision outcome
@@ -47,11 +47,14 @@ folder without touching a byte of an accepted record. The digest copies the two
 sections a later reader needs mechanically, so no summarising happens and the
 result is deterministic and testable.
 
-The trigger is a SessionStart hook that counts the archivable records in
-`docs/decisions/` (not proposed, not a digest) and prints one line at 50 or
-more, the same count the script uses. A hook cannot run the compaction itself; it
-tells the session to run the skill's `compact` mode, which runs
-`adr_compact.py --dry-run`, shows the mapping, and moves on a yes.
+The trigger is a hook, run at session start and after an edit in
+`docs/decisions/`, that counts the archivable records in `docs/decisions/`
+(accepted or rejected, not a digest) and prints one line at 50 or more, the same count
+the script uses. When 50 records exist but fewer than 50 are decided, it prints
+a line saying how many are still proposed instead. A hook cannot run the
+compaction itself; it tells the session to run the skill's `compact` mode,
+which runs `adr_compact.py --dry-run`, shows the mapping, and moves on a yes.
+Compaction lands as its own pull request.
 
 ## Consequences
 
@@ -74,15 +77,15 @@ tells the session to run the skill's `compact` mode, which runs
 
 ## Gaps accepted
 
-- The 50 and 25 are constants in `adr_compact.py`; the hook runs the script's
-  `--check` so there is one definition of "due". A repo wanting different
+- The 50 and 25 are constants in `adr_compact.py`; the hook imports the same
+  check `--check` prints, so there is one definition of "due." A repo wanting different
   numbers edits the script; a manifest key can come later.
 - The immutability check sees an archived record's history only from the move
   onward; an edit made between acceptance and archiving is not visible after.
 - Records are counted, not sized. A repo with 49 very long records gets no
   nudge.
-- Only SessionStart triggers the nudge. A session that crosses 50 mid-way hears
-  nothing until the next start.
+- The nudge runs at session start and after an edit in `docs/decisions/`;
+  changes made through Bash wait for the next session start.
 
 ## Links
 

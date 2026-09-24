@@ -1,7 +1,7 @@
 {
   "name": "docs-warden",
-  "version": "0.6.0",
-  "description": "Keeps repository documentation consistent and honest. Scaffolds a universal document set scaled by repo archetype, audits existing repos for missing, stale, or off-standard docs, enforces append-only architecture decision records, compacts the oldest of them into a digest once fifty exist, and regenerates the generated ones so drift from the code is reported rather than discovered. Ships a plain-English Vale style alongside it, and a domain-model skill that maps a repo's concepts, their relationships, and which document describes each, in Python, JS/TS, PowerShell and Terraform, plus optional compliance overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and NIST SSDF, each describing document structure only and never inventing regulatory content.",
+  "version": "0.7.0",
+  "description": "Keeps repository documentation consistent and honest. Scaffolds a universal document set scaled by repo archetype, audits existing repos for missing, stale, or off-standard docs, enforces append-only architecture decision records, offers to archive the oldest of them into a digest once fifty are decided, and regenerates the generated ones so drift from the code is reported rather than discovered. Ships a plain-English Vale style alongside it, and a domain-model skill that maps a repo's concepts, their relationships, and which document describes each, in Python, JS/TS, PowerShell and Terraform, plus optional compliance overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and NIST SSDF, each describing document structure only and never inventing regulatory content.",
   "author": {
     "name": "claude-skills"
   },

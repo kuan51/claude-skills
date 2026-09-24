@@ -60,7 +60,7 @@ Alongside them, `adr_index.py` writes a generated `docs/decisions/README.md`: a
 heading, one sentence, and a link up to the index. It is a signpost for anyone
 browsing the folder, not a second copy of the table.
 
-At 50 records, `adr_compact.py` moves the 25 oldest unchanged into
+At 50 decided records, `adr_compact.py` moves the 25 oldest unchanged into
 `docs/decisions/archive/` and writes one digest record in their place; see
 `adr-format.md`, "Compaction."
 
@@ -80,8 +80,8 @@ Each glossary term has exactly one meaning. A four-column table:
 enforceable rather than decorative. It feeds the Vale vocabulary.
 
 Seed it with `extract_concepts.py` from the `ontological-documentation` skill,
-which ships with this plugin. Keep the concepts whose `category` is `domain` and
-add one row per term the glossary does not already carry: Term, Definition from
+which comes with this plugin. Keep the concepts whose `category` is `domain` and
+add one row per term the glossary does not already carry, with Term, Definition from
 `summary` (or the template placeholder when the code gave none), `Do not use`
 empty, Source from `defined_in`. Merge by term. Never overwrite a human-edited
 definition, and never invent one.
