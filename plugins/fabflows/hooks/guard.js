@@ -145,20 +145,14 @@ function isScratchPypdf(seg, cwd) {
 // npm's own runner (npx, npm exec) runs a bin from the project's node_modules/.bin before it
 // downloads anything, so a plain bin name already installed there is not an install. Only
 // npm: pnpx is `pnpm dlx` and always fetches, and bunx and `bun x` are not trusted to.
-// Only the runner's own flags (before the bin name) count; anything after belongs to the bin.
-const LOCAL_RUNNER = /^(?:npx|npm\s+(?:exec|x))(?:\s+(.*))?$/i;
+// The bin must be the first word after the runner (or after a bare `--`): any runner flag
+// before it could be -p, -c, or a flag whose value (`--cache x`) would pass for the bin
+// name. Anything after the bin belongs to the bin, so `npx tsc -p x.json` is local.
+const LOCAL_RUNNER = /^(?:npx|npm\s+(?:exec|x))(?:\s+--)?\s+(\S+)/i;
 function isLocalRun(seg, cwd) {
   const m = LOCAL_RUNNER.exec(seg);
   if (!m) return false;
-  let bin = null;
-  for (const a of (m[1] || '').split(/\s+/).filter(Boolean)) {
-    if (a === '--') continue;
-    // -p names a package to fetch; -c runs a shell string, which could be anything
-    if (/^(-p|--package|-c|--call)(=.*)?$/i.test(a)) return false;
-    if (a.startsWith('-')) continue;
-    bin = a;
-    break;
-  }
+  const bin = m[1];
   // no @, / or :, so no version or package spec; `.` and `..` are directory specs, not bins
   if (!bin || !/^[\w.-]+$/.test(bin) || /^\.+$/.test(bin)) return false;
   const exists = (p) => fs.existsSync(p);
@@ -307,13 +301,23 @@ const VAR_PREFIX = /^(\w+=(\$\(|[^\s<>]*(\s+|$)))+/;
 // Prefixes that run the command after them: `time npx foo` is judged as `npx foo`. Their
 // flags go too, including the value of a flag that takes one as a separate word
 // (`xargs -n 1`, `xargs -I {}`, `env -u VAR`, `exec -a name`). `env` leaves its
-// `VAR=value` pairs to VAR_PREFIX. Case-sensitive: `-P` and `-p` differ for xargs.
+// `VAR=value` pairs to VAR_PREFIX. `env -S 'cmd'` leaves a quoted command, whose quote
+// goes next. `command -v`/`-V` only looks a name up, so it is left alone. The flags are
+// case-sensitive (`-P` and `-p` differ for xargs), so the prefix name is lower-cased
+// first: `Env` and `TIME` run the same binary on a case-insensitive filesystem.
 const TRANSPARENT =
-  /^((time|nohup|command)(\s+-\S+)*\s+|exec(\s+(-a\s+\S+|-\S+))*\s+|env(\s+(-[uCS]\s*\S+|-\S+))*\s+|xargs(\s+(-[nILPsdEa]\s*\S+|-\S+))*\s+|!\s*|\{\s+)/;
+  /^((time|nohup)(\s+-\S+)*\s+|command(?!\s+-[vV]\b)(\s+-\S+)*\s+|exec(\s+(-a\s+\S+|-\S+))*\s+|env(\s+(-[uC]\s*\S+|--(unset|chdir)\s+\S+|-\S+))*\s+|xargs(\s+(-[nILPsdEa]\s*\S+|--(max-args|max-lines|max-procs|max-chars|delimiter|arg-file|eof|replace)\s+\S+|-\S+))*\s+|!\s*|\{\s+)/;
+const TRANSPARENT_NAME = /^(time|nohup|command|exec|env|xargs)(?=\s)/i;
 const stripPrefixes = (s) => {
   for (let prev; prev !== s; ) {
     prev = s;
-    s = s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(VAR_PREFIX, '').replace(TRANSPARENT, '');
+    s = s
+      .replace(/^[\s(]+/, '')
+      .replace(SHELL_KEYWORD, '')
+      .replace(VAR_PREFIX, '')
+      .replace(TRANSPARENT_NAME, (w) => w.toLowerCase())
+      .replace(TRANSPARENT, '')
+      .replace(/^["'](?=\S)/, '');
   }
   return s.trim();
 };

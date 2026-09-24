@@ -223,11 +223,11 @@ test('a locally installed bin is not a download', () => {
     const nested = path.join(proj, 'pkg');
     fs.mkdirSync(nested);
     fs.writeFileSync(path.join(nested, 'package.json'), '{}\n');
-    for (const cmd of ['npx vitest run', 'npm exec -- vitest', 'npx --no vitest', 'npx tsc -p tsconfig.build.json']) allows(as(cmd, proj, w), cmd);
+    for (const cmd of ['npx vitest run', 'npm exec -- vitest', 'npx tsc -p tsconfig.build.json']) allows(as(cmd, proj, w), cmd);
     allows(as('npx vitest run', sub, w), 'a bin found in a parent directory');
     denies(as('npx vitest run', nested, w), 'a bin above the nearest package.json');
     for (const cmd of ['npx vitest@1 run', 'npx -p vitest vitest', 'npx notinstalled', 'npx --no --yes notinstalled', 'npx --no -y notinstalled', 'npx -y --offline notinstalled', 'npx ..', 'npx .', 'npm exec ..', 'bunx .', 'npx adir',
-      'npx --no eslint .', 'npx --no -c "npm install evil"', 'npx -c vitest', 'npx --call vitest', 'pnpx vitest', 'pnpx --no evilpkg', 'bunx --no evilpkg', 'bunx vitest', 'bun x vitest']) {
+      'npx --no eslint .', 'npx --no vitest', 'npx --cache vitest cowsay', 'npx -w vitest cowsay', 'npm exec --prefix vitest -- cowsay', 'npx --no -c "npm install evil"', 'npx -c vitest', 'npx --call vitest', 'pnpx vitest', 'pnpx --no evilpkg', 'bunx --no evilpkg', 'bunx vitest', 'bun x vitest']) {
       denies(as(cmd, proj, w), `${cmd} in a worker`);
       assert.equal(as(cmd, proj, d).decision, 'ask', `${cmd} in the lead`);
     }
@@ -252,8 +252,12 @@ test('quoted alternations and uv or npm init flags are not installs', () => {
 
 test('transparent prefixes do not hide a runner or installer', () => {
   const w = { agent_id: 'a1', permission_mode: 'default' };
+  for (const command of ['command -v npx', 'command -V npx >/dev/null && echo ok']) {
+    allows(run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: '.', ...w }), command);
+  }
   for (const command of ['time npx foo', 'exec npx foo', 'xargs -n1 npx foo', '! npx foo', '{ npx foo; }', 'env FOO=1 npm install x', 'command npm install x',
-    'time -p npx foo', 'command -p npx foo', 'exec -a name npx foo', 'nohup -- npx foo', 'env -i npx foo', 'env -u HOME npx foo', 'xargs -n 1 npx foo', 'xargs -I {} npx {}', 'xargs -0 -n 1 npx foo']) {
+    'time -p npx foo', 'command -p npx foo', 'exec -a name npx foo', 'nohup -- npx foo', 'env -i npx foo', 'env -u HOME npx foo', 'xargs -n 1 npx foo', 'xargs -I {} npx {}', 'xargs -0 -n 1 npx foo',
+    'Env npx foo', 'TIME npx foo', 'Xargs npx foo', 'xargs --max-args 1 npx foo', 'xargs --max-args=1 npx foo', 'env --unset X npx foo', "env -S 'npx foo'"]) {
     denies(run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: '.', ...w }), command);
   }
 });
