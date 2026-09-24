@@ -129,8 +129,9 @@ case they cannot, a workflow error in place of a result.
 
 This plugin ships an active `PreToolUse` guard that stops package installs and package
 runners such as `npx` (except `pypdf` into a literal `scratchpad` `--target` with
-`--isolated`, for reading a PDF): the lead gets the user's permission prompt, a worker is
-denied. Before any install, any package runner, or any script you know will fetch a
+`--isolated`, for reading a PDF): in the default, acceptEdits and auto modes the lead gets
+the user's permission prompt, and a worker is denied. In any other mode the lead is denied
+too, and asks the user to run the command themselves. Before any install, any package runner, or any script you know will fetch a
 package, stop. Name the package, the version and where it lands, and ask the user. If the
 guard asks or denies, look for no other route until the user says yes. It also blocks
 commits and pushes on a default branch, destructive shell commands, credential-file access,

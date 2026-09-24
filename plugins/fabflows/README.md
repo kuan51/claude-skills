@@ -146,18 +146,26 @@ replacement for it.
 
 ## Guard rules
 
-A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
+A `hooks/guard.js` file (Node, no dependencies) implements every rule below. The shell
+rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alike:
 
 - **Package installs and package runners** across npm, pnpm, yarn, bun, pip, uv, dotnet,
   cargo, go, gem, apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`,
   plus the runners that download on the fly: `npx`, `pnpx`, `bunx`, `npm exec`/`npm x`,
   `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool run`/`install`, `uv run --with`,
   `pipx run`/`install`, `npm|yarn|pnpm|bun create`, and `npm init <name>` (`npm init -y`
-  is allowed). In the lead, in the `default`, `acceptEdits`, `auto` or `plan` mode, the
-  guard returns `ask`, so you approve or refuse it in the normal permission prompt. It
-  only asks once every other rule has passed, so an install next to a denied segment is
-  still denied. A worker, and any other mode (`bypassPermissions`, `dontAsk`, missing),
-  gets `deny`. One exception:
+  is allowed). In the lead, in the `default`, `acceptEdits` or `auto` mode, the
+  guard returns `ask`, so you approve or refuse it in the normal permission prompt, and
+  Claude is told to stop if you decline. It only asks once every other rule has passed,
+  so an install next to a denied segment is still denied. A worker, and any other mode
+  (`plan`, `bypassPermissions`, `dontAsk`, missing), gets `deny`; in a mode that cannot
+  prompt, Claude asks you to run the command yourself. An install aimed at live
+  configuration (a `cd` or session directory there, a `VAR=` prefix or a `--prefix=` /
+  `--target=` naming it) is always denied. A local bin is not a download: `npx`, `pnpx`,
+  `bunx`, `npm exec`/`npm x` and `bun x` pass when they carry `--no`, `--no-install` or
+  `--offline`, or when they name a plain bin (no `@`, `/` or `:`, no `-p`/`--package`)
+  found in `node_modules/.bin` in the working directory or a parent. So `npx vitest run`
+  works in a project that has vitest installed. One more exception:
   `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
   literal path with a `scratchpad` directory in it and outside the live configuration below,
   so a session can read a PDF without anything landing in site-packages. `--isolated` is
@@ -199,9 +207,10 @@ fields, and sends it back to be re-emitted if two or more are missing.
 The guard matches patterns on shell strings. It does not understand shells, and it can
 be walked around:
 
-- Base64, variable expansion (`X=rm; $X -rf ~`), command substitution, `xargs`,
-  heredocs, `python -c`, and full binary paths all evade it. Newlines, `&`, a leading
-  `(`, and a `VAR=value` prefix do not: each segment is anchored separately.
+- Base64, variable expansion (`X=rm; $X -rf ~`), command substitution (`$(...)`),
+  heredocs, `bash -c`, `python -c`, and full binary paths all evade it. Newlines, `&`, a
+  leading `(`, a `VAR=value` prefix, and the prefixes `time`, `exec`, `nohup`, `command`,
+  `!`, `{`, `env` and `xargs` do not: each segment is anchored separately.
 - Any binary whose basename is an interpreter name (`./x/python.exe`) is trusted to run a
   script from the plugin cache.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
@@ -214,9 +223,13 @@ be walked around:
 - The runner-file rule keys on the **file name**. A payload written to `notes.txt` and
   then run with `bash notes.txt` is not caught, and neither is one assembled from pieces.
 - A script that spawns a package runner itself is invisible to it, since only the shell
-  string is checked. The one known site, docs-warden's `audit.py`, no longer does so.
-- `env npm`, `command npm`, `npm.cmd`, and flags before the subcommand
-  (`npm --global install`) evade the install rules, just as full binary paths do.
+  string is checked. docs-warden's `audit.py --run-generators` skips a runner generator,
+  but any other script, and `pre-commit` on its first run, can still download where no
+  hook sees it.
+- `npm.cmd` and flags before the subcommand (`npm --global install`) evade the install
+  rules, just as full binary paths do.
+- A multi-line `git commit -m` body with a line that starts with a runner is judged as a
+  command. That errs toward ask or deny.
 - An `ask` can be answered with no human looking: a `PermissionRequest` hook, an SDK
   `canUseTool` callback, or `--permission-prompt-tool` can approve it automatically.
 - Workers are told apart by the `agent_id` field. Whether agent-team teammates carry it

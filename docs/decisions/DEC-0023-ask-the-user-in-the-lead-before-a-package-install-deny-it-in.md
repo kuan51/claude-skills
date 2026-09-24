@@ -39,8 +39,12 @@ DEC-0002 stands.
 1. **Runners count as installs; `ask` in the lead, `deny` elsewhere; `audit.py` never
    downloads** -- the guard records an install match, finishes every other rule, and only
    then returns `ask` when `agent_id` is absent and `permission_mode` is `default`,
-   `acceptEdits`, `auto` or `plan`, and `deny` otherwise. `audit.py` runs markdownlint only
-   when it is on PATH.
+   `acceptEdits` or `auto`, and `deny` otherwise. `plan` is not an ask mode: a hook `ask`
+   is not documented as enforced there, and plan mode has no reason to install. A bin
+   already in `node_modules/.bin` (a plain name, no version or `-p`), or a runner with
+   `--no`, `--no-install` or `--offline`, is not a download, because npx runs a local bin
+   before it fetches anything. `audit.py` runs markdownlint only when it is on PATH, and
+   `--run-generators` skips a generator that is a package runner.
 2. **Deny only** -- add the runners to the install patterns and keep denying. Rejected: it
    leaves the user no approval path, which is the behaviour that pushed the model to look
    for other routes.
@@ -75,7 +79,8 @@ cannot be shown or is not confirmed to prompt.
 
 - docs-warden's lint no longer runs where `markdownlint-cli2` is not on PATH. The check
   reports `skipped`, or `warn`, where it used to run through `npx`.
-- `npx` on a local script, with no download, now asks or denies too.
+- `npx` on a local script path, with no download, now asks or denies too. A local bin
+  by plain name does not.
 - The guard now has a third decision type, `ask`, and its tests depend on
   `permission_mode` and `agent_id` in the hook input.
 
@@ -85,15 +90,19 @@ cannot be shown or is not confirmed to prompt.
   can answer an `ask` with no human looking.
 - Whether agent-team teammates carry `agent_id` is not documented, so a teammate may be
   treated as the lead.
-- A script that spawns a runner itself is invisible to the guard. The one known site,
-  `audit.py`, is fixed.
-- `env npm`, `command npm`, `npm.cmd` and flags before the subcommand
-  (`npm --global install`) evade the install rules, just as full binary paths do.
+- A script that spawns a runner itself is invisible to the guard. `audit.py` no longer
+  does, and skips runner generators, but any other script, and `pre-commit` on its first
+  run, can still download.
+- `npm.cmd` and flags before the subcommand (`npm --global install`) evade the install
+  rules, just as full binary paths do.
+- A local bin is detected only through `node_modules/.bin`, so `pnpm exec` and Yarn PnP
+  bins are not recognised.
 - Whether a hook's `ask` prompts in `bypassPermissions` or `dontAsk` is not confirmed;
   those modes get `deny`.
 
 ## Links
 
-- Ticket: none; spec `docs/specs/2026-09-24-fabflows-install-approval.md`
+- Ticket: none; spec `docs/specs/2026-09-24-fabflows-install-approval.md`, amended by
+  `docs/specs/2026-09-24-fabflows-install-approval-review-fixes.md`
 - Pull request: pending
 - Related: DEC-0002

@@ -159,7 +159,7 @@ start and Vale advisory until its rules are promoted:
 A tool that could not run is always named in the reason, and the `fix` field
 carries the command that would let it run. The audit never runs a package
 runner: markdownlint runs only when `markdownlint-cli2` is on PATH, and its fix
-names the `npx` command CI uses as one to ask the user to approve first, because
+names the approved `npx` command as one to ask the user to approve first, because
 it downloads into the npm cache. `pass` is never reported
 while anything went unrun.
 **Fix:** whatever the linter said, or the command in the `fix` field.
