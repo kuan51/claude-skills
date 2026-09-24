@@ -128,6 +128,7 @@ A PR that finishes the ticket carries the tracker's closing phrase in its body (
 merging it leaves the ticket open.
 
 After a PR merges (check it did first: the reminder also fires after a failed merge command),
-read the ticket. If the PR carried a closing phrase for the key and the tracker did not close
-it, transition it to done yourself, post the close comment if the outcome differs from the
-spec, then run `ticket.js clear --pr '<url>'`. If the PR was Refs-only, leave the ticket open.
+read the ticket. If the PR carried a closing phrase for the key, confirm the ticket is closed and
+transition it to done yourself if not. Post the close comment if the outcome differs from the
+spec. Then run `ticket.js clear --pr '<url>'`, whether or not the tracker closed it. If the PR
+was Refs-only, leave the ticket open.
