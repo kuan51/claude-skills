@@ -48,7 +48,7 @@ function validState(s) {
 // gets: the ticket as written, minus HTML comments outside fences, invisible and control
 // characters, and the Links section. Nothing is rendered, so nothing a renderer does can
 // change it. A comment inside 4-space indented code (not fenced) is still removed.
-const INVISIBLE = /[\p{Cf}︀-️\u{E0100}-\u{E01EF}]|(?![\n\t])\p{Cc}/gu;
+const INVISIBLE = /[\p{Cf}\uFE00-\uFE0F\u{E0100}-\u{E01EF}]|(?![\n\t])\p{Cc}/gu;
 const LINKS = /^ {0,3}(?:#{1,6}[ \t]+Links:?|\*\*Links(?::\*\*|\*\*:?))[ \t]*$/;
 
 function normalize(text) {

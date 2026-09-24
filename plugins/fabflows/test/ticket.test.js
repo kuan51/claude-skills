@@ -64,7 +64,7 @@ test('normalize removes comments, invisible characters and Links, and nothing el
 
   assert.equal(normalize('a <!-- hidden --> b'), 'a  b', 'a comment outside a fence');
   assert.equal(normalize('a\n<!-- open\nsecret\n```\nx\n```'), 'a', 'an unclosed comment removes the rest');
-  assert.equal(normalize('wo​rd️ a\rb c\x1b[2Kd'), 'word ab c[2Kd', 'invisible and control characters');
+  assert.equal(normalize('wo\u200Brd\uFE0F a\rb c\x1b[2Kd'), 'word ab c[2Kd', 'invisible and control characters');
   assert.equal(normalize('a\tb\r\nc'), 'a\tb\nc', 'CRLF becomes LF, a tab stays');
   assert.equal(normalize('x  \ny\n\n'), 'x\ny', 'trailing whitespace');
   for (const heading of ['## Links', '## Links  ', '**Links**', '**Links**:', '# Links:']) {
@@ -72,7 +72,7 @@ test('normalize removes comments, invisible characters and Links, and nothing el
   }
   assert.equal(normalize('a\n## Links\nb\n## Links\nc'), 'a\n## Links\nb', 'the last Links heading');
   // A fence closes only on its own \n-delimited line; a lone \r or U+2028 is not a line break.
-  for (const sep of ['\r', ' ', ' ']) {
+  for (const sep of ['\r', '\u2028', '\u2029']) {
     const t = '```\na' + sep + '```\n## Links\nsecret\n```';
     assert.ok(normalize(t).includes('secret'), `fence must not close at ${JSON.stringify(sep)}`);
   }
