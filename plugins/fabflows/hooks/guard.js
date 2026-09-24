@@ -683,10 +683,11 @@ function subagentStop(input) {
   const tail = fs.readFileSync(input.agent_transcript_path, 'utf8').slice(-40000);
 
   // The tail is raw JSONL, where `"command"` and `"output"` appear as keys in every tool
-  // call. A word followed by a quote is a key, not prose, and does not count.
+  // call. A word followed by a quote is a key, not prose, and does not count. A researcher
+  // reports searches and fetches rather than commands.
   const groups = [
     [/files?\s+(touched|changed)|modified files/i, 'files touched'],
-    [/\b(command|output)\b(?!")|exit code/i, 'commands and their real output'],
+    [/\b(command|output|(search|fetch)\w*)\b(?!")|exit (code|status)/i, 'commands and their real output'],
     [/\bconfirmed\b|\binferred\b|\bguessed\b/i, 'confidence labels'],
   ];
   const missing = groups.filter(([re]) => !re.test(tail)).map(([, label]) => label);

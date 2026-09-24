@@ -776,6 +776,15 @@ test('SubagentStop blocks a report missing its contract fields', () => {
     );
     assert.equal(stop().decision, 'block', 'JSON keys must not satisfy the contract');
 
+    // A researcher's contract has no files field and speaks of searches and fetches, and
+    // an editor may say exit status. Keys named search or fetch still do not count.
+    fs.writeFileSync(transcript, 'Searched the docs for the flag and fetched https://example.com/a. Confidence: confirmed.');
+    allows(stop(), 'a compliant researcher report');
+    fs.writeFileSync(transcript, 'Files changed: docs/a.md:3. Ran the build, exit status 0.');
+    allows(stop(), 'an editor report that says exit status');
+    fs.writeFileSync(transcript, '{"search":"x","fetch":"y"}\n{"type":"text","text":"It seems fine."}');
+    assert.equal(stop().decision, 'block', 'search and fetch keys must not satisfy the contract');
+
     fs.writeFileSync(transcript, 'I looked around and it seems fine.');
     allows(stop({ stop_hook_active: true }), 'the loop guard must stop a re-block');
 
