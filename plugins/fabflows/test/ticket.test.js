@@ -950,3 +950,58 @@ test('trace --enrich ignores every value of the wrong shape', () => {
     h.r.done();
   }
 });
+
+test('trace --out writes only outside the repo, never over a file', () => {
+  const h = history();
+  const inRepo = path.join(h.r.dir, 'out');
+  try {
+    for (const [what, out] of [
+      ['inside the repo', () => inRepo],
+      ['the repo itself', () => h.r.dir],
+      ['through a symlink into the repo', (tmp) => (fs.symlinkSync(h.r.dir, path.join(tmp, 'link')), path.join(tmp, 'link', 'out'))],
+    ]) {
+      const res = report(h, null, {}, out);
+      assert.equal(res.status, 1, what);
+      assert.match(res.stderr, /--out must be outside the repository/, what);
+      assert.equal(res.stdout, '', what);
+    }
+    assert.ok(!fs.existsSync(inRepo), 'nothing written in the repo');
+    assert.ok(!fs.existsSync(path.join(h.r.dir, 'trace.md')));
+
+    for (const name of ['trace.md', 'trace.csv']) {
+      const res = report(h, null, {}, (tmp) => (fs.writeFileSync(path.join(tmp, name), 'old'), tmp));
+      assert.equal(res.status, 1, name);
+      assert.match(res.stderr, new RegExp(`already holds ${name.replace('.', '\\.')}`), name);
+      assert.equal(res[name === 'trace.md' ? 'md' : 'csv'], 'old', `${name} is untouched`);
+      assert.equal(res[name === 'trace.md' ? 'csv' : 'md'], null, 'and the other is not written');
+    }
+    const nested = report(h, null, {}, (tmp) => path.join(tmp, 'a', 'b', 'c'));
+    assert.equal(nested.status, 0, nested.stderr);
+    assert.ok(nested.md && nested.csv, 'a missing --out directory is created');
+  } finally {
+    h.r.done();
+  }
+});
+
+test('trace report cells cannot run as formulas or break the table', () => {
+  const h = history();
+  const author = (a) => {
+    const e = clean();
+    e.prs[5].author = a;
+    return report(h, e, FILES);
+  };
+  try {
+    for (const v of ['=1+1', '+1', '-1', '@SUM(A1)', ' =1', '​=1', '＝1']) {
+      assert.equal(author(v).row(MERGE5)[5], "'" + v, JSON.stringify(v));
+    }
+    const quoted = author('a,"b"');
+    assert.equal(quoted.row(MERGE5)[5], 'a,"b"');
+    assert.ok(quoted.csv.includes('"a,""b"""'), 'RFC 4180 quoting');
+    assert.ok(quoted.csv.startsWith(COLUMNS.join(',') + '\r\n'), 'CRLF lines');
+    const md = author('a\\b`c*d_e[f]g<h>i|j\rk\nl').md;
+    assert.ok(md.includes('| a\\\\b\\`c\\*d\\_e\\[f\\]g\\<h\\>i\\|j k l |'), md);
+    assert.equal(md.split('\n').length, 8 + 3 + 1, 'one line per row');
+  } finally {
+    h.r.done();
+  }
+});

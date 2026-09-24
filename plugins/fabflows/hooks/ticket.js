@@ -458,15 +458,47 @@ function reportRows(rows, en, on) {
   });
 }
 
-const csvCell = (v) => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-const mdCell = (v) => v;
+// RFC 4180, with a leading ' on a cell a spreadsheet would run as a formula.
+const csvCell = (v) => {
+  const s = /^[\s\p{Cf}]*[=+\-@＝＋－＠]/u.test(v) ? "'" + v : v;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+const mdCell = (v) => v.replace(/[\\`*_[\]<>|]/g, '\\$&').replace(/[\r\n]/g, ' ');
 
-// Writes <out>/trace.md and <out>/trace.csv, and returns the summary line.
-function writeReport(out, from, to, cells) {
-  fs.mkdirSync(out, { recursive: true });
+// p with symlinks resolved through its nearest existing parent.
+function realOut(p) {
+  const rest = [];
+  for (;;) {
+    try {
+      return path.join(fs.realpathSync(p), ...rest);
+    } catch {
+      rest.unshift(path.basename(p));
+      p = path.dirname(p);
+    }
+  }
+}
+
+// Writes <out>/trace.md and <out>/trace.csv, outside the repo and never over a file, and
+// returns the summary line.
+function writeReport(out, from, to, cells, cwd) {
+  const top = fs.realpathSync(traceGit(['rev-parse', '--show-toplevel'], cwd).trim());
+  const dir = realOut(out);
+  const rel = path.relative(top, dir);
+  if (!(rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel))) throw new Error('--out must be outside the repository');
+  fs.mkdirSync(dir, { recursive: true });
+  const [mdFile, csvFile] = ['trace.md', 'trace.csv'].map((n) => path.join(dir, n));
+  for (const f of [mdFile, csvFile]) {
+    let there = true;
+    try {
+      fs.lstatSync(f);
+    } catch {
+      there = false;
+    }
+    if (there) throw new Error(`--out already holds ${path.basename(f)}; choose an empty directory`);
+  }
   const md = [`# Trace ${from}..${to}`, '', `| ${COLUMNS.join(' | ')} |`, `|${' --- |'.repeat(COLUMNS.length)}`, ...cells.map((r) => `| ${r.map(mdCell).join(' | ')} |`)];
-  fs.writeFileSync(path.join(out, 'trace.md'), md.join('\n') + '\n');
-  fs.writeFileSync(path.join(out, 'trace.csv'), [COLUMNS, ...cells].map((r) => r.map(csvCell).join(',') + '\r\n').join(''));
+  fs.writeFileSync(mdFile, md.join('\n') + '\n', { flag: 'wx' });
+  fs.writeFileSync(csvFile, [COLUMNS, ...cells].map((r) => r.map(csvCell).join(',') + '\r\n').join(''), { flag: 'wx' });
   const count = (f) => cells.filter((r) => r[r.length - 1].split('; ').includes(f)).length;
   return `trace: ${cells.length} commits; ${FLAGS.map((f) => `${f} ${count(f)}`).join(', ')}`;
 }
@@ -587,7 +619,7 @@ function cli(cmd, args) {
     if (o.out) {
       const en = o.enrich ? enrichment(path.resolve(o.enrich)) : null;
       if (o.enrich && !en) process.stderr.write('ticket.js: warning: the enrichment file is unreadable, over 1 MB or not a JSON object, so no row is enriched\n');
-      process.stdout.write(writeReport(path.resolve(o.out), from, to, reportRows(rows, en, complianceMode(cwd) === 'on')) + '\n');
+      process.stdout.write(writeReport(path.resolve(o.out), from, to, reportRows(rows, en, complianceMode(cwd) === 'on'), cwd) + '\n');
       process.exit(0);
     }
     process.stdout.write(JSON.stringify(rows.map(({ sha, date, pr, keys, keySource, specs, ai }) => ({ sha, date, pr, keys, keySource, specs, ai }))) + '\n');
