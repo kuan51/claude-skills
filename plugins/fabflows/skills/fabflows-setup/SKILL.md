@@ -40,12 +40,24 @@ reads or stores a token, key or password: a secret typed into chat stays in the 
 | Linear | team key | none |
 | Other | whatever names the project in that tracker | none |
 
-## 4. Write and commit
+## 4. Ask for compliance frameworks
+
+Ask one multi-select AskUserQuestion question, "Which compliance frameworks apply to this
+repository?" It has three options: **SOC 2** (`soc2`), **ISO 27001** (`iso27001`) and
+**IEC 62304** (`iec62304`). The built-in "Other" answer takes free text: lowercased, with
+spaces turned into `-`, and it must match `^[a-z0-9-]{1,30}$`. Ask again for a value that
+does not.
+
+The chosen values go into `compliance.frameworks`. Choosing no framework
+leaves compliance off: write no `compliance` key. With compliance on, every ticket spec
+needs a Compliance section, per `fabflows:ticket`.
+
+## 5. Write and commit
 
 Write `.claude/fabflows.json` with the Write tool:
 
 ```json
-{"tracker": "jira", "project": "ABC", "site": "example.atlassian.net"}
+{"tracker": "jira", "project": "ABC", "site": "example.atlassian.net", "compliance": {"frameworks": ["soc2", "iso27001"]}}
 ```
 
 `tracker` is `github`, `jira`, `linear`, or the Other name in lowercase with dashes.

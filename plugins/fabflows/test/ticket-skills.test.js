@@ -42,6 +42,20 @@ test('brainstorming and ticket show the user raw ticket text', () => {
   has(afterMerge, ['Refs-only', 'clear --pr'], 'ticket/SKILL.md after-merge paragraph');
 });
 
+test('fabflows-setup asks for compliance frameworks', () => {
+  const needles = ['compliance.frameworks', '`soc2`', '`iso27001`', '`iec62304`', 'lowercased', 'leaves compliance off'];
+  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), needles, 'fabflows-setup/SKILL.md');
+});
+
+test('ticket and brainstorming carry the Compliance section and its labels', () => {
+  const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
+  has(ticket, [
+    '## Compliance', '- Controls:', '- Change:', '- Class:', '- Traces:', 'ticket.js labels',
+    'never guesses', 'never blocks', 'before `Links`', 'Decisions or Compliance;\n  then re-approve',
+  ], 'ticket/SKILL.md');
+  has(read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md'), ['Compliance section', 'show the user the refusal'], 'brainstorming/SKILL.md');
+});
+
 test('trace enriches through MCP, reports flags only and keeps the report out of the repo', () => {
   const needles = [
     'ticket.js trace', '--enrich', 'get_reviews', 'never commits', 'Write tool', 'newest tag',
