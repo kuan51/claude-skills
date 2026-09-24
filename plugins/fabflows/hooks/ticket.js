@@ -302,6 +302,127 @@ function cli(cmd, args) {
   process.exit(0);
 }
 
+// ---------------------------------------------------------------- shell
+// The simple commands a shell line runs, split at unquoted && || ; | &, newlines and
+// parentheses. Each is { text, words }: text is its source plus the body of any heredoc it
+// opened, words its arguments with quotes removed. It knows quotes, \ escapes, $(...),
+// backticks and heredocs at any depth; not aliases, eval, functions, here-strings, case
+// patterns or # comments. Returns null when quotes or parentheses don't balance.
+function commands(s) {
+  const out = [];
+  const docs = []; // heredocs whose bodies start after the next newline
+  const stack = []; // open nested contexts: '"', or '(' for $( and the parentheses inside it
+  let cur, from, word, open;
+  let depth = 0; // top-level subshell parentheses
+  const begin = (at) => {
+    cur = { text: '', words: [] };
+    out.push(cur);
+    [from, word] = [at, null];
+  };
+  const add = (w) => (word = (word ?? '') + w);
+  const end = (at) => {
+    if (word !== null) cur.words.push(word);
+    word = null;
+    cur.text = s.slice(from, at).trim() + cur.text;
+  };
+  // Skip heredoc bodies from p, just after a newline. A top-level heredoc's body joins the
+  // text of the command that opened it; a nested one is already inside its text.
+  const bodies = (p) => {
+    for (const d of docs.splice(0)) {
+      const b = p;
+      for (;;) {
+        const nl = s.indexOf('\n', p);
+        const stop = nl < 0 ? s.length : nl;
+        const line = s.slice(p, stop);
+        p = stop + 1;
+        if ((d.dash ? line.replace(/^\t+/, '') : line) === d.word || nl < 0) {
+          if (d.cmd) d.cmd.text += '\n' + s.slice(b, stop);
+          break;
+        }
+      }
+    }
+    return Math.min(p, s.length);
+  };
+  // The index of the backtick closing the one at i, or -1.
+  const tick = (i) => {
+    for (let j = i + 1; j < s.length; j++) {
+      if (s[j] === '\\') j++;
+      else if (s[j] === '`') return j;
+    }
+    return -1;
+  };
+  begin(0);
+  for (let i = 0; i < s.length; ) {
+    const c = s[i];
+    const top = stack.length === 0;
+    const inner = stack[stack.length - 1];
+    if (c === '\\') {
+      if (top && s[i + 1] !== '\n') add(s[i + 1] ?? '');
+      i += 2;
+    } else if (c === '`') {
+      const j = tick(i);
+      if (j < 0) return null;
+      if (top) add(s.slice(i, j + 1));
+      i = j + 1;
+    } else if (inner === '"') {
+      if (c === '"') stack.pop();
+      else if (s.startsWith('$(', i)) {
+        stack.push('(');
+        i++;
+      }
+      i++;
+    } else if (c === "'") {
+      const j = s.indexOf("'", i + 1);
+      if (j < 0) return null;
+      if (top) add(s.slice(i + 1, j));
+      i = j + 1;
+    } else if (c === '"' || s.startsWith('$(', i)) {
+      if (top) open = i;
+      stack.push(c === '"' ? '"' : '(');
+      i += c === '"' ? 1 : 2;
+    } else if (s.startsWith('<<<', i)) {
+      if (top) add('<<<');
+      i += 3;
+    } else if (s.startsWith('<<', i)) {
+      const m = /^<<(-?)[ \t]*([^\s;&|()<>]+)/.exec(s.slice(i, i + 300));
+      if (!m) return null;
+      docs.push({ dash: m[1] === '-', word: m[2].replace(/['"\\]/g, ''), cmd: top ? cur : null });
+      i += m[0].length;
+    } else if (c === '\n') {
+      if (top) end(i);
+      i = bodies(i + 1);
+      if (top) begin(i);
+    } else if (!top) {
+      if (c === '(') stack.push('(');
+      else if (c === ')') stack.pop();
+      i++;
+    } else if (c === ' ' || c === '\t') {
+      if (word !== null) cur.words.push(word);
+      word = null;
+      i++;
+    } else if (/[;&|()]/.test(c) && !(c === '&' && (/[<>]/.test(s[i - 1]) || s[i + 1] === '>'))) {
+      depth += c === '(' ? 1 : c === ')' ? -1 : 0;
+      if (depth < 0) return null;
+      end(i);
+      begin(++i);
+    } else {
+      add(c);
+      i++;
+    }
+    if (!top && stack.length === 0) {
+      const piece = s.slice(open, i);
+      add(piece[0] === '"' ? piece.slice(1, -1).replace(/\\([\\"$`\n])/g, (_, ch) => (ch === '\n' ? '' : ch)) : piece);
+    }
+  }
+  if (stack.length || depth) return null;
+  end(s.length);
+  return out.filter((x) => x.text);
+}
+
+// When commands() can't parse a line, it is one command with words split on spaces.
+const split = (cmd) =>
+  commands(cmd) || [{ text: cmd, words: (cmd.match(/"(?:[^"\\]|\\.)*"|'[^']*'|\S+/g) || []).map((t) => t.replace(/^(["'])([\s\S]*)\1$/, '$2')) }];
+
 // ---------------------------------------------------------------- hooks
 // Like guard.js: JSON output, always exit 0, and fail open on anything unexpected.
 const emit = (hookEventName, extra) => process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName, ...extra } }));
@@ -375,16 +496,21 @@ function preToolUse(tool, ti, cwd) {
   }
   if (!str(ti.command)) return;
   const cmd = ti.command;
-  const commit = COMMIT.exec(cmd);
-  if (commit && INLINE_MSG.test(cmd.slice(commit.index))) {
+  // Each commit's trailers must be in its own text: not in an echo, not in another commit.
+  const commits = split(cmd).filter((c) => {
+    const m = COMMIT.exec(c.text);
+    return m && INLINE_MSG.test(c.text.slice(m.index));
+  });
+  if (commits.length) {
     const l = linked(cwd);
     if (!l || !l.key) return;
     const need = [['Refs', l.key]];
     if (l.specHash) need.push(['Spec', l.specHash]);
-    if (need.every(([p, v]) => hasTrailer(cmd, p, v))) return;
-    return deny(
-      `fabflows: this branch is linked to ticket ${l.key}. Put these lines in the commit message's last paragraph, next to any Co-Authored-By trailer:\n${need.map(([p, v]) => `${p}: ${v}`).join('\n')}`
-    );
+    const bad = commits.find((c) => !need.every(([p, v]) => hasTrailer(c.text, p, v)));
+    if (!bad) return;
+    let reason = `fabflows: this branch is linked to ticket ${l.key}. Put these lines in the commit message's last paragraph, next to any Co-Authored-By trailer:\n${need.map(([p, v]) => `${p}: ${v}`).join('\n')}`;
+    if (commits.length > 1) reason += `\nEvery commit in the command needs them; this one does not: ${bad.text.split('\n')[0].slice(0, 80)}`;
+    return deny(reason);
   }
   const pr = GH_PR('create').exec(cmd);
   if (pr) {

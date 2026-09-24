@@ -406,6 +406,36 @@ test('commits need Refs and Spec when linked', () => {
   }
 });
 
+test('each commit in a command needs its own trailers', () => {
+  const r = repo();
+  try {
+    cli(r.dir, ['link', 'ABC-1', URL, 'jira']);
+    const T = 'Refs: ABC-1';
+    for (const cmd of [
+      `git commit -m "a\n\n${T}" && git commit -m "b"`,
+      `git commit -m "b" && echo "${T}"`,
+      `echo "${T}"; git commit -m b`,
+      `git commit -F - <<EOF && echo "${T}"\nx\nEOF`,
+    ]) {
+      assert.equal(shell(r.dir, cmd).decision, 'deny', cmd);
+    }
+    assert.match(shell(r.dir, `git commit -m "a\n\n${T}" && git commit -m "b"`).reason, /does not: git commit -m "b"$/);
+    for (const cmd of [
+      `git commit -m "$(cat <<'EOF'\nfix: x; y && z (a) "q"\n\n${T}\nEOF\n)"`,
+      `git commit -F - <<'EOF'\nx; y && z (a) "q" 'r\n\n${T}\nEOF`,
+      `git commit -m "a\n\n${T}" && git commit -m "b\n\n${T}"`,
+      `git add . && git commit -F - <<EOF && git push\nx\n\n${T}\nEOF`,
+      `cd d && (git commit -m 'x\n\n${T}')`,
+    ]) {
+      assert.equal(shell(r.dir, cmd).decision, 'allow', cmd);
+    }
+    // Quotes that don't balance: the whole command is read as one, as before.
+    assert.equal(shell(r.dir, `git commit -m "b" && echo "${T}" '`).decision, 'allow', 'unbalanced');
+  } finally {
+    r.done();
+  }
+});
+
 test('PR titles must carry the key', () => {
   const r = repo();
   const mcp = (title) =>

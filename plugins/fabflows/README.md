@@ -93,7 +93,9 @@ forgets a link after its branch is gone.
 - SessionStart prints one line: the linked ticket, a link found only in a `Refs:` trailer
   (unconfirmed, so Claude asks first), or a reminder that the branch has none.
 - PreToolUse denies a `git commit` with an inline message that lacks `Refs: <key>` (and
-  `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key.
+  `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key. It
+  reads a chained command as the shell does, so each commit needs the lines in its own
+  message: a trailer in an `echo` or in another commit does not count.
 - PostToolUse reminds Claude to update the ticket after a push and a PR creation. After a
   merge (not `gh pr merge --auto` or `--disable-auto`) it finds the ticket by the PR the merge named, asks Claude
   to check the merge happened, and closes the ticket only for a PR with a closing phrase: a
