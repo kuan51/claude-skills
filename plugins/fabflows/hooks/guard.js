@@ -174,12 +174,13 @@ function isLocalRun(seg, cwd) {
   const isFile = (p) => fs.statSync(p, { throwIfNoEntry: false })?.isFile() === true;
   try {
     // npm's project root is the nearest directory with a package.json or node_modules;
-    // it looks for the bin there and nowhere above.
+    // it looks for the bin there and in every directory above, up to `/` (libnpmexec),
+    // which is how a workspace package finds bins hoisted to the monorepo root.
+    let root = false;
     for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
-      if (exists(path.join(dir, 'package.json')) || exists(path.join(dir, 'node_modules'))) {
-        const b = path.join(dir, 'node_modules', '.bin', bin);
-        return isFile(b) || isFile(b + '.cmd');
-      }
+      root = root || exists(path.join(dir, 'package.json')) || exists(path.join(dir, 'node_modules'));
+      const b = path.join(dir, 'node_modules', '.bin', bin);
+      if (root && (isFile(b) || isFile(b + '.cmd'))) return true;
       if (path.dirname(dir) === dir) return false;
     }
   } catch {
@@ -188,8 +189,11 @@ function isLocalRun(seg, cwd) {
 }
 
 // Secret-bearing paths. Accepts either separator so a Windows path matches too.
+// A `.env` directory is a Python virtualenv, not a secret. `.pem` or `.key` followed by a
+// source or prose extension is a file about keys; `json` is left out, since a `*.key.json`
+// can be a real service-account key.
 const SECRET_PATH =
-  /(^|[\s"'\\/])\.env($|[.\s"'\\/])|\.pem\b|\.key\b|\bid_rsa\b|\bid_ed25519\b|[\\/]\.aws[\\/]credentials|[\\/]\.ssh[\\/]|\.npmrc\b|\.pypirc\b/i;
+  /(^|[\s"'\\/])\.env($|[.\s"'])|\.(pem|key)\b(?!\.(md|mdx|txt|html|js|jsx|mjs|cjs|ts|tsx|py|go|rs|java|cs|rb)\b)|\bid_rsa\b|\bid_ed25519\b|[\\/]\.aws[\\/]credentials|[\\/]\.ssh[\\/]|\.npmrc\b|\.pypirc\b/i;
 
 // .env.example and friends are committed scaffolding that agents legitimately read and
 // edit in most repos. Blocking them would be a false positive on nearly every project.
@@ -202,7 +206,14 @@ const SECRET_CONTENT =
 
 const READERS = /^(cat|less|more|head|tail|strings|xxd|od|bat|get-content|gc|type)\b/i;
 
-const GIT_OP = /^git\s+(-c\s+\S+\s+)?(commit|push|merge|rebase)\b/i;
+// `(?=\s|$)`, not `\b`, so `merge-base` and `commit-graph` are not `merge` and `commit`.
+const GIT_OP = /^git\s+(-c\s+\S+\s+)?(commit|push|merge|rebase)(?=\s|$)/i;
+// Ending a merge or rebase in progress makes no new commit.
+const GIT_ABORT = /^git\s+(-c\s+\S+\s+)?(merge|rebase)\s+--(abort|quit)\s*$/i;
+const GIT_PUSH = /^git\s+(-c\s+\S+\s+)?push(?=\s|$)/i;
+// A branch the same command creates or moves to. A bare `git checkout <x>` is skipped,
+// since <x> can be a file, and so is a `switch` flag such as `--detach` or `-`.
+const GIT_NEW_BRANCH = /^git\s+(-c\s+\S+\s+)?(checkout\s+-[bB]|switch\s+-[cC]|switch)\s+([^\s-]\S*)/i;
 const GIT_ADD = /^git\s+(-c\s+\S+\s+)?add\b/i;
 const GIT_FORCE = /^git\s+(-c\s+\S+\s+)?push\b.*(--force\b|--force-with-lease\b|\s-f(\s|$))/i;
 
@@ -217,22 +228,37 @@ const PIPE_TO_SHELL = [
   /(invoke-webrequest|invoke-restmethod|iwr|irm)\b[^|]*\|\s*(iex|invoke-expression)\b/i,
 ];
 
+// The one unanchored rule below, so checkShell tests it on text with quotes blanked.
+const SYSTEM_REDIRECT = />\s*\/(etc|usr|bin|sbin|boot|sys)\//i;
+
 const DESTRUCTIVE = [
   [/^git\s+(-c\s+\S+\s+)?reset\s+--hard\b/i, 'git reset --hard discards uncommitted work'],
-  [/^git\s+(-c\s+\S+\s+)?clean\s+-[a-z]*d/i, 'git clean -d deletes untracked files'],
+  // A dry run (-n or --dry-run) only lists what it would delete.
+  [/^git\s+(-c\s+\S+\s+)?clean(?!.*\s(-[a-z]*n|--dry-run))\s+-[a-z]*d/i, 'git clean -d deletes untracked files'],
   [/^chmod\s+[0-7]*7{2,3}\b/i, 'chmod 777 makes a path world-writable'],
   [/^dd\b[^|]*\bof=/i, 'dd with of= overwrites a device or file wholesale'],
   [/^mkfs(\.|\s)/i, 'mkfs formats a filesystem'],
   [/^format-volume\b/i, 'Format-Volume formats a volume'],
   [/^set-executionpolicy\b/i, 'Set-ExecutionPolicy changes a machine-wide security setting'],
   [/^sudo\b/i, 'sudo escalates privileges'],
-  [/>\s*\/(etc|usr|bin|sbin|boot|sys)\//i, 'writing into a system path'],
+  [SYSTEM_REDIRECT, 'writing into a system path'],
 ];
 
+// Home in every spelling a shell string can carry it: the real home is spelled out too,
+// plus the usual absolute homes on Windows, Linux and macOS.
+const HOME_LITERAL = os.homedir().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const HOME_SPELLINGS = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+|/root|/home/[^\s/]+|/users/[^\s/]+|${HOME_LITERAL})`;
+
 // rm -rf / Remove-Item -Recurse -Force are only destructive at a dangerous target.
-// `rm -rf ./build` is routine; `rm -rf ~` is not.
-const RM_DANGER =
-  /(^|\s)(\/|~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]?)(\s|$)|(^|\s)(~|\$HOME|\$env:USERPROFILE)[\\/]|\s\.\.(\s|[\\/]|$)|\s\*(\s|$)|(^|\s|[\\/])\.git(\s|[\\/]|$)/i;
+// `rm -rf ./build` is routine; `rm -rf ~` is not. Under home, only home itself, a direct
+// child (`~/projects`, `~/*`) and anything in a credential or config directory count, so
+// `rm -rf ~/.cache/pip` passes. A target may be quoted. A `..` segment anywhere
+// (`~/a/../..`) can climb back to home, so it counts as dangerous too.
+const RM_HOME = String.raw`(^|\s)["']?${HOME_SPELLINGS}([\\/][^\s\\/"']*)?[\\/]?["']?(\s|$)|(^|\s)["']?${HOME_SPELLINGS}[\\/]\.(ssh|claude|aws|config|gnupg)([\\/"'\s]|$)`;
+const RM_DANGER = new RegExp(
+  String.raw`(^|\s)(\/|[a-z]:[\\/]?)(\s|$)|${RM_HOME}|\s\.\.(\s|[\\/]|$)|[\\/]\.\.([\\/"'\s]|$)|\s\*(\s|$)|(^|\s|[\\/])\.git(\s|[\\/]|$)`,
+  'i'
+);
 
 function isDangerousDelete(seg) {
   const posix = /^rm\b/i.test(seg);
@@ -254,13 +280,23 @@ const RUNNER_EXT = 'mk|sh|bash|zsh|ps1|cmd|bat';
 const RUNNER_FILE = new RegExp(String.raw`(^|[\\/])(makefile|justfile|package\.json|[^\\/]+\.(${RUNNER_EXT}))$`, 'i');
 const RUNNER_REDIRECT = new RegExp(String.raw`(>>?|\|\s*tee(\s+-a)?)\s*["']?(\S*?(makefile|justfile|package\.json|\S+\.(${RUNNER_EXT})))["']?(\s|$)`, 'i');
 
+// A comment, or an echo with no redirect and no `| tee` outside quotes, runs nothing.
+const isMessageLine = (line) =>
+  /^\s*#/.test(line) ||
+  (/^\s*(echo|printf|write-host|write-output)(\s|$)/i.test(line) && !/>|\|\s*tee\b/i.test(unquoted(line)));
+
 function destructiveLine(content) {
   const text = String(content).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
   // A Makefile recipe line starts with a tab and maybe `@` or `-`; an npm script is a
   // quoted JSON value; a printf/echo payload is a quoted string that may span lines.
-  // Check every line, and every line of every quoted string.
+  // Check every line, and every line of every quoted string, except a string on a comment
+  // line or on an echo line that goes to the terminal: that one is a message.
   const units = [text];
-  for (const m of text.matchAll(/"((?:[^"\\]|\\.)*)"|'([^']*)'/g)) units.push((m[1] ?? m[2]).replace(/\\(.)/g, '$1'));
+  for (const m of text.matchAll(/"((?:[^"\\]|\\.)*)"|'([^']*)'/g)) {
+    const end = text.indexOf('\n', m.index + m[0].length);
+    if (isMessageLine(text.slice(text.lastIndexOf('\n', m.index) + 1, end < 0 ? text.length : end))) continue;
+    units.push((m[1] ?? m[2]).replace(/\\(.)/g, '$1'));
+  }
   for (const unit of units) {
     for (const raw of unit.split(/\r?\n/)) {
       const c = raw.replace(/^[\s@-]+/, '').trim();
@@ -301,7 +337,7 @@ function isProtectedPath(p) {
 // everything else that names a protected path is denied. A redirect anywhere in the
 // segment denies regardless, since `cat x > settings.json` starts with a reader.
 const READ_ONLY =
-  /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|cmp|comm|cut|tr|nl|tac|rev|column|basename|dirname|du|ls|echo|printf|test|\[|<|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash|compare-object|sort-object|measure-object|select-object|convertfrom-json)(\.exe)?(\s|$)/i;
+  /^(cat|bat|sed(?!.*\s(-[a-z]*i|--in-place))|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|cmp|comm|cut|tr|nl|tac|rev|column|basename|dirname|du|ls|echo|printf|test|\[|<|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash|compare-object|sort-object|measure-object|select-object|convertfrom-json)(\.exe)?(\s|$)/i;
 // `for d in ...; do cat x; done` splits into a header and `do cat x`; both read as unknown
 // commands. Repeated, because `else if cmd` stacks two keywords and stripping one would
 // leave `if cmd` to slip past every rule anchored at segment start.
@@ -340,15 +376,46 @@ const stripPrefixes = (s) => {
 };
 // A `>` inside quotes is text (`echo "a -> b"`), not a redirect.
 // ponytail: no real quote parsing; an unbalanced quote is left in, which errs toward deny.
-const redirects = (s) => s.replace(/"[^"]*"|'[^']*'/g, '').includes('>');
+const unquoted = (s) => s.replace(/"[^"]*"|'[^']*'/g, '');
+const redirects = (s) => unquoted(s).includes('>');
+
+// Split on `&&`, `||`, `;`, `|`, `&`, CR and LF, but only outside quotes, so a commit
+// message or a grep pattern is not read as a command. A backslash escapes the next
+// character outside single quotes. A quote still open at the end falls back to the naive
+// split, which errs toward deny.
+const NAIVE_SPLIT = /&&|\|\||[;|&\r\n]/;
+function splitSegments(command) {
+  const out = [];
+  let cur = '';
+  let quote = null;
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i];
+    if (c === '\\' && quote !== "'" && i + 1 < command.length) {
+      cur += c + command[++i];
+    } else if (quote) {
+      if (c === quote) quote = null;
+      cur += c;
+    } else if (c === '"' || c === "'") {
+      quote = c;
+      cur += c;
+    } else if (';|&\r\n'.includes(c)) {
+      out.push(cur);
+      cur = '';
+      if ((c === '&' || c === '|') && command[i + 1] === c) i++;
+    } else {
+      cur += c;
+    }
+  }
+  if (quote) return command.split(NAIVE_SPLIT);
+  out.push(cur);
+  return out;
+}
 // The header runs nothing unless it carries a substitution -- but it hides the path in a
 // variable the rules below cannot follow, so it is read-only only when the body is too.
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
-// The real home is spelled out too, plus the usual absolute homes on Linux and macOS.
-const HOME_LITERAL = os.homedir().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+|/root|/home/[^\s/]+|/users/[^\s/]+|${HOME_LITERAL})[\\/]\.claude[\\/]`;
-const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s;|&)]|$))|[\\/]\.git[\\/]hooks([\\/"'\s;|&)]|$)`, 'i');
+const CLAUDE_HOME = String.raw`${HOME_SPELLINGS}[\\/]\.claude[\\/]`;
+const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|hooks|plugins)([\\/"'\s;|&)]|$)|[\\/]\.git[\\/]hooks([\\/"'\s;|&)]|$)`, 'i');
 // Discarding or merging a stream (`2>/dev/null`, `2>&1`) is not a write. Stripped from the
 // raw command before the split, because `2>&1` would otherwise be cut on its `&`. A digit
 // is required after `>&`, so `cat x >& file` still counts as a redirect.
@@ -357,7 +424,37 @@ const HARMLESS_REDIRECT = /\d*>&\d+|\d*>>?\s*(\/dev\/null|\$null)\b/gi;
 // write. Only a path directly after the interpreter (past its flags) qualifies, so
 // `python fix.py ~/.claude/settings.json` stays denied. The interpreter may sit at a path
 // (`./.venv/Scripts/python.exe`); only its basename is checked. Redirects still deny below.
-const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^["']?(\S*[\\/])?(node|deno|bun|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?["']?\s+(run\s+)?(-\S+\s+)*["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
+// The interpreter is optional: `~/.claude/hooks/notify.sh` runs the script too, and so does
+// PowerShell's `& "<script>"` once the split has removed the `&`. python's `-X` and `-W`
+// take a separate value.
+const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^(["']?(\S*[\\/])?(node|deno|bun|python3?|py|uv|bash|sh|pwsh|powershell)(\.exe)?["']?\s+(run\s+)?(-[XW]\s+\S+\s+|-\S+\s+)*)?["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
+// A copy out of live config is a read of it. The destination (the `-Destination` value,
+// else the last word) must not be live config, nor home, `~/.claude` itself or a `.git`
+// directory, where a copy can overwrite a protected file by name. `cp -t` names its target
+// first, and a flag after a path can make the last word a flag value, so neither is a read.
+const COPY = /^(cp|copy-item)(\s|$)/i;
+const COPY_INTO_DIR = new RegExp(String.raw`^${HOME_SPELLINGS}([\\/]\.claude)?[\\/]?$|(^|[\\/])\.git([\\/]|$)`, 'i');
+function isReadCopy(seg, cwd) {
+  if (!COPY.test(seg)) return false;
+  // A word may join quoted and bare parts (`"$HOME"/.claude`), so match it whole.
+  const args = (seg.replace(COPY, '').match(/(?:"[^"]*"|'[^']*'|[^\s"'])+/g) || []).map((a) => a.replace(/["']/g, ''));
+  if (/^cp/i.test(seg) && args.some((a) => /^(-[a-zA-Z]*t|--target-directory)/.test(a))) return false;
+  const d = args.findIndex((a) => /^-destination$/i.test(a));
+  let dest = args[d + 1];
+  if (d < 0) {
+    const first = args.findIndex((a) => !a.startsWith('-'));
+    if (first < 0 || args.slice(first).some((a) => a.startsWith('-'))) return false;
+    dest = args[args.length - 1];
+  }
+  if (!dest) return false;
+  // Every home variable resolves to the real home, so `$HOME/.claude/.` is `~/.claude` below.
+  const abs = norm(path.resolve(cwd, expandHome(dest.replace(/^(\$HOME|\$\{HOME\}|\$env:USERPROFILE)(?=[\\/]|$)/i, '~'))));
+  const home = norm(os.homedir());
+  return (
+    !PROTECTED_SHELL.test(dest) && !COPY_INTO_DIR.test(dest) && !isProtectedPath(abs) &&
+    abs !== home && abs !== home + '/.claude' && !/(^|\/)\.git(\/|$)/.test(abs)
+  );
+}
 // The marketplace clone is source, not live config: nothing under it runs until it is
 // copied into the cache, and that copy stays denied. So git may fetch and check it out.
 // Only these subcommands, and checkout/switch take one bare branch: `worktree add`,
@@ -403,11 +500,32 @@ function branches(cwd) {
 // Returns the first install segment, if any, so the caller can ask or deny only after
 // every other rule has had its chance to deny.
 // Commands that move the shell into a directory the guard cannot always follow.
-const CHANGE_DIR = /^(cd|pushd|set-location|sl|chdir)(\s|$)/i;
+const CHANGE_DIR = /^(cd|pushd|set-location|sl|push-location|chdir)(\s|$)/i;
+
+// Where a `git push` segment pushes: every refspec's destination branch, with `HEAD` as
+// the current branch. An empty list means no refspec, so the current branch is pushed.
+// `--all` and `--mirror` return null, since they push every branch.
+const PUSH_VALUE_FLAG = /^(--repo|-o|--push-option)$/;
+function pushDestinations(seg, current) {
+  const args = seg.replace(GIT_PUSH, '').trim().split(/\s+/).filter(Boolean).map(unquote);
+  const words = [];
+  for (let i = 0; i < args.length; i++) {
+    if (/^--(all|mirror)$/.test(args[i])) return null;
+    if (PUSH_VALUE_FLAG.test(args[i])) i++;
+    else if (!args[i].startsWith('-')) words.push(args[i]);
+  }
+  // The first word is the remote.
+  return words.slice(1).map((ref) => {
+    const r = ref.replace(/^\+/, '');
+    const dst = r.includes(':') ? r.slice(r.indexOf(':') + 1) : r;
+    const name = dst.replace(/^refs\/heads\//, '');
+    return name === 'HEAD' ? current : name;
+  });
+}
 function checkShell(command, cwd) {
   const installs = [];
   for (const re of PIPE_TO_SHELL) {
-    if (re.test(command)) {
+    if (re.test(unquoted(command))) {
       deny('fabflows: piping a download straight into a shell is blocked. Download it, read it, then run it.');
     }
   }
@@ -421,15 +539,13 @@ function checkShell(command, cwd) {
     if (line) denyRunnerPayload(line, redirect[3]);
   }
 
-  // Split on shell separators, then anchor every pattern at segment start. That is what
-  // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
-  // to parse quoting. Newlines and `&` separate too, and a leading `(`, a shell keyword, a
+  // Split on shell separators outside quotes, then anchor every pattern at segment start.
+  // That is what makes `echo "npm install"` allowed and a bare `npm install` blocked.
+  // Newlines and `&` separate too, and a leading `(`, a shell keyword, a
   // `VAR=value` prefix (even when it is the whole segment) and a transparent prefix such
   // as `time` are stripped, so none of them hides a command from the anchor. The raw
   // segment is kept, because `NPM_CONFIG_PREFIX=<path> npm i` names its target there.
-  const parts = command
-    .replace(HARMLESS_REDIRECT, '')
-    .split(/&&|\|\||[;|&\r\n]/)
+  const parts = splitSegments(command.replace(HARMLESS_REDIRECT, ''))
     .map((raw) => [raw.trim(), stripPrefixes(raw)])
     .filter(([, s]) => s);
   const segments = parts.map(([, s]) => s);
@@ -443,11 +559,15 @@ function checkShell(command, cwd) {
   // moves into a worktree is checked against that worktree's branch.
   let effCwd = cwd;
   let movedIntoConfig = false;
+  // `git checkout -b fix && git commit` commits on fix, not on the branch checked out now.
+  let newBranch = null;
   for (const [raw, seg] of parts) {
-    const cd = /^cd\s+(.+)$/.exec(seg);
-    if (cd) {
-      effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
+    if (CHANGE_DIR.test(seg)) {
+      const dir = seg.replace(CHANGE_DIR, '').replace(/^-(literal)?path\s+/i, '').trim();
+      if (dir) effCwd = path.resolve(effCwd, expandHome(unquote(dir)));
     }
+    const nb = GIT_NEW_BRANCH.exec(seg);
+    if (nb) newBranch = unquote(nb[3]);
     // `cd $HOME/...`, `pushd` and `Set-Location` into live config, which effCwd cannot follow.
     if (CHANGE_DIR.test(seg) && PROTECTED_SHELL.test(seg)) movedIntoConfig = true;
 
@@ -467,7 +587,7 @@ function checkShell(command, cwd) {
     }
 
     for (const [re, why] of DESTRUCTIVE) {
-      if (re.test(seg)) deny(`fabflows: blocked -- ${why}.`);
+      if (re.test(re === SYSTEM_REDIRECT ? unquoted(seg) : seg)) deny(`fabflows: blocked -- ${why}.`);
     }
 
     if (GIT_FORCE_DELETE.test(seg)) {
@@ -485,29 +605,36 @@ function checkShell(command, cwd) {
     // A package runner (`npx`, `uv run --with`) is an install, never a read of the path.
     const readOnly =
       (!isInstall && RUNS_PROTECTED_SCRIPT.test(seg)) ||
+      // After a move into live config that effCwd cannot follow, a relative target may be in it.
+      (!movedIntoConfig && isReadCopy(seg, effCwd)) ||
       (!EXEC_FLAGS.test(seg) &&
         (READ_ONLY.test(seg) || (FOR_HEADER.test(seg) && loopReadOnly) || MARKETPLACE_GIT.test(seg)));
     if (PROTECTED_SHELL.test(seg) && (redirects(seg) || !readOnly)) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard. Reads are allowed: use the Read, Glob or Grep tools, or a plain ls/cat with no redirect.');
     }
 
-    if (GIT_OP.test(seg)) {
+    if (GIT_OP.test(seg) && !GIT_ABORT.test(seg)) {
       // A `cd` the guard could not follow (a variable, `-`, a missing directory, a
       // subshell) leaves effCwd outside any repo; judge in the session cwd rather than
       // let the cd erase the branch check.
       const b = branches(effCwd) || (effCwd !== cwd ? branches(cwd) : null);
       if (!b) continue; // fail open
-      const onDefault = b.defaults.includes(b.current);
-      if (onDefault) {
+      const current = newBranch || b.current;
+      if (GIT_PUSH.test(seg)) {
+        // A push is judged by the branch it writes to, not the one checked out. Force-push
+        // is narrowed the same way: --force-with-lease on your own branch is routine.
+        const dests = pushDestinations(seg, current);
+        const hit = dests === null || dests.some((d) => b.defaults.includes(d)) || (!dests.length && b.defaults.includes(current));
+        if (hit && (GIT_FORCE.test(seg) || /\s\+\S/.test(seg))) {
+          deny(`fabflows: force-pushing to the default branch '${b.defaults.join("' or '")}' is blocked.`);
+        }
+        if (hit) {
+          deny(`fabflows: git push to the default branch '${b.defaults.join("' or '")}' is blocked. Push a branch named for the change instead.`);
+        }
+      } else if (b.defaults.includes(current)) {
         deny(
-          `fabflows: ${seg.split(/\s+/).slice(0, 2).join(' ')} on the default branch '${b.current}' is blocked. Create a branch named for the change first.`
+          `fabflows: ${seg.split(/\s+/).slice(0, 2).join(' ')} on the default branch '${current}' is blocked. Create a branch named for the change first.`
         );
-      }
-      // Force-push is narrowed to default branches. Rewriting history on a shared
-      // branch is the actual rule; --force-with-lease on your own feature branch is
-      // routine and a blanket block would fight the user weekly.
-      if (GIT_FORCE.test(seg) && b.defaults.some((d) => new RegExp(`(^|[\\s:/])${d}(\\s|$)`).test(seg))) {
-        deny(`fabflows: force-pushing to the default branch '${b.defaults.join("' or '")}' is blocked.`);
       }
     }
   }
@@ -560,10 +687,11 @@ function subagentStop(input) {
   const tail = fs.readFileSync(input.agent_transcript_path, 'utf8').slice(-40000);
 
   // The tail is raw JSONL, where `"command"` and `"output"` appear as keys in every tool
-  // call. A word followed by a quote is a key, not prose, and does not count.
+  // call. A word followed by a quote is a key, not prose, and does not count. A researcher
+  // reports searches and fetches rather than commands.
   const groups = [
     [/files?\s+(touched|changed)|modified files/i, 'files touched'],
-    [/\b(command|output)\b(?!")|exit code/i, 'commands and their real output'],
+    [/\b(command|output|(search|fetch)\w*)\b(?!")|exit (code|status)/i, 'commands and their real output'],
     [/\bconfirmed\b|\binferred\b|\bguessed\b/i, 'confidence labels'],
   ];
   const missing = groups.filter(([re]) => !re.test(tail)).map(([, label]) => label);
