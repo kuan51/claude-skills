@@ -325,9 +325,10 @@ function runCell(a, cell, settingsPath) {
   // launch's payloads into this run's hook counts (observed in iteration 5, two stale rows).
   const probePath = path.join(runDir, 'hook-probe.jsonl');
   fs.rmSync(probePath, { force: true });
-  const env = { ...process.env, FABFLOWS_PROBE: probePath };
+  // A ceiling of '0' lifts the 600 s cap on waiting for background work in print mode.
+  const env = { ...process.env, FABFLOWS_PROBE: probePath, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0' };
   delete env.CLAUDECODE; // the nested-session guard is for interactive terminals
-  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: ['claude', ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE }, startedAt: new Date().toISOString() });
+  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: ['claude', ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS }, startedAt: new Date().toISOString() });
 
   const caps = capsFor(cell.task);
   return new Promise((resolve) => {

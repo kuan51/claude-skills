@@ -14,6 +14,7 @@ const EVALS = path.join(__dirname, '..', 'evals');
 const FIXTURE = path.join(__dirname, 'fixtures', 'transcript-sample.jsonl');
 const DEP_RESOLVER = path.join(EVALS, 'fixtures', 'dep-resolver');
 const OUTDATED = path.join(EVALS, 'fixtures', 'lockstep-outdated');
+const UPDATE = path.join(EVALS, 'fixtures', 'lockstep-update');
 
 test('tasks.json is well formed: unique ids, both arms or per-task arms, a prompt and a grade kind per task', () => {
   const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
@@ -95,6 +96,21 @@ test('the review-catch fixture, defect in place, fails only the caret-on-zero te
   assert.notEqual(r.status, 0);
   assert.ok(r.failed.includes("caret-on-zero: satisfies('0.3.0', '^0.2.3') is false"), `the satisfies case must fail on the fixture:\n${r.out}`);
   const other = r.failed.filter((n) => !n.startsWith('outdated:') && !n.startsWith('caret-on-zero:'));
+  assert.deepEqual(other, [], 'no other hidden test may fail on the fixture');
+});
+
+test('the update-minimal hidden suite passes against its solution', () => {
+  const r = runHidden(path.join(UPDATE, 'hidden'), path.join(UPDATE, 'solution'));
+  assert.equal(r.status, 0, `hidden suite failed against the solution:\n${r.out}`);
+});
+
+test('the update-minimal fixture fails only the update and cli cases', () => {
+  // `update` is absent from the fixture; the regression cases must pass, or the baseline is
+  // broken somewhere the task does not ask to touch.
+  const r = runHidden(path.join(UPDATE, 'hidden'), path.join(UPDATE, 'visible'));
+  assert.notEqual(r.status, 0);
+  assert.ok(r.failed.some((n) => n.startsWith('update:')), `the update cases must fail on the fixture:\n${r.out}`);
+  const other = r.failed.filter((n) => !n.startsWith('update:') && !n.startsWith('cli:'));
   assert.deepEqual(other, [], 'no other hidden test may fail on the fixture');
 });
 

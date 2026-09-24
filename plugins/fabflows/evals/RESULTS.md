@@ -68,6 +68,329 @@ unexercised.
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
 
+## Iteration 13 (2026-09-24): task 9 with the split pins and a 60-minute cap
+
+**Bottom line.** Builder `medium`, reviewer `xhigh`, cap raised from 30 to 60 minutes, same
+three runs of task 9. Every run finished its loop, committed, and passed 21/21 hidden tests.
+Every run went through rework: two of three needed two rounds, and every must-fix named a real
+defect in the search (exponential minimality search, a U2 ordering that depended on the
+registry file's key order, a tie-break broken by unreachable packages). No trailer nits. Builds
+took 17 to 22 minutes at medium, which is why the 30-minute cap had been deciding runs. Cost
+$3.76 to $5.80 list, mean $4.87, of which Opus $2.61 to $4.91; wall clock 26 to 42 minutes.
+This is the first arm where three of three runs ended green with the loop's review doing the
+work it was built for.
+
+### Setup (confirmed)
+
+Task 9 as in iterations 11 and 12, `runTimeoutMinutes` 60 (commit `c21bf71`), `loop` arm,
+three repeats concurrent, Fable lead at medium. Plugin loaded via `--plugin-dir` from a copy of
+this checkout (0.5.1) with one edit: `workflows/build.js` builder `effort: 'medium'`; the
+reviewer stays `xhigh` and `agents/refuter.md` stays `xhigh`. Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 13 --tasks 9 --parallel 3 --plugin-dir <0.5.1 copy with builder medium>/plugins/fabflows --confirm
+```
+
+### Observed
+
+| run | hidden | rounds | build s (each) | review s (each) | review think (each) | verdicts | wall s | Fable $ | Opus $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 21/21 | 3 | 1,333, 72, 34 | 272, 207, 205 | 23k, 17k, 16k | REWORK, REWORK, ACCEPT | 2,183 | 0.94 | 4.09 | 5.04 |
+| 2 | 21/21 | 2 | 1,007, 43 | 163, 253 | 12k, 21k | REWORK, ACCEPT | 1,550 | 1.15 | 2.61 | 3.76 |
+| 3 | 21/21 | 3 | 1,228, 196, 222 | 201, 313, 324 | 16k, 27k, 28k | REWORK, REWORK, ACCEPT | 2,543 | 0.89 | 4.91 | 5.80 |
+
+Must-fix items (confirmed, from the journals):
+
+| run | round | finding |
+| --- | --- | --- |
+| 1 | review:1 | U2 comparison phases use plain string order where the spec says `Object.keys` order |
+| 1 | review:2 | the U2 changed-set order follows the registry file's key order, so output depends on file formatting |
+| 2 | review:1 | the U2 version tie-break breaks when an unchanged package is no longer reachable from the new root |
+| 3 | review:1 | the U1 search's only lower bound counts pending names, not the graph below them, so it is exponential; and `mustSelect` is checked only at a leaf |
+| 3 | review:2 | the U1 search is still exponential on an input inside the spec's size limit |
+
+Two of these (run 1) are the reviewer reading "Object.keys order" more strictly than the hidden
+suite does: the suite never varies registry key order, so both builds would have passed the
+grader unchanged. The other three are correctness or complexity defects the hidden suite would
+also have missed on its fixed cases. Nothing was denied.
+
+### Against iterations 11 and 12
+
+| arm | pins (builder/reviewer), cap | loops finished | hidden 21/21 | REWORK rounds with a real defect | mean list $ | mean wall s |
+| --- | --- | --- | --- | --- | --- | --- |
+| iteration 11 | medium/medium, 30 min | 2/3 | 2/3 | 1 of 2 | 3.15 | 1,318 |
+| iteration 12 | high/xhigh, 30 min | 1/3 | 3/3 (two uncommitted) | 2 of 2 | 3.30 | 1,696 |
+| iteration 13 | medium/xhigh, 60 min | 3/3 | 3/3 | 5 of 5 | 4.87 | 2,092 |
+
+Iteration 13's higher mean cost is the price of finishing: its runs are the only ones with no
+truncated build in the average. Iteration 11's two complete runs cost $3.84 and $2.67 and their
+one real finding cost two rounds.
+
+### What it means
+
+- **Reviewer at xhigh is the pin that pays on this task (confirmed, n=3 plus 1).** Four complete
+  xhigh-reviewed runs across iterations 12 and 13 produced seven must-fix items, all defects in
+  the search. Two complete medium-reviewed runs produced one such defect and one nit.
+- **Builder at high did not help and cost runs (confirmed at the 30-minute cap, unmeasured at
+  60).** Medium builders finish task 9 in 17 to 22 minutes. High builders had not committed at
+  30 minutes in two of three runs.
+- **The 30-minute cap was the binding constraint on task 9 (confirmed).** At 60 minutes no run
+  was truncated.
+- **Spec ambiguity found by the benchmark itself (inferred).** "Object.keys order" in U2 reads
+  two ways, and two review rounds went on it. The hidden suite is indifferent, so the grade is
+  unaffected, but the fixture's `SPEC.md` should say "ascending string order" in the next
+  revision of task 9.
+- **Three runs per arm.** Enough to say the direction of each pin; not a rate.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 13 --tasks 9 --parallel 3 --plugin-dir <0.5.1 copy with builder medium>/plugins/fabflows --confirm
+```
+
+## Iterations 11 and 12 (2026-09-24): task 9, medium pins against the raised pins
+
+**Bottom line.** Task 9 (`update-minimal`, a minimal-change re-resolution with a hidden oracle
+and a 16-package case that defeats brute force) is the first task where the loop's outcome
+varies at medium: one run passed clean, one needed two rework rounds, one hit the 30-minute cap
+mid-build with one hidden test failing. So the raised pins finally had something to move, and
+iteration 12 ran the same three runs at 0.5.1's builder `high` and reviewer `xhigh`. They did
+not move the graded outcome upward: two of three builders were still working at the 30-minute
+cap and never committed, and the one complete run needed two rework rounds and cost $5.04.
+Where the raised pins showed a difference is in what the reviewer found: at xhigh both rework
+rounds named real defects (a self-dependency that breaks R1, an exponential minimality proof),
+where at medium one of the two rework rounds was a commit-trailer nit. Three runs per arm; the
+cap, not the pins, decided two of six outcomes.
+
+### Setup (confirmed)
+
+Task 9 as specified in `docs/specs/2026-09-23-fabflows-benchmark-update-minimal.md` (built by
+`fabflows:build`, one round, `5550518`). `loop` arm only, three repeats concurrent, Fable lead
+at medium effort, caps 120 turns, $15, 30 minutes. The harness now sets
+`CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`, so the `claude -p` 600 s background limit from
+iteration 10 no longer applies; the 30-minute `runTimeoutMinutes` cap does. Iteration 11 loaded
+a `git archive 7dc5335 plugins/fabflows` snapshot (0.5.0, all pins medium) via `--plugin-dir`;
+iteration 12 loaded this checkout (0.5.1). Remote cloud session. Commands:
+
+```bash
+git archive 7dc5335 plugins/fabflows | tar -x -C <snapshot>
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 9 --parallel 3 --plugin-dir <snapshot>/plugins/fabflows --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 12 --tasks 9 --parallel 3 --confirm
+```
+
+### Observed
+
+| iter, pins | run | hidden | loop finished | rounds | build:1 s | review s (each) | verdicts | wall s | Fable $ | Opus $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 11, medium | 1 | 20/21 | no, killed at cap mid build:1, nothing committed | 0 | 1,782+ | n/a | none | 1,802 | 1.09 | 1.84 | 2.94 |
+| 11, medium | 2 | 21/21 | yes | 3 | 675 | 79, 76 | REWORK, REWORK, ACCEPT | 1,146 | 1.84 | 1.99 | 3.84 |
+| 11, medium | 3 | 21/21 | yes | 1 | 896 | 59 | ACCEPT | 1,006 | 1.38 | 1.29 | 2.67 |
+| 12, high/xhigh | 1 | 21/21 | no, killed at cap mid build:1, nothing committed | 0 | 1,775+ | n/a | none | 1,802 | 0.57 | 1.69 | 2.26 |
+| 12, high/xhigh | 2 | 21/21 | yes | 3 | 518 | 181, 249, 261 | REWORK, REWORK, ACCEPT | 1,483 | 1.04 | 3.99 | 5.04 |
+| 12, high/xhigh | 3 | 21/21 | no, killed at cap mid build:1, nothing committed | 0 | 1,759+ | n/a | none | 1,803 | 0.70 | 1.90 | 2.60 |
+
+The hidden score of a killed run is graded on the uncommitted working tree. In iteration 11
+run 1 the failing test was the U2 tie-break; in both iteration 12 kills the tree already passed
+21/21 and the builder was still running probes (its last tool call was a Bash of a `node -e`
+script against its own `src/index.js`, 42 and 48 tool calls in). No tool call was denied.
+
+Rework findings, from the workflow journals (confirmed):
+
+| iter | round | reviewer must-fix |
+| --- | --- | --- |
+| 11 | review:1 | `while (!search(new Map(), k)) k++` re-runs a full search for every k below the answer: exponential, will miss the 10 s bound at spec scale |
+| 11 | review:2 | commit trailer names Opus 5.5, the brief said Fable 5.1 |
+| 12 | review:1 | `update` never checks a package's dependency on itself, so it can return a lockfile that breaks R1 and an answer where `resolve` throws, breaking U3 |
+| 12 | review:2 | minimality proof `search(k - 1, ...)` is exponential when every change is forced but found one at a time, as in a dependency chain |
+
+### What the runs showed
+
+1. **Task 9 discriminates (confirmed).** Six loop runs, four distinct outcomes: clean ACCEPT,
+   two-round rework, cap kill with a failing test, cap kill with a passing tree. No earlier task
+   produced anything but clean ACCEPT in thirteen runs.
+2. **The raised builder pin did not make the build converge faster (confirmed).** At medium,
+   two of three build:1 rounds finished (675 s, 896 s); at high, one of three (518 s). The two
+   high builders that were killed had thought 14k and 23k tokens and had correct code in the
+   tree for some time before the cap; they were still probing rather than committing. Whether
+   they would have committed at 35 or 60 minutes is unmeasured: the cap truncates the arm.
+3. **The xhigh reviewer found more, and different, things (confirmed, n=1 complete run per
+   arm).** Both of its rework rounds named correctness or complexity defects in the search
+   itself. The medium reviewer found one such defect and one attribution nit. The xhigh reviews
+   took 181 to 261 s and 14k to 21k thinking tokens each, against 59 to 79 s and 3k to 5k.
+4. **Cost, on the one complete run per arm (confirmed).** $5.04 against $3.84 list, of which Opus
+   $3.99 against $1.99; three xhigh reviews are most of the difference.
+5. **Three runs per arm, two of them truncated (confirmed).** This is a direction on the
+   reviewer and no verdict on the builder.
+
+### What it means
+
+- The reviewer pin is where the raised effort showed up: at xhigh the review reads the search
+  for correctness and complexity, not only the diff against the spec. That is the behaviour
+  the pin was raised for, and it costs about $0.65 and 200 s a round on this task.
+- The builder pin bought nothing measurable and may have cost two runs, because a high-effort
+  builder on an open-ended search problem keeps probing. The 30-minute cap is now the binding
+  constraint on task 9 in both arms, and it should be raised (60 minutes) before the next
+  comparison, or the builder brief should say when to stop probing and commit.
+- The next measurement worth paying for: task 9 at a 60-minute cap, builder medium and reviewer
+  xhigh (the split the evidence points at), three runs, against these six.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 9 --parallel 3 --plugin-dir <0.5.0 snapshot>/plugins/fabflows --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 12 --tasks 9 --parallel 3 --confirm
+```
+
+## Iteration 10 (2026-09-23): the raised effort pins on the large build
+
+**Bottom line.** Task 7 (the greenfield resolver, 41 hidden tests) with fabflows 0.5.1's pins
+(builder `high`, reviewer `xhigh`) against iteration 6's two runs at `medium`: quality was
+41/41 in both runs, as it was in every earlier run, so the pins had no graded effect. What they
+did change is time. Worker output rose 66%, almost all of it thinking, and the loop's wall clock
+rose from about 410 s to about 650 s. That crossed a limit iteration 6 never met: `claude -p`
+terminates background tasks after 600 s, and run 2's reviewer was killed mid-review with no
+verdict. The builder had already committed, so the grade held; the loop did not finish.
+
+### Setup (confirmed)
+
+Task 7 as in iteration 6, `with_skill` arm only, two repeats concurrent, Fable lead at medium
+effort, caps 200 turns, $60, 120 minutes. Plugin staged at 0.5.1 with the pins named in
+iteration 9. Run in a remote cloud session. Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 7 --arms with_skill --repeats 2 --parallel 2 --confirm
+```
+
+### Observed
+
+| run | hidden | checks | turns | wall s | lead out | build out (think) | review out (think) | verdict | Fable $ | Opus $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 41/41 | 50/50 | 12 | 676 | 5,969 | 37,681 (13,974) | 28,276 (23,861) | ACCEPT, no must-fix | 1.12 | 2.07 | 3.19 |
+| 2 | 41/41 | 49/50 | 11 | 629 | 1,612 | 36,847 (13,379) | 23,935 (22,402) | none: killed at 600 s | 0.64 | 1.94 | 2.58 |
+
+Against iteration 6's `with_skill` runs (41/41 both; $2.97 and $2.87; 419 s and 408 s; worker
+output 38,979 and 36,714; build:1 review:1 ACCEPT both):
+
+| | iteration 6 (medium/medium) | iteration 10 (high/xhigh) | delta |
+| --- | --- | --- | --- |
+| hidden tests | 41/41, 41/41 | 41/41, 41/41 | none |
+| review verdict | ACCEPT, ACCEPT | ACCEPT, killed | one lost review |
+| worker output tokens | 37,847 | 63,370 | +66% |
+| wall clock s | 414 | 653 | +58% |
+| list $ | 2.92 | 2.89 | flat |
+
+List dollars are flat only because run 2's lead never ran its post-accept gate (its Fable spend
+is half of run 1's). Run 1 alone, the one complete loop, cost $3.19 against $2.92, +9%.
+
+### What the runs showed
+
+1. **No graded gain, again (confirmed).** The task was at ceiling before the pins and stays
+   there. Neither reviewer returned REWORK, so the rework path is still unexercised after
+   thirteen loop runs.
+2. **The reviewer's thinking is the cost (confirmed).** Review thinking was 22k to 24k tokens
+   per run at xhigh; its visible output was under 5k. Builder thinking was about 14k at high.
+   Iteration 6 did not split thinking out, but its whole worker output per run was under what
+   this reviewer thinks alone.
+3. **The loop now runs into the CLI's background ceiling (confirmed).** Run 2's `stderr.txt`:
+   "Background tasks still running after 600s; terminating." The review agent's last event is
+   two seconds before the run ended. Iteration 6's loops finished with about three minutes to
+   spare; the pins consumed that margin. The lead had ended its turn to wait for the workflow,
+   so it never ran the gate, and the grader's "every launched workflow finished" row failed.
+4. **Two runs (confirmed).** Direction only.
+
+### What it means
+
+- On the two tasks measured (this one and iteration 9's), the raised pins bought no graded
+  quality and cost 58% to 73% more wall clock. On the large build they also make the loop
+  overrun a headless `claude -p` session's 600 s background limit, which is the harness's own
+  setting (`CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`) and not a limit an interactive session has,
+  but it is the difference between a loop that returns and one that does not.
+- The benchmark cannot show the pins helping until a task produces a REWORK at medium. Until
+  one does, the measured case for `medium` on both workers stands, and the pins are a cost
+  without a measured return.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 7 --arms with_skill --repeats 2 --parallel 2 --confirm
+```
+
+## Iteration 9 (2026-09-23): the raised effort pins, on the same shipped defect
+
+**Bottom line.** fabflows 0.5.1 (PR #60) pins the build-loop builder at `high` and the refuter
+at `xhigh`, both previously `medium`. Three loop runs of task 8 against iteration 8's five loop
+runs at the old pins: the review still returned ACCEPT with no must-fix items in every run and
+none named the defect (0/3, against 0/5), while worker output tokens nearly doubled, Opus
+dollars rose about 80%, and wall clock rose 73%. On this fixture the raised pins bought nothing
+the grader can see. That is consistent with iteration 8's reading that the miss is a briefing
+gap, not an effort gap: every reviewer opened `src/index.js`, the file that holds the defect,
+and still checked only what the spec names.
+
+### Setup (confirmed)
+
+Task 8 exactly as in iteration 8, `loop` arm only, three repeats, three runs concurrent, Fable
+lead at medium effort, caps 120 turns, $15, 30 minutes. The plugin staged from this checkout at
+0.5.1: `agents/refuter.md` `effort: xhigh`, `workflows/build.js` builder `effort: 'high'` and
+reviewer `effort: 'xhigh'`. Run in a remote cloud session, not the usual desktop. Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --repeats 3 --parallel 3 --confirm
+```
+
+### Observed
+
+| run | hidden | defect shipped | review named it | verdict | turns | wall s | lead out | build out (think) | review out (think) | Fable $ | Opus $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 7/9 | yes | no | ACCEPT | 13 | 169 | 2,894 | 5,886 (1,277) | 6,744 (3,671) | 1.35 | 0.54 | 1.89 |
+| 2 | 7/9 | yes | no | ACCEPT | 16 | 183 | 4,425 | 5,300 (600) | 7,641 (4,621) | 1.50 | 0.54 | 2.04 |
+| 3 | 7/9 | yes | no | ACCEPT | 12 | 173 | 2,190 | 6,552 (1,167) | 7,482 (3,828) | 1.27 | 0.61 | 1.89 |
+
+Same two hidden failures as iteration 8 in every run. Every worker ran on `claude-opus-5-5`; no
+tool call was denied. Means against iteration 8's loop arm (n=5):
+
+| | iteration 8 (medium/medium) | iteration 9 (high/xhigh) | delta |
+| --- | --- | --- | --- |
+| review named the defect | 0/5 | 0/3 | none |
+| worker output tokens | 6,847 | 13,217 | +93% |
+| Opus $ (list minus Fable) | 0.31 | 0.56 | +80% |
+| wall clock s | 101 | 175 | +73% |
+| lead output tokens | 2,933 | 3,170 | +8% |
+| Fable $ | 0.80 | 1.37 | +71%, see below |
+| list $ | 1.11 | 1.94 | +75% |
+
+### What the runs showed
+
+1. **No quality change the grader can see (confirmed).** Three ACCEPT verdicts with empty
+   must-fix lists. The xhigh reviewers wrote longer reports, with two to four notes each on
+   edge cases the spec does not name (an unnamed dependency in an error message, a usage-text
+   change), and each note was placed below must-fix on purpose. None probed `satisfies` on a
+   caret-on-zero range.
+2. **The refuter's thinking is where the tokens went (confirmed).** Review thinking was 3,671
+   to 4,621 tokens per run; iteration 8's whole loop-arm lead-plus-worker thinking was under
+   that. Builder output rose less.
+3. **The Fable delta is a cache artifact, not the pins (inferred).** Lead cache writes were
+   55,499 against 27,558: this run's three sessions started in the same second and each wrote
+   the ~39.7k system prompt, where iteration 8's ten runs shared it. 39.7k at the Fable
+   cache-write rate is about $0.50, which is the whole of the Fable gap. The pins do not touch
+   the lead.
+4. **Three runs on a 0/3 outcome (confirmed).** Enough to say the direction of cost; not
+   enough to put a rate on anything.
+
+### What it means
+
+- The two pins cost about $0.25 of Opus and 75 s per loop round on a task this size, and on
+  this fixture returned nothing. Whether they pay on a harder build (task 7's 41-test suite,
+  which has never produced a REWORK either) is unmeasured, and that arm costs about $4 a run.
+- The lever iteration 8 named still stands: brief the refuter to probe an input family the
+  spec leaves unstated, or to read the functions the diff newly depends on. Effort alone does
+  not make it do either.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --repeats 3 --parallel 3 --confirm
+```
+
 ## Iteration 8 (2026-09-22): the hidden rule, and what the review does not catch
 
 **Bottom line.** With the caret-on-zero rule removed from `SPEC.md` and its example moved to a
