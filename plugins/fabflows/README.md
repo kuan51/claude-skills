@@ -83,9 +83,10 @@ secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carri
 rules after that: the tool table, the ticket body template, what a confirmed link lets
 Claude do without asking, and how status moves from in progress to in review to done.
 
-**Hooks.** `hooks/ticket.js` keeps a per-branch link: one state file per branch under the
-git dir (`git rev-parse --git-path fabflows/tickets`), named by a hash of the branch, never
-in the working tree. It reads only that local state; every tracker write is Claude's own MCP
+**Hooks.** `hooks/ticket.js` keeps a per-branch link: one state file per branch under
+`fabflows/tickets` in the common git dir (`git rev-parse --git-common-dir`), named by a hash
+of the branch, never in the working tree. Every worktree of the repository sees the same
+links. It reads only that local state; every tracker write is Claude's own MCP
 call. `ticket.js status` prints the current branch's link, and `ticket.js clear --pr '<url>'`
 forgets a link after its branch is gone.
 

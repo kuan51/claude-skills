@@ -12,8 +12,8 @@
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
 //
-// State is one file per branch, fabflows/tickets/<h>.json in the git dir, where <h> is the
-// first 16 hex characters of sha256(branch); approve adds <h>.approved.md beside it.
+// State is one file per branch, fabflows/tickets/<h>.json in the common git dir, where <h> is
+// the first 16 hex characters of sha256(branch); approve adds <h>.approved.md beside it.
 //
 // Every value is validated on every read and write: the state file, commit trailers and
 // the git dir can hold any text, and what this prints reaches Claude's context.
@@ -167,7 +167,9 @@ function currentBranch(cwd) {
   return b && b !== 'HEAD' && valid.branch(b) ? b : null;
 }
 
-const stateDir = (cwd) => path.resolve(cwd, git(['rev-parse', '--git-path', 'fabflows/tickets'], cwd));
+// The common git dir, so every worktree sees the same links: git checks a branch out in one
+// worktree at a time, so branch-keyed files never collide.
+const stateDir = (cwd) => path.resolve(cwd, git(['rev-parse', '--git-common-dir'], cwd), 'fabflows', 'tickets');
 const statePath = (cwd, branch) => path.join(stateDir(cwd), sha(branch).slice(0, 16) + '.json');
 const approvedPath = (p) => p.replace(/\.json$/, '.approved.md');
 

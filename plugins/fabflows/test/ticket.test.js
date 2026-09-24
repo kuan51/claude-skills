@@ -298,6 +298,25 @@ test('links are per branch', () => {
   }
 });
 
+test('links are shared across worktrees', () => {
+  const r = repo();
+  const wt = r.dir + '-wt';
+  const PR = 'https://github.com/o/r/pull/6';
+  try {
+    r.git('worktree', 'add', '-q', '-b', 'feat-w', wt);
+    assert.equal(cli(wt, ['link', 'ABC-6', URL, 'jira']).status, 0);
+    assert.equal(cli(wt, ['pr', PR]).status, 0);
+    assert.ok(fs.existsSync(r.stateOf('feat-w')), 'the state file sits in the common git dir');
+    const text = after(r.dir, 'Bash', { command: 'gh pr merge 6' }).context;
+    assert.ok(text && text.includes('ABC-6'), `the main checkout finds it: ${text}`);
+    assert.equal(cli(r.dir, ['clear', '--pr', PR]).status, 0);
+    assert.ok(!fs.existsSync(r.stateOf('feat-w')), 'clear --pr from the main checkout removes it');
+  } finally {
+    r.done();
+    fs.rmSync(wt, { recursive: true, force: true });
+  }
+});
+
 test('SessionStart prints one line per case', () => {
   const r = repo();
   try {

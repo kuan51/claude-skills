@@ -60,7 +60,7 @@ test('the README names the ticket hook, the ticket skills and raw review', () =>
   const included = readme.slice(readme.indexOf("## What's included"), readme.indexOf('## Brainstorming'));
   has(included, ['`fabflows-setup`', '`ticket`'], "README What's included");
   const tickets = readme.slice(readme.indexOf('## Tickets'), readme.indexOf('\n## ', readme.indexOf('## Tickets') + 1));
-  has(tickets, ['raw diff', 'per-branch', 'unclosed `<!--`', 'refuses'], 'README Tickets');
+  has(tickets, ['raw diff', 'per-branch', 'unclosed `<!--`', 'refuses', 'worktree'], 'README Tickets');
 });
 
 test('the current version is documented', () => {
