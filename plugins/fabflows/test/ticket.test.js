@@ -457,6 +457,7 @@ test('PR titles must carry the key', () => {
     assert.equal(shell(r.dir, 'gh pr create --body "run with -t ABC-1" --title "fix (ABC-1)"').decision, 'allow');
     assert.equal(shell(r.dir, 'gh pr create --body "run with -t ABC-1" --title "no key"').decision, 'deny', 'the body is not the title');
     assert.equal(shell(r.dir, 'gh pr create --title=ABC-1:x').decision, 'allow', '--title=');
+    assert.equal(shell(r.dir, 'gh pr create --title "ABC-1" --title "no key"').decision, 'deny', 'every --title');
     assert.equal(shell(r.dir, 'url=$(gh pr create --title "no key" --body x)').decision, 'deny', 'inside $(...)');
     assert.equal(shell(r.dir, '# then gh pr create\nls x#y').decision, 'allow', 'a comment is not a command');
     assert.equal(shell(r.dir, 'url=$(gh pr create --title "ABC-1 x")').decision, 'allow', 'inside $(...) with the key');

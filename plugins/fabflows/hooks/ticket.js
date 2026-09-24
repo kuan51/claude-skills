@@ -471,13 +471,15 @@ function ghArgs(words, verb) {
   const k = words.findIndex((w, j) => /(^|[/\\])gh(\.exe)?$/.test(w) && words[j + 1] === 'pr' && words[j + 2] === verb);
   return k < 0 ? null : words.slice(k + 3);
 }
-// The title a `gh pr create` passes: the word after --title or -t, or the rest of --title=.
-function prTitle(args) {
+// The titles a `gh pr create` passes: each word after --title or -t, and the rest of each
+// --title=. Every one must carry the key, so which one gh keeps doesn't matter.
+function prTitles(args) {
+  const titles = [];
   for (let k = 0; k < args.length; k++) {
-    if (args[k] === '--title' || args[k] === '-t') return args[k + 1] ?? '';
-    if (args[k].startsWith('--title=')) return args[k].slice(8);
+    if (args[k] === '--title' || args[k] === '-t') titles.push(args[k + 1] ?? '');
+    else if (args[k].startsWith('--title=')) titles.push(args[k].slice(8));
   }
-  return null;
+  return titles;
 }
 const isMcp = (tool, verb) => new RegExp(`^mcp__.*${verb}_pull_request$`).test(tool);
 
@@ -558,9 +560,9 @@ function preToolUse(tool, ti, cwd) {
     if (!args) continue;
     const l = linked(cwd);
     if (!l || !l.key) return;
-    const title = prTitle(args); // null for --fill, --web or none: the key can't be checked
-    if (title === null) return deny(`fabflows: this branch is linked to ticket ${l.key}; pass --title containing ${l.key}.`);
-    if (!hasKey(title, '', l.key)) return deny(`fabflows: this branch is linked to ticket ${l.key}; put ${l.key} in the pull request title (--title).`);
+    const titles = prTitles(args); // none for --fill, --web or nothing: the key can't be checked
+    if (!titles.length) return deny(`fabflows: this branch is linked to ticket ${l.key}; pass --title containing ${l.key}.`);
+    if (!titles.every((t) => hasKey(t, '', l.key))) return deny(`fabflows: this branch is linked to ticket ${l.key}; put ${l.key} in the pull request title (--title).`);
   }
 }
 
