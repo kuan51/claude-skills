@@ -6,6 +6,7 @@ Why this repository is the way it is. Newest first.
 
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
+| [DEC-0023](decisions/DEC-0023-ask-the-user-in-the-lead-before-a-package-install-deny-it-in.md) | Ask the user in the lead before a package install, deny it in workers | proposed | 2026-09-24 | DEC-0002 | - |
 | [DEC-0022](decisions/DEC-0022-benchmark-plugins-with-claude-plugin-eval-not-a-ported-harne.md) | Benchmark plugins with claude plugin eval, not a ported harness | proposed | 2026-09-19 | - | - |
 | [DEC-0021](decisions/DEC-0021-a-regulation-that-incorporates-a-standard-by-reference-binds.md) | A regulation that incorporates a standard by reference binds the cited edition | proposed | 2026-09-22 | - | - |
 | [DEC-0020](decisions/DEC-0020-commit-the-ciso-interview-in-4-6-control-sub-batches-instead.md) | Commit the ciso interview in 4-6 control sub-batches instead of whole domains | proposed | 2026-09-22 | - | - |
@@ -26,7 +27,7 @@ Why this repository is the way it is. Newest first.
 | [DEC-0005](decisions/DEC-0005-let-the-fabflows-refuter-answer-blocked-when-it-cannot-revie.md) | Let the fabflows refuter answer BLOCKED when it cannot review | proposed | 2026-09-13 | - | - |
 | [DEC-0004](decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md) | Fable leads fabflows; Opus builds and reviews in a deterministic build loop | proposed | 2026-09-13 | - | - |
 | [DEC-0003](decisions/DEC-0003-archive-old-decision-records-into-a-digest-instead-of-deleti.md) | Archive old decision records into a digest instead of deleting them | proposed | 2026-09-10 | - | - |
-| [DEC-0002](decisions/DEC-0002-ship-fabflows-as-a-plugin-with-worker-agents-and-an-active-g.md) | Ship fabflows as a plugin with worker agents and an active guard hook | proposed | 2026-09-09 | - | - |
+| [DEC-0002](decisions/DEC-0002-ship-fabflows-as-a-plugin-with-worker-agents-and-an-active-g.md) | Ship fabflows as a plugin with worker agents and an active guard hook | proposed (superseded) | 2026-09-09 | - | DEC-0023 |
 | [DEC-0001](decisions/DEC-0001-rotate-the-run-log-on-its-line-count-alone.md) | Rotate the run log on its line count alone | proposed | 2026-09-05 | - | - |
 
 To add a decision, run `adr_new.py <repo> "<title>"`, fill the sections with
