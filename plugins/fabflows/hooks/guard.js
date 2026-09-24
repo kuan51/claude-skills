@@ -605,7 +605,8 @@ function checkShell(command, cwd) {
     // A package runner (`npx`, `uv run --with`) is an install, never a read of the path.
     const readOnly =
       (!isInstall && RUNS_PROTECTED_SCRIPT.test(seg)) ||
-      isReadCopy(seg, effCwd) ||
+      // After a move into live config that effCwd cannot follow, a relative target may be in it.
+      (!movedIntoConfig && isReadCopy(seg, effCwd)) ||
       (!EXEC_FLAGS.test(seg) &&
         (READ_ONLY.test(seg) || (FOR_HEADER.test(seg) && loopReadOnly) || MARKETPLACE_GIT.test(seg)));
     if (PROTECTED_SHELL.test(seg) && (redirects(seg) || !readOnly)) {

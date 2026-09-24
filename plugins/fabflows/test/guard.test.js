@@ -623,6 +623,10 @@ test('reads, copies out and runs of live config pass; writes into it do not', ()
     ['cp ~/.claude/plugins/x/settings.json "$HOME"/.claude/.', B, 'deny'],
     ['cp ~/.claude/plugins/x/settings.json $HOME/bak.json', B, 'allow'],
     ['cp ~/.claude/plugins/x/settings.json "$HOME"/bak.json', B, 'allow'],
+    // After a move into live config the guard cannot follow, `./b.sh` may be live config.
+    ['cd $HOME/.claude/hooks && cp ~/.claude/plugins/x/a.sh ./b.sh', B, 'deny'],
+    ['pushd "$HOME/.claude/hooks"; cp ~/.claude/plugins/x/a.sh b.sh', B, 'deny'],
+    ['cp ~/.claude/plugins/x/a.sh ./b.sh', B, 'allow'],
     ['cp ~/.claude/hooks/pre-commit .git', B, 'deny'],
     ['cp ~/.claude/hooks/pre-commit repo/.git/', B, 'deny'],
     ['cp x ~/.claude/settings.json -S y', B, 'deny'],
