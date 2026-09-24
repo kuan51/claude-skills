@@ -105,7 +105,6 @@ function decode(_, hex, dec) {
 
 function prose(s) {
   return s
-    .replace(/&#(?:[xX]([0-9a-fA-F]{1,6})|([0-9]{1,7}));/g, decode)
     .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
     .replace(/<\/?[A-Za-z][A-Za-z0-9-]*(?:\s(?:[^<>"']|"[^"]*"|'[^']*')*)?\/?>/g, '')
     .replace(/!\[[^\]]*\]\(/g, '![](')
@@ -118,7 +117,9 @@ function normalize(text) {
   // A definition is used when its label appears in brackets anywhere else in the prose.
   const refs = parts.filter((p) => !p.code).map((p) => p.s.replace(DEF, '\n')).join('\n').toLowerCase();
   const used = (label) => refs.includes(`[${labelOf(label)}]`);
-  let out = parts.map((p) => (p.code ? p.s : p.s.replace(DEF, (m, label) => (used(label) ? m : '')))).join('');
+  // Entities are decoded last, so a decoded character is never read as markup.
+  const entities = (s) => s.replace(/&#(?:[xX]([0-9a-fA-F]{1,6})|([0-9]{1,7}));/g, decode);
+  let out = parts.map((p) => (p.code ? p.s : entities(p.s.replace(DEF, (m, label) => (used(label) ? m : ''))))).join('');
   out = out.replace(/[\p{Cf}︀-️\u{E0100}-\u{E01EF}]/gu, '').replace(/\[[xX]\]/g, '[ ]');
   const lines = out.split('\n');
   for (let i = lines.length - 1; i >= 0; i--) {

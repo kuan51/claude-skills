@@ -73,6 +73,9 @@ test('normalize ignores what a rendered ticket hides, and nothing else', () => {
   assert.equal(normalize('a `<!-- k -->` b'), 'a `<!-- k -->` b', 'text inside a code span is unchanged');
   const bad = normalize('``` a`b\n<!-- gone -->\nkeep');
   assert.ok(!bad.includes('gone') && bad.includes('keep'), 'a comment after an invalid fence opener is removed');
+  // Markup is removed before entities are decoded, and decoded characters are never markup.
+  assert.equal(normalize('a <!-- b &#45;-> HIDDEN --> c'), 'a  c', 'an encoded -> does not end a comment');
+  assert.equal(normalize('&#60;!-- x'), '<!-- x', 'an encoded <!-- stays literal text');
   const used = normalize('see [r]\n\n[r]: https://r "t"');
   assert.equal(used, 'see [r]\n\n[r]: https://r', 'a used definition stays, without its title');
 });
