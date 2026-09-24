@@ -306,14 +306,17 @@ function cli(cmd, args) {
 // The simple commands a shell line runs, split at unquoted && || ; | &, newlines and
 // parentheses. Each is { text, words }: text is its source plus the body of any heredoc it
 // opened, words its arguments with quotes removed. It knows quotes, \ escapes, $(...),
-// backticks and heredocs at any depth; not aliases, eval, functions, here-strings, case
-// patterns or # comments. Returns null when quotes or parentheses don't balance.
-function commands(s) {
+// backticks and heredocs at any depth, and the commands inside $(...) and backticks are
+// listed too; not aliases, eval, functions, here-strings, case patterns or # comments.
+// Returns null when quotes or parentheses don't balance.
+function commands(s, level = 0) {
   const out = [];
   const docs = []; // heredocs whose bodies start after the next newline
   const stack = []; // open nested contexts: '"', or '(' for $( and the parentheses inside it
-  let cur, from, word, open;
+  const subs = []; // [from, to) of each outermost $(...) or backtick body, read again at the end
+  let cur, from, word, open, sub;
   let depth = 0; // top-level subshell parentheses
+  let parens = 0; // '(' entries on the stack
   const begin = (at) => {
     cur = { text: '', words: [] };
     out.push(cur);
@@ -362,11 +365,13 @@ function commands(s) {
     } else if (c === '`') {
       const j = tick(i);
       if (j < 0) return null;
+      if (!parens) subs.push([i + 1, j]);
       if (top) add(s.slice(i, j + 1));
       i = j + 1;
     } else if (inner === '"') {
       if (c === '"') stack.pop();
       else if (s.startsWith('$(', i)) {
+        if (!parens++) sub = i + 2;
         stack.push('(');
         i++;
       }
@@ -376,10 +381,15 @@ function commands(s) {
       if (j < 0) return null;
       if (top) add(s.slice(i + 1, j));
       i = j + 1;
-    } else if (c === '"' || s.startsWith('$(', i)) {
+    } else if (c === '"') {
       if (top) open = i;
-      stack.push(c === '"' ? '"' : '(');
-      i += c === '"' ? 1 : 2;
+      stack.push('"');
+      i++;
+    } else if (s.startsWith('$(', i)) {
+      if (top) open = i;
+      if (!parens++) sub = i + 2;
+      stack.push('(');
+      i += 2;
     } else if (s.startsWith('<<<', i)) {
       if (top) add('<<<');
       i += 3;
@@ -393,8 +403,13 @@ function commands(s) {
       i = bodies(i + 1);
       if (top) begin(i);
     } else if (!top) {
-      if (c === '(') stack.push('(');
-      else if (c === ')') stack.pop();
+      if (c === '(') {
+        parens++;
+        stack.push('(');
+      } else if (c === ')') {
+        stack.pop();
+        if (!--parens) subs.push([sub, i]);
+      }
       i++;
     } else if (c === ' ' || c === '\t') {
       if (word !== null) cur.words.push(word);
@@ -416,6 +431,7 @@ function commands(s) {
   }
   if (stack.length || depth) return null;
   end(s.length);
+  if (level < 8) for (const [a, b] of subs) for (const c of commands(s.slice(a, b), level + 1) || []) out.push(c);
   return out.filter((x) => x.text);
 }
 
@@ -444,7 +460,6 @@ const GIT = String.raw`(?:^|[\s;&|(])(?:[^\s;&|()]*[/\\])?git(?:\.exe)?(?:\s+(?:
 const COMMIT = new RegExp(GIT + String.raw`commit\b`);
 const PUSH = new RegExp(GIT + String.raw`push\b`);
 const INLINE_MSG = /\s(?:-[a-zA-Z]*m|--message)(?:[\s="']|$)|\s(?:-F\s*-|--file[=\s]-)(?:\s|$)/;
-const GH_PR = (verb) => new RegExp(String.raw`(?:^|[\s;&|(])gh\s+pr\s+${verb}\b`);
 // The arguments after `gh pr <verb>` in a command's words, or null.
 function ghArgs(words, verb) {
   const k = words.findIndex((w, j) => /(^|[/\\])gh(\.exe)?$/.test(w) && words[j + 1] === 'pr' && words[j + 2] === verb);
@@ -573,7 +588,7 @@ function postToolUse(tool, ti, cwd) {
   const cmd = str(ti.command) ? ti.command : '';
   const target = mergeTarget(tool, ti);
   if (target) return mergeReminder(target, cwd);
-  if (!(isMcp(tool, 'create') || PUSH.test(cmd) || GH_PR('create').test(cmd))) return;
+  if (!(isMcp(tool, 'create') || PUSH.test(cmd) || split(cmd).some((c) => ghArgs(c.words, 'create')))) return;
   const l = linked(cwd);
   if (!l || !l.key) return;
   let text = `fabflows: update ticket ${l.key}: Links and status, per fabflows:ticket.`;

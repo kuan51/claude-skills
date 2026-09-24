@@ -455,7 +455,9 @@ test('PR titles must carry the key', () => {
     assert.equal(shell(r.dir, 'gh pr create --body "run with -t ABC-1" --title "fix (ABC-1)"').decision, 'allow');
     assert.equal(shell(r.dir, 'gh pr create --body "run with -t ABC-1" --title "no key"').decision, 'deny', 'the body is not the title');
     assert.equal(shell(r.dir, 'gh pr create --title=ABC-1:x').decision, 'allow', '--title=');
-    for (const cmd of ['gh pr create --fill', 'gh pr create --web', 'git push && gh pr create']) {
+    assert.equal(shell(r.dir, 'url=$(gh pr create --title "no key" --body x)').decision, 'deny', 'inside $(...)');
+    assert.equal(shell(r.dir, 'url=$(gh pr create --title "ABC-1 x")').decision, 'allow', 'inside $(...) with the key');
+    for (const cmd of ['gh pr create --fill', 'gh pr create --web', 'git push && gh pr create', 'x=`gh pr create --fill`']) {
       const d = shell(r.dir, cmd);
       assert.equal(d.decision, 'deny', cmd);
       assert.match(d.reason, /pass --title containing ABC-1/, cmd);
@@ -477,6 +479,7 @@ test('PostToolUse asks for a ticket update after push and PR creation', () => {
     for (const [tool, input] of [
       ['Bash', { command: 'git push -u origin feature' }],
       ['Bash', { command: 'gh pr create --title "ABC-1 x"' }],
+      ['Bash', { command: 'url=$(gh pr create --title "ABC-1 x")' }],
       ['mcp__github__create_pull_request', { title: 'ABC-1 x' }],
     ]) {
       assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket ABC-1: Links and status, per fabflows:ticket.', tool);
@@ -511,6 +514,7 @@ test('the merge reminder finds the ticket by PR, only after a real merge', () =>
     assert.equal(after(r.dir, 'mcp__github__merge_pull_request', { owner: 'x', repo: 'r', pullNumber: 3 }).context, undefined, 'other repo');
     assert.equal(merge(`gh pr merge ${PR} --squash`), text, 'by URL');
     assert.equal(merge('gh pr merge --subject "a; b" 3'), text, 'a quoted ; is not the end of the command');
+    assert.equal(merge('out=$(gh pr merge 3 --squash)'), text, 'inside $(...)');
     assert.equal(merge('gh pr merge 9'), undefined, 'a number that matches nothing');
     assert.equal(merge('gh pr merge https://github.com/o/r/pull/9'), undefined, 'a URL that matches nothing');
 
