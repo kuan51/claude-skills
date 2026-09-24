@@ -2017,6 +2017,34 @@ def test_adr_compact_archives_only_decided_records():
         assert "49 decided" in out and "ready to archive" not in out, out
 
 
+def test_adr_compact_outside_a_git_repository():
+    """The clean-tree check is the only git call on the compaction path, so
+    outside a repository --check and --dry-run still answer, and compaction
+    refuses rather than moving files git cannot account for."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = repo / "docs" / "decisions"
+        decisions.mkdir(parents=True)
+        for n in range(1, 51):
+            (decisions / f"DEC-{n:04d}-x.md").write_text("---\nid: x\nstatus: accepted\n---\n")
+        # Stop git from finding a repository above the temp dir.
+        env = dict(os.environ, GIT_CEILING_DIRECTORIES=str(repo.parent))
+
+        def run(*flags):
+            return subprocess.run([sys.executable, str(SCRIPTS / "adr_compact.py"), str(repo), *flags],
+                                  capture_output=True, text=True, env=env, check=False)
+
+        check = run("--check")
+        assert check.returncode == 0 and "ready to archive" in check.stdout, check
+        dry = run("--dry-run")
+        assert dry.returncode == 0 and "digest:" in dry.stdout, dry
+        result = run()
+        assert result.returncode == 1, result
+        assert "compaction must land as its own commit" in result.stderr, result.stderr
+        assert not (decisions / "archive").exists(), "moved files outside git"
+        assert len(list(decisions.glob("DEC-*.md"))) == 50
+
+
 def test_adr_compact_section_ignores_headings_inside_code_fences():
     sys.path.insert(0, str(SCRIPTS))
     try:
@@ -2176,6 +2204,76 @@ def test_decisions_check_hook_after_edit():
     ifs = {e["matcher"]: [h["if"] for h in e["hooks"]] for e in entries}
     assert ifs == {"Edit": ["Edit(//**/docs/decisions/*)"],
                    "Write": ["Write(//**/docs/decisions/*)"]}, ifs
+
+
+def _link_dir(link: Path, target: Path) -> None:
+    """Link a directory without admin rights: a symlink where the OS allows one,
+    else an NTFS junction, since Windows refuses symlinks to most users."""
+    try:
+        os.symlink(target, link, target_is_directory=True)
+    except OSError:
+        if os.name != "nt":
+            raise
+        subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                       check=True, capture_output=True)
+
+
+def test_decisions_check_hook_keeps_the_edited_path():
+    """The hook judges the folder the way the edit named it. resolve() followed
+    a linked docs/decisions to a target with another name, and an exact-case
+    match missed a Docs/Decisions folder that load_adrs reads on a
+    case-insensitive filesystem, so both reminders went silent."""
+    hook = SCRIPTS.parent.parent.parent / "hooks" / "decisions_check.py"
+
+    def after(file_path, cwd):
+        payload = {"hook_event_name": "PostToolUse", "tool_name": "Edit",
+                   "tool_input": {"file_path": str(file_path)}, "cwd": str(cwd)}
+        return subprocess.run([sys.executable, str(hook)], input=json.dumps(payload),
+                              capture_output=True, text=True, check=False).stdout
+
+    record = "---\nid: x\nstatus: accepted\n---\n"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        shared = root / "shared-adr"
+        shared.mkdir()
+        for n in range(1, 51):
+            (shared / f"DEC-{n:04d}-x.md").write_text(record)
+        (root / "repo" / "docs").mkdir(parents=True)
+        _link_dir(root / "repo" / "docs" / "decisions", shared)
+        out = after(root / "repo" / "docs" / "decisions" / "DEC-0050-x.md", root)
+        assert "ready to archive" in out, out
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        folder = repo / "Docs" / "Decisions"
+        folder.mkdir(parents=True)
+        for n in range(1, 51):
+            (folder / f"DEC-{n:04d}-x.md").write_text(record)
+        # Speak exactly where load_adrs sees the records: a case-insensitive
+        # filesystem finds docs/decisions, a case-sensitive one does not.
+        seen = (repo / "docs" / "decisions").is_dir()
+        out = after(folder / "DEC-0050-x.md", repo)
+        assert ("ready to archive" in out) is seen, (seen, out)
+
+
+def test_decisions_check_hook_reads_utf8_input():
+    """Claude Code sends the payload as UTF-8, but sys.stdin decodes with the
+    locale codec (cp1252 on Windows), so a repository path such as café came
+    through garbled and both reminders went silent."""
+    hook = SCRIPTS.parent.parent.parent / "hooks" / "decisions_check.py"
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONIOENCODING", "PYTHONUTF8")}
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "café"
+        _decisions_repo(repo, 50)
+        record = repo / "docs" / "decisions" / "DEC-0050-choice-50.md"
+        for payload in ({"hook_event_name": "SessionStart", "cwd": str(repo)},
+                        {"hook_event_name": "PostToolUse", "cwd": tmp, "tool_name": "Edit",
+                         "tool_input": {"file_path": str(record)}}):
+            result = subprocess.run([sys.executable, str(hook)], env=env, capture_output=True,
+                                    input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                                    check=False)
+            out = result.stdout.decode("utf-8", "replace")
+            assert result.returncode == 0 and "ready to archive" in out, \
+                (payload["hook_event_name"], out, result.stderr)
 
 
 # --- ontological-documentation -------------------------------------------------

@@ -1,35 +1,39 @@
 #!/usr/bin/env python3
-"""Hook, at session start and after an edit in docs/decisions/: pass through
-adr_compact.py --check, which prints one line when docs/decisions is due for
-compaction or waiting on proposed records, and nothing otherwise. After an edit
-the line goes out as PostToolUse additionalContext, since plain stdout there
-reaches only the debug log. Fails open: any error, including a missing PyYAML,
-means silence and exit 0."""
+"""Hook, at session start and after an edit in docs/decisions/: print
+adr_compact.check_line(), the one line --check prints when docs/decisions is
+due for compaction or waiting on proposed records, and nothing otherwise. It
+imports the check instead of running the script, so each run costs one Python
+start, not two. After an edit the line goes out as PostToolUse
+additionalContext, since plain stdout there reaches only the debug log. Fails
+open: any error, including a missing PyYAML, means silence and exit 0, and the
+timeout in hooks.json bounds a slow read."""
 import json
-import subprocess
+import os
 import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parent.parent / "skills" / "docs-warden" / "scripts" / "adr_compact.py"
-
-
-def check(repo) -> str:
-    return subprocess.run([sys.executable, str(SCRIPT), str(repo), "--check"],
-                          capture_output=True, text=True, timeout=4).stdout
-
+SCRIPTS = Path(__file__).resolve().parent.parent / "skills" / "docs-warden" / "scripts"
 
 try:
-    payload = json.load(sys.stdin)
+    # Bytes, not sys.stdin: its locale codec (cp1252 on Windows) garbles a UTF-8 path.
+    payload = json.loads(sys.stdin.buffer.read())
     cwd = payload.get("cwd") or "."
+    sys.path.insert(0, str(SCRIPTS))
+    from adr_compact import check_line  # a missing PyYAML raises here: silence
     if payload.get("hook_event_name") == "PostToolUse":
-        edited = (Path(cwd) / payload["tool_input"]["file_path"]).resolve()
+        # The path as the edit named it: resolve() would follow a linked
+        # docs/decisions to its target, and case must match the way load_adrs
+        # finds the folder on a case-insensitive filesystem.
+        edited = Path(os.path.abspath(Path(cwd) / payload["tool_input"]["file_path"]))
         folder = edited.parent
-        if (folder.parent.name, folder.name) == ("docs", "decisions"):
-            line = check(folder.parent.parent).strip()
+        if (folder.parent.name.lower(), folder.name.lower()) == ("docs", "decisions"):
+            line = check_line(folder.parent.parent)
             if line:
                 print(json.dumps({"hookSpecificOutput": {
                     "hookEventName": "PostToolUse", "additionalContext": line}}))
     else:
-        print(check(cwd), end="")
+        line = check_line(Path(cwd))
+        if line:
+            print(line)
 except Exception:
     pass

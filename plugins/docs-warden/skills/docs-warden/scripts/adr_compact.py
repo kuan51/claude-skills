@@ -15,9 +15,9 @@ archived, so what they carry stays at the top level.
 
 The script archives nothing below 50 decided. Re-run adr_index.py afterwards.
 --check prints one line when compaction is due, or when 50 records exist but
-too many are still proposed, and nothing otherwise; the hook runs it at
-session start and after an edit in docs/decisions/, so "due" is defined in
-exactly one place.
+too many are still proposed, and nothing otherwise. That line comes from
+check_line(), which the hook imports at session start and after an edit in
+docs/decisions/, so "due" is defined in exactly one place.
 """
 import argparse
 import datetime as dt
@@ -84,6 +84,33 @@ def render(record_id: str, records) -> str:
     return "\n".join(lines)
 
 
+def split(repo: Path):
+    """Top-level records that are not digests, and the decided ones among them.
+    Decided is a closed list, not "anything but proposed": a draft, a "Proposed"
+    or front matter that did not parse is no decision, and the digest would
+    freeze it as one."""
+    records = [r for r in load_adrs(repo) if DIGEST_TAG not in r["tags"]]
+    return records, [r for r in records if adr_status(r) in DECIDED]
+
+
+def check_line(repo: Path) -> str:
+    """The line --check prints, or "" when compaction is neither due nor
+    waiting. The decisions hook imports this, so "due" is defined in exactly
+    one place. Counts and fixed text only: the line enters Claude's context."""
+    records, decided = split(repo)
+    if len(decided) >= COMPACT_AT:
+        return (f"docs-warden: {len(decided)} decision records in {DECISIONS_DIR} are ready "
+                f"to archive (compaction point is {COMPACT_AT}). Run the docs-warden "
+                f"skill's compact mode to move the oldest {COMPACT_BATCH} into a digest.")
+    if len(records) >= COMPACT_AT:
+        return (f"docs-warden: {len(records)} decision records in {DECISIONS_DIR}, "
+                f"{len(decided)} decided and {len(records) - len(decided)} still "
+                f"proposed. Compaction archives decided records only and starts at "
+                f"{COMPACT_AT}. Run the docs-warden skill's compact mode to review the "
+                f"proposed ones.")
+    return ""
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Archive the oldest decision records into a digest")
     parser.add_argument("repo", type=Path)
@@ -96,26 +123,15 @@ def main() -> int:
         print(f"error: {repo} is not a directory", file=sys.stderr)
         return 1
 
-    # Archivable: decided, and not a digest. Decided is a closed list, not
-    # "anything but proposed": a draft, a "Proposed" or front matter that did
-    # not parse is no decision, and the digest would freeze it as one.
-    records = [r for r in load_adrs(repo) if DIGEST_TAG not in r["tags"]]
-    candidates = [r for r in records if adr_status(r) in DECIDED]
-    if len(candidates) < COMPACT_AT:
-        if args.check and len(records) >= COMPACT_AT:
-            # Counts and fixed text only: this line enters Claude's context.
-            print(f"docs-warden: {len(records)} decision records in {DECISIONS_DIR}, "
-                  f"{len(candidates)} decided and {len(records) - len(candidates)} still "
-                  f"proposed. Compaction archives decided records only and starts at "
-                  f"{COMPACT_AT}. Run the docs-warden skill's compact mode to review the "
-                  f"proposed ones.")
-        if not args.check:
-            print(f"{len(candidates)} eligible record(s), below the compaction point of {COMPACT_AT}")
-        return 0
     if args.check:
-        print(f"docs-warden: {len(candidates)} decision records in {DECISIONS_DIR} are ready "
-              f"to archive (compaction point is {COMPACT_AT}). Run the docs-warden "
-              f"skill's compact mode to move the oldest {COMPACT_BATCH} into a digest.")
+        line = check_line(repo)
+        if line:
+            print(line)
+        return 0
+
+    _, candidates = split(repo)
+    if len(candidates) < COMPACT_AT:
+        print(f"{len(candidates)} eligible record(s), below the compaction point of {COMPACT_AT}")
         return 0
     batch = candidates[:COMPACT_BATCH]
 
