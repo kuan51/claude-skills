@@ -51,7 +51,7 @@ The trigger is a hook, run at session start and after an edit in
 `docs/decisions/`, that counts the archivable records in `docs/decisions/`
 (accepted or rejected, not a digest) and prints one line at 50 or more, the same count
 the script uses. When 50 records exist but fewer than 50 are decided, it prints
-a line saying how many are still proposed instead. A hook cannot run the
+a line saying how many are not yet accepted or rejected instead. A hook cannot run the
 compaction itself; it tells the session to run the skill's `compact` mode,
 which runs `adr_compact.py --dry-run`, shows the mapping, and moves on a yes.
 Compaction lands as its own pull request.

@@ -166,7 +166,7 @@ offer to split it into one file per entry, preserving IDs and dates. Ask first.
 Triggered by the plugin's hook (`hooks/decisions_check.py`), which runs at session
 start and after an edit in `docs/decisions/`, and prints a line once
 `docs/decisions/` holds 50 or more archivable records (accepted or rejected, not
-a digest), or once 50 records exist but some are still proposed. Also triggered
+a digest), or once 50 records exist but some are not yet accepted or rejected. Also triggered
 by "compact decisions," "too many decision records."
 
 1. `scripts/adr_compact.py <repo> --dry-run` and show the human the mapping: the
@@ -196,9 +196,11 @@ by "compact decisions," "too many decision records."
    a branch that carries code. Once it is pushed, offer to remove a worktree you
    made (`git worktree remove <path>`). The branch stays on the remote.
 
-If the line instead says 50 records exist but some are still proposed, nothing is
-due yet: list the proposed records oldest first and ask the human to accept or
-reject each. Never change a status without their word. Then re-run
+If the line instead says 50 records exist but some are not yet accepted or
+rejected, nothing is due yet: list every record whose status is neither accepted
+nor rejected, in any case, oldest first, with the status it shows: proposed, a
+draft, another value, or none when its front matter does not parse. Ask the
+human to accept or reject each. Never change a status without their word. Then re-run
 `scripts/adr_compact.py <repo> --check`. Status changes follow the same route
 as compaction: their own commit, in the same housekeeping pull request. A record
 accepted as part of the change that implements it stays with that change.

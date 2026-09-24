@@ -15,7 +15,7 @@ archived, so what they carry stays at the top level.
 
 The script archives nothing below 50 decided. Re-run adr_index.py afterwards.
 --check prints one line when compaction is due, or when 50 records exist but
-too many are still proposed, and nothing otherwise. That line comes from
+too many are not yet accepted or rejected, and nothing otherwise. That line comes from
 check_line(), which the hook imports at session start and after an edit in
 docs/decisions/, so "due" is defined in exactly one place.
 """
@@ -104,10 +104,10 @@ def check_line(repo: Path) -> str:
                 f"skill's compact mode to move the oldest {COMPACT_BATCH} into a digest.")
     if len(records) >= COMPACT_AT:
         return (f"docs-warden: {len(records)} decision records in {DECISIONS_DIR}, "
-                f"{len(decided)} decided and {len(records) - len(decided)} still "
-                f"proposed. Compaction archives decided records only and starts at "
-                f"{COMPACT_AT}. Run the docs-warden skill's compact mode to review the "
-                f"proposed ones.")
+                f"{len(decided)} decided and {len(records) - len(decided)} not yet "
+                f"accepted or rejected. Compaction archives decided records only and "
+                f"starts at {COMPACT_AT}. Run the docs-warden skill's compact mode to "
+                f"review the undecided ones.")
     return ""
 
 

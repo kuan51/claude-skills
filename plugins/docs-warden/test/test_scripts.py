@@ -2111,7 +2111,7 @@ def test_check_says_why_compaction_waits():
         repo = Path(tmp)
         _decisions_repo(repo, 50, proposed={50})
         out = _compact(repo, "--check").stdout
-        assert "49 decided and 1 still proposed" in out, out
+        assert "49 decided and 1 not yet accepted or rejected" in out, out
         assert "ready to archive" not in out, out
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
@@ -2129,9 +2129,23 @@ def test_check_says_why_compaction_waits():
         repo = Path(tmp)
         decisions = _decisions_repo(repo, 50)
         out = _compact(repo, "--check").stdout
-        assert "ready to archive" in out and "still proposed" not in out, out
+        assert "ready to archive" in out and "not yet accepted" not in out, out
         assert not (decisions / "archive").exists(), "--check archived"
         assert len(list(decisions.glob("DEC-*.md"))) == 50
+
+
+def test_waiting_line_names_undecided_records_not_proposed_ones():
+    """A draft or a stored "superseded" is not proposed, so calling every
+    undecided record "still proposed" sent compact mode looking for records
+    that do not exist, and the line never went away."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 48)
+        for n, status in ((49, "Draft"), (50, "superseded")):
+            (decisions / f"DEC-{n:04d}-x.md").write_text(f"---\nid: x\nstatus: {status}\n---\n")
+        out = _compact(repo, "--check").stdout
+        assert "48 decided and 2 not yet accepted or rejected" in out, out
+        assert "proposed" not in out, out
 
 
 def test_decisions_check_hook_speaks_only_at_50():
@@ -2155,7 +2169,7 @@ def test_decisions_check_hook_speaks_only_at_50():
                 capture_output=True, text=True, check=False)
             assert result.returncode == 0, result.stderr
             assert ("ready to archive" in result.stdout) is expect, (count, result.stdout)
-            assert ("still proposed" in result.stdout) is not expect, (count, result.stdout)
+            assert ("not yet accepted" in result.stdout) is not expect, (count, result.stdout)
     # Garbage stdin must not break session start.
     result = subprocess.run([sys.executable, str(hook)], input="not json",
                             capture_output=True, text=True, check=False)
