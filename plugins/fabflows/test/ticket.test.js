@@ -43,41 +43,37 @@ function repo(originHead = true) {
 
 const URL = 'https://tracker.example/browse/ABC-1';
 
-test('normalize ignores what a rendered ticket hides, and nothing else', () => {
+test('normalize removes comments, invisible characters and Links, and nothing else', () => {
   const { normalize } = require(TICKET);
-  const base = '# Spec\n\n- [ ] item\nSome word here.\n\n![](https://i/p.png)\n[link](https://x)';
-  const same = [
-    ['CRLF', base.replace(/\n/g, '\r\n')],
-    ['[x]', base.replace('[ ]', '[x]')],
-    ['[X]', base.replace('[ ]', '[X]')],
-    ['HTML comment', base.replace('here.', 'here. <!-- hidden -->')],
-    ['unclosed comment', base + '\n<!-- open\nsecret text'],
-    ['tag split across lines', base.replace('word', '<span\nclass="x">word</span>')],
-    ['tag attributes', base.replace('word', '<b class="a" data-x=\'y\'>word</b>')],
-    ['zero-width character', base.replace('word', 'wo\u200Brd')],
-    ['U+FE0F', base.replace('word', 'word\uFE0F')],
-    ['&#8203;', base.replace('word', 'wo&#8203;rd')],
-    ['image alt text', base.replace('![]', '![a picture]')],
-    ['link title', base.replace('(https://x)', '(https://x "a title")')],
-    ['unused reference definition', base + '\n\n[unused]: https://u "t"'],
-    ['trailing spaces', base.replace('here.', 'here.   ') + '  \n\n'],
-    ['Links section', base + '\n\n## Links\n- https://a'],
-    ['bold Links section', base + '\n\n**Links**\n- https://b'],
+  const kept = [
+    '```js\ngrid[x] = 1\n```',
+    'a `a[x]` b',
+    'List<Order>',
+    '```\n## Links\n- a\n```',
+    'a <script>HIDDEN</script> b',
+    'wo&#8203;rd',
+    '- [x] done',
+    '![alt](https://i/p.png "title")',
+    'Behaviour\nLinks open in new tab.\nMust validate input.',
+    '- item\n      ```\n      <!-- keep -->\n      ```',
+    '````\n<!-- keep -->\n```\nstill code\n`````',
   ];
-  for (const [label, text] of same) assert.equal(normalize(text), normalize(base), label);
-  assert.equal(normalize(base + '\n\n## Links\n- a'), normalize(base + '\n\n## Links\n- b'), 'Links edits');
-  assert.notEqual(normalize(base.replace('word', 'other')), normalize(base), 'a changed word');
+  for (const text of kept) assert.equal(normalize(text), text, text);
 
-  const fence = '```\n<!-- keep -->\n<b>x</b> &#8203;\n```';
-  assert.equal(normalize(fence), fence, 'text inside a code fence is unchanged');
-  assert.equal(normalize('a `<!-- k -->` b'), 'a `<!-- k -->` b', 'text inside a code span is unchanged');
-  const bad = normalize('``` a`b\n<!-- gone -->\nkeep');
-  assert.ok(!bad.includes('gone') && bad.includes('keep'), 'a comment after an invalid fence opener is removed');
-  // Markup is removed before entities are decoded, and decoded characters are never markup.
-  assert.equal(normalize('a <!-- b &#45;-> HIDDEN --> c'), 'a  c', 'an encoded -> does not end a comment');
-  assert.equal(normalize('&#60;!-- x'), '<!-- x', 'an encoded <!-- stays literal text');
-  const used = normalize('see [r]\n\n[r]: https://r "t"');
-  assert.equal(used, 'see [r]\n\n[r]: https://r', 'a used definition stays, without its title');
+  assert.equal(normalize('a <!-- hidden --> b'), 'a  b', 'a comment outside a fence');
+  assert.equal(normalize('a\n<!-- open\nsecret\n```\nx\n```'), 'a', 'an unclosed comment removes the rest');
+  assert.equal(normalize('wo​rd️ a\rb c\x1b[2Kd'), 'word ab c[2Kd', 'invisible and control characters');
+  assert.equal(normalize('a\tb\r\nc'), 'a\tb\nc', 'CRLF becomes LF, a tab stays');
+  assert.equal(normalize('x  \ny\n\n'), 'x\ny', 'trailing whitespace');
+  for (const heading of ['## Links', '## Links  ', '**Links**', '**Links**:', '# Links:']) {
+    assert.equal(normalize(`spec\n\n${heading}\n- https://a`), 'spec', heading);
+  }
+  assert.equal(normalize('a\n## Links\nb\n## Links\nc'), 'a\n## Links\nb', 'the last Links heading');
+
+  const big = '[a\n'.repeat(64 * 1024 / 3);
+  const t0 = Date.now();
+  normalize(big);
+  assert.ok(Date.now() - t0 < 500, `64 KB took ${Date.now() - t0} ms`);
 });
 
 test('approve then check passes on the same text and fails on changed text', () => {

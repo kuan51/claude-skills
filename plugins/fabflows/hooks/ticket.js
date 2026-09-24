@@ -38,97 +38,59 @@ function validState(s) {
 }
 
 // ---------------------------------------------------------------- normalize
-// Split into code (fenced blocks, inline spans) and prose, left to right, so a comment
-// that opens first swallows backticks and a code span that opens first keeps `<!--`.
-function split(t) {
-  const parts = [];
-  let buf = '';
-  const code = (s) => {
-    if (buf) parts.push({ code: false, s: buf });
-    buf = '';
-    parts.push({ code: true, s });
-  };
-  let i = 0;
-  while (i < t.length) {
-    if (i === 0 || t[i - 1] === '\n') {
-      const nl = t.indexOf('\n', i);
-      const lineEnd = nl < 0 ? t.length : nl + 1;
-      const m = /^ {0,3}(`{3,}|~{3,})([^\n]*)/.exec(t.slice(i, lineEnd));
-      if (m && !(m[1][0] === '`' && m[2].includes('`'))) {
-        const close = new RegExp(`^ {0,3}${m[1][0]}{${m[1].length},}[ \\t]*$`, 'm').exec(t.slice(lineEnd));
-        const end = close ? lineEnd + close.index + close[0].length : t.length; // unclosed runs to the end
-        code(t.slice(i, end));
-        i = end;
-        continue;
-      }
-    }
-    if (t.startsWith('<!--', i)) {
-      const e = t.indexOf('-->', i + 4);
-      const end = e < 0 ? t.length : e + 3;
-      buf += t.slice(i, end);
-      i = end;
-      continue;
-    }
-    if (t[i] === '`') {
-      let n = 1;
-      while (t[i + n] === '`') n++;
-      const close = new RegExp(`(?<!\`)\`{${n}}(?!\`)`, 'g');
-      close.lastIndex = i + n;
-      const m = close.exec(t);
-      // A span never crosses a blank line: that ends the paragraph.
-      if (m && !/\n[ \t]*\n/.test(t.slice(i + n, m.index))) {
-        code(t.slice(i, m.index + n));
-        i = m.index + n;
-      } else {
-        buf += t.slice(i, i + n);
-        i += n;
-      }
-      continue;
-    }
-    buf += t[i++];
-  }
-  if (buf) parts.push({ code: false, s: buf });
-  return parts;
-}
-
-const TITLE = String.raw`(?:"[^"]*"|'[^']*'|\([^)]*\))`;
-const DEST = String.raw`(?:<[^>\n]*>|[^\s()]+)`;
-const LABEL = String.raw`\[((?:[^\]\\]|\\.)+)\]:`;
-const DEF_TITLE = new RegExp(String.raw`^( {0,3}${LABEL}[ \t]*\n?[ \t]*${DEST})[ \t]*\n?[ \t]*${TITLE}[ \t]*$`, 'gm');
-const DEF = new RegExp(String.raw`^ {0,3}${LABEL}[ \t]*\n?[ \t]*${DEST}[ \t]*(?:\n|$)`, 'gm');
-const labelOf = (s) => s.trim().replace(/\s+/g, ' ').toLowerCase();
-
-function decode(_, hex, dec) {
-  const n = hex ? parseInt(hex, 16) : parseInt(dec, 10);
-  return n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : '�';
-}
-
-function prose(s) {
-  return s
-    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
-    .replace(/<\/?[A-Za-z][A-Za-z0-9-]*(?:\s(?:[^<>"']|"[^"]*"|'[^']*')*)?\/?>/g, '')
-    .replace(/!\[[^\]]*\]\(/g, '![](')
-    .replace(new RegExp(String.raw`(\]\(\s*${DEST})\s+${TITLE}\s*\)`, 'g'), '$1)')
-    .replace(DEF_TITLE, '$1');
-}
+// The text the fingerprint is taken over, and the text the user approves and the build
+// gets: the ticket as written, minus HTML comments outside fences, invisible and control
+// characters, and the Links section. Nothing is rendered, so nothing a renderer does can
+// change it. A comment inside 4-space indented code (not fenced) is still removed.
+const INVISIBLE = /[\p{Cf}︀-️\u{E0100}-\u{E01EF}]|(?![\n\t])\p{Cc}/gu;
+const LINKS = /^ {0,3}(?:#{1,6}[ \t]+Links:?|\*\*Links(?::\*\*|\*\*:?))[ \t]*$/;
 
 function normalize(text) {
-  const parts = split(String(text).replace(/\r\n/g, '\n')).map((p) => (p.code ? p : { code: false, s: prose(p.s) }));
-  // A definition is used when its label appears in brackets anywhere else in the prose.
-  const refs = parts.filter((p) => !p.code).map((p) => p.s.replace(DEF, '\n')).join('\n').toLowerCase();
-  const used = (label) => refs.includes(`[${labelOf(label)}]`);
-  // Entities are decoded last, so a decoded character is never read as markup.
-  const entities = (s) => s.replace(/&#(?:[xX]([0-9a-fA-F]{1,6})|([0-9]{1,7}));/g, decode);
-  let out = parts.map((p) => (p.code ? p.s : entities(p.s.replace(DEF, (m, label) => (used(label) ? m : ''))))).join('');
-  out = out.replace(/[\p{Cf}\uFE00-\uFE0F\u{E0100}-\u{E01EF}]/gu, '').replace(/\[[xX]\]/g, '[ ]');
-  const lines = out.split('\n');
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (/^\s*(#{1,6}\s*)?(\*\*)?Links\b/.test(lines[i])) {
-      lines.length = i;
-      break;
+  const t = String(text).replace(/\r\n/g, '\n');
+  const strip = (s) => s.replace(INVISIBLE, '');
+  let out = '';
+  const code = []; // [start, end) of each fenced block in `out`
+  let i = 0;
+  let lineStart = true;
+  while (i < t.length) {
+    const nl = t.indexOf('\n', i);
+    const lineEnd = nl < 0 ? t.length : nl + 1;
+    const fence = lineStart && /^[ \t]*(`{3,}|~{3,})/.exec(t.slice(i, lineEnd));
+    if (fence) {
+      const [c, n] = [fence[1][0], fence[1].length];
+      const close = new RegExp(`^[ \\t]*${c}{${n},}[ \\t]*$`, 'm').exec(t.slice(lineEnd));
+      const end = close ? lineEnd + close.index + close[0].length : t.length; // unclosed runs to the end
+      const s = strip(t.slice(i, end));
+      code.push([out.length, out.length + s.length]);
+      out += s;
+      i = end;
+      lineStart = false;
+      continue;
     }
+    const open = t.indexOf('<!--', i);
+    if (open < 0 || open >= lineEnd) {
+      out += strip(t.slice(i, lineEnd));
+      i = lineEnd;
+      lineStart = true;
+      continue;
+    }
+    out += strip(t.slice(i, open));
+    const shut = t.indexOf('-->', open + 4);
+    i = shut < 0 ? t.length : shut + 3; // an unclosed comment removes the rest
+    lineStart = false;
   }
-  return lines.map((l) => l.replace(/\s+$/u, '')).join('\n').replace(/\s+$/u, '');
+  // Drop the Links section: from the last Links heading outside a fence to the end.
+  const inCode = (o) => code.some(([s, e]) => o >= s && o < e);
+  let cut = -1;
+  for (let o = 0; o <= out.length; ) {
+    const nl = out.indexOf('\n', o);
+    const line = out.slice(o, nl < 0 ? out.length : nl);
+    if (LINKS.test(line) && !inCode(o)) cut = o;
+    if (nl < 0) break;
+    o = nl + 1;
+  }
+  if (cut >= 0) out = out.slice(0, cut);
+  return out.split('\n').map((l) => l.replace(/\s+$/u, '')).join('\n').replace(/\s+$/u, '');
 }
 
 const fingerprint = (text) => 'sha256:' + crypto.createHash('sha256').update(normalize(text), 'utf8').digest('hex');
