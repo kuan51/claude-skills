@@ -305,12 +305,17 @@ test('links are shared across worktrees', () => {
   const PR = 'https://github.com/o/r/pull/6';
   try {
     r.git('worktree', 'add', '-q', '-b', 'feat-w', wt);
-    assert.equal(cli(wt, ['link', 'ABC-6', URL, 'jira']).status, 0);
-    assert.equal(cli(wt, ['pr', PR]).status, 0);
+    // From subdirectories: git prints the common dir relative to the current directory.
+    const [wsub, msub] = [path.join(wt, 'sub'), path.join(r.dir, 'sub')];
+    fs.mkdirSync(wsub);
+    fs.mkdirSync(msub);
+    assert.equal(cli(wsub, ['link', 'ABC-6', URL, 'jira']).status, 0);
+    assert.equal(cli(wsub, ['pr', PR]).status, 0);
     assert.ok(fs.existsSync(r.stateOf('feat-w')), 'the state file sits in the common git dir');
-    const text = after(r.dir, 'Bash', { command: 'gh pr merge 6' }).context;
+    assert.match(cli(wt, ['status']).stdout, /ABC-6/, 'the worktree root sees it');
+    const text = after(msub, 'Bash', { command: 'gh pr merge 6' }).context;
     assert.ok(text && text.includes('ABC-6'), `the main checkout finds it: ${text}`);
-    assert.equal(cli(r.dir, ['clear', '--pr', PR]).status, 0);
+    assert.equal(cli(msub, ['clear', '--pr', PR]).status, 0);
     assert.ok(!fs.existsSync(r.stateOf('feat-w')), 'clear --pr from the main checkout removes it');
   } finally {
     r.done();
