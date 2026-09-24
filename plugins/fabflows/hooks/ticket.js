@@ -14,6 +14,8 @@
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
 //   trace <from> [<to>] --json   print each first-parent commit's PR, keys and specs
+//   trace <from> [<to>] [--enrich <file>] --out <dir>
+//                                write trace.md and trace.csv with PR, ticket and flag columns
 //
 // State is one file per branch, fabflows/tickets/<h>.json in the common git dir, where <h> is
 // the first 16 hex characters of sha256(branch); approve adds <h>.approved.md beside it.
@@ -368,6 +370,107 @@ function traceRows(from, to, cwd) {
   });
 }
 
+// ---------------------------------------------------------------- trace report
+const COLUMNS = ['commit', 'date', 'author', 'AI', 'PR', 'PR author', 'approvers', 'tickets', 'key source', 'spec hashes', 'ticket fingerprints', 'controls', 'change', 'class', 'traces', 'expected labels', 'actual labels', 'flags'];
+const FLAGS = ['no-ticket', 'no-spec', 'no-pr', 'spec-changed', 'no-compliance', 'label-missing', 'emergency', 'no-approval', 'self-approved', 'not-enriched'];
+const short = (v) => str(v) && v.length <= 200;
+const shortList = (v) => Array.isArray(v) && v.every(short);
+
+// The text of a regular file of at most max bytes, else null.
+function readSmall(file, max, flags = 0) {
+  let fd;
+  try {
+    fd = fs.openSync(file, fs.constants.O_RDONLY | flags);
+    const st = fs.fstatSync(fd);
+    return st.isFile() && st.size <= max ? fs.readFileSync(fd, 'utf8') : null;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
+
+// The enrichment file Claude wrote from its MCP tools, re-validated entry by entry: an entry
+// of the wrong shape is dropped, so its row reads as not enriched. Null when the file is unusable.
+function enrichment(file) {
+  let e;
+  try {
+    e = JSON.parse(readSmall(file, 1024 * 1024));
+  } catch {
+    return null;
+  }
+  if (!e || typeof e !== 'object') return null;
+  const entries = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? Object.entries(o) : []);
+  const prs = new Map();
+  for (const [n, v] of entries(e.prs)) {
+    if (/^[0-9]+$/.test(n) && v && short(v.author) && shortList(v.approvers)) prs.set(Number(n), { author: v.author, approvers: v.approvers });
+  }
+  const tickets = new Map();
+  for (const [key, v] of entries(e.tickets)) {
+    if (!(valid.key(key) && v && shortList(v.labels) && short(v.bodyFile) && /^[^/\\]+$/.test(v.bodyFile) && !/^\.\.?$/.test(v.bodyFile))) continue;
+    const body = readSmall(path.join(path.dirname(file), v.bodyFile), 256 * 1024, fs.constants.O_NOFOLLOW);
+    if (body === null) continue;
+    const text = normalize(body);
+    const c = compliance(text);
+    tickets.set(key, { fingerprint: 'sha256:' + sha(text), c, expected: c.errors ? [] : labels(c), labels: v.labels });
+  }
+  return { prs, tickets };
+}
+
+// The report's cells for each row: git data, the enrichment for its PR and tickets, and flags.
+function reportRows(rows, en, on) {
+  return rows.map((row) => {
+    const pr = en && row.pr !== null ? en.prs.get(row.pr) : undefined;
+    const found = row.keys.map((k) => en && en.tickets.get(k));
+    const known = found.filter(Boolean);
+    const all = (f) => uniq(known.flatMap(f)).join('; ');
+    const flags = new Set();
+    if (!row.keys.length) flags.add('no-ticket');
+    if (!row.specs.length) flags.add('no-spec');
+    if (row.pr === null) flags.add('no-pr');
+    if (row.specs.length && known.some((t) => !row.specs.includes(t.fingerprint))) flags.add('spec-changed');
+    if (on && known.some((t) => t.c.errors)) flags.add('no-compliance');
+    if (known.some((t) => t.expected.some((l) => !t.labels.some((have) => have.toLowerCase() === l)))) flags.add('label-missing');
+    if (known.some((t) => t.c.change === 'emergency')) flags.add('emergency');
+    if (pr && !pr.approvers.length) flags.add('no-approval');
+    if (pr && pr.approvers.includes(pr.author)) flags.add('self-approved');
+    if (!en || (row.pr !== null && !pr) || known.length < found.length) flags.add('not-enriched');
+    return [
+      `${row.sha} ${row.subject}`,
+      row.date || '',
+      row.authors.join('; '),
+      row.ai ? 'yes' : 'no',
+      row.pr === null ? '' : String(row.pr),
+      pr ? pr.author : '',
+      pr ? pr.approvers.join('; ') : '',
+      row.keys.join('; '),
+      row.keySource,
+      row.specs.join('; '),
+      known.map((t) => t.fingerprint).join('; '),
+      all((t) => t.c.controls || []),
+      all((t) => (t.c.change ? [t.c.change] : [])),
+      all((t) => (t.c.cls ? [t.c.cls] : [])),
+      all((t) => t.c.traces || []),
+      all((t) => t.expected),
+      all((t) => t.labels),
+      FLAGS.filter((f) => flags.has(f)).join('; '),
+    ];
+  });
+}
+
+const csvCell = (v) => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+const mdCell = (v) => v;
+
+// Writes <out>/trace.md and <out>/trace.csv, and returns the summary line.
+function writeReport(out, from, to, cells) {
+  fs.mkdirSync(out, { recursive: true });
+  const md = [`# Trace ${from}..${to}`, '', `| ${COLUMNS.join(' | ')} |`, `|${' --- |'.repeat(COLUMNS.length)}`, ...cells.map((r) => `| ${r.map(mdCell).join(' | ')} |`)];
+  fs.writeFileSync(path.join(out, 'trace.md'), md.join('\n') + '\n');
+  fs.writeFileSync(path.join(out, 'trace.csv'), [COLUMNS, ...cells].map((r) => r.map(csvCell).join(',') + '\r\n').join(''));
+  const count = (f) => cells.filter((r) => r[r.length - 1].split('; ').includes(f)).length;
+  return `trace: ${cells.length} commits; ${FLAGS.map((f) => `${f} ${count(f)}`).join(', ')}`;
+}
+
 // ---------------------------------------------------------------- CLI
 function cli(cmd, args) {
   const cwd = process.cwd();
@@ -458,9 +561,11 @@ function cli(cmd, args) {
     const o = {};
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--json') o.json = true;
+      else if (args[i] === '--enrich' || args[i] === '--out') o[args[i].slice(2)] = args[++i];
       else refs.push(args[i]);
     }
-    if (refs.length < 1 || refs.length > 2 || !o.json) fail('usage: trace <from> [<to>] --json');
+    const usage = 'usage: trace <from> [<to>] --json, or trace <from> [<to>] [--enrich <file>] --out <dir>';
+    if (refs.length < 1 || refs.length > 2 || !(o.json || o.out) || ('enrich' in o && !o.enrich) || ('out' in o && !o.out)) fail(usage);
     const [from, to] = [refs[0], refs[1] || 'HEAD'].map((ref, n) => {
       const which = n ? 'to' : 'from';
       if (ref.startsWith('-')) fail(`the ${which} ref may not start with -`);
@@ -479,6 +584,12 @@ function cli(cmd, args) {
       process.stderr.write('ticket.js: warning: from is not an ancestor of to, so the range may not be what you meant\n');
     }
     const rows = traceRows(from, to, cwd);
+    if (o.out) {
+      const en = o.enrich ? enrichment(path.resolve(o.enrich)) : null;
+      if (o.enrich && !en) process.stderr.write('ticket.js: warning: the enrichment file is unreadable, over 1 MB or not a JSON object, so no row is enriched\n');
+      process.stdout.write(writeReport(path.resolve(o.out), from, to, reportRows(rows, en, complianceMode(cwd) === 'on')) + '\n');
+      process.exit(0);
+    }
     process.stdout.write(JSON.stringify(rows.map(({ sha, date, pr, keys, keySource, specs, ai }) => ({ sha, date, pr, keys, keySource, specs, ai }))) + '\n');
   } else {
     fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status, clear or trace`);

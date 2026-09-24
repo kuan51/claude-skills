@@ -807,3 +807,146 @@ test('trace refuses option-like refs and warns on shallow or unrelated ranges', 
     fs.rmSync(clone, { recursive: true, force: true });
   }
 });
+
+const COLUMNS = ['commit', 'date', 'author', 'AI', 'PR', 'PR author', 'approvers', 'tickets', 'key source', 'spec hashes', 'ticket fingerprints', 'controls', 'change', 'class', 'traces', 'expected labels', 'actual labels', 'flags'];
+function parseCsv(s) {
+  const rows = [];
+  let row = [], cell = '', q = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) {
+      if (c === '"' && s[i + 1] === '"') (cell += '"'), i++;
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') row.push(cell), (cell = '');
+    else if (c === '\r' && s[i + 1] === '\n') row.push(cell), rows.push(row), (row = []), (cell = ''), i++;
+    else cell += c;
+  }
+  return rows;
+}
+
+// Runs trace --out into a fresh directory outside the repo, with the enrichment (when given)
+// and its files beside it: a string is a file, { link } a symlink. Returns the output, the
+// report files, and flags(subject) for one row's flags.
+function report(h, enrich, files = {}, out) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-trace-'));
+  try {
+    const dir = out ? out(tmp) : path.join(tmp, 'out');
+    const args = ['trace', h.from, '--out', dir];
+    if (enrich) {
+      for (const [name, v] of Object.entries(files)) {
+        fs.mkdirSync(path.dirname(path.join(tmp, name)), { recursive: true });
+        if (typeof v === 'string') fs.writeFileSync(path.join(tmp, name), v);
+        else fs.symlinkSync(v.link, path.join(tmp, name));
+      }
+      fs.writeFileSync(path.join(tmp, 'enrich.json'), typeof enrich === 'string' ? enrich : JSON.stringify(enrich));
+      args.push('--enrich', path.join(tmp, 'enrich.json'));
+    }
+    const res = cli(h.r.dir, args);
+    const read = (n) => (fs.existsSync(path.join(dir, n)) ? fs.readFileSync(path.join(dir, n), 'utf8') : null);
+    const [md, csv] = [read('trace.md'), read('trace.csv')];
+    const rows = csv === null ? [] : parseCsv(csv);
+    const row = (subject) => rows.find((r) => r[0].startsWith(h.sha[subject] + ' '));
+    const flags = (subject) => row(subject)[17].split('; ').filter(Boolean);
+    return { ...res, md, csv, rows, row, flags, dir, tmp };
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+const EXPECTED = ['ctl-soc2-cc8-1', 'ctl-iso27001-a-8-32', 'change-normal', 'class-b'];
+const MERGE5 = 'Merge pull request #5 from o/f1';
+const OCTOPUS = 'Merge branches o1 and o2';
+const X = 'feat: x (ABC-7) (#12)';
+// Enriches the #5 merge so it raises no flag; tweak one part to raise one.
+const clean = () => ({
+  prs: { 5: { author: 'alice', approvers: ['bob'] }, 12: { author: 'alice', approvers: ['bob'] } },
+  tickets: {
+    'ABC-1': { bodyFile: 'abc1.md', labels: EXPECTED.map((l) => l.toUpperCase()) },
+    'ABC-2': { bodyFile: 'abc2.md', labels: ['change-standard', 'class-na'] },
+    'ABC-3': { bodyFile: 'abc3.md', labels: ['change-normal', 'class-a'] },
+    'ABC-7': { bodyFile: 'abc7.md', labels: [] },
+  },
+});
+const FILES = { 'abc1.md': BODY['ABC-1'], 'abc2.md': BODY['ABC-2'], 'abc3.md': BODY['ABC-3'], 'abc7.md': 'plain spec' };
+
+test('trace --out writes the report and raises each flag in its own case', () => {
+  const h = history();
+  try {
+    const plain = report(h);
+    assert.equal(plain.status, 0, plain.stderr);
+    assert.deepEqual(plain.rows[0], COLUMNS, 'the header row');
+    assert.equal(plain.rows.length, 8);
+    assert.ok(plain.rows.slice(1).every((r) => r[17].split('; ').includes('not-enriched')), 'no --enrich');
+    assert.ok(plain.md.includes('feat: z (#66) (#67)'), 'a subject is in trace.md');
+    assert.match(plain.row('fix: w')[2], /^Copilot <copilot@example.com>$/);
+    assert.match(plain.row(MERGE5)[2], /^Dev <dev@example.com>$/, 'the merge author; its branch co-author sets AI');
+    assert.equal(plain.row(MERGE5)[3], 'yes');
+
+    const base = report(h, clean(), FILES);
+    assert.equal(base.status, 0, base.stderr);
+    assert.deepEqual(base.flags(MERGE5), [], base.row(MERGE5).join(' | '));
+    assert.deepEqual(base.flags(OCTOPUS), ['no-pr']);
+    assert.deepEqual(base.flags('chore: direct'), ['no-ticket', 'no-spec', 'no-pr']);
+    assert.deepEqual(base.flags(X), ['no-spec'], 'compliance is off, so no no-compliance');
+    assert.ok(!base.csv.includes('no-compliance'));
+    const counts = Object.fromEntries(base.stdout.trim().replace(/^trace: 7 commits; /, '').split(', ').map((p) => p.split(' ')));
+    for (const f of Object.keys(counts)) assert.equal(Number(counts[f]), base.rows.slice(1).filter((r) => r[17].split('; ').includes(f)).length, f);
+    assert.equal(Object.keys(counts).length, 10, base.stdout);
+    assert.equal(base.row(MERGE5)[5], 'alice');
+    assert.equal(base.row(MERGE5)[16], EXPECTED.map((l) => l.toUpperCase()).join('; '));
+
+    const spec = report(h, clean(), { ...FILES, 'abc3.md': BODY['ABC-3'] + '\nchanged' });
+    assert.deepEqual(spec.flags(OCTOPUS), ['no-pr', 'spec-changed'], 'one key of two changed');
+    const e = clean();
+    e.tickets['ABC-1'].labels.pop();
+    assert.deepEqual(report(h, e, FILES).flags(MERGE5), ['label-missing']);
+    const noApproval = clean();
+    noApproval.prs[5].approvers = [];
+    assert.deepEqual(report(h, noApproval, FILES).flags(MERGE5), ['no-approval']);
+    const self = clean();
+    self.prs[5].approvers = ['bob', 'alice'];
+    assert.deepEqual(report(h, self, FILES).flags(MERGE5), ['self-approved']);
+    const urgent = { ...FILES, 'abc7.md': '## Compliance\n- Controls: none\n- Change: emergency\n- Class: C' };
+    const em = clean();
+    em.tickets['ABC-7'].labels = ['change-emergency', 'class-c'];
+    assert.deepEqual(report(h, em, urgent).flags(X), ['no-spec', 'emergency']);
+
+    fs.mkdirSync(path.join(h.r.dir, '.claude'));
+    fs.writeFileSync(path.join(h.r.dir, '.claude', 'fabflows.json'), JSON.stringify({ compliance: { frameworks: ['soc2'] } }));
+    assert.deepEqual(report(h, clean(), FILES).flags(X), ['no-spec', 'no-compliance'], 'compliance on');
+  } finally {
+    h.r.done();
+  }
+});
+
+test('trace --enrich ignores every value of the wrong shape', () => {
+  const h = history();
+  const tweak = (f) => {
+    const e = clean();
+    f(e);
+    return e;
+  };
+  const moved = (name) => tweak((e) => (e.tickets['ABC-1'].bodyFile = name));
+  try {
+    for (const [what, enrich, files] of [
+      ['a bad prs key', tweak((e) => (e.prs['5x'] = e.prs[5]) && delete e.prs[5]), FILES],
+      ['a bad tickets key', tweak((e) => (e.tickets['abc-1'] = e.tickets['ABC-1']) && delete e.tickets['ABC-1']), FILES],
+      ['a string over 200 characters', tweak((e) => (e.prs[5].approvers = ['x'.repeat(201)])), FILES],
+      ['a bodyFile with a /', moved('sub/abc1.md'), { ...FILES, 'sub/abc1.md': BODY['ABC-1'] }],
+      ['a bodyFile that is a symlink', moved('link.md'), { ...FILES, 'link.md': { link: 'abc1.md' } }],
+      ['a bodyFile over 256 KB', moved('big.md'), { ...FILES, 'big.md': BODY['ABC-1'] + ' '.repeat(256 * 1024) }],
+      ['an enrichment file over 1 MB', JSON.stringify(clean()) + ' '.repeat(1024 * 1024), FILES],
+      ['a wrong-shaped value', tweak((e) => (e.prs[5].approvers = 'bob')), FILES],
+    ]) {
+      const out = report(h, enrich, files);
+      assert.equal(out.status, 0, `${what}: ${out.stderr}`);
+      assert.deepEqual(out.flags(MERGE5), ['not-enriched'], what);
+    }
+    const edge = report(h, moved('edge.md'), { ...FILES, 'edge.md': BODY['ABC-1'].padEnd(256 * 1024) });
+    assert.deepEqual(edge.flags(MERGE5), [], 'a bodyFile of exactly 256 KB');
+  } finally {
+    h.r.done();
+  }
+});
