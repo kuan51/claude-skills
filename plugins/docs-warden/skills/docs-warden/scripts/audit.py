@@ -516,6 +516,18 @@ GENERATED_DOCS_FIX = ("Give generated_docs as a list of entries, each a mapping 
                       "See references/audit-schema.md.")
 
 
+PACKAGE_RUNNERS = {"npx", "pnpx", "bunx", "uvx", "pipx"}
+PACKAGE_RUNNER_PAIRS = {("pnpm", "dlx"), ("yarn", "dlx"), ("npm", "exec"),
+                        ("npm", "x"), ("bun", "x")}
+
+
+def _is_package_runner(command):
+    """True when a generator command would fetch a package to run it."""
+    first = re.sub(r"\.(cmd|exe)$", "", Path(str(command[0])).name.lower())
+    second = str(command[1]).lower() if len(command) > 1 else ""
+    return first in PACKAGE_RUNNERS or (first, second) in PACKAGE_RUNNER_PAIRS
+
+
 def check_generated_docs(repo, config, run_generators):
     entries = (config or {}).get("generated_docs") or []
     if not entries:
@@ -574,9 +586,14 @@ def check_generated_docs(repo, config, run_generators):
             # Rejected here rather than passing vacuously.
             rejected.append(f"{path} (is a directory, not a document)")
             continue
-        # Same reason _lint_runner resolves its runner: a bare name that which()
-        # found is still unrunnable on Windows, where npm and npx are .CMD
-        # shims, and the FileNotFoundError would cost the whole scorecard.
+        # A package runner downloads from a registry, and a subprocess spawn is
+        # invisible to any shell-string hook, so the user runs it, not the audit.
+        if _is_package_runner(command):
+            skipped.append(f"{path} (package runner; ask the user to run it)")
+            continue
+        # Same reason _lint_runner resolves the tool: a bare name that which()
+        # found is still unrunnable on Windows, where the tool itself is a .CMD
+        # shim, and the FileNotFoundError would cost the whole scorecard.
         executable = shutil.which(command[0])
         if executable is None:
             skipped.append(f"{path} ({command[0]} not on PATH)")
