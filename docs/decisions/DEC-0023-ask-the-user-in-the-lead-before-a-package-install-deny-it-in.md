@@ -42,7 +42,7 @@ DEC-0002 stands.
    `acceptEdits` or `auto`, and `deny` otherwise. `plan` is not an ask mode: a hook `ask`
    is not documented as enforced there, and plan mode has no reason to install. A bin
    already in the project's `node_modules/.bin`, run by `npx` or `npm exec` (a plain
-   name, no version, no `-p` or `-c`), is not a download, because npm runs a local bin
+   name, no version, and no runner flag before it), is not a download, because npm runs a local bin
    before it fetches anything. The project is the nearest directory with a `package.json`
    or `node_modules`, as npm defines it. `pnpx`, `bunx` and `bun x` get no such exemption,
    and neither does `--no` or `--offline`: npx's `-c` runs any shell string under them. `audit.py` runs markdownlint only when it is on PATH, and

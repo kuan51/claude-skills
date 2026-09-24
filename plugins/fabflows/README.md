@@ -164,7 +164,7 @@ rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alik
   configuration (the session directory there, or a command that names it anywhere: `cd`,
   `pushd`, `Set-Location`, a `VAR=` prefix, a `--prefix=` or `--target=`) is always
   denied. A local bin is not a download: `npx` and `npm exec`/`npm x` pass when they name
-  a plain bin (no `@`, `/` or `:`, and no `-p`/`--package` or `-c`/`--call` before it)
+  a plain bin (no `@`, `/` or `:`) as the first word, with no runner flag before it
   found in `node_modules/.bin` of the nearest directory with a `package.json` or
   `node_modules`, which is where npm looks. So `npx vitest run` and `npx tsc -p x.json`
   work in a project that has them installed. `pnpx`, `bunx` and `bun x` always count as
@@ -215,8 +215,9 @@ be walked around:
   leading `(`, a `VAR=value` prefix, and the prefixes `time`, `exec`, `nohup`, `command`,
   `!`, `{`, `env` and `xargs`, with their flags, do not: each segment is anchored
   separately. A prefix flag whose value is a separate word is stripped only when the
-  guard knows it takes one (`xargs -n 1`, `xargs -I {}`, `env -u VAR`, `exec -a name`);
-  an unlisted one hides the command after it.
+  guard knows it takes one (`xargs -n 1`, `xargs --max-args 1`, `xargs -I {}`,
+  `env -u VAR`, `exec -a name`); an unlisted one hides the command after it, and so does
+  `env -S'cmd'` written with no space. Prefix names match in any case (`Env`, `TIME`).
 - Any binary whose basename is an interpreter name (`./x/python.exe`) is trusted to run a
   script from the plugin cache.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
