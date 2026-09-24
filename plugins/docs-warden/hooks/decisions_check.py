@@ -19,7 +19,8 @@ def check(repo) -> str:
 
 
 try:
-    payload = json.load(sys.stdin)
+    # Bytes, not sys.stdin: its locale codec (cp1252 on Windows) garbles a UTF-8 path.
+    payload = json.loads(sys.stdin.buffer.read())
     cwd = payload.get("cwd") or "."
     if payload.get("hook_event_name") == "PostToolUse":
         edited = (Path(cwd) / payload["tool_input"]["file_path"]).resolve()

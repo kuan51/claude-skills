@@ -2153,6 +2153,27 @@ def test_decisions_check_hook_after_edit():
                    "Write": ["Write(//**/docs/decisions/*)"]}, ifs
 
 
+def test_decisions_check_hook_reads_utf8_input():
+    """Claude Code sends the payload as UTF-8, but sys.stdin decodes with the
+    locale codec (cp1252 on Windows), so a repository path such as café came
+    through garbled and both reminders went silent."""
+    hook = SCRIPTS.parent.parent.parent / "hooks" / "decisions_check.py"
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONIOENCODING", "PYTHONUTF8")}
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "café"
+        _decisions_repo(repo, 50)
+        record = repo / "docs" / "decisions" / "DEC-0050-choice-50.md"
+        for payload in ({"hook_event_name": "SessionStart", "cwd": str(repo)},
+                        {"hook_event_name": "PostToolUse", "cwd": tmp, "tool_name": "Edit",
+                         "tool_input": {"file_path": str(record)}}):
+            result = subprocess.run([sys.executable, str(hook)], env=env, capture_output=True,
+                                    input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                                    check=False)
+            out = result.stdout.decode("utf-8", "replace")
+            assert result.returncode == 0 and "ready to archive" in out, \
+                (payload["hook_event_name"], out, result.stderr)
+
+
 # --- ontological-documentation -------------------------------------------------
 
 def _ontology_repo(tmp):
