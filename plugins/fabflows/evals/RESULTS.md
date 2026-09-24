@@ -68,6 +68,86 @@ unexercised.
 Newest iteration first. Every number is a mean of two runs per cell unless stated; `cells.json`
 and `benchmark.json` under each iteration directory are tracked and hold every run.
 
+## Iteration 13 (2026-09-24): task 9 with the split pins and a 60-minute cap
+
+**Bottom line.** Builder `medium`, reviewer `xhigh`, cap raised from 30 to 60 minutes, same
+three runs of task 9. Every run finished its loop, committed, and passed 21/21 hidden tests.
+Every run went through rework: two of three needed two rounds, and every must-fix named a real
+defect in the search (exponential minimality search, a U2 ordering that depended on the
+registry file's key order, a tie-break broken by unreachable packages). No trailer nits. Builds
+took 17 to 22 minutes at medium, which is why the 30-minute cap had been deciding runs. Cost
+$3.76 to $5.80 list, mean $4.87, of which Opus $2.61 to $4.91; wall clock 26 to 42 minutes.
+This is the first arm where three of three runs ended green with the loop's review doing the
+work it was built for.
+
+### Setup (confirmed)
+
+Task 9 as in iterations 11 and 12, `runTimeoutMinutes` 60 (commit `c21bf71`), `loop` arm,
+three repeats concurrent, Fable lead at medium. Plugin loaded via `--plugin-dir` from a copy of
+this checkout (0.5.1) with one edit: `workflows/build.js` builder `effort: 'medium'`; the
+reviewer stays `xhigh` and `agents/refuter.md` stays `xhigh`. Command:
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 13 --tasks 9 --parallel 3 --plugin-dir <0.5.1 copy with builder medium>/plugins/fabflows --confirm
+```
+
+### Observed
+
+| run | hidden | rounds | build s (each) | review s (each) | review think (each) | verdicts | wall s | Fable $ | Opus $ | list $ |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 21/21 | 3 | 1,333, 72, 34 | 272, 207, 205 | 23k, 17k, 16k | REWORK, REWORK, ACCEPT | 2,183 | 0.94 | 4.09 | 5.04 |
+| 2 | 21/21 | 2 | 1,007, 43 | 163, 253 | 12k, 21k | REWORK, ACCEPT | 1,550 | 1.15 | 2.61 | 3.76 |
+| 3 | 21/21 | 3 | 1,228, 196, 222 | 201, 313, 324 | 16k, 27k, 28k | REWORK, REWORK, ACCEPT | 2,543 | 0.89 | 4.91 | 5.80 |
+
+Must-fix items (confirmed, from the journals):
+
+| run | round | finding |
+| --- | --- | --- |
+| 1 | review:1 | U2 comparison phases use plain string order where the spec says `Object.keys` order |
+| 1 | review:2 | the U2 changed-set order follows the registry file's key order, so output depends on file formatting |
+| 2 | review:1 | the U2 version tie-break breaks when an unchanged package is no longer reachable from the new root |
+| 3 | review:1 | the U1 search's only lower bound counts pending names, not the graph below them, so it is exponential; and `mustSelect` is checked only at a leaf |
+| 3 | review:2 | the U1 search is still exponential on an input inside the spec's size limit |
+
+Two of these (run 1) are the reviewer reading "Object.keys order" more strictly than the hidden
+suite does: the suite never varies registry key order, so both builds would have passed the
+grader unchanged. The other three are correctness or complexity defects the hidden suite would
+also have missed on its fixed cases. Nothing was denied.
+
+### Against iterations 11 and 12
+
+| arm | pins (builder/reviewer), cap | loops finished | hidden 21/21 | REWORK rounds with a real defect | mean list $ | mean wall s |
+| --- | --- | --- | --- | --- | --- | --- |
+| iteration 11 | medium/medium, 30 min | 2/3 | 2/3 | 1 of 2 | 3.15 | 1,318 |
+| iteration 12 | high/xhigh, 30 min | 1/3 | 3/3 (two uncommitted) | 2 of 2 | 3.30 | 1,696 |
+| iteration 13 | medium/xhigh, 60 min | 3/3 | 3/3 | 5 of 5 | 4.87 | 2,092 |
+
+Iteration 13's higher mean cost is the price of finishing: its runs are the only ones with no
+truncated build in the average. Iteration 11's two complete runs cost $3.84 and $2.67 and their
+one real finding cost two rounds.
+
+### What it means
+
+- **Reviewer at xhigh is the pin that pays on this task (confirmed, n=3 plus 1).** Four complete
+  xhigh-reviewed runs across iterations 12 and 13 produced seven must-fix items, all defects in
+  the search. Two complete medium-reviewed runs produced one such defect and one nit.
+- **Builder at high did not help and cost runs (confirmed at the 30-minute cap, unmeasured at
+  60).** Medium builders finish task 9 in 17 to 22 minutes. High builders had not committed at
+  30 minutes in two of three runs.
+- **The 30-minute cap was the binding constraint on task 9 (confirmed).** At 60 minutes no run
+  was truncated.
+- **Spec ambiguity found by the benchmark itself (inferred).** "Object.keys order" in U2 reads
+  two ways, and two review rounds went on it. The hidden suite is indifferent, so the grade is
+  unaffected, but the fixture's `SPEC.md` should say "ascending string order" in the next
+  revision of task 9.
+- **Three runs per arm.** Enough to say the direction of each pin; not a rate.
+
+### Reproduce
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 13 --tasks 9 --parallel 3 --plugin-dir <0.5.1 copy with builder medium>/plugins/fabflows --confirm
+```
+
 ## Iterations 11 and 12 (2026-09-24): task 9, medium pins against the raised pins
 
 **Bottom line.** Task 9 (`update-minimal`, a minimal-change re-resolution with a hidden oracle

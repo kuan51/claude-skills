@@ -1,0 +1,94 @@
+[
+ {
+  "task": "update-minimal",
+  "arm": "loop",
+  "run": "run-1",
+  "quality": 1,
+  "denials": 0,
+  "turns": 16,
+  "lead_out": 3582,
+  "lead_think": 242,
+  "lead_msgs": 11,
+  "lead_cache_read": 509381,
+  "lead_cache_write": 31691,
+  "first_ctx": 39765,
+  "final_ctx": 59061,
+  "worker_out": 111512,
+  "worker_in": 2245718,
+  "workers": {
+   "fabflows:editor": 3,
+   "fabflows:refuter": 3
+  },
+  "cost": 5.037972849999998,
+  "sec": 2182.716,
+  "verification_runs": 1,
+  "hook_payloads": 102,
+  "tools": {
+   "Skill": 3,
+   "Read": 2,
+   "Bash": 5,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "update-minimal",
+  "arm": "loop",
+  "run": "run-2",
+  "quality": 1,
+  "denials": 0,
+  "turns": 17,
+  "lead_out": 6021,
+  "lead_think": 541,
+  "lead_msgs": 14,
+  "lead_cache_read": 682293,
+  "lead_cache_write": 33724,
+  "first_ctx": 39771,
+  "final_ctx": 61094,
+  "worker_out": 73248,
+  "worker_in": 1346958,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 2
+  },
+  "cost": 3.761438850000001,
+  "sec": 1549.875,
+  "verification_runs": 1,
+  "hook_payloads": 71,
+  "tools": {
+   "Skill": 3,
+   "Bash": 7,
+   "Read": 1,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "update-minimal",
+  "arm": "loop",
+  "run": "run-3",
+  "quality": 1,
+  "denials": 0,
+  "turns": 12,
+  "lead_out": 3969,
+  "lead_think": 0,
+  "lead_msgs": 10,
+  "lead_cache_read": 460872,
+  "lead_cache_write": 28781,
+  "first_ctx": 39771,
+  "final_ctx": 56151,
+  "worker_out": 141875,
+  "worker_in": 2746508,
+  "workers": {
+   "fabflows:editor": 3,
+   "fabflows:refuter": 3
+  },
+  "cost": 5.797569599999999,
+  "sec": 2543.316,
+  "verification_runs": 1,
+  "hook_payloads": 118,
+  "tools": {
+   "Skill": 2,
+   "Bash": 5,
+   "Workflow": 1
+  }
+ }
+]
