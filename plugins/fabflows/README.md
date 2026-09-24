@@ -53,7 +53,8 @@ Invoking it authorizes the lead to launch the build loop, which commits to your 
 branch, without asking again per task. The `brainstorming` skill sits in front of the loop
 for a request that arrives without a spec; see [Brainstorming](#brainstorming). The
 `fabflows-setup` skill points the repository at a tracker, and the `ticket` skill keeps the
-linked ticket current; see [Tickets](#tickets).
+linked ticket current; see [Tickets](#tickets). The `trace` skill writes an audit report
+of merged changes with their tickets, specs and approvals; see [Compliance](#compliance).
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 
