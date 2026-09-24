@@ -2077,6 +2077,47 @@ def test_decisions_check_hook_speaks_only_at_50():
     assert result.returncode == 0 and result.stdout == ""
 
 
+def test_decisions_check_hook_after_edit():
+    """PostToolUse plain stdout reaches only the debug log, so after an edit
+    in docs/decisions the line has to go out as additionalContext, checked
+    against the repo holding the record rather than the session's cwd."""
+    hooks_dir = SCRIPTS.parent.parent.parent / "hooks"
+    hook = hooks_dir / "decisions_check.py"
+
+    def run(payload):
+        result = subprocess.run([sys.executable, str(hook)], input=json.dumps(payload),
+                                capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stderr
+        return result.stdout
+
+    def after(tool, file_path, cwd):
+        return run({"hook_event_name": "PostToolUse", "tool_name": tool,
+                    "tool_input": {"file_path": str(file_path)}, "cwd": str(cwd)})
+
+    with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as other:
+        repo = Path(tmp)
+        _decisions_repo(repo, 50)
+        record = repo / "docs" / "decisions" / "DEC-0050-x.md"
+        for tool, path, cwd in (("Edit", record, other), ("Write", record, other),
+                                ("Edit", "docs/decisions/DEC-0050-x.md", repo)):
+            out = json.loads(after(tool, path, cwd))["hookSpecificOutput"]
+            assert out["hookEventName"] == "PostToolUse", out
+            assert "ready to archive" in out["additionalContext"], out
+        # cwd is the repo, so a fallback to cwd would speak here.
+        assert after("Edit", repo / "README.md", repo) == ""
+        assert after("Edit", repo / "docs" / "decisions" / "archive" / "DEC-0001-x.md", repo) == ""
+        assert run({"hook_event_name": "PostToolUse", "cwd": str(repo)}) == ""
+        start = run({"hook_event_name": "SessionStart", "cwd": str(repo)})
+        assert "ready to archive" in start and not start.lstrip().startswith("{"), start
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        _decisions_repo(repo, 49)
+        assert after("Edit", repo / "docs" / "decisions" / "DEC-0049-x.md", repo) == ""
+    entry = json.loads((hooks_dir / "hooks.json").read_text(encoding="utf-8"))["hooks"]["PostToolUse"][0]
+    assert entry["matcher"] == "Edit|Write", entry
+    assert entry["hooks"][0]["if"] == "Edit(//**/docs/decisions/*)", entry
+
+
 # --- ontological-documentation -------------------------------------------------
 
 def _ontology_repo(tmp):

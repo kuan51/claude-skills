@@ -126,8 +126,8 @@ immutability check reads the archive too, so an edit after the move is caught
 and the links check read the top-level folder only, so `DECISIONS.md` lists
 the digest and not the archived records, and a moved record's `../` links are
 not reported. Digests are never archived, so what they carry stays at the top
-level. The plugin's SessionStart hook prints a reminder once 50 archivable
-records exist.
+level. The plugin's hook prints a reminder once 50 archivable
+records exist, at session start and after an edit in `docs/decisions/`.
 
 ## Migrating a monolithic decision log
 

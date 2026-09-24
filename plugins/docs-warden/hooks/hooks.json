@@ -1,11 +1,24 @@
 {
-  "description": "docs-warden -- at session start, says when docs/decisions has reached the compaction point so the compact mode gets run.",
+  "description": "docs-warden -- at session start and after an edit in docs/decisions/, says when docs/decisions has reached the compaction point so the compact mode gets run.",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/decisions_check.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(//**/docs/decisions/*)",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/decisions_check.py\"",
             "timeout": 5
           }

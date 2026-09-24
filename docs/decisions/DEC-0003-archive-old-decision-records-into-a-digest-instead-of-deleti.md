@@ -47,9 +47,9 @@ folder without touching a byte of an accepted record. The digest copies the two
 sections a later reader needs mechanically, so no summarising happens and the
 result is deterministic and testable.
 
-The trigger is a SessionStart hook that counts the archivable records in
-`docs/decisions/` (not proposed, not a digest) and prints one line at 50 or
-more, the same count the script uses. A hook cannot run the compaction itself; it
+The trigger is a hook, run at session start and after an edit in
+`docs/decisions/`, that counts the archivable records in `docs/decisions/`
+(not proposed, not a digest) and prints one line at 50 or more, the same count the script uses. A hook cannot run the compaction itself; it
 tells the session to run the skill's `compact` mode, which runs
 `adr_compact.py --dry-run`, shows the mapping, and moves on a yes.
 
@@ -81,8 +81,8 @@ tells the session to run the skill's `compact` mode, which runs
   onward; an edit made between acceptance and archiving is not visible after.
 - Records are counted, not sized. A repo with 49 very long records gets no
   nudge.
-- Only SessionStart triggers the nudge. A session that crosses 50 mid-way hears
-  nothing until the next start.
+- The nudge runs at session start and after an edit in `docs/decisions/`;
+  changes made through Bash wait for the next session start.
 
 ## Links
 
