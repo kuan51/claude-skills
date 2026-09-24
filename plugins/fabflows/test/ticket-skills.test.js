@@ -32,8 +32,43 @@ test('brainstorming approves and checks the ticket through Write-tool files', ()
   has(read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md'), ['ticket.js approve', 'ticket.js check', 'written with the Write tool'], 'brainstorming/SKILL.md');
 });
 
-test('0.6.0 is released and documented', () => {
-  assert.equal(JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json')).version, '0.6.0');
+test('brainstorming and ticket show the user raw ticket text', () => {
+  const review = ['raw diff', 'description only', 'diff -u', 'did not write', 'full raw'];
+  const brainstorming = read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md');
+  has(brainstorming, [...review, 'ticket.js status'], 'brainstorming/SKILL.md');
+  const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
+  has(ticket, review, 'ticket/SKILL.md');
+  const afterMerge = ticket.slice(ticket.indexOf('After a PR merges'));
+  has(afterMerge, ['Refs-only', 'clear --pr'], 'ticket/SKILL.md after-merge paragraph');
+});
+
+test('no skill or README names the old single state file', () => {
+  const files = [
+    ['README.md'],
+    ...fs.readdirSync(path.join(PLUGIN, 'skills')).map((d) => ['skills', d, 'SKILL.md']),
+  ];
+  for (const f of files) {
+    const text = read(PLUGIN, ...f);
+    assert.ok(!/fabflows\/ticket(?!s)/.test(text), `${f.join('/')} names fabflows/ticket`);
+  }
+});
+
+test('the README names the ticket hook, the ticket skills and raw review', () => {
+  const readme = read(PLUGIN, 'README.md');
+  const warning = readme.slice(0, readme.indexOf('## The problem'));
+  has(warning, ['ticket.js'], 'README hook warning');
+  const included = readme.slice(readme.indexOf("## What's included"), readme.indexOf('## Brainstorming'));
+  has(included, ['`fabflows-setup`', '`ticket`'], "README What's included");
+  const tickets = readme.slice(readme.indexOf('## Tickets'), readme.indexOf('\n## ', readme.indexOf('## Tickets') + 1));
+  has(tickets, ['raw diff', 'per-branch'], 'README Tickets');
+});
+
+test('the current version is documented', () => {
+  const { version } = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
   assert.match(read(PLUGIN, 'README.md'), /^## Tickets$/m);
-  assert.ok(read(ROOT, 'CHANGELOG.md').includes('fabflows 0.6.0'), 'CHANGELOG.md must name fabflows 0.6.0');
+  const log = read(ROOT, 'CHANGELOG.md');
+  const start = log.indexOf(`fabflows ${version}`);
+  assert.ok(start >= 0, `CHANGELOG.md must name fabflows ${version}`);
+  const entry = log.slice(start, log.indexOf('\n- **', start));
+  has(entry, ['raw', 'per-branch'], `CHANGELOG.md fabflows ${version}`);
 });
