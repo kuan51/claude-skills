@@ -77,6 +77,19 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.6.0** -- the guard now covers package runners (`npx`, `pnpx`, `bunx`,
+  `npm exec`, `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool`, `uv run --with`, `pipx`,
+  `npm|yarn|pnpm|bun create`, `npm init <pkg>`), not only installers. An install or runner in
+  the lead now returns `ask`, so the user approves it in a native prompt, but only in the
+  `default`, `acceptEdits`, `auto` and `plan` modes; a worker, `bypassPermissions`,
+  `dontAsk`, or a missing mode still gets `deny`. The ask is emitted only after every other
+  rule has passed, so a destructive segment or a live-config path still denies. The skill
+  tells Claude to name the package and ask before trying any other route. DEC-0023
+  supersedes DEC-0002's "no installs regardless of model judgement".
+- **docs-warden 0.6.0** -- `audit.py` no longer runs markdownlint-cli2 through `npx --yes` or
+  `bunx`, which downloaded it into a cache outside the repo where no hook could see it. Lint
+  runs only when `markdownlint-cli2` is on PATH; otherwise the check reports `skipped` and
+  names the `npx` command to ask the user to approve.
 - **docs-warden 0.4.2** -- the concept extractor reads tracked files when the repository is a
   git checkout, so untracked worktrees and scratch under `.claude/` no longer leak into
   `docs/architecture/domain-model.md` and trip the `ontology` check.

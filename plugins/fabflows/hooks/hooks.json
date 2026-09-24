@@ -1,5 +1,5 @@
 {
-  "description": "fabflows guard -- blocks package installs, default-branch commits and pushes, destructive shell commands, and reads or writes of credential files; checks that a worker's final report carries the required contract fields.",
+  "description": "fabflows guard -- asks the user before a package install or runner in the lead and blocks it in workers, blocks default-branch commits and pushes, destructive shell commands, and reads or writes of credential files; checks that a worker's final report carries the required contract fields.",
   "hooks": {
     "PreToolUse": [
       {
