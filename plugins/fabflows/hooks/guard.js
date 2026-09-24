@@ -248,10 +248,11 @@ const HOME_SPELLINGS = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[
 // rm -rf / Remove-Item -Recurse -Force are only destructive at a dangerous target.
 // `rm -rf ./build` is routine; `rm -rf ~` is not. Under home, only home itself, a direct
 // child (`~/projects`, `~/*`) and anything in a credential or config directory count, so
-// `rm -rf ~/.cache/pip` passes. A target may be quoted.
+// `rm -rf ~/.cache/pip` passes. A target may be quoted. A `..` segment anywhere
+// (`~/a/../..`) can climb back to home, so it counts as dangerous too.
 const RM_HOME = String.raw`(^|\s)["']?${HOME_SPELLINGS}([\\/][^\s\\/"']*)?[\\/]?["']?(\s|$)|(^|\s)["']?${HOME_SPELLINGS}[\\/]\.(ssh|claude|aws|config|gnupg)([\\/"'\s]|$)`;
 const RM_DANGER = new RegExp(
-  String.raw`(^|\s)(\/|[a-z]:[\\/]?)(\s|$)|${RM_HOME}|\s\.\.(\s|[\\/]|$)|\s\*(\s|$)|(^|\s|[\\/])\.git(\s|[\\/]|$)`,
+  String.raw`(^|\s)(\/|[a-z]:[\\/]?)(\s|$)|${RM_HOME}|\s\.\.(\s|[\\/]|$)|[\\/]\.\.([\\/"'\s]|$)|\s\*(\s|$)|(^|\s|[\\/])\.git(\s|[\\/]|$)`,
   'i'
 );
 

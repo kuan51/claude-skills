@@ -359,6 +359,8 @@ test('a delete under home is blocked only at home, its children and its secrets'
     'rm -rf ~/.claude/projects/x', 'rm -rf $HOME/.aws/sso', 'rm -rf ~/.config/gh', 'rm -rf ~/.gnupg/x', 'rm -rf /root',
     'rm -rf /home/someone', 'rm -rf /Users/someone/', 'rm -rf "$HOME"', 'rm -rf "${HOME}"', "rm -rf '~/projects'",
     'rm -rf C:\\Users\\me', 'rm -rf C:/Users/me/Documents', `rm -rf ${os.homedir()}`,
+    // A `..` segment can climb back to home, wherever it sits.
+    'rm -rf ~/a/../..', 'rm -rf $HOME/x/../..', 'rm -rf "~/.cache/pip/../.."',
   ]) {
     denies(shell(cmd), cmd);
   }
