@@ -170,7 +170,7 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     phase: 'Build',
     agentType: 'fabflows:editor',
     model: 'opus',
-    effort: 'high',
+    effort: 'medium',
     schema: BUILD,
   })
   if (!build) {
