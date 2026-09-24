@@ -1156,7 +1156,7 @@ def test_adr_immutability_asks_accepted_the_same_way_load_adrs_does():
     edit was reported as 'skipped | not yet committed' -- a false reason on a
     record that is committed. Any case is accepted: 'Accepted' matched neither
     and was never checked at all."""
-    for status_line in ['accepted', '"accepted"', 'accepted  # ratified', 'Accepted']:
+    for status_line in ['accepted', '"accepted"', 'accepted  # ratified', 'Accepted', '" Accepted "']:
         with tempfile.TemporaryDirectory() as tmp:
             repo = _accepted_record_edited_after_acceptance(tmp, status_line)
             entry = _audit_check(repo, "adr-immutability")
@@ -2149,22 +2149,21 @@ def test_waiting_line_names_undecided_records_not_proposed_ones():
 
 
 def test_status_matches_in_any_case_and_spacing():
-    """Status matched in any case but not with stray spaces, and load_adrs kept
-    the raw value, so the index and digests printed "ACCEPTED" and "accepted"
-    side by side."""
+    """Status matched in any case but not with stray spaces, so a quoted
+    " Accepted " was neither checked nor archived. load_adrs keeps the value
+    as written: lowercasing it there would change every consuming repo's
+    generated index and fail its adr-index check on a patch upgrade."""
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
         decisions = _decisions_repo(repo, 48)
         (decisions / "DEC-0049-x.md").write_text('---\nid: x\nstatus: " Accepted "\n---\n')
         (decisions / "DEC-0050-x.md").write_text("---\nid: x\nstatus: ACCEPTED\n---\n")
-        sys.path.insert(0, str(SCRIPTS))
-        try:
-            import _common  # noqa: E402
-            statuses = {r["path"].name: r["status"] for r in _common.load_adrs(repo)}
-        finally:
-            sys.path.remove(str(SCRIPTS))
-        assert statuses["DEC-0049-x.md"] == statuses["DEC-0050-x.md"] == "accepted", statuses
-        assert "50 decision records" in _compact(repo, "--check").stdout
+        _common = _table("_common")
+        records = {r["path"].name: r for r in _common.load_adrs(repo)}
+        assert records["DEC-0050-x.md"]["status"] == "ACCEPTED", records["DEC-0050-x.md"]
+        assert _common.adr_status(records["DEC-0049-x.md"]) == "accepted"
+        out = _compact(repo, "--check").stdout
+        assert "50 decision records" in out and "ready to archive" in out, out
 
 
 def test_digest_tag_matches_in_any_case_and_only_whole():

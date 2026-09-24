@@ -44,7 +44,7 @@ tags: []
 ```
 
 `status` has exactly three values, matched in any case and ignoring surrounding
-spaces: `Accepted` is accepted, and the index and digests print it as `accepted`.
+spaces: `Accepted` is accepted. The index and digests print it as written.
 No `superseded` status exists. See below.
 
 ## Body sections, in this order
