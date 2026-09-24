@@ -217,6 +217,9 @@ const PIPE_TO_SHELL = [
   /(invoke-webrequest|invoke-restmethod|iwr|irm)\b[^|]*\|\s*(iex|invoke-expression)\b/i,
 ];
 
+// The one unanchored rule below, so checkShell tests it on text with quotes blanked.
+const SYSTEM_REDIRECT = />\s*\/(etc|usr|bin|sbin|boot|sys)\//i;
+
 const DESTRUCTIVE = [
   [/^git\s+(-c\s+\S+\s+)?reset\s+--hard\b/i, 'git reset --hard discards uncommitted work'],
   [/^git\s+(-c\s+\S+\s+)?clean\s+-[a-z]*d/i, 'git clean -d deletes untracked files'],
@@ -226,7 +229,7 @@ const DESTRUCTIVE = [
   [/^format-volume\b/i, 'Format-Volume formats a volume'],
   [/^set-executionpolicy\b/i, 'Set-ExecutionPolicy changes a machine-wide security setting'],
   [/^sudo\b/i, 'sudo escalates privileges'],
-  [/>\s*\/(etc|usr|bin|sbin|boot|sys)\//i, 'writing into a system path'],
+  [SYSTEM_REDIRECT, 'writing into a system path'],
 ];
 
 // rm -rf / Remove-Item -Recurse -Force are only destructive at a dangerous target.
@@ -340,7 +343,40 @@ const stripPrefixes = (s) => {
 };
 // A `>` inside quotes is text (`echo "a -> b"`), not a redirect.
 // ponytail: no real quote parsing; an unbalanced quote is left in, which errs toward deny.
-const redirects = (s) => s.replace(/"[^"]*"|'[^']*'/g, '').includes('>');
+const unquoted = (s) => s.replace(/"[^"]*"|'[^']*'/g, '');
+const redirects = (s) => unquoted(s).includes('>');
+
+// Split on `&&`, `||`, `;`, `|`, `&`, CR and LF, but only outside quotes, so a commit
+// message or a grep pattern is not read as a command. A backslash escapes the next
+// character outside single quotes. A quote still open at the end falls back to the naive
+// split, which errs toward deny.
+const NAIVE_SPLIT = /&&|\|\||[;|&\r\n]/;
+function splitSegments(command) {
+  const out = [];
+  let cur = '';
+  let quote = null;
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i];
+    if (c === '\\' && quote !== "'" && i + 1 < command.length) {
+      cur += c + command[++i];
+    } else if (quote) {
+      if (c === quote) quote = null;
+      cur += c;
+    } else if (c === '"' || c === "'") {
+      quote = c;
+      cur += c;
+    } else if (';|&\r\n'.includes(c)) {
+      out.push(cur);
+      cur = '';
+      if ((c === '&' || c === '|') && command[i + 1] === c) i++;
+    } else {
+      cur += c;
+    }
+  }
+  if (quote) return command.split(NAIVE_SPLIT);
+  out.push(cur);
+  return out;
+}
 // The header runs nothing unless it carries a substitution -- but it hides the path in a
 // variable the rules below cannot follow, so it is read-only only when the body is too.
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
@@ -407,7 +443,7 @@ const CHANGE_DIR = /^(cd|pushd|set-location|sl|chdir)(\s|$)/i;
 function checkShell(command, cwd) {
   const installs = [];
   for (const re of PIPE_TO_SHELL) {
-    if (re.test(command)) {
+    if (re.test(unquoted(command))) {
       deny('fabflows: piping a download straight into a shell is blocked. Download it, read it, then run it.');
     }
   }
@@ -421,15 +457,13 @@ function checkShell(command, cwd) {
     if (line) denyRunnerPayload(line, redirect[3]);
   }
 
-  // Split on shell separators, then anchor every pattern at segment start. That is what
-  // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
-  // to parse quoting. Newlines and `&` separate too, and a leading `(`, a shell keyword, a
+  // Split on shell separators outside quotes, then anchor every pattern at segment start.
+  // That is what makes `echo "npm install"` allowed and a bare `npm install` blocked.
+  // Newlines and `&` separate too, and a leading `(`, a shell keyword, a
   // `VAR=value` prefix (even when it is the whole segment) and a transparent prefix such
   // as `time` are stripped, so none of them hides a command from the anchor. The raw
   // segment is kept, because `NPM_CONFIG_PREFIX=<path> npm i` names its target there.
-  const parts = command
-    .replace(HARMLESS_REDIRECT, '')
-    .split(/&&|\|\||[;|&\r\n]/)
+  const parts = splitSegments(command.replace(HARMLESS_REDIRECT, ''))
     .map((raw) => [raw.trim(), stripPrefixes(raw)])
     .filter(([, s]) => s);
   const segments = parts.map(([, s]) => s);
@@ -467,7 +501,7 @@ function checkShell(command, cwd) {
     }
 
     for (const [re, why] of DESTRUCTIVE) {
-      if (re.test(seg)) deny(`fabflows: blocked -- ${why}.`);
+      if (re.test(re === SYSTEM_REDIRECT ? unquoted(seg) : seg)) deny(`fabflows: blocked -- ${why}.`);
     }
 
     if (GIT_FORCE_DELETE.test(seg)) {

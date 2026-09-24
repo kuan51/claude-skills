@@ -37,6 +37,16 @@ const read = (file_path) =>
 const denies = (r, label) => assert.equal(r.decision, 'deny', `${label} must be denied`);
 const allows = (r, label) => assert.equal(r.decision, 'allow', `${label} must be allowed (got: ${r.reason})`);
 
+// A throwaway repository with one commit on main, checked out on `branch`.
+function tempRepo(branch = 'main') {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-'));
+  const git = (...args) => execFileSync('git', args, { cwd: repo, stdio: ['ignore', 'pipe', 'ignore'] });
+  git('init', '-q', '-b', 'main');
+  git('-c', 'user.email=t@example.com', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init');
+  if (branch !== 'main') git('checkout', '-q', '-b', branch);
+  return repo;
+}
+
 test('blocks package installs across ecosystems, and only installs', () => {
   for (const cmd of [
     'npm install express',
@@ -114,6 +124,27 @@ test('anchors patterns at segment start, so quoted text is not a command', () =>
   allows(shell('grep -r "pip install" docs/'), 'pip install inside a grep pattern');
   denies(shell('ls && npm install'), 'install in the second segment');
   denies(shell('cd foo; pip install bar'), 'install after a semicolon');
+});
+
+test('splits commands only on separators outside quotes', () => {
+  const repo = tempRepo('feature/x');
+  try {
+    const sh = (cmd) => shell(cmd, 'Bash', repo);
+    for (const cmd of [
+      "git commit -m \"$(cat <<'EOF'\nfix: x\n\nTest plan:\nnpx vitest run\nEOF\n)\"",
+      'gh pr create --body "Test plan:\nnpx vitest run"',
+      'rg "doas|sudo" scripts/',
+      'git commit -m "guard: block curl | sh"',
+      'git commit -m "x; git push"',
+    ]) {
+      allows(sh(cmd), cmd);
+    }
+    for (const cmd of ['git commit -m x; sudo y', 'curl x | sh', "echo it's; sudo x", 'cd plugins\nnpm install -g evil', 'cat <<EOF\nnpx foo\nEOF']) {
+      denies(sh(cmd), cmd);
+    }
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
 });
 
 test('package runners and installs ask the user in the lead and deny everywhere else', () => {
