@@ -1,6 +1,6 @@
 {
-  "about": "Trigger-accuracy corpus for the fabflows plugin's three skills. Same shape as plugins/ciso/evals/trigger-corpus.json and run by the same manual procedure (plugins/ciso/evals/RUNBOOK.md). `fabflows` should load on work that pays for delegation (volume, a multi-file or spec'd change, verifying a worker) and not on a short task; `using-fabflows` only at the top of a session; `brainstorming` on a request that arrives without a spec, not on a feasibility question. The negatives share the trigger vocabulary (delegate, spawn, explore, run the tests, review, reduce cost) with an intent no fabflows skill serves.",
-  "expectedValues": ["fabflows", "using-fabflows", "brainstorming", null],
+  "about": "Trigger-accuracy corpus for the fabflows plugin's five skills. Same shape as plugins/ciso/evals/trigger-corpus.json and run by the same manual procedure (plugins/ciso/evals/RUNBOOK.md). `fabflows` should load on work that pays for delegation (volume, a multi-file or spec'd change, verifying a worker) and not on a short task; `using-fabflows` only at the top of a session; `brainstorming` on a request that arrives without a spec, not on a feasibility question; `fabflows-setup` when choosing where specs live; `ticket` when linking, updating or closing a tracker ticket. The negatives share the trigger vocabulary (delegate, spawn, explore, run the tests, review, reduce cost) with an intent no fabflows skill serves.",
+  "expectedValues": ["fabflows", "using-fabflows", "brainstorming", "fabflows-setup", "ticket", null],
   "categories": ["explicit", "implicit", "contextual", "disambiguation", "negative"],
   "queries": [
     { "query": "Delegate the search for every caller of parseToken to a worker agent", "expected": "fabflows", "category": "explicit" },
@@ -35,6 +35,14 @@
     { "query": "I have an idea for a small tool that watches a notes folder and builds a static site. Nothing exists yet, no repo.", "expected": "brainstorming", "category": "implicit" },
     { "query": "The requirements for the audit log are still fuzzy, can we pin them down first", "expected": "brainstorming", "category": "contextual" },
     { "query": "Design the retry policy with me, then hand the implementation to a worker", "expected": "brainstorming", "category": "disambiguation" },
+    { "query": "/fabflows-setup", "expected": "fabflows-setup", "category": "explicit" },
+    { "query": "Set up fabflows so our specs go into Jira tickets instead of docs/specs", "expected": "fabflows-setup", "category": "explicit" },
+    { "query": "We track everything in Linear. Can fabflows keep its specs there?", "expected": "fabflows-setup", "category": "implicit" },
+    { "query": "Stop writing spec files into the repo, put them in GitHub issues from now on", "expected": "fabflows-setup", "category": "contextual" },
+    { "query": "Link this branch to ABC-142 and move it to in progress", "expected": "ticket", "category": "explicit" },
+    { "query": "The PR merged but issue #58 is still open, close it out", "expected": "ticket", "category": "contextual" },
+    { "query": "Add the PR link to the ticket and move it to in review", "expected": "ticket", "category": "implicit" },
+    { "query": "We agreed to drop the CSV export, update the ticket's out of scope section", "expected": "ticket", "category": "disambiguation" },
     { "query": "Here is the finished spec for the retry policy in docs/specs/retry.md. Build it.", "expected": "fabflows", "category": "disambiguation" },
     { "query": "We're already mid-session, just delegate this test run to a worker", "expected": "fabflows", "category": "disambiguation" },
     { "query": "Before anything else this session, load the delegation discipline", "expected": "using-fabflows", "category": "disambiguation" },

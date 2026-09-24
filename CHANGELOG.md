@@ -8,6 +8,24 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.6.0** -- specs can live in the tracker ticket instead of `docs/specs/`
+  (#66). `fabflows-setup` asks once for GitHub Issues, Jira, Linear or none, checks that the
+  tracker's MCP tools are loaded without ever adding a server or handling a secret, and
+  writes a committed `.claude/fabflows.json`. The `ticket` skill carries the rules: the tool
+  table per tracker, a plain-bullet body template, the description edited in place, standing
+  permission only on a confirmed link, and status moving from in progress to done with the
+  closing phrase on a finishing PR. `brainstorming` writes a full-tier spec to the linked
+  ticket, fingerprints the approved text with `ticket.js approve`, and confirms it with
+  `ticket.js check` before the build. The user approves the ticket description as raw text: a
+  raw diff when Claude wrote it, the full raw text when it did not. `ticket.js normalize`
+  removes only HTML comments outside fences, invisible and control characters, and the Links
+  section, so the build gets the approved text unchanged, and `ticket.js approve` refuses text
+  with an unclosed `<!--`. Links are per-branch, one state file each, shared by every
+  worktree. The merge reminder finds the ticket by PR, or for a bare `gh pr merge` by the
+  branch it started on, skips `--auto` and `--disable-auto`, and leaves a Refs-only ticket
+  open. The `ticket.js` hook requires `Refs:` and `Spec:` trailers on their own line in each
+  commit's own message, including commits chained with `&&` or run inside `$(...)`, and the
+  key in the PR title.
 - **docs-warden 0.6.0** -- compaction reminders that explain themselves. When fifty
   decision records exist but fewer than fifty are decided, `adr_compact.py --check` now says
   how many are still proposed instead of staying silent, and compact mode walks the human
@@ -87,7 +105,7 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
-- **fabflows 0.6.0** -- the guard now covers package runners (`npx`, `pnpx`, `bunx`,
+- **fabflows 0.7.0** -- the guard now covers package runners (`npx`, `pnpx`, `bunx`,
   `npm exec`, `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool`, `uv run --with`, `pipx`,
   `npm|yarn|pnpm|bun create`, `npm init <pkg>`), not only installers. An install or runner in
   the lead now returns `ask`, so the user approves it in a native prompt, but only in the
