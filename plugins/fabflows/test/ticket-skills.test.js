@@ -67,8 +67,10 @@ test('the current version is documented', () => {
   const { version } = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
   assert.match(read(PLUGIN, 'README.md'), /^## Tickets$/m);
   const log = read(ROOT, 'CHANGELOG.md');
-  const start = log.indexOf(`fabflows ${version}`);
-  assert.ok(start >= 0, `CHANGELOG.md must name fabflows ${version}`);
+  assert.ok(log.includes(`fabflows ${version}`), `CHANGELOG.md must name fabflows ${version}`);
+  // The tickets entry, whichever release is current: a later bump adds its own entry.
+  const start = log.indexOf('specs can live in the tracker ticket');
+  assert.ok(start >= 0, 'CHANGELOG.md must describe the tickets release');
   const entry = log.slice(start, log.indexOf('\n- **', start));
-  has(entry, ['raw', 'per-branch'], `CHANGELOG.md fabflows ${version}`);
+  has(entry, ['raw', 'per-branch'], 'CHANGELOG.md tickets entry');
 });

@@ -1754,80 +1754,86 @@ def _import_audit():
     return _table("audit")
 
 
-def test_lint_runner_resolves_npx_instead_of_returning_a_bare_name():
-    """Windows CreateProcess does not probe PATHEXT and Node ships npx.CMD, not
-    npx.exe, so a bare "npx" in the argv raised FileNotFoundError and cost the
-    whole scorecard -- not just the lint row, but every check that needs no
-    tooling at all. which() had already resolved the path; this threw it away.
+def test_lint_runner_resolves_the_tool_instead_of_returning_a_bare_name():
+    """Windows CreateProcess does not probe PATHEXT and npm ships
+    markdownlint-cli2.CMD, so a bare name in the argv raised FileNotFoundError
+    and cost the whole scorecard. which() had already resolved the path.
 
     Asserted on the argv rather than through a stub on PATH: a stub written as
     an extensionless sh script is invisible to which() on Windows.
     """
     audit = _import_audit()
     tool = next(t for t in audit.LINT_TOOLS if t["name"] == "markdownlint-cli2")
-    resolved = r"C:\Program Files\nodejs\npx.CMD"
-
-    real_which = audit.shutil.which
-    audit.shutil.which = lambda name, *a, **k: resolved if name == "npx" else None
-    try:
-        argv = audit._lint_runner(tool)
-    finally:
-        audit.shutil.which = real_which
-
-    assert argv is not None, "npx resolves, so the fallback should be usable"
-    assert argv[0] == resolved, \
-        f"argv[0] is {argv[0]!r}, not the path which() resolved -- subprocess cannot run it"
-    assert argv[1:] == ["--yes", audit.MARKDOWNLINT], \
-        f"the pinned npx arguments changed: {argv[1:]}"
-
-
-def test_lint_runner_falls_back_to_bunx_when_only_bun_is_installed():
-    """Some machines have Bun and no Node, so npx is not on PATH but bunx is.
-
-    Not a drop-in argv swap. npx needs --yes to skip its install prompt; bunx
-    never prompts and documents no --yes, so it is not sent one. (bun 1.3.11
-    does silently ignore a stray --yes -- tolerance that is not in `bunx
-    --help` and so is not a contract.) Hence ordered candidate argvs.
-
-    Monkeypatched rather than stubbed on PATH for the same reason as the npx
-    test above -- and here it also matters that bunx is bunx.exe on Windows.
-    """
-    audit = _import_audit()
-    tool = next(t for t in audit.LINT_TOOLS if t["name"] == "markdownlint-cli2")
-    resolved = r"C:\Users\dev\.bun\bin\bunx.exe"
-
-    real_which = audit.shutil.which
-    audit.shutil.which = lambda name, *a, **k: resolved if name == "bunx" else None
-    try:
-        argv = audit._lint_runner(tool)
-    finally:
-        audit.shutil.which = real_which
-
-    assert argv is not None, "bunx resolves, so it should be usable as a fallback"
-    assert argv[0] == resolved, \
-        f"argv[0] is {argv[0]!r}, not the path which() resolved -- subprocess cannot run it"
-    assert "--yes" not in argv, \
-        f"bunx documents no --yes; npx's argv was reused verbatim: {argv}"
-    assert argv[1:] == [audit.MARKDOWNLINT], \
-        f"the pinned bunx arguments changed: {argv[1:]}"
-
-
-def test_lint_runner_prefers_npx_when_both_runners_are_installed():
-    """The fallbacks are ordered, not a set. A machine with both Node and Bun
-    keeps running what CI runs; bunx is the fallback, never the default."""
-    audit = _import_audit()
-    tool = next(t for t in audit.LINT_TOOLS if t["name"] == "markdownlint-cli2")
+    resolved = r"C:\Users\dev\AppData\Roaming\npm\markdownlint-cli2.CMD"
 
     real_which = audit.shutil.which
     audit.shutil.which = lambda name, *a, **k: (
-        None if name == "markdownlint-cli2" else f"/usr/bin/{name}")
+        resolved if name == "markdownlint-cli2" else None)
     try:
         argv = audit._lint_runner(tool)
     finally:
         audit.shutil.which = real_which
 
-    assert argv[0] == "/usr/bin/npx", \
-        f"npx is first in the fallback order, but {argv[0]!r} was chosen"
+    assert argv is not None and argv[0] == resolved, \
+        f"argv is {argv!r}, not led by the path which() resolved"
+
+
+def test_lint_never_downloads_through_a_package_runner():
+    """audit.py ran `npx --yes markdownlint-cli2` through subprocess.run, where
+    no shell-string hook could see it, and the package landed in the npm cache.
+    With npx and bunx on PATH but no markdownlint-cli2, nothing may run."""
+    audit = _import_audit()
+    calls = []
+    real_which, real_run = audit.shutil.which, audit.subprocess.run
+    audit.shutil.which = lambda name, *a, **k: (
+        f"/usr/bin/{name}" if name in ("npx", "bunx") else None)
+    audit.subprocess.run = lambda argv, **k: calls.append(argv)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "README.md").write_text("# R\n", encoding="utf-8")
+            (repo / ".markdownlint-cli2.yaml").write_text("config: {}\n",
+                                                          encoding="utf-8")
+            entry = audit.check_lint(repo)
+    finally:
+        audit.shutil.which, audit.subprocess.run = real_which, real_run
+
+    assert calls == [], f"check_lint spawned {calls}"
+    assert entry["state"] == "skipped", \
+        f"expected skipped, got {entry['state']}: {entry['reason']}"
+    assert f"npx --yes {audit.MARKDOWNLINT}" in entry["fix"] \
+        and "approve" in entry["fix"], \
+        f"the fix should name the approve-first command: {entry['fix']}"
+
+
+def test_run_generators_skips_a_package_runner():
+    """A declared generator that is a package runner would download through
+    subprocess.run, where no hook sees it. It is skipped, never spawned."""
+    audit = _import_audit()
+    calls = []
+    real_which, real_run = audit.shutil.which, audit.subprocess.run
+    audit.shutil.which = lambda name, *a, **k: f"/usr/bin/{name}"
+    audit.subprocess.run = lambda argv, **k: calls.append(argv)
+    runners = [["npx", "x"], ["npm", "create", "vite"], ["yarn", "create", "x"],
+               ["pnpm", "create", "x"], ["bun", "create", "x"], ["npm", "init", "vite"],
+               ["uv", "tool", "run", "foo"], ["uv", "run", "--with", "foo", "x.py"],
+               ["npm", "ci"], ["npm", "install"], ["pip", "install", "-r", "req.txt"],
+               ["python3", "-m", "pip", "install", "x"], ["uv", "sync"], ["uv", "add", "x"],
+               ["yarn", "install"]]
+    try:
+        for command in runners:
+            with tempfile.TemporaryDirectory() as tmp:
+                config = {"generated_docs": [{"path": "x.md", "command": command}]}
+                entry = audit.check_generated_docs(Path(tmp), config, True)
+            assert calls == [], f"check_generated_docs spawned {calls}"
+            assert entry["state"] == "skipped", \
+                f"{command}: expected skipped, got {entry['state']}: {entry['reason']}"
+            assert "downloads a package; ask the user to run it" in entry["reason"], entry["reason"]
+    finally:
+        audit.shutil.which, audit.subprocess.run = real_which, real_run
+    # Read-only uv tool subcommands and plain local runs are not downloads.
+    for command in (["uv", "tool", "list"], ["uv", "tool", "dir"], ["npm", "run", "docs"]):
+        assert not audit._is_package_runner(command), command
 
 
 def _decisions_repo(repo: Path, count: int, proposed=()):

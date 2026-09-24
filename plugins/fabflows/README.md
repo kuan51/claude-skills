@@ -4,8 +4,9 @@ Routes mechanical work from an expensive lead model down to cheaper workers, and
 the lead prove what those workers claim.
 
 > **This plugin installs an active hook.** Once enabled, a `PreToolUse` hook runs on
-> every `Bash`, `PowerShell`, `Read`, `Grep`, `Edit`, and `Write` call in your session
-> and can block it. It blocks package installs, commits and pushes on a default branch,
+> every `Bash`, `PowerShell`, `Monitor`, `Read`, `Grep`, `Edit`, `Write`, and `NotebookEdit`
+> call in your session
+> and can block it. It asks before package installs and package runners, and blocks commits and pushes on a default branch,
 > destructive shell commands, reads and writes of credential files, and writes to live
 > Claude Code configuration. Read [Guard rules](#guard-rules) before you install it,
 > including its [known gaps](#known-gaps). It behaves like a tripwire. It offers no
@@ -213,10 +214,32 @@ replacement for it.
 
 ## Guard rules
 
-A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
+A `hooks/guard.js` file (Node, no dependencies) implements every rule below. The shell
+rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alike:
 
-- **Package installs** across npm, pnpm, yarn, bun, pip, uv, dotnet, cargo, go, gem,
-  apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`. One exception:
+- **Package installs and package runners** across npm, pnpm, yarn, bun, pip, uv (including
+  `uv sync`), dotnet,
+  cargo, go, gem, apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`,
+  plus the runners that download on the fly: `npx`, `pnpx`, `bunx`, `npm exec`/`npm x`,
+  `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool run`/`install`, `uv run --with`,
+  `pipx run`/`install`, `npm|yarn|pnpm|bun create`, and `npm init <name>` (`npm init -y`
+  is allowed). In the lead, in the `default`, `acceptEdits` or `auto` mode, the
+  guard returns `ask`, so you approve or refuse it in the normal permission prompt, and
+  Claude is told to stop if you decline. It only asks once every other rule has passed,
+  so an install next to a denied segment is still denied. A worker, and any other mode
+  (`plan`, `bypassPermissions`, `dontAsk`, missing), gets `deny`; in a mode that cannot
+  prompt, Claude asks you to run the command yourself. The prompt names every install in
+  the command, not only the first. An install aimed at live configuration is always
+  denied: run from a session directory there, after a `cd`, `pushd` or `Set-Location`
+  into it, or naming it in its own `VAR=` prefix, `--prefix=` or `--target=`, whether
+  written as `~`, `$HOME` or an absolute home such as `/home/<user>` or `/root`. A
+  mention of live config elsewhere in the command (`cat ~/.claude/settings.json`) does
+  not turn an install into a deny. A local bin is not a download: `npx` and `npm exec`/`npm x` pass when they name
+  a plain bin (no `@`, `/` or `:`) as the first word, with no runner flag before it
+  found in `node_modules/.bin` of the nearest directory with a `package.json` or
+  `node_modules`, which is where npm looks. That lets `npx vitest run` and `npx tsc -p x.json`
+  work in a project that has them installed. `pnpx`, `bunx` and `bun x` always count as
+  downloads. One more exception:
   `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
   literal path with a `scratchpad` directory in it and outside the live configuration below,
   so a session can read a PDF without anything landing in site-packages. `--isolated` is
@@ -258,9 +281,16 @@ fields, and sends it back to be re-emitted if two or more are missing.
 The guard matches patterns on shell strings. It does not understand shells, and it can
 be walked around:
 
-- Base64, variable expansion (`X=rm; $X -rf ~`), command substitution, `xargs`,
-  heredocs, `python -c`, and full binary paths all evade it. Newlines, `&`, a leading
-  `(`, and a `VAR=value` prefix do not: each segment is anchored separately.
+- Base64, variable expansion (`X=rm; $X -rf ~`), command substitution (`$(...)`),
+  heredocs, `bash -c`, `python -c`, and full binary paths all evade it. Newlines, `&`, a
+  leading `(`, a `VAR=value` prefix, a quoted command name (`"npx" foo`), and the prefixes
+  `time`, `exec`, `nohup`, `command`, `timeout`, `nice`, `stdbuf`, `watch`, `ionice`, `!`,
+  `{`, `env` and `xargs`, with their flags, do not: each segment is anchored separately.
+  Any other wrapper (`taskset`, `chrt`, `unbuffer`, `caffeinate`) still hides the command
+  after it. A prefix flag whose value is a separate word is stripped only when the
+  guard knows it takes one (`xargs -n 1`, `xargs --max-args 1`, `xargs -I {}`,
+  `env -u VAR`, `exec -a name`); an unlisted one hides the command after it, and so does
+  `env -S'cmd'` written with no space. Prefix names match in any case (`Env`, `TIME`).
 - Any binary whose basename is an interpreter name (`./x/python.exe`) is trusted to run a
   script from the plugin cache.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
@@ -272,6 +302,18 @@ be walked around:
   judged there, whatever branch the session is on.
 - The runner-file rule keys on the **file name**. A payload written to `notes.txt` and
   then run with `bash notes.txt` is not caught, and neither is one assembled from pieces.
+- A script that spawns a package runner itself is invisible to it, since only the shell
+  string is checked. docs-warden's `audit.py --run-generators` skips a runner or installer generator,
+  but any other script, and `pre-commit` on its first run, can still download where no
+  hook sees it.
+- `npm.cmd` and flags before the subcommand (`npm --global install`) evade the install
+  rules, just as full binary paths do.
+- A multi-line `git commit -m` body with a line that starts with a runner is judged as a
+  command. That errs toward ask or deny.
+- An `ask` can be answered with no human looking: a `PermissionRequest` hook, an SDK
+  `canUseTool` callback, or `--permission-prompt-tool` can approve it automatically.
+- Workers are told apart by the `agent_id` field. Whether agent-team teammates carry it
+  is not documented.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.

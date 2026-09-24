@@ -211,6 +211,7 @@ test('escalates a builder reply the lead cannot act on, but reviews one that rec
 
   assert.match(silent.calls[0].prompt, /start report with `Permission denied:`/);
   assert.match(silent.calls[0].prompt, /A denial you worked around is not a blocker/);
+  assert.match(silent.calls[0].prompt, /denied package install or package runner: that is always a blocker/);
 });
 
 // The Skill hands args across as a string; both runs of benchmark iteration 5 lost a turn to it.

@@ -105,6 +105,28 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.7.0** -- the guard now covers package runners (`npx`, `pnpx`, `bunx`,
+  `npm exec`, `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool`, `uv run --with`, `pipx`,
+  `npm|yarn|pnpm|bun create`, `npm init <pkg>`), not only installers. An install or runner in
+  the lead now returns `ask`, so the user approves it in a native prompt, but only in the
+  `default`, `acceptEdits` and `auto` modes; a worker, `plan`, `bypassPermissions`,
+  `dontAsk`, or a missing mode still gets `deny`, and every decision tells Claude to stop.
+  The ask is emitted only after every other rule has passed, and an install aimed at live
+  config (by `cd`, `pushd`, `Set-Location`, session directory, `VAR=` prefix or
+  `--prefix=`, with `~`, `$HOME` or an absolute home) is always denied, and the prompt
+  names every install in the command. An `npx` or `npm exec` of a bin already in the project's
+  `node_modules/.bin` is not a download, so `npx vitest run` still works; `pnpx` and
+  `bunx` always count as downloads. Prefixes such as `time`, `timeout`, `nice`, `env` and
+  `xargs`, and a quoted command name, no longer hide a command, and the `Monitor` tool is guarded like Bash. The build brief makes
+  a denied install a blocker. The skill tells Claude to name the package and ask before
+  trying any other route. DEC-0023 supersedes DEC-0002's "no installs regardless of model
+  judgement".
+- **docs-warden 0.7.0** -- `audit.py` no longer runs markdownlint-cli2 through `npx --yes` or
+  `bunx`, which downloaded it into a cache outside the repo where no hook could see it. Lint
+  runs only when `markdownlint-cli2` is on PATH; otherwise the check reports `skipped` and
+  names the `npx` command to ask the user to approve. `--run-generators` skips a generator
+  that is a package runner or installer (`npm ci`, `pip install`, `uv sync`) and asks the
+  user to run it.
 - **docs-warden 0.4.2** -- the concept extractor reads tracked files when the repository is a
   git checkout, so untracked worktrees and scratch under `.claude/` no longer leak into
   `docs/architecture/domain-model.md` and trip the `ontology` check.

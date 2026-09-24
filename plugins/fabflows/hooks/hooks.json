@@ -1,5 +1,5 @@
 {
-  "description": "fabflows guard -- blocks package installs, default-branch commits and pushes, destructive shell commands, and reads or writes of credential files; checks that a worker's final report carries the required contract fields. fabflows ticket.js -- links a branch to its tracker ticket, requires Refs and Spec commit trailers and the key in the PR title, and reminds Claude to update the ticket after a push, PR creation and merge.",
+  "description": "fabflows guard -- asks the user before a package install or runner in the lead and blocks it in workers, blocks default-branch commits and pushes, destructive shell commands, and reads or writes of credential files; checks that a worker's final report carries the required contract fields. fabflows ticket.js -- links a branch to its tracker ticket, requires Refs and Spec commit trailers and the key in the PR title, and reminds Claude to update the ticket after a push, PR creation and merge.",
   "hooks": {
     "SessionStart": [
       {
@@ -15,7 +15,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^(Bash|PowerShell|Read|Grep|Edit|Write|NotebookEdit)$",
+        "matcher": "^(Bash|PowerShell|Monitor|Read|Grep|Edit|Write|NotebookEdit)$",
         "hooks": [
           {
             "type": "command",
