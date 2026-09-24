@@ -6,6 +6,7 @@ the line goes out as PostToolUse additionalContext, since plain stdout there
 reaches only the debug log. Fails open: any error, including a missing PyYAML,
 means silence and exit 0."""
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -23,9 +24,12 @@ try:
     payload = json.loads(sys.stdin.buffer.read())
     cwd = payload.get("cwd") or "."
     if payload.get("hook_event_name") == "PostToolUse":
-        edited = (Path(cwd) / payload["tool_input"]["file_path"]).resolve()
+        # The path as the edit named it: resolve() would follow a linked
+        # docs/decisions to its target, and case must match the way load_adrs
+        # finds the folder on a case-insensitive filesystem.
+        edited = Path(os.path.abspath(Path(cwd) / payload["tool_input"]["file_path"]))
         folder = edited.parent
-        if (folder.parent.name, folder.name) == ("docs", "decisions"):
+        if (folder.parent.name.lower(), folder.name.lower()) == ("docs", "decisions"):
             line = check(folder.parent.parent).strip()
             if line:
                 print(json.dumps({"hookSpecificOutput": {

@@ -2153,6 +2153,55 @@ def test_decisions_check_hook_after_edit():
                    "Write": ["Write(//**/docs/decisions/*)"]}, ifs
 
 
+def _link_dir(link: Path, target: Path) -> None:
+    """Link a directory without admin rights: a symlink where the OS allows one,
+    else an NTFS junction, since Windows refuses symlinks to most users."""
+    try:
+        os.symlink(target, link, target_is_directory=True)
+    except OSError:
+        if os.name != "nt":
+            raise
+        subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                       check=True, capture_output=True)
+
+
+def test_decisions_check_hook_keeps_the_edited_path():
+    """The hook judges the folder the way the edit named it. resolve() followed
+    a linked docs/decisions to a target with another name, and an exact-case
+    match missed a Docs/Decisions folder that load_adrs reads on a
+    case-insensitive filesystem, so both reminders went silent."""
+    hook = SCRIPTS.parent.parent.parent / "hooks" / "decisions_check.py"
+
+    def after(file_path, cwd):
+        payload = {"hook_event_name": "PostToolUse", "tool_name": "Edit",
+                   "tool_input": {"file_path": str(file_path)}, "cwd": str(cwd)}
+        return subprocess.run([sys.executable, str(hook)], input=json.dumps(payload),
+                              capture_output=True, text=True, check=False).stdout
+
+    record = "---\nid: x\nstatus: accepted\n---\n"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        shared = root / "shared-adr"
+        shared.mkdir()
+        for n in range(1, 51):
+            (shared / f"DEC-{n:04d}-x.md").write_text(record)
+        (root / "repo" / "docs").mkdir(parents=True)
+        _link_dir(root / "repo" / "docs" / "decisions", shared)
+        out = after(root / "repo" / "docs" / "decisions" / "DEC-0050-x.md", root)
+        assert "ready to archive" in out, out
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        folder = repo / "Docs" / "Decisions"
+        folder.mkdir(parents=True)
+        for n in range(1, 51):
+            (folder / f"DEC-{n:04d}-x.md").write_text(record)
+        # Speak exactly where load_adrs sees the records: a case-insensitive
+        # filesystem finds docs/decisions, a case-sensitive one does not.
+        seen = (repo / "docs" / "decisions").is_dir()
+        out = after(folder / "DEC-0050-x.md", repo)
+        assert ("ready to archive" in out) is seen, (seen, out)
+
+
 def test_decisions_check_hook_reads_utf8_input():
     """Claude Code sends the payload as UTF-8, but sys.stdin decodes with the
     locale codec (cp1252 on Windows), so a repository path such as café came
