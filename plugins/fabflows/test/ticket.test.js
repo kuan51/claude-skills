@@ -288,6 +288,19 @@ test('PostToolUse asks for a ticket update after push, PR creation and merge', (
   }
 });
 
+test('hooks.json wires ticket.js to SessionStart, PreToolUse and PostToolUse', () => {
+  const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'hooks', 'hooks.json'), 'utf8'));
+  const ticket = (event) => (cfg.hooks[event] || []).filter((e) => e.hooks.some((h) => /ticket\.js/.test(h.command)));
+  assert.deepEqual(ticket('SessionStart').map((e) => e.matcher), ['startup|resume|clear|compact']);
+  assert.deepEqual(ticket('PreToolUse').map((e) => e.matcher), ['^(Bash|PowerShell|mcp__.*create_pull_request)$']);
+  assert.deepEqual(ticket('PostToolUse').map((e) => e.matcher), ['^(Bash|PowerShell|mcp__.*(create|merge)_pull_request)$']);
+  for (const e of ['SessionStart', 'PreToolUse', 'PostToolUse'].flatMap(ticket)) {
+    for (const h of e.hooks) {
+      assert.deepEqual(h, { type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js"', timeout: 5 });
+    }
+  }
+});
+
 test('garbage stdin exits 0 with no output', () => {
   for (const input of ['not json', '', '{}', '{"hook_event_name":"PreToolUse","tool_name":"Bash"}']) {
     const r = spawnSync(process.execPath, [TICKET], { input, encoding: 'utf8', cwd: os.tmpdir() });
