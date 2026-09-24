@@ -106,7 +106,7 @@ function normalize(text) {
     o = nl + 1;
   }
   if (cut >= 0) out = out.slice(0, cut);
-  return out.split('\n').map((l) => l.replace(/\s+$/u, '')).join('\n').replace(/\s+$/u, '');
+  return out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd();
 }
 
 const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');

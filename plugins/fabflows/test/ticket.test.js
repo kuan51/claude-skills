@@ -77,10 +77,12 @@ test('normalize removes comments, invisible characters and Links, and nothing el
     assert.ok(normalize(t).includes('secret'), `fence must not close at ${JSON.stringify(sep)}`);
   }
 
-  const big = '[a\n'.repeat(64 * 1024 / 3);
-  const t0 = Date.now();
-  normalize(big);
-  assert.ok(Date.now() - t0 < 500, `64 KB took ${Date.now() - t0} ms`);
+  // Ticket text is attacker-controlled: none of these may go quadratic.
+  for (const big of ['[a\n'.repeat(64 * 1024 / 3), ' '.repeat(64 * 1024) + 'x', '\n'.repeat(64 * 1024) + 'b']) {
+    const t0 = Date.now();
+    normalize(big);
+    assert.ok(Date.now() - t0 < 500, `64 KB took ${Date.now() - t0} ms`);
+  }
 });
 
 test('approve then check passes on the same text and fails on changed text', () => {
