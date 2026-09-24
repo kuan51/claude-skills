@@ -11,7 +11,7 @@ The choice of runner is recorded in the repository's DEC-0022.
 
 ## Layout
 
-```
+```text
 evals/
 ├── _lib/seed.sh              copies a test fixture into the workspace and commits it
 ├── trigger-pos-*/            Tier 1: prompts that should invoke docs-warden
