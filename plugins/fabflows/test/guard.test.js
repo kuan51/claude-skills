@@ -581,6 +581,57 @@ test('protects live config only, never the wider ~/.claude tree', () => {
   );
 });
 
+test('reads, copies out and runs of live config pass; writes into it do not', () => {
+  const B = 'Bash';
+  const P = 'PowerShell';
+  const cases = [
+    ['sed -n 1,40p ~/.claude/settings.json', B, 'allow'],
+    ['bat ~/.claude/settings.json', B, 'allow'],
+    ['sed -i s/a/b/ ~/.claude/settings.json', B, 'deny'],
+    ['sed -i.bak s/a/b/ ~/.claude/settings.json', B, 'deny'],
+    ['sed -ni s/a/b/ ~/.claude/settings.json', B, 'deny'],
+    ['sed --in-place s/a/b/ ~/.claude/settings.json', B, 'deny'],
+    ['sed -n 1p ~/.claude/settings.json > /tmp/x', B, 'deny'],
+    // A copy out of live config is a read; a copy into it, or into a directory where a
+    // protected file can be overwritten by name, is not.
+    ['cp ~/.claude/settings.json ~/bak.json', B, 'allow'],
+    ['cp ~/.claude/settings.json ~/settings.bak.json', B, 'allow'],
+    ['cp -r ~/.claude/plugins/cache/x /tmp/x', B, 'allow'],
+    ['Copy-Item $env:USERPROFILE\\.claude\\settings.json C:\\tmp\\bak.json', P, 'allow'],
+    ['Copy-Item -Path $env:USERPROFILE\\.claude\\settings.json -Destination C:\\tmp\\bak.json', P, 'allow'],
+    ['cp x ~/.claude/settings.json', B, 'deny'],
+    ['cp x ~/.claude/settings.local.json', B, 'deny'],
+    ['cp -t ~/.claude/hooks x', B, 'deny'],
+    ['cp --target-directory=~/.claude/hooks x', B, 'deny'],
+    ['cp ~/.claude/plugins/x/settings.json ~/.claude/', B, 'deny'],
+    ['cp ~/.claude/plugins/x/settings.json ~/.claude', B, 'deny'],
+    ['cp ~/.claude/plugins/x/settings.json $HOME/.claude/', B, 'deny'],
+    ['cp -r ~/.claude/plugins/x/.claude ~', B, 'deny'],
+    ['cp -r ~/.claude/plugins/x/.claude "$HOME"', B, 'deny'],
+    ['cp ~/.claude/hooks/pre-commit .git', B, 'deny'],
+    ['cp ~/.claude/hooks/pre-commit repo/.git/', B, 'deny'],
+    ['cp x ~/.claude/settings.json -S y', B, 'deny'],
+    ['cp ~/.claude/settings.json ~/bak.json > ~/.claude/hooks/x', B, 'deny'],
+    ['Copy-Item x -Destination $env:USERPROFILE\\.claude\\settings.json', P, 'deny'],
+    ['Copy-Item x $env:USERPROFILE\\.claude\\settings.json -Force', P, 'deny'],
+    ['Copy-Item $env:USERPROFILE\\.claude\\plugins\\x\\settings.json $env:USERPROFILE', P, 'deny'],
+    // Running a shipped script directly, or through python's -X or -W, is a read of it.
+    ['python3 -X utf8 ~/.claude/plugins/cache/x/1.0.0/scripts/a.py .', B, 'allow'],
+    ['python -W ignore ~/.claude/hooks/x.py', B, 'allow'],
+    ['~/.claude/hooks/notify.sh', B, 'allow'],
+    ['"$HOME/.claude/hooks/notify.sh" --quiet', B, 'allow'],
+    ['& "$HOME/.claude/plugins/x/run.ps1"', P, 'allow'],
+    ['~/.claude/hooks/notify.sh > ~/.claude/settings.json', B, 'deny'],
+    ['python3 -X utf8 fix.py ~/.claude/settings.json', B, 'deny'],
+    // settings.json ends at a separator, like hooks and plugins.
+    ['cp x ~/.claude/settings.json.bak', B, 'allow'],
+    ['cp x ~/.claude/settings.local.json.bak', B, 'allow'],
+    ['rm ~/.claude/settings.json', B, 'deny'],
+    ['echo "{}" > "$HOME/.claude/settings.json"', B, 'deny'],
+  ];
+  for (const [cmd, tool, expected] of cases) assert.equal(shell(cmd, tool).decision, expected, cmd);
+});
+
 test('git ops are blocked on a default branch and allowed elsewhere', () => {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-'));
   const git = (args) => execFileSync('git', args, { cwd: repo, stdio: ['ignore', 'pipe', 'ignore'] });

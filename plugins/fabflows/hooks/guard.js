@@ -336,7 +336,7 @@ function isProtectedPath(p) {
 // everything else that names a protected path is denied. A redirect anywhere in the
 // segment denies regardless, since `cat x > settings.json` starts with a reader.
 const READ_ONLY =
-  /^(cat|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|cmp|comm|cut|tr|nl|tac|rev|column|basename|dirname|du|ls|echo|printf|test|\[|<|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash|compare-object|sort-object|measure-object|select-object|convertfrom-json)(\.exe)?(\s|$)/i;
+  /^(cat|bat|sed(?!.*\s(-[a-z]*i|--in-place))|less|more|head|tail|grep|rg|fd|find|tree|jq|stat|file|wc|diff|cmp|comm|cut|tr|nl|tac|rev|column|basename|dirname|du|ls|echo|printf|test|\[|<|cd|pushd|popd|realpath|readlink|sha\d*sum|md5sum|shasum|get-content|gc|type|select-string|get-childitem|gci|dir|test-path|get-item|gi|resolve-path|set-location|sl|push-location|pop-location|get-filehash|compare-object|sort-object|measure-object|select-object|convertfrom-json)(\.exe)?(\s|$)/i;
 // `for d in ...; do cat x; done` splits into a header and `do cat x`; both read as unknown
 // commands. Repeated, because `else if cmd` stacks two keywords and stripping one would
 // leave `if cmd` to slip past every rule anchored at segment start.
@@ -414,7 +414,7 @@ function splitSegments(command) {
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
 const CLAUDE_HOME = String.raw`${HOME_SPELLINGS}[\\/]\.claude[\\/]`;
-const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s;|&)]|$))|[\\/]\.git[\\/]hooks([\\/"'\s;|&)]|$)`, 'i');
+const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|hooks|plugins)([\\/"'\s;|&)]|$)|[\\/]\.git[\\/]hooks([\\/"'\s;|&)]|$)`, 'i');
 // Discarding or merging a stream (`2>/dev/null`, `2>&1`) is not a write. Stripped from the
 // raw command before the split, because `2>&1` would otherwise be cut on its `&`. A digit
 // is required after `>&`, so `cat x >& file` still counts as a redirect.
@@ -423,7 +423,35 @@ const HARMLESS_REDIRECT = /\d*>&\d+|\d*>>?\s*(\/dev\/null|\$null)\b/gi;
 // write. Only a path directly after the interpreter (past its flags) qualifies, so
 // `python fix.py ~/.claude/settings.json` stays denied. The interpreter may sit at a path
 // (`./.venv/Scripts/python.exe`); only its basename is checked. Redirects still deny below.
-const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^["']?(\S*[\\/])?(node|deno|bun|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?["']?\s+(run\s+)?(-\S+\s+)*["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
+// The interpreter is optional: `~/.claude/hooks/notify.sh` runs the script too, and so does
+// PowerShell's `& "<script>"` once the split has removed the `&`. python's `-X` and `-W`
+// take a separate value.
+const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^(["']?(\S*[\\/])?(node|deno|bun|python3?|py|uv|bash|sh|pwsh|powershell)(\.exe)?["']?\s+(run\s+)?(-[XW]\s+\S+\s+|-\S+\s+)*)?["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
+// A copy out of live config is a read of it. The destination (the `-Destination` value,
+// else the last word) must not be live config, nor home, `~/.claude` itself or a `.git`
+// directory, where a copy can overwrite a protected file by name. `cp -t` names its target
+// first, and a flag after a path can make the last word a flag value, so neither is a read.
+const COPY = /^(cp|copy-item)(\s|$)/i;
+const COPY_INTO_DIR = new RegExp(String.raw`^${HOME_SPELLINGS}([\\/]\.claude)?[\\/]?$|(^|[\\/])\.git([\\/]|$)`, 'i');
+function isReadCopy(seg, cwd) {
+  if (!COPY.test(seg)) return false;
+  const args = (seg.replace(COPY, '').match(/"[^"]*"|'[^']*'|\S+/g) || []).map(unquote);
+  if (/^cp/i.test(seg) && args.some((a) => /^(-[a-zA-Z]*t|--target-directory)/.test(a))) return false;
+  const d = args.findIndex((a) => /^-destination$/i.test(a));
+  let dest = args[d + 1];
+  if (d < 0) {
+    const first = args.findIndex((a) => !a.startsWith('-'));
+    if (first < 0 || args.slice(first).some((a) => a.startsWith('-'))) return false;
+    dest = args[args.length - 1];
+  }
+  if (!dest) return false;
+  const abs = norm(path.resolve(cwd, expandHome(dest)));
+  const home = norm(os.homedir());
+  return (
+    !PROTECTED_SHELL.test(dest) && !COPY_INTO_DIR.test(dest) && !isProtectedPath(abs) &&
+    abs !== home && abs !== home + '/.claude' && !/(^|\/)\.git(\/|$)/.test(abs)
+  );
+}
 // The marketplace clone is source, not live config: nothing under it runs until it is
 // copied into the cache, and that copy stays denied. So git may fetch and check it out.
 // Only these subcommands, and checkout/switch take one bare branch: `worktree add`,
@@ -574,6 +602,7 @@ function checkShell(command, cwd) {
     // A package runner (`npx`, `uv run --with`) is an install, never a read of the path.
     const readOnly =
       (!isInstall && RUNS_PROTECTED_SCRIPT.test(seg)) ||
+      isReadCopy(seg, effCwd) ||
       (!EXEC_FLAGS.test(seg) &&
         (READ_ONLY.test(seg) || (FOR_HEADER.test(seg) && loopReadOnly) || MARKETPLACE_GIT.test(seg)));
     if (PROTECTED_SHELL.test(seg) && (redirects(seg) || !readOnly)) {
