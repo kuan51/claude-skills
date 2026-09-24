@@ -2146,6 +2146,15 @@ def test_waiting_line_names_undecided_records_not_proposed_ones():
         out = _compact(repo, "--check").stdout
         assert "48 decided and 2 not yet accepted or rejected" in out, out
         assert "proposed" not in out, out
+        # Compact mode lists them from the script, not by re-deriving the
+        # rule; front matter that does not parse shows no status to choose.
+        (decisions / "DEC-0051-x.md").write_text(
+            "---\nid: x\ntitle: Use: Postgres\nstatus: accepted\n---\n")
+        plan = _compact(repo, "--dry-run").stdout
+        assert "DEC-0049-x.md (status: Draft)" in plan, plan
+        assert "DEC-0050-x.md (status: superseded)" in plan, plan
+        assert "DEC-0051-x.md (status: none, fix its front matter)" in plan, plan
+        assert "DEC-0001" not in plan, plan
 
 
 def test_status_matches_in_any_case_and_spacing():

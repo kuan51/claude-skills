@@ -137,9 +137,14 @@ def main() -> int:
             print(line)
         return 0
 
-    _, candidates = split(repo)
+    records, candidates = split(repo)
     if len(candidates) < COMPACT_AT:
         print(f"{len(candidates)} eligible record(s), below the compaction point of {COMPACT_AT}")
+        # What compact mode asks the human about, so it never re-derives the rule.
+        for r in records:
+            if r not in candidates:
+                print(f"undecided: {r['path'].relative_to(repo).as_posix()} "
+                      f"(status: {r['status'] or 'none, fix its front matter'})")
         return 0
     batch = candidates[:COMPACT_BATCH]
 

@@ -132,9 +132,9 @@ the digest and not the archived records, and a moved record's `../` links are
 not reported. Digests are never archived, so what they carry stays at the top
 level. The plugin's hook prints a reminder once 50 archivable
 records exist, at session start and after an edit in `docs/decisions/`. When 50
-records exist but fewer than 50 are decided, it says how many are still
-proposed instead, since only decided records move. Compaction lands as its own
-pull request.
+records exist but fewer than 50 are decided, it says how many are not yet
+accepted or rejected instead, since only decided records move. Compaction
+lands as its own pull request.
 
 ## Migrating a monolithic decision log
 
