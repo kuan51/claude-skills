@@ -83,6 +83,11 @@ test('normalize removes comments, invisible characters and Links, and nothing el
     normalize(big);
     assert.ok(Date.now() - t0 < 500, `64 KB took ${Date.now() - t0} ms`);
   }
+  // Searching for `<!--` again on every line took about 5 s here.
+  const lines = `${'x'.repeat(59)}\n`.repeat((4 * 1024 * 1024) / 60);
+  const t0 = Date.now();
+  normalize(lines);
+  assert.ok(Date.now() - t0 < 500, `4 MB of 60-character lines took ${Date.now() - t0} ms`);
 });
 
 test('approve then check passes on the same text and fails on changed text', () => {

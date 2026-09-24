@@ -58,6 +58,7 @@ function normalize(text) {
   const code = []; // [start, end) of each fenced block in `out`
   let i = 0;
   let lineStart = true;
+  let open = -1; // the next `<!--` at or after i, found once: searching per line is quadratic
   while (i < t.length) {
     const nl = t.indexOf('\n', i);
     const lineEnd = nl < 0 ? t.length : nl + 1;
@@ -83,8 +84,11 @@ function normalize(text) {
       lineStart = false;
       continue;
     }
-    const open = t.indexOf('<!--', i);
-    if (open < 0 || open >= lineEnd) {
+    if (open < i) {
+      open = t.indexOf('<!--', i);
+      if (open < 0) open = Infinity;
+    }
+    if (open >= lineEnd) {
       out += strip(t.slice(i, lineEnd));
       i = lineEnd;
       lineStart = true;
