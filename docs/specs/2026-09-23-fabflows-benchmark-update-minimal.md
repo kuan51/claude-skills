@@ -116,8 +116,8 @@ with a non-brute-force implementation on every small case.
 
 ```bash
 cd plugins/fabflows/evals
-LOCKSTEP_ROOT=$PWD/fixtures/lockstep-update/solution node --test fixtures/lockstep-update/hidden/   # all pass, large case under 10 s
-LOCKSTEP_ROOT=$PWD/fixtures/lockstep-update/visible  node --test fixtures/lockstep-update/hidden/   # update and cli cases fail, regression passes
+LOCKSTEP_ROOT=$PWD/fixtures/lockstep-update/solution node --test fixtures/lockstep-update/hidden/*.test.js  # all pass, large case under 10 s
+LOCKSTEP_ROOT=$PWD/fixtures/lockstep-update/visible  node --test fixtures/lockstep-update/hidden/*.test.js  # update and cli cases fail, regression passes
 (cd fixtures/lockstep-update/visible && npm test)                                                   # public suite passes
 (cd fixtures/lockstep-update/solution && cp -r ../visible/test ../visible/package.json . && npm test) # public suite still passes; then remove the copies
 cd ../../..
