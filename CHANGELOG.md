@@ -120,6 +120,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **docs-warden 0.6.1** -- compaction archived any decision record whose status was not a
+  lowercase `proposed`, so a `Proposed` or `draft` record, or one whose front matter did not
+  parse, could be moved into `archive/` and frozen into an accepted digest. Only `accepted`
+  and `rejected` records archive now, in any case, and `--check` counts the same way. The
+  immutability check also reads status in any case: a record marked `Accepted` was never
+  checked.
 - **docs-warden 0.6.0** -- the decisions hook reads its input as UTF-8. It decoded stdin with
   Python's locale codec, cp1252 on Windows, so in a repository whose path held a non-ASCII
   character, such as `café`, the compaction reminder never appeared.

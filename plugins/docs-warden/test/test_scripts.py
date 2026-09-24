@@ -1154,8 +1154,9 @@ def test_adr_immutability_asks_accepted_the_same_way_load_adrs_does():
     'accepted' at end of line. status: "accepted" and an accepted line with a
     trailing comment satisfy one and not the other, so a real post-acceptance
     edit was reported as 'skipped | not yet committed' -- a false reason on a
-    record that is committed."""
-    for status_line in ['accepted', '"accepted"', 'accepted  # ratified']:
+    record that is committed. Any case is accepted: 'Accepted' matched neither
+    and was never checked at all."""
+    for status_line in ['accepted', '"accepted"', 'accepted  # ratified', 'Accepted']:
         with tempfile.TemporaryDirectory() as tmp:
             repo = _accepted_record_edited_after_acceptance(tmp, status_line)
             entry = _audit_check(repo, "adr-immutability")
@@ -1990,6 +1991,30 @@ def test_adr_compact_refuses_a_dirty_tree():
             subprocess.run(["git", "-C", str(repo), *git, "commit", "-qm", "wip"], check=True)
             result = _compact(repo)
             assert result.returncode == 0, (dirty, result.stderr)
+
+
+def test_adr_compact_archives_only_decided_records():
+    """Anything but a lowercase "proposed" counted as decided, so "Proposed",
+    "draft" and a record whose YAML did not parse (status "") were archived
+    and frozen into an accepted digest: a decision nobody made. Decided is
+    accepted or rejected, in any case."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 53)
+        fronts = {1: "status: Rejected", 2: "status: Proposed", 3: "status: draft",
+                  # The unquoted colon is a YAML error, so this reads as {}.
+                  4: "title: Choice 4: unquoted colon\nstatus: proposed"}
+        for n, front in fronts.items():
+            (decisions / f"DEC-{n:04d}-choice-{n}.md").write_text(
+                f"---\nid: DEC-{n:04d}\n{front}\n---\n", encoding="utf-8")
+        plan = _compact(repo, "--dry-run").stdout
+        assert not [n for n in (2, 3, 4) if f"DEC-{n:04d}" in plan], plan
+        assert plan.count("-> archive/") == 25, plan
+        assert "DEC-0001-" in plan and "DEC-0028-" in plan, plan
+        assert "50 decision records" in _compact(repo, "--check").stdout
+        (decisions / "DEC-0053-choice-53.md").unlink()  # 49 decided: waiting, not due
+        out = _compact(repo, "--check").stdout
+        assert "49 decided" in out and "ready to archive" not in out, out
 
 
 def test_adr_compact_outside_a_git_repository():

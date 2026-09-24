@@ -165,12 +165,12 @@ offer to split it into one file per entry, preserving IDs and dates. Ask first.
 
 Triggered by the plugin's hook (`hooks/decisions_check.py`), which runs at session
 start and after an edit in `docs/decisions/`, and prints a line once
-`docs/decisions/` holds 50 or more archivable records (not proposed, not a
-digest), or once 50 records exist but some are still proposed. Also triggered
+`docs/decisions/` holds 50 or more archivable records (accepted or rejected, not
+a digest), or once 50 records exist but some are still proposed. Also triggered
 by "compact decisions," "too many decision records."
 
 1. `scripts/adr_compact.py <repo> --dry-run` and show the human the mapping: the
-   25 oldest non-proposed records that move to `docs/decisions/archive/`, and the
+   25 oldest accepted or rejected records that move to `docs/decisions/archive/`, and the
    id of the digest that replaces them.
 2. On a yes, prepare a branch. Compaction is housekeeping and lands alone. Unlike
    a doc update, which rides with the code it describes

@@ -282,6 +282,15 @@ def load_adrs(repo: Path, archived: bool = False):
     return records
 
 
+def adr_status(record) -> str:
+    """A decision record's status, lowercased, from a load_adrs record or a
+    parsed front-matter dict. Status matches in any case, so "Accepted" is
+    accepted, and str() comes first because YAML can hand back a bool, a date
+    or a list. One definition, so the audit and compaction cannot drift into
+    two answers for what a record's status is."""
+    return str(record.get("status") or "").lower()
+
+
 def git(repo: Path, *args):
     """Run a git command, returning stdout or None if git cannot answer."""
     try:

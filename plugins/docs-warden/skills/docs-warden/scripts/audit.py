@@ -41,6 +41,7 @@ from _common import (
     RUNLOG_ARCHIVE_DIR,
     UNIVERSAL_FILES,
     adr_files,
+    adr_status,
     git,
     is_git_repo,
     load_adrs,
@@ -348,7 +349,7 @@ def check_adr_immutability(repo):
     # Archived records are still accepted records; git mv'd, so their log
     # starts at the move and post-move edits are what this can see.
     records = [r for r in load_adrs(repo) + load_adrs(repo, archived=True)
-               if r["status"] == "accepted"]
+               if adr_status(r) == "accepted"]
     if not records:
         return check("adr-immutability", "skipped", "No accepted decision records.", "")
     violations, uncommitted, unaccepted = [], [], []
@@ -378,7 +379,7 @@ def check_adr_immutability(repo):
             # question the same way. A regex for a bare "accepted" at end of
             # line missed status: "accepted" and a trailing "# ratified"
             # comment, leaving a real post-acceptance edit unreported.
-            if blob and parse_front_matter(blob)[0].get("status") == "accepted":
+            if blob and adr_status(parse_front_matter(blob)[0]) == "accepted":
                 accepted_at = index
                 break
         if accepted_at is None:
