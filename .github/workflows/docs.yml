@@ -3,7 +3,13 @@
 # current), then Vale on the changed files, as .pre-commit-config.yaml runs it.
 name: docs
 
-on: pull_request
+# Also on push to master: a pull_request run does not re-run when master
+# moves, so two PRs that each pass alone can merge into a stale
+# domain-model.md. This run shows that on master itself, not on the next PR.
+on:
+  pull_request:
+  push:
+    branches: [master]
 
 permissions:
   contents: read
@@ -23,7 +29,8 @@ jobs:
       # record's git log, and a shallow clone cuts that log down to the PR
       # head, so an edit to an accepted record would pass. The Vale step diffs
       # against HEAD^1: on pull_request, HEAD is the merge commit and its first
-      # parent is the base branch tip.
+      # parent is the base branch tip. On push to master, HEAD^1 is the
+      # previous master tip when the push is a PR's merge commit.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
