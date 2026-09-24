@@ -81,7 +81,7 @@ for why, `docs/GLOSSARY.md`, `docs/SECURITY.md`,
 `docs/specs/` for fabflows design records). `.docs-warden.yml` at the root drives it. The
 `docs-warden` plugin in this repo is also the installed tool: invoke the `docs-warden:docs-warden`
 skill and it picks the mode, or run its scripts directly from the installed plugin, never from a
-copy in this repo:
+copy in this repo. CI is the one exception, described below:
 
 ```bash
 W=~/.claude/plugins/cache/claude-skills/docs-warden/<version>/skills/docs-warden/scripts
@@ -104,6 +104,7 @@ Rules that bite here:
 - **This repo keeps no run log** (its archetype is `library`). Operational narrative, such as
   commands run and checks skipped, goes in the PR description; durable conclusions go in a
   decision record or spec.
-- **CI runs markdownlint, Vale and `audit.py` on every pull request** (`.github/workflows/docs.yml`),
-  from the PR's own checkout. Vale lints only the Markdown files the PR changes, as pre-commit does.
+- **CI runs markdownlint, Vale and `audit.py` on every pull request and push to master**
+  (`.github/workflows/docs.yml`), from the checkout's own copy of the scripts, so a PR is
+  checked by its own version of docs-warden. Vale lints only the Markdown files the PR changes, as pre-commit does.
   lychee and `freshness.py` still run only by hand.
