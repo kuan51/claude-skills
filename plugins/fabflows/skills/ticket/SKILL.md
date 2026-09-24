@@ -50,7 +50,7 @@ ticket's `https://` address. `<tracker>` is the `tracker` value from `.claude/fa
 
 When `.claude/fabflows.json` has a non-empty `parent`, file every ticket you create under it:
 
-- Jira: pass it as `parent` to `createJiraIssue`. Under an epic, use Task or Story; under a
+- Jira: pass it as `parent` to `createJiraIssue`. Under an epic, use Task or Story. Under a
   story or task, use the project's sub-task type, the only type Jira nests there.
 - GitHub: create with `issue_write`, then `sub_issue_write` method `add`, with the parent's
   number as `issue_number` and the new issue's ID (not its number) as `sub_issue_id`.

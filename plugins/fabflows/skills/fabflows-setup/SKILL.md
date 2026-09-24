@@ -41,9 +41,9 @@ reads or stores a token, key or password: a secret typed into chat stays in the 
 | Other | whatever names the project in that tracker | none |
 
 Then ask whether new tickets should be filed under a parent: an epic or story (`ABC-7`) for
-Jira and Linear, an issue (`#7`) for GitHub. It is optional; offer "none" first. When given,
-read it once with the tracker's read tool from `fabflows:ticket`'s tool table. Not found:
-say so, then ask again or go on without one.
+Jira and Linear, an issue (`#7`) for GitHub. It is optional, so offer "none" first. When
+given, read it once with the tracker's read tool from `fabflows:ticket`'s tool table. Not
+found: say so, then ask again or go on without one.
 
 ## 4. Write and commit
 
