@@ -931,7 +931,7 @@ test('trace --enrich ignores every value of the wrong shape', () => {
   const moved = (name) => tweak((e) => (e.tickets['ABC-1'].bodyFile = name));
   try {
     for (const [what, enrich, files] of [
-      ['a bad prs key', tweak((e) => (e.prs['5x'] = e.prs[5]) && delete e.prs[5]), FILES],
+      ['a bad prs key', tweak((e) => (e.prs['5.0'] = e.prs[5]) && delete e.prs[5]), FILES], // Number('5.0') is 5
       ['a bad tickets key', tweak((e) => (e.tickets['abc-1'] = e.tickets['ABC-1']) && delete e.tickets['ABC-1']), FILES],
       ['a string over 200 characters', tweak((e) => (e.prs[5].approvers = ['x'.repeat(201)])), FILES],
       ['a bodyFile with a /', moved('sub/abc1.md'), { ...FILES, 'sub/abc1.md': BODY['ABC-1'] }],
