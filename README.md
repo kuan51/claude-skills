@@ -52,7 +52,8 @@ so it picks up the newly installed plugin.
   which turns a rough idea into a spec the build loop can take, with the refuter attacking
   the draft before it is written; and `fabflows-setup` plus `ticket`, which keep specs in a
   GitHub Issues, Jira or Linear ticket instead of `docs/specs/`, with a hook that puts the
-  ticket key on every commit and PR. Includes an
+  ticket key on every commit and PR; and `trace`, which writes an audit trace report
+  tracing every merged change to its ticket, approved spec and approvers. Includes an
   **active guard hook** that asks you before package installs and package runners such
   as `npx`, and denies them in workers (one exception: `pypdf` into a literal scratchpad
   `--target` with `--isolated`), and blocks default-branch commits,

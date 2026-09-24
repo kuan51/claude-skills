@@ -134,6 +134,70 @@ A command whose quotes don't balance is read whole, as one command. A `gh pr cre
 checked. The merge reminder also fires after a failed merge command, so it asks Claude to
 check first.
 
+## Compliance
+
+Auditors (SOC 2 CC8.1, ISO 27001 A.8.32, IEC 62304) sample merged changes and trace each
+one to a ticket, an approved spec and an approval. fabflows keeps that record in the ticket
+and writes the trace as a report.
+
+**Setup.** After the tracker, `/fabflows-setup` asks which frameworks apply: SOC 2, ISO
+27001, IEC 62304, or your own. It writes them to `compliance.frameworks` in
+`.claude/fabflows.json`. Choosing none leaves compliance off.
+
+**The Compliance section.** With compliance on, each ticket spec carries a `## Compliance`
+section before Links:
+
+```markdown
+## Compliance
+- Controls: soc2-cc8.1
+- Change: normal
+- Class: B
+- Traces: REQ-AUTH-1
+```
+
+Controls is a list of control IDs or `none`, Change is `normal`, `standard` or `emergency`,
+Class is `A`, `B`, `C` or `n/a`, and Traces is optional. Claude asks you for the values and
+never guesses them. The section sits inside the approval fingerprint, and `ticket.js
+approve` refuses a spec without a valid one.
+
+**Labels.** `ticket.js labels` turns the section into tracker labels: `ctl-soc2-cc8-1`,
+`change-normal`, `class-b` (`n/a` becomes `na`). Claude sets them with the tracker's MCP
+tools. The section is the record, and the labels are a copy for filtering.
+
+**The trace report.** `/fabflows:trace` asks for a range (the newest tag to `HEAD` by
+default) and an output directory outside the repo. It runs `ticket.js trace`, adds each
+PR's author and approvers from GitHub and each ticket's body and labels from the tracker,
+and writes `trace.md` and `trace.csv`. It is never committed. The columns are commit,
+date, author, AI, PR, PR author, approvers, tickets, key source, spec hashes, ticket
+fingerprints, controls, change, class, traces, expected labels, actual labels and flags.
+
+| Flag | Meaning |
+| --- | --- |
+| `no-ticket` | the commit names no ticket key |
+| `no-spec` | the commit has no `Spec:` trailer |
+| `no-pr` | no pull request was found for the commit |
+| `spec-changed` | the ticket's current fingerprint differs from the commit's `Spec:` |
+| `no-compliance` | compliance is on and the ticket has no valid Compliance section |
+| `label-missing` | a label the Compliance section implies is missing from the ticket |
+| `emergency` | the change is an emergency change |
+| `no-approval` | the PR has no approving review |
+| `self-approved` | the PR author approved their own PR |
+| `not-enriched` | the PR or a ticket could not be read |
+
+Claude sees only the summary and each flagged row's SHA, PR, key and flags: commit messages
+can carry instructions, so they go into the files and never back into the session.
+
+**Limits.**
+
+- Labels are best-effort. A tracker may reject a label or lack it, and GitHub's MCP server
+  cannot create one. Claude reports a label it could not set and carries on.
+- AI authorship is detected by trailer and author name only (`Co-Authored-By` and the
+  commit author). The trailer is opt-out, so a `no` proves nothing.
+- A re-approved ticket marks earlier commits `spec-changed`, because the report compares
+  each commit's `Spec:` with the ticket as it is now.
+- The report is no proof of review quality. It shows that an approval happened, not that
+  the review was careful.
+
 ## The build loop
 
 `fabflows:build` takes one spec'd change through build and review: an Opus `editor`

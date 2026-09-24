@@ -85,6 +85,26 @@ test('the README names the ticket hook, the ticket skills and raw review', () =>
   has(tickets, ['raw diff', 'per-branch', 'unclosed `<!--`', 'refuses', 'worktree'], 'README Tickets');
 });
 
+test('0.8.0 documents the trace report and the compliance limits', () => {
+  const plugin = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
+  assert.equal(plugin.version, '0.8.0');
+  const market = JSON.parse(read(ROOT, '.claude-plugin', 'marketplace.json')).plugins.find((p) => p.name === 'fabflows');
+  const bullet = read(ROOT, 'README.md').split('\n- **').find((b) => b.startsWith('[fabflows]'));
+  for (const [text, file] of [[plugin.description, 'plugin.json'], [market.description, 'marketplace.json'], [bullet, 'root README bullet']]) {
+    has(text.replace(/\s+/g, ' '), ['trace report'], file);
+  }
+  const readme = read(PLUGIN, 'README.md');
+  assert.match(readme, /^## Compliance$/m);
+  const start = readme.indexOf('\n## Compliance');
+  const section = readme.slice(start, readme.indexOf('\n## The build loop', start)).replace(/\s+/g, ' ');
+  const limits = [
+    'Labels are best-effort', 'AI authorship is detected by trailer and author name only',
+    'A re-approved ticket marks earlier commits `spec-changed`', 'no proof of review quality',
+  ];
+  has(section, limits, 'README Compliance');
+  has(read(ROOT, 'CHANGELOG.md'), ['fabflows 0.8.0'], 'CHANGELOG.md');
+});
+
 test('the current version is documented', () => {
   const { version } = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
   assert.match(read(PLUGIN, 'README.md'), /^## Tickets$/m);

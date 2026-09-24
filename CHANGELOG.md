@@ -8,6 +8,17 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.8.0** -- compliance tracing for audits (#68). `fabflows-setup` asks which
+  frameworks apply (SOC 2, ISO 27001, IEC 62304 or your own) and writes
+  `compliance.frameworks`. With compliance on, each ticket spec carries a Compliance section
+  with Controls, Change, Class and optional Traces lines, which Claude asks the user for and
+  never guesses. `ticket.js approve` refuses a spec without a valid one, and
+  `ticket.js labels` gives the tracker labels Claude sets on a best-effort basis. The new
+  `trace` skill writes an audit trace report outside the repo, `trace.md` and `trace.csv`,
+  listing every merged change with its PR author and approvers, tickets, spec hashes,
+  Compliance values and flags such as `no-ticket`, `spec-changed` and `self-approved`. It
+  shows Claude only the summary and each flagged row's SHA, PR, key and flags, and never
+  commits the report.
 - **fabflows 0.6.0** -- specs can live in the tracker ticket instead of `docs/specs/`
   (#66). `fabflows-setup` asks once for GitHub Issues, Jira, Linear or none, checks that the
   tracker's MCP tools are loaded without ever adding a server or handling a secret, and
