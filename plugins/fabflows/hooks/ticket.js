@@ -607,8 +607,9 @@ function postToolUse(tool, ti, cwd) {
 const pendingPath = (cwd) => path.resolve(cwd, git(['rev-parse', '--git-path', 'fabflows/pending-merge.json'], cwd));
 function rememberMerge(cwd) {
   const p = pendingPath(cwd);
+  fs.rmSync(p, { force: true }); // first, so a failure below leaves no older note behind
   const branch = currentBranch(cwd);
-  if (!branch || !readState(cwd, branch)) return fs.rmSync(p, { force: true });
+  if (!branch || !readState(cwd, branch)) return;
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, JSON.stringify({ file: path.basename(statePath(cwd, branch)), at: Date.now() }) + '\n');
 }
