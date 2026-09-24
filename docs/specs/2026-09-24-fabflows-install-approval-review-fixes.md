@@ -1,3 +1,9 @@
+---
+owner: kuan51
+review_by: 2027-03-24
+generated: false
+---
+
 # Review fixes for the package-install approval change
 
 Follow-up to `docs/specs/2026-09-24-fabflows-install-approval.md`. Two code reviews of branch
