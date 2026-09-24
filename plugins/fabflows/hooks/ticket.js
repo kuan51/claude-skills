@@ -30,7 +30,7 @@ const valid = {
   key: (v) => str(v) && KEY.some((re) => re.test(v)),
   url: (v) => str(v) && v.startsWith('https://') && v.length <= 300 && !/[\s'\p{Cc}]/u.test(v),
   tracker: (v) => str(v) && /^[a-z][a-z0-9-]{0,30}$/.test(v),
-  branch: (v) => str(v) && /^[A-Za-z0-9._/-]{1,200}$/.test(v),
+  branch: (v) => str(v) && [...v].length <= 200 && /^[^-]/.test(v) && !/[\s\p{Cc}\p{Cf}~^:?*[\\]/u.test(v),
   specHash: (v) => str(v) && /^sha256:[0-9a-f]{64}$/.test(v),
 };
 // A GitHub PR or GitLab MR: no query, fragment or shell characters.
@@ -158,9 +158,10 @@ const removeState = (file) => {
   fs.rmSync(approvedPath(file), { force: true });
 };
 
-// Same base as guard.js: origin/HEAD, else main or master.
+// The base for trailer recovery: origin/HEAD, else origin/main or origin/master, else a
+// local main or master.
 function base(cwd) {
-  for (const b of ['origin/HEAD', 'main', 'master']) {
+  for (const b of ['origin/HEAD', 'origin/main', 'origin/master', 'main', 'master']) {
     if (tryGit(['rev-parse', '--verify', '-q', b + '^{commit}'], cwd)) return b;
   }
   return null;
@@ -302,7 +303,7 @@ function sessionStart(cwd) {
   }
   const def = tryGit(['symbolic-ref', '-q', '--short', 'refs/remotes/origin/HEAD'], cwd);
   const defaults = def ? [def.replace(/^origin\//, '')] : ['main', 'master'];
-  if (cfg && typeof cfg.tracker === 'string' && cfg.tracker && !defaults.includes(branch)) {
+  if (cfg && typeof cfg.tracker === 'string' && cfg.tracker && cfg.tracker !== 'none' && !defaults.includes(branch)) {
     context(
       'SessionStart',
       'fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows:ticket to link one before building.'

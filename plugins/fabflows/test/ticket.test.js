@@ -168,6 +168,36 @@ test('validation rejects bad values on the CLI and in the state file', () => {
   }
 });
 
+test('branch names: anything git allows that cannot break a line or a command', () => {
+  const { valid } = require(TICKET);
+  for (const b of ['user@fix+1', 'feat#12', 'ünï', 'feature/x.y_z']) assert.ok(valid.branch(b), b);
+  for (const b of ['a b', '-x', 'a~1', 'a\u202Eb', 'a^1', 'a:b', 'a?', 'a*', 'a[b', 'a\\b', '', 'x'.repeat(201)]) {
+    assert.ok(!valid.branch(b), JSON.stringify(b));
+  }
+  const r = repo();
+  try {
+    for (const b of ['user@fix+1', 'feat#12', 'ünï']) {
+      r.git('checkout', '-q', '-b', b);
+      assert.equal(cli(r.dir, ['link', 'ABC-1', URL, 'jira']).status, 0, b);
+      assert.equal(shell(r.dir, 'git commit -m x').decision, 'deny', b);
+    }
+  } finally {
+    r.done();
+  }
+});
+
+test('trailer recovery finds origin/master without origin/HEAD or a local default branch', () => {
+  const r = repo(false);
+  try {
+    r.git('update-ref', 'refs/remotes/origin/master', 'main');
+    r.git('branch', '-q', '-D', 'main');
+    r.git('commit', '-q', '--allow-empty', '-m', 'x\n\nRefs: ABC-9');
+    assert.match(start(r.dir), /ticket ABC-9 found in commit trailers/);
+  } finally {
+    r.done();
+  }
+});
+
 test('linking: other branch, Refs trailers with and without origin/HEAD', () => {
   for (const originHead of [true, false]) {
     const r = repo(originHead);
@@ -252,6 +282,9 @@ test('SessionStart prints one line per case', () => {
     const warn = start(r.dir);
     assert.match(warn, /no linked ticket/);
     assert.ok(!warn.includes('EVIL'), 'the warning echoes nothing from the config');
+    fs.writeFileSync(path.join(r.dir, '.claude', 'fabflows.json'), JSON.stringify({ tracker: 'none' }));
+    assert.equal(start(r.dir), undefined, 'tracker none is no tracker');
+    fs.writeFileSync(path.join(r.dir, '.claude', 'fabflows.json'), JSON.stringify({ tracker: 'jira' }));
     r.git('checkout', '-q', 'main');
     assert.equal(start(r.dir), undefined, 'no warning on the default branch');
     r.git('checkout', '-q', 'feature');
