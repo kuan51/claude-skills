@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       SCRIPTS: plugins/docs-warden/skills/docs-warden/scripts
+    # An explicit bash adds -o pipefail to the default -e, so a failing
+    # command before a pipe fails the step instead of feeding xargs nothing.
+    defaults:
+      run:
+        shell: bash
     steps:
       # Full history: audit.py's adr-immutability check reads each decision
       # record's git log, and a shallow clone cuts that log down to the PR
