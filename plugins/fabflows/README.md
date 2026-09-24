@@ -97,9 +97,10 @@ forgets a link after its branch is gone.
   reads a chained command as the shell does, so each commit needs the lines in its own
   message: a trailer in an `echo` or in another commit does not count.
 - PostToolUse reminds Claude to update the ticket after a push and a PR creation. After a
-  merge (not `gh pr merge --auto` or `--disable-auto`) it finds the ticket by the PR the merge named, asks Claude
-  to check the merge happened, and closes the ticket only for a PR with a closing phrase: a
-  Refs-only PR leaves it open.
+  merge (not `gh pr merge --auto` or `--disable-auto`) it finds the ticket by the PR the merge
+  named, or, for a bare `gh pr merge`, by the branch it started on. It asks Claude to check
+  the merge happened, and closes the ticket only for a PR with a closing phrase: a Refs-only
+  PR leaves it open.
 
 **Approval.** The user approves the ticket description as raw text, never rendered: a raw
 diff of what Claude wrote against what the tracker holds, or the full raw text when Claude

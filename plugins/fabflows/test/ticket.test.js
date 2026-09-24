@@ -533,6 +533,39 @@ test('the merge reminder finds the ticket by PR, only after a real merge', () =>
   }
 });
 
+test('a merge with no PR argument finds the branch it started on', () => {
+  const r = repo();
+  const pending = path.join(r.dir, '.git', 'fabflows', 'pending-merge.json');
+  const PR = 'https://github.com/o/r/pull/5';
+  const merged = () => after(r.dir, 'Bash', { command: 'gh pr merge --squash -d' }).context;
+  try {
+    cli(r.dir, ['link', 'ABC-1', URL, 'jira']);
+    cli(r.dir, ['pr', PR]);
+    assert.deepEqual(shell(r.dir, 'gh pr merge 5'), { decision: 'allow' });
+    assert.ok(!fs.existsSync(pending), 'a merge that names its PR writes no record');
+    assert.deepEqual(shell(r.dir, 'gh pr merge --squash -d'), { decision: 'allow' }, 'prints nothing');
+    assert.ok(fs.existsSync(pending), 'records the link');
+    r.git('checkout', '-q', 'main'); // what -d does before PostToolUse
+    const text = merged();
+    assert.ok(text && text.includes('ABC-1') && text.includes(`clear --pr '${PR}'`), text);
+    assert.ok(!fs.existsSync(pending), 'the record is used once');
+
+    r.git('checkout', '-q', 'feature');
+    shell(r.dir, 'gh pr merge --squash -d');
+    const rec = JSON.parse(fs.readFileSync(pending, 'utf8'));
+    fs.writeFileSync(pending, JSON.stringify({ ...rec, at: rec.at - 11 * 60 * 1000 }));
+    r.git('checkout', '-q', 'main');
+    assert.equal(merged(), undefined, 'a record older than 10 minutes is ignored');
+    assert.ok(!fs.existsSync(pending), 'and deleted');
+
+    fs.writeFileSync(pending, JSON.stringify(rec));
+    shell(r.dir, 'gh pr merge --squash -d');
+    assert.ok(!fs.existsSync(pending), 'a merge from an unlinked branch drops any record');
+  } finally {
+    r.done();
+  }
+});
+
 test('hooks.json wires ticket.js to SessionStart, PreToolUse and PostToolUse', () => {
   const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'hooks', 'hooks.json'), 'utf8'));
   const ticket = (event) => (cfg.hooks[event] || []).filter((e) => e.hooks.some((h) => /ticket\.js/.test(h.command)));

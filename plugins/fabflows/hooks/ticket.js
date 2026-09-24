@@ -507,6 +507,14 @@ function preToolUse(tool, ti, cwd) {
     return;
   }
   if (!str(ti.command)) return;
+  const target = mergeTarget(tool, ti);
+  if (target && !target.url && !target.suffix) {
+    try {
+      rememberMerge(cwd);
+    } catch {
+      // the reminder falls back to the current branch
+    }
+  }
   const cmds = split(ti.command);
   // Each commit's trailers must be in its own text: not in an echo, not in another commit.
   const commits = cmds.filter((c) => {
@@ -573,13 +581,38 @@ function postToolUse(tool, ti, cwd) {
   context('PostToolUse', text);
 }
 
-// Found by PR first: `gh pr merge -d` has already switched branch when this runs.
+// `gh pr merge -d` switches branch before PostToolUse runs, so PreToolUse notes the current
+// branch's link for a merge that names no PR: { file, at } in this worktree's git dir.
+const pendingPath = (cwd) => path.resolve(cwd, git(['rev-parse', '--git-path', 'fabflows/pending-merge.json'], cwd));
+function rememberMerge(cwd) {
+  const p = pendingPath(cwd);
+  const branch = currentBranch(cwd);
+  if (!branch || !readState(cwd, branch)) return fs.rmSync(p, { force: true });
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify({ file: path.basename(statePath(cwd, branch)), at: Date.now() }) + '\n');
+}
+// The link noted before this merge, used once; a note older than 10 minutes is stale.
+function recallMerge(cwd) {
+  const p = pendingPath(cwd);
+  let r;
+  try {
+    r = JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    return null;
+  }
+  fs.rmSync(p, { force: true });
+  const age = Date.now() - (r && r.at);
+  const s = age >= 0 && age < 10 * 60 * 1000 && /^[0-9a-f]{16}\.json$/.test(r.file) && readFile(path.join(stateDir(cwd), r.file));
+  return s ? { ...s, confirmed: true } : null;
+}
+
+// Found by PR first, else by the link noted before the merge, else by the current branch.
 function mergeReminder(target, cwd) {
   let found;
   if (target.url) found = allStates(cwd).map((e) => e.s).filter((s) => s.pr === target.url);
   else if (target.suffix) found = allStates(cwd).map((e) => e.s).filter((s) => s.pr && s.pr.endsWith(target.suffix));
   else {
-    const l = linked(cwd);
+    const l = recallMerge(cwd) || linked(cwd);
     found = l && l.key ? [l] : [];
   }
   if (found.length === 0) return;
