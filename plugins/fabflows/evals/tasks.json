@@ -127,7 +127,7 @@
       "name": "update-minimal",
       "routing": "fabflows:build (a spec'd minimal-change optimisation on a brownfield project)",
       "fixture": { "kind": "dir", "from": "fixtures/lockstep-update/visible" },
-      "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 30 },
+      "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 60 },
       "repeats": 3,
       "arms": {
         "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself.\n\n", "grade": { "requireReview": true } }
