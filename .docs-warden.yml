@@ -21,7 +21,8 @@ extra_files: []
 waivers: {}
 #  required-files: "the runbook lives in the ops wiki, see DEC-0009"
 
-# CI regenerates each path with its command and fails on any diff.
+# `audit.py --run-generators` regenerates each path with its command and fails
+# on any diff. CI does not pass that flag yet: add it with the first entry.
 generated_docs: []
 #  - path: docs/reference/cli.md
 #    command: ["pwsh", "./build/Export-Help.ps1"]

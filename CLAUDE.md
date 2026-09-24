@@ -74,7 +74,7 @@ session at startup**, so a newly installed skill is not invocable until a new se
 for a restart rather than assuming a mid-session rescan. Revert by deleting the version directory,
 dropping its `installed_plugins.json` entry, and checking the marketplace clone back to `master`.
 
-## Maintaining documentation: use docs-warden
+## Maintaining documentation with docs-warden
 
 `docs/` follows the docs-warden layout (`docs/CONVENTIONS.md` for current state, `docs/decisions/`
 for why, `docs/GLOSSARY.md`, `docs/SECURITY.md`,
@@ -83,7 +83,7 @@ spec lives in the linked ticket instead, and the approval fingerprint plus each 
 trailer replace the "never overwritten" guarantee). `.docs-warden.yml` at the root drives it. The
 `docs-warden` plugin in this repo is also the installed tool: invoke the `docs-warden:docs-warden`
 skill and it picks the mode, or run its scripts directly from the installed plugin, never from a
-copy in this repo:
+copy in this repo. CI is the one exception, described below:
 
 ```bash
 W=~/.claude/plugins/cache/claude-skills/docs-warden/<version>/skills/docs-warden/scripts
@@ -100,11 +100,13 @@ Rules that bite here:
   specific edits, then re-run `adr_index.py` and `audit.py`.
 - **A decision record only when all three are yes:** reversing it costs more than one PR, it
   constrains work outside the component touched, and a rejected alternative exists. Otherwise the
-  reasoning goes in the PR description. Accepted records are never edited; supersede them.
+  reasoning goes in the PR description. Accepted records are never edited. Supersede them instead.
 - **Generated files are never hand-edited:** `docs/DECISIONS.md`, `docs/decisions/README.md`,
   `docs/architecture/domain-model.md` (see the table in `docs/CONVENTIONS.md`).
 - **This repo keeps no run log** (its archetype is `library`). Operational narrative, such as
   commands run and checks skipped, goes in the PR description; durable conclusions go in a
   decision record or spec.
-- **Nothing runs these checks in CI yet**, so run `audit.py` yourself before opening a PR that
-  touches `docs/`.
+- **CI runs markdownlint, Vale and `audit.py` on every pull request and push to master**
+  (`.github/workflows/docs.yml`), from the checkout's own copy of the scripts, so a PR is
+  checked by its own version of docs-warden. Vale lints only the Markdown files the PR changes, as pre-commit does.
+  lychee and `freshness.py` still run only by hand.

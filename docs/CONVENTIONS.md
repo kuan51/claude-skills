@@ -77,8 +77,9 @@ first suite (DEC-0022).
 
 Every pull request updates the affected documents or says why not.
 Accepted decision records are never edited; supersede them instead.
-At 50 records, `docs-warden`'s `compact` mode archives the oldest 25 into
-`docs/decisions/archive/` behind one digest record (DEC-0003).
+At 50 decided records, `docs-warden`'s `compact` mode offers to archive the oldest
+25 into `docs/decisions/archive/` behind one digest record, as its own pull request
+(DEC-0003).
 
 ## Generated files
 

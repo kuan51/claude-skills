@@ -43,7 +43,8 @@ tags: []
 ---
 ```
 
-`status` has exactly three values. No `superseded` status exists. See below.
+`status` has exactly three values, matched in any case: `Accepted` is accepted.
+No `superseded` status exists. See below.
 
 ## Body sections, in this order
 
@@ -108,8 +109,8 @@ run, and CI relies on that to detect a hand edit.
 
 ## Compaction
 
-`docs/decisions/` only ever grows, so at 50 archivable records (not `proposed`,
-not a digest) `adr_compact.py` moves the 25 oldest into `docs/decisions/archive/` with `git mv` and
+`docs/decisions/` only ever grows, so at 50 archivable records (`accepted` or
+`rejected`, not a digest) `adr_compact.py` moves the 25 oldest into `docs/decisions/archive/` with `git mv` and
 writes one new digest record, `DEC-NNNN-compaction-of-dec-0001-to-dec-0026.md`,
 `status: accepted`, `tags: [compaction]`.
 
@@ -126,8 +127,11 @@ immutability check reads the archive too, so an edit after the move is caught
 and the links check read the top-level folder only, so `DECISIONS.md` lists
 the digest and not the archived records, and a moved record's `../` links are
 not reported. Digests are never archived, so what they carry stays at the top
-level. The plugin's SessionStart hook prints a reminder once 50 archivable
-records exist.
+level. The plugin's hook prints a reminder once 50 archivable
+records exist, at session start and after an edit in `docs/decisions/`. When 50
+records exist but fewer than 50 are decided, it says how many are still
+proposed instead, since only decided records move. Compaction lands as its own
+pull request.
 
 ## Migrating a monolithic decision log
 

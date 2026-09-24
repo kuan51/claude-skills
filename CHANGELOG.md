@@ -26,6 +26,16 @@ per-plugin history until entries are recorded here going forward.
   open. The `ticket.js` hook requires `Refs:` and `Spec:` trailers on their own line in each
   commit's own message, reading a chained command as the shell does, and the key in the PR
   title.
+- **docs-warden 0.6.0** -- compaction reminders that explain themselves. When fifty
+  decision records exist but fewer than fifty are decided, `adr_compact.py --check` now says
+  how many are still proposed instead of staying silent, and compact mode walks the human
+  through accepting or rejecting them. The decisions hook also runs after an `Edit` or
+  `Write` in `docs/decisions/` (one `PostToolUse` handler per tool, each with an `if` rule), passing the line to
+  Claude as `additionalContext`, not only at session start. Compaction now lands as its own
+  pull request: `adr_compact.py` refuses to archive on a working tree that is not clean, and
+  compact mode starts a new branch or a separate worktree off the default branch and offers
+  the push and pull request rather than folding the moves into a code branch. The plugin
+  description now says it offers to archive once fifty are decided.
 - **fabflows 0.5.0** -- brought in line with Anthropic's skill guide. The guard gains one
   exception: `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>`
   is a literal path with a `scratchpad` directory in it and outside live configuration, so a
@@ -128,8 +138,17 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **docs-warden 0.6.1** -- compaction archived any decision record whose status was not a
+  lowercase `proposed`, so a `Proposed` or `draft` record, or one whose front matter did not
+  parse, could be moved into `archive/` and frozen into an accepted digest. Only `accepted`
+  and `rejected` records archive now, in any case, and `--check` counts the same way. The
+  immutability check also reads status in any case: a record marked `Accepted` was never
+  checked.
+- **docs-warden 0.6.0** -- the decisions hook reads its input as UTF-8. It decoded stdin with
+  Python's locale codec, cp1252 on Windows, so in a repository whose path held a non-ASCII
+  character, such as `café`, the compaction reminder never appeared.
 - **fabflows 0.3.6** -- `fabflows:build` failed on Windows before it ran, with the harness
-  error "script contains control characters". The plugin cache is a git checkout, and with
+  error "script contains control characters." The plugin cache is a git checkout, and with
   `core.autocrlf=true` the workflow script arrived as CRLF; the harness hands that file to
   the Workflow tool verbatim and refuses the carriage returns. A root `.gitattributes` now
   pins LF on every platform and a test keeps the script free of control bytes. A cache
