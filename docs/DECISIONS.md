@@ -6,7 +6,7 @@ Why this repository is the way it is. Newest first.
 
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
-| [DEC-0023](decisions/DEC-0023-ask-the-user-in-the-lead-before-a-package-install-deny-it-in.md) | Ask the user in the lead before a package install, deny it in workers | proposed | 2026-09-24 | DEC-0002 | - |
+| [DEC-0023](decisions/DEC-0023-ask-the-user-in-the-lead-before-a-package-install-deny-it-in.md) | Ask the user in the lead before a package install, deny it in workers | accepted | 2026-09-24 | DEC-0002 | - |
 | [DEC-0022](decisions/DEC-0022-benchmark-plugins-with-claude-plugin-eval-not-a-ported-harne.md) | Benchmark plugins with claude plugin eval, not a ported harness | proposed | 2026-09-19 | - | - |
 | [DEC-0021](decisions/DEC-0021-a-regulation-that-incorporates-a-standard-by-reference-binds.md) | A regulation that incorporates a standard by reference binds the cited edition | proposed | 2026-09-22 | - | - |
 | [DEC-0020](decisions/DEC-0020-commit-the-ciso-interview-in-4-6-control-sub-batches-instead.md) | Commit the ciso interview in 4-6 control sub-batches instead of whole domains | proposed | 2026-09-22 | - | - |

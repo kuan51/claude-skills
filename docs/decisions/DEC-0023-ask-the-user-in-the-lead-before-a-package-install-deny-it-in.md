@@ -1,7 +1,7 @@
 ---
 id: DEC-0023
 title: Ask the user in the lead before a package install, deny it in workers
-status: proposed
+status: accepted
 date: 2026-09-24
 deciders: [kuan51]
 supersedes: [DEC-0002]
