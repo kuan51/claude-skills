@@ -120,6 +120,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **docs-warden 0.6.1** -- compaction archived any decision record whose status was not a
+  lowercase `proposed`, so a `Proposed` or `draft` record, or one whose front matter did not
+  parse, could be moved into `archive/` and frozen into an accepted digest. Only `accepted`
+  and `rejected` records archive now, in any case, and `--check` counts the same way. The
+  immutability check also reads status in any case: a record marked `Accepted` was never
+  checked.
 - **fabflows 0.3.6** -- `fabflows:build` failed on Windows before it ran, with the harness
   error "script contains control characters". The plugin cache is a git checkout, and with
   `core.autocrlf=true` the workflow script arrived as CRLF; the harness hands that file to
