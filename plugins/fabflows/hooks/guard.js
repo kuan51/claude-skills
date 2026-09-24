@@ -202,7 +202,14 @@ const SECRET_CONTENT =
 
 const READERS = /^(cat|less|more|head|tail|strings|xxd|od|bat|get-content|gc|type)\b/i;
 
-const GIT_OP = /^git\s+(-c\s+\S+\s+)?(commit|push|merge|rebase)\b/i;
+// `(?=\s|$)`, not `\b`, so `merge-base` and `commit-graph` are not `merge` and `commit`.
+const GIT_OP = /^git\s+(-c\s+\S+\s+)?(commit|push|merge|rebase)(?=\s|$)/i;
+// Ending a merge or rebase in progress makes no new commit.
+const GIT_ABORT = /^git\s+(-c\s+\S+\s+)?(merge|rebase)\s+--(abort|quit)\s*$/i;
+const GIT_PUSH = /^git\s+(-c\s+\S+\s+)?push(?=\s|$)/i;
+// A branch the same command creates or moves to. A bare `git checkout <x>` is skipped,
+// since <x> can be a file, and so is a `switch` flag such as `--detach` or `-`.
+const GIT_NEW_BRANCH = /^git\s+(-c\s+\S+\s+)?(checkout\s+-[bB]|switch\s+-[cC]|switch)\s+([^\s-]\S*)/i;
 const GIT_ADD = /^git\s+(-c\s+\S+\s+)?add\b/i;
 const GIT_FORCE = /^git\s+(-c\s+\S+\s+)?push\b.*(--force\b|--force-with-lease\b|\s-f(\s|$))/i;
 
@@ -222,7 +229,8 @@ const SYSTEM_REDIRECT = />\s*\/(etc|usr|bin|sbin|boot|sys)\//i;
 
 const DESTRUCTIVE = [
   [/^git\s+(-c\s+\S+\s+)?reset\s+--hard\b/i, 'git reset --hard discards uncommitted work'],
-  [/^git\s+(-c\s+\S+\s+)?clean\s+-[a-z]*d/i, 'git clean -d deletes untracked files'],
+  // A dry run (-n or --dry-run) only lists what it would delete.
+  [/^git\s+(-c\s+\S+\s+)?clean(?!.*\s(-[a-z]*n|--dry-run))\s+-[a-z]*d/i, 'git clean -d deletes untracked files'],
   [/^chmod\s+[0-7]*7{2,3}\b/i, 'chmod 777 makes a path world-writable'],
   [/^dd\b[^|]*\bof=/i, 'dd with of= overwrites a device or file wholesale'],
   [/^mkfs(\.|\s)/i, 'mkfs formats a filesystem'],
@@ -439,7 +447,28 @@ function branches(cwd) {
 // Returns the first install segment, if any, so the caller can ask or deny only after
 // every other rule has had its chance to deny.
 // Commands that move the shell into a directory the guard cannot always follow.
-const CHANGE_DIR = /^(cd|pushd|set-location|sl|chdir)(\s|$)/i;
+const CHANGE_DIR = /^(cd|pushd|set-location|sl|push-location|chdir)(\s|$)/i;
+
+// Where a `git push` segment pushes: every refspec's destination branch, with `HEAD` as
+// the current branch. An empty list means no refspec, so the current branch is pushed.
+// `--all` and `--mirror` return null, since they push every branch.
+const PUSH_VALUE_FLAG = /^(--repo|-o|--push-option)$/;
+function pushDestinations(seg, current) {
+  const args = seg.replace(GIT_PUSH, '').trim().split(/\s+/).filter(Boolean).map(unquote);
+  const words = [];
+  for (let i = 0; i < args.length; i++) {
+    if (/^--(all|mirror)$/.test(args[i])) return null;
+    if (PUSH_VALUE_FLAG.test(args[i])) i++;
+    else if (!args[i].startsWith('-')) words.push(args[i]);
+  }
+  // The first word is the remote.
+  return words.slice(1).map((ref) => {
+    const r = ref.replace(/^\+/, '');
+    const dst = r.includes(':') ? r.slice(r.indexOf(':') + 1) : r;
+    const name = dst.replace(/^refs\/heads\//, '');
+    return name === 'HEAD' ? current : name;
+  });
+}
 function checkShell(command, cwd) {
   const installs = [];
   for (const re of PIPE_TO_SHELL) {
@@ -477,11 +506,15 @@ function checkShell(command, cwd) {
   // moves into a worktree is checked against that worktree's branch.
   let effCwd = cwd;
   let movedIntoConfig = false;
+  // `git checkout -b fix && git commit` commits on fix, not on the branch checked out now.
+  let newBranch = null;
   for (const [raw, seg] of parts) {
-    const cd = /^cd\s+(.+)$/.exec(seg);
-    if (cd) {
-      effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
+    if (CHANGE_DIR.test(seg)) {
+      const dir = seg.replace(CHANGE_DIR, '').replace(/^-(literal)?path\s+/i, '').trim();
+      if (dir) effCwd = path.resolve(effCwd, expandHome(unquote(dir)));
     }
+    const nb = GIT_NEW_BRANCH.exec(seg);
+    if (nb) newBranch = unquote(nb[3]);
     // `cd $HOME/...`, `pushd` and `Set-Location` into live config, which effCwd cannot follow.
     if (CHANGE_DIR.test(seg) && PROTECTED_SHELL.test(seg)) movedIntoConfig = true;
 
@@ -525,23 +558,28 @@ function checkShell(command, cwd) {
       deny('fabflows: modifying live Claude Code configuration or git hooks is blocked. That is what stops a worker from disarming this guard. Reads are allowed: use the Read, Glob or Grep tools, or a plain ls/cat with no redirect.');
     }
 
-    if (GIT_OP.test(seg)) {
+    if (GIT_OP.test(seg) && !GIT_ABORT.test(seg)) {
       // A `cd` the guard could not follow (a variable, `-`, a missing directory, a
       // subshell) leaves effCwd outside any repo; judge in the session cwd rather than
       // let the cd erase the branch check.
       const b = branches(effCwd) || (effCwd !== cwd ? branches(cwd) : null);
       if (!b) continue; // fail open
-      const onDefault = b.defaults.includes(b.current);
-      if (onDefault) {
+      const current = newBranch || b.current;
+      if (GIT_PUSH.test(seg)) {
+        // A push is judged by the branch it writes to, not the one checked out. Force-push
+        // is narrowed the same way: --force-with-lease on your own branch is routine.
+        const dests = pushDestinations(seg, current);
+        const hit = dests === null || dests.some((d) => b.defaults.includes(d)) || (!dests.length && b.defaults.includes(current));
+        if (hit && (GIT_FORCE.test(seg) || /\s\+\S/.test(seg))) {
+          deny(`fabflows: force-pushing to the default branch '${b.defaults.join("' or '")}' is blocked.`);
+        }
+        if (hit) {
+          deny(`fabflows: git push to the default branch '${b.defaults.join("' or '")}' is blocked. Push a branch named for the change instead.`);
+        }
+      } else if (b.defaults.includes(current)) {
         deny(
-          `fabflows: ${seg.split(/\s+/).slice(0, 2).join(' ')} on the default branch '${b.current}' is blocked. Create a branch named for the change first.`
+          `fabflows: ${seg.split(/\s+/).slice(0, 2).join(' ')} on the default branch '${current}' is blocked. Create a branch named for the change first.`
         );
-      }
-      // Force-push is narrowed to default branches. Rewriting history on a shared
-      // branch is the actual rule; --force-with-lease on your own feature branch is
-      // routine and a blanket block would fight the user weekly.
-      if (GIT_FORCE.test(seg) && b.defaults.some((d) => new RegExp(`(^|[\\s:/])${d}(\\s|$)`).test(seg))) {
-        deny(`fabflows: force-pushing to the default branch '${b.defaults.join("' or '")}' is blocked.`);
       }
     }
   }

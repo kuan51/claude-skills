@@ -583,6 +583,72 @@ test('git ops are blocked on a default branch and allowed elsewhere', () => {
   }
 });
 
+test('git rules judge the branch and ref a command actually touches', () => {
+  const main = tempRepo('main');
+  const feat = tempRepo('feat');
+  try {
+    const onMain = (cmd) => shell(cmd, 'Bash', main);
+    const onFeat = (cmd) => shell(cmd, 'Bash', feat);
+    for (const cmd of [
+      'git merge-base main HEAD',
+      'git merge-tree main HEAD',
+      'git commit-graph write',
+      'git commit-tree HEAD^{tree} -m x',
+      'git merge --abort',
+      'git merge --quit',
+      'git rebase --abort',
+      'git rebase --quit',
+      'git clean -nd',
+      'git clean -dn',
+      'git clean --dry-run -d',
+      'git checkout -b fix && git commit -m x',
+      'git switch -c fix && git commit -m x',
+      'git switch fix; git rebase origin/fix',
+      'git push origin feat',
+      `Set-Location ${feat}; git commit -m x`,
+    ]) {
+      allows(onMain(cmd), `${cmd} (on main)`);
+    }
+    for (const cmd of [
+      'git commit -m x',
+      'git merge feat',
+      'git clean -fdx',
+      'git clean -fd',
+      'git checkout src && git commit -m x',
+      'git switch - && git commit -m x',
+      'git push',
+      'git push --all',
+    ]) {
+      denies(onMain(cmd), `${cmd} (on main)`);
+    }
+    for (const cmd of ['git push --force-with-lease origin fix/main', 'git push origin feat', 'git push origin HEAD']) {
+      allows(onFeat(cmd), `${cmd} (on feat)`);
+    }
+    for (const cmd of [
+      'git push origin HEAD:main',
+      'git push origin feat:main',
+      'git push origin feat:refs/heads/main',
+      'git push origin +feat:main',
+      'git push --force origin main',
+      'git push --mirror',
+      'git switch main && git commit -m x',
+      'git switch main && git push origin HEAD',
+      `Set-Location ${main}; git commit -m x`,
+      `Set-Location -Path ${main}; git commit -m x`,
+      `Push-Location ${main}; git commit -m x`,
+      `pushd ${main} && git commit -m x`,
+      `chdir ${main} && git commit -m x`,
+    ]) {
+      denies(onFeat(cmd), `${cmd} (on feat)`);
+    }
+    assert.match(onFeat('git push origin +feat:main').reason, /force-push/);
+    assert.match(onFeat('git push -f origin feat:main').reason, /force-push/);
+  } finally {
+    fs.rmSync(main, { recursive: true, force: true });
+    fs.rmSync(feat, { recursive: true, force: true });
+  }
+});
+
 test('fails open on anything it cannot understand', () => {
   const r = spawnSync(process.execPath, [GUARD], { input: 'not json at all', encoding: 'utf8' });
   assert.equal(r.status, 0);
