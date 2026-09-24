@@ -50,7 +50,9 @@ so it picks up the newly installed plugin.
   loop for a spec'd change; and `using-fabflows`, the entrypoint skill you invoke at the
   start of a conversation to put the whole session on that discipline; and `brainstorming`,
   which turns a rough idea into a spec the build loop can take, with the refuter attacking
-  the draft before it is written. Includes an
+  the draft before it is written; and `fabflows-setup` plus `ticket`, which keep specs in a
+  GitHub Issues, Jira or Linear ticket instead of `docs/specs/`, with a hook that puts the
+  ticket key on every commit and PR. Includes an
   **active guard hook** that blocks package installs (one exception: `pypdf` into a
   literal scratchpad `--target` with `--isolated`), default-branch commits,
   destructive commands, and credential reads and writes. Read that plugin's README

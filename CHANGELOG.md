@@ -8,6 +8,17 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.6.0** -- specs can live in the tracker ticket instead of `docs/specs/`
+  (#66). `fabflows-setup` asks once for GitHub Issues, Jira, Linear or none, checks that the
+  tracker's MCP tools are loaded without ever adding a server or handling a secret, and
+  writes a committed `.claude/fabflows.json`. The `ticket` skill carries the rules: the tool
+  table per tracker, a plain-bullet body template, the description edited in place, standing
+  permission only on a confirmed link, and status moving from in progress to done with the
+  closing phrase on a finishing PR. `brainstorming` writes a full-tier spec to the linked
+  ticket, fingerprints the approved text with `ticket.js approve`, and confirms it with
+  `ticket.js check` before the build. The `ticket.js` hook requires `Refs:` and `Spec:`
+  trailers on commits and the key in the PR title. `ticket.js normalize` now strips comments
+  and tags before decoding entities, so an encoded `-->` no longer lets hidden text through.
 - **fabflows 0.5.0** -- brought in line with Anthropic's skill guide. The guard gains one
   exception: `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>`
   is a literal path with a `scratchpad` directory in it and outside live configuration, so a
