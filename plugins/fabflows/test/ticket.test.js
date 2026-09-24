@@ -67,6 +67,7 @@ test('normalize removes comments, invisible characters and Links, and nothing el
   assert.equal(normalize('a <!-- hidden --> b'), 'a  b', 'a comment outside a fence');
   assert.equal(normalize('a\n<!-- open\nsecret\n```\nx\n```'), 'a', 'an unclosed comment removes the rest');
   assert.equal(normalize('`<!--` a <!-- b --> c'), '`<!--` a  c', 'a comment after a code span');
+  assert.equal(normalize('a <!-- ` --> `<!--` b -->'), 'a  `<!--` b -->', 'a backtick inside a closed comment opens no span');
   assert.deepEqual(normalizeInfo('a <!-- open\nsecret'), { text: 'a', unclosedAt: 1 });
   assert.deepEqual(normalizeInfo('x\ny ` <!-- z'), { text: 'x\ny `', unclosedAt: 2 }, 'an unmatched backtick opens no span');
   assert.equal(normalizeInfo('a <!-- b --> c').unclosedAt, null);
@@ -84,7 +85,7 @@ test('normalize removes comments, invisible characters and Links, and nothing el
   }
 
   // Ticket text is attacker-controlled: none of these may go quadratic.
-  for (const big of ['[a\n'.repeat(64 * 1024 / 3), ' '.repeat(64 * 1024) + 'x', '\n'.repeat(64 * 1024) + 'b', '`<!--` '.repeat(64 * 1024 / 7)]) {
+  for (const big of ['[a\n'.repeat(64 * 1024 / 3), ' '.repeat(64 * 1024) + 'x', '\n'.repeat(64 * 1024) + 'b', '`<!--` '.repeat(64 * 1024 / 7), '<!-- ` --> `x` '.repeat(64 * 1024 / 15)]) {
     const t0 = Date.now();
     normalize(big);
     assert.ok(Date.now() - t0 < 500, `64 KB took ${Date.now() - t0} ms`);

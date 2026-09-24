@@ -52,23 +52,17 @@ function validState(s) {
 const INVISIBLE = /[\p{Cf}\uFE00-\uFE0F\u{E0100}-\u{E01EF}]|(?![\n\t])\p{Cc}/gu;
 const LINKS = /^ {0,3}(?:#{1,6}[ \t]+Links:?|\*\*Links(?::\*\*|\*\*:?))[ \t]*$/;
 
-// Inline code spans on t[from, to): a run of N backticks closed by the next run of exactly N.
-function codeSpans(t, from, to) {
-  const runs = [...t.slice(from, to).matchAll(/`+/g)].map((m) => [from + m.index, m[0].length]);
-  const next = []; // the next run of the same length, found right to left so this stays linear
-  const seen = new Map();
+// The backtick runs on t[from, to), each [start, end, next]. An inline code span is a run of
+// N backticks closed by the next run of exactly N on the line; next is that run's index.
+function backtickRuns(t, from, to) {
+  const runs = [...t.slice(from, to).matchAll(/`+/g)].map((m) => [from + m.index, from + m.index + m[0].length]);
+  const seen = new Map(); // right to left, so this stays linear
   for (let a = runs.length - 1; a >= 0; a--) {
-    next[a] = seen.get(runs[a][1]);
-    seen.set(runs[a][1], a);
+    const n = runs[a][1] - runs[a][0];
+    runs[a][2] = seen.get(n);
+    seen.set(n, a);
   }
-  const spans = [];
-  for (let a = 0; a < runs.length; a++) {
-    const b = next[a];
-    if (b === undefined) continue;
-    spans.push([runs[a][0], runs[b][0] + runs[b][1]]);
-    a = b;
-  }
-  return spans;
+  return runs;
 }
 
 // { text, unclosedAt }: unclosedAt is the line of a `<!--` that never closes, which removes
@@ -81,7 +75,7 @@ function normalizeInfo(text) {
   let i = 0;
   let lineStart = true;
   let open = -1; // the next `<!--` at or after i, found once: searching per line is quadratic
-  let spans = [], spansEnd = -1, sp = 0; // this line's code spans, and the first not yet passed
+  let runs = [], runsEnd = -1, r = 0; // this line's backtick runs, and the next that may open a span
   let unclosedAt = null;
   while (i < t.length) {
     const nl = t.indexOf('\n', i);
@@ -112,11 +106,15 @@ function normalizeInfo(text) {
       open = t.indexOf('<!--', i);
       if (open < 0) open = Infinity;
     }
-    if (open < lineEnd && spansEnd !== lineEnd) [spans, spansEnd, sp] = [codeSpans(t, i, lineEnd), lineEnd, 0];
+    if (open < lineEnd && runsEnd !== lineEnd) [runs, runsEnd, r] = [backtickRuns(t, i, lineEnd), lineEnd, 0];
+    // Spans open left to right from i, so a backtick inside a comment that closed opens none.
     while (open < lineEnd) {
-      while (sp < spans.length && spans[sp][1] <= open) sp++;
-      if (sp === spans.length || spans[sp][0] > open) break;
-      open = t.indexOf('<!--', spans[sp][1]); // this one is code
+      while (r < runs.length && runs[r][0] < i) r++;
+      while (r < runs.length && runs[r][0] < open && (runs[r][2] === undefined || runs[runs[r][2]][1] <= open)) {
+        r = runs[r][2] === undefined ? r + 1 : runs[r][2] + 1;
+      }
+      if (r === runs.length || runs[r][0] > open) break;
+      open = t.indexOf('<!--', runs[runs[r][2]][1]); // inside the span run r opens: code
       if (open < 0) open = Infinity;
     }
     if (open >= lineEnd) {
