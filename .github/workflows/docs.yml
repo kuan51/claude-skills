@@ -14,12 +14,15 @@ jobs:
     env:
       SCRIPTS: plugins/docs-warden/skills/docs-warden/scripts
     steps:
-      # Depth 2 reaches HEAD^1: on pull_request, HEAD is the merge commit and
-      # its first parent is the base branch tip.
+      # Full history: audit.py's adr-immutability check reads each decision
+      # record's git log, and a shallow clone cuts that log down to the PR
+      # head, so an edit to an accepted record would pass. The Vale step diffs
+      # against HEAD^1: on pull_request, HEAD is the merge commit and its first
+      # parent is the base branch tip.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 0
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
