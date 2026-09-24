@@ -160,6 +160,15 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **docs-warden 0.7.1** -- the compaction waiting line counted every record that was not
+  accepted or rejected as "still proposed" in its text. A draft or a stored `superseded` then
+  sent compact mode looking for proposed records that did not exist, and the line never
+  cleared. The line now names them as "not yet accepted or rejected" and compact mode lists
+  each such record with its status.
+  Status is also matched ignoring surrounding spaces, so `" accepted "` counts. The index
+  still prints each status as written, so no committed index goes out of date. A string tag
+  such as `no-compaction-needed` no longer hides a record: only the whole, lowercase tag
+  `compaction` marks a digest.
 - **docs-warden 0.6.1** -- compaction archived any decision record whose status was not a
   lowercase `proposed`, so a `Proposed` or `draft` record, or one whose front matter did not
   parse, could be moved into `archive/` and frozen into an accepted digest. Only `accepted`

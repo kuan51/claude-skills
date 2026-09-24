@@ -1156,7 +1156,7 @@ def test_adr_immutability_asks_accepted_the_same_way_load_adrs_does():
     edit was reported as 'skipped | not yet committed' -- a false reason on a
     record that is committed. Any case is accepted: 'Accepted' matched neither
     and was never checked at all."""
-    for status_line in ['accepted', '"accepted"', 'accepted  # ratified', 'Accepted']:
+    for status_line in ['accepted', '"accepted"', 'accepted  # ratified', 'Accepted', '" Accepted "']:
         with tempfile.TemporaryDirectory() as tmp:
             repo = _accepted_record_edited_after_acceptance(tmp, status_line)
             entry = _audit_check(repo, "adr-immutability")
@@ -2117,7 +2117,7 @@ def test_check_says_why_compaction_waits():
         repo = Path(tmp)
         _decisions_repo(repo, 50, proposed={50})
         out = _compact(repo, "--check").stdout
-        assert "49 decided and 1 still proposed" in out, out
+        assert "49 decided and 1 not yet accepted or rejected" in out, out
         assert "ready to archive" not in out, out
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)
@@ -2135,9 +2135,69 @@ def test_check_says_why_compaction_waits():
         repo = Path(tmp)
         decisions = _decisions_repo(repo, 50)
         out = _compact(repo, "--check").stdout
-        assert "ready to archive" in out and "still proposed" not in out, out
+        assert "ready to archive" in out and "not yet accepted" not in out, out
         assert not (decisions / "archive").exists(), "--check archived"
         assert len(list(decisions.glob("DEC-*.md"))) == 50
+
+
+def test_waiting_line_names_undecided_records_not_proposed_ones():
+    """A draft or a stored "superseded" is not proposed, so calling every
+    undecided record "still proposed" sent compact mode looking for records
+    that do not exist, and the line never went away."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 48)
+        for n, status in ((49, "Draft"), (50, "superseded")):
+            (decisions / f"DEC-{n:04d}-x.md").write_text(f"---\nid: x\nstatus: {status}\n---\n")
+        out = _compact(repo, "--check").stdout
+        assert "48 decided and 2 not yet accepted or rejected" in out, out
+        assert "proposed" not in out, out
+        # Compact mode lists them from the script, not by re-deriving the
+        # rule; front matter that does not parse shows no status to choose.
+        (decisions / "DEC-0051-x.md").write_text(
+            "---\nid: x\ntitle: Use: Postgres\nstatus: accepted\n---\n")
+        plan = _compact(repo, "--dry-run").stdout
+        assert "DEC-0049-x.md (status: Draft)" in plan, plan
+        assert "DEC-0050-x.md (status: superseded)" in plan, plan
+        assert "DEC-0051-x.md (status: none, fix its front matter)" in plan, plan
+        assert "DEC-0001" not in plan, plan
+
+
+def test_status_matches_in_any_case_and_spacing():
+    """Status matched in any case but not with stray spaces, so a quoted
+    " Accepted " was neither checked nor archived. load_adrs keeps the value
+    as written: lowercasing it there would change every consuming repo's
+    generated index and fail its adr-index check on a patch upgrade."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 48)
+        (decisions / "DEC-0049-x.md").write_text('---\nid: x\nstatus: " Accepted "\n---\n')
+        (decisions / "DEC-0050-x.md").write_text("---\nid: x\nstatus: ACCEPTED\n---\n")
+        _common = _table("_common")
+        records = {r["path"].name: r for r in _common.load_adrs(repo)}
+        assert records["DEC-0050-x.md"]["status"] == "ACCEPTED", records["DEC-0050-x.md"]
+        assert _common.adr_status(records["DEC-0049-x.md"]) == "accepted"
+        out = _compact(repo, "--check").stdout
+        assert "50 decision records" in out and "ready to archive" in out, out
+
+
+def test_digest_tag_matches_only_the_whole_tag_render_writes():
+    """A digest is what render() writes: the whole tag `compaction`, exactly.
+    A substring test on a string tag hid "no-compaction-needed" from the
+    count, and matching in any case hid an ordinary record about log
+    compaction tagged [Compaction]."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 48)
+        (decisions / "DEC-0901-d.md").write_text(
+            "---\nid: d\nstatus: accepted\ntags: [compaction]\n---\n")
+        (decisions / "DEC-0049-x.md").write_text(
+            "---\nid: x\nstatus: accepted\ntags: [Kafka, Compaction]\n---\n")
+        assert _compact(repo, "--check").stdout == ""
+        (decisions / "DEC-0050-x.md").write_text(
+            "---\nid: x\nstatus: accepted\ntags: no-compaction-needed\n---\n")
+        out = _compact(repo, "--check").stdout
+        assert "50 decision records" in out and "ready to archive" in out, out
 
 
 def test_decisions_check_hook_speaks_only_at_50():
@@ -2161,7 +2221,7 @@ def test_decisions_check_hook_speaks_only_at_50():
                 capture_output=True, text=True, check=False)
             assert result.returncode == 0, result.stderr
             assert ("ready to archive" in result.stdout) is expect, (count, result.stdout)
-            assert ("still proposed" in result.stdout) is not expect, (count, result.stdout)
+            assert ("not yet accepted" in result.stdout) is not expect, (count, result.stdout)
     # Garbage stdin must not break session start.
     result = subprocess.run([sys.executable, str(hook)], input="not json",
                             capture_output=True, text=True, check=False)

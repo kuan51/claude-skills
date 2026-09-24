@@ -15,9 +15,9 @@ archived, so what they carry stays at the top level.
 
 The script archives nothing below 50 decided. Re-run adr_index.py afterwards.
 --check prints one line when compaction is due, or when 50 records exist but
-too many are still proposed, and nothing otherwise. That line comes from
-check_line(), which the hook imports at session start and after an edit in
-docs/decisions/, so "due" is defined in exactly one place.
+too many are not yet accepted or rejected, and nothing otherwise. That line
+comes from check_line(), which the hook imports at session start and after
+an edit in docs/decisions/, so "due" is defined in exactly one place.
 """
 import argparse
 import datetime as dt
@@ -84,12 +84,20 @@ def render(record_id: str, records) -> str:
     return "\n".join(lines)
 
 
+def is_digest(record) -> bool:
+    """Carries the tag render() writes, exactly and whole. Exact, because
+    `Compaction` is also an ordinary topic tag; whole, because a string tag
+    such as "no-compaction-needed" is one tag, not a list to search inside."""
+    tags = record["tags"]
+    return DIGEST_TAG in (tags if isinstance(tags, list) else [tags])
+
+
 def split(repo: Path):
     """Top-level records that are not digests, and the decided ones among them.
     Decided is a closed list, not "anything but proposed": a draft, a "Proposed"
     or front matter that did not parse is no decision, and the digest would
     freeze it as one."""
-    records = [r for r in load_adrs(repo) if DIGEST_TAG not in r["tags"]]
+    records = [r for r in load_adrs(repo) if not is_digest(r)]
     return records, [r for r in records if adr_status(r) in DECIDED]
 
 
@@ -104,10 +112,10 @@ def check_line(repo: Path) -> str:
                 f"skill's compact mode to move the oldest {COMPACT_BATCH} into a digest.")
     if len(records) >= COMPACT_AT:
         return (f"docs-warden: {len(records)} decision records in {DECISIONS_DIR}, "
-                f"{len(decided)} decided and {len(records) - len(decided)} still "
-                f"proposed. Compaction archives decided records only and starts at "
-                f"{COMPACT_AT}. Run the docs-warden skill's compact mode to review the "
-                f"proposed ones.")
+                f"{len(decided)} decided and {len(records) - len(decided)} not yet "
+                f"accepted or rejected. Compaction archives decided records only and "
+                f"starts at {COMPACT_AT}. Run the docs-warden skill's compact mode to "
+                f"review the undecided ones.")
     return ""
 
 
@@ -129,9 +137,14 @@ def main() -> int:
             print(line)
         return 0
 
-    _, candidates = split(repo)
+    records, candidates = split(repo)
     if len(candidates) < COMPACT_AT:
         print(f"{len(candidates)} eligible record(s), below the compaction point of {COMPACT_AT}")
+        # What compact mode asks the human about, so it never re-derives the rule.
+        for r in records:
+            if r not in candidates:
+                print(f"undecided: {r['path'].relative_to(repo).as_posix()} "
+                      f"(status: {r['status'] or 'none, fix its front matter'})")
         return 0
     batch = candidates[:COMPACT_BATCH]
 

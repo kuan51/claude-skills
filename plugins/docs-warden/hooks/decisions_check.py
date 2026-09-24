@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Hook, at session start and after an edit in docs/decisions/: print
 adr_compact.check_line(), the one line --check prints when docs/decisions is
-due for compaction or waiting on proposed records, and nothing otherwise. It
-imports the check instead of running the script, so each run costs one Python
-start, not two. After an edit the line goes out as PostToolUse
+due for compaction or waiting on records not yet accepted or rejected, and
+nothing otherwise. It imports the check instead of running the script, so each
+run costs one Python start, not two. After an edit the line goes out as PostToolUse
 additionalContext, since plain stdout there reaches only the debug log. Fails
 open: any error, including a missing PyYAML, means silence and exit 0, and the
 timeout in hooks.json bounds a slow read."""
