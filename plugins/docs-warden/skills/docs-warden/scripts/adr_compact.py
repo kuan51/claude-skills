@@ -132,6 +132,13 @@ def main() -> int:
         print(f"digest: {digest_path.relative_to(repo)}")
         return 0
 
+    # Only the path that runs git mv asks git; --check and --dry-run stay git-free.
+    if git(repo, "status", "--porcelain") != "":
+        print("error: the working tree is not clean, or git cannot tell: compaction must "
+              "land as its own commit; start from a clean checkout of a new branch off "
+              "the default branch", file=sys.stderr)
+        return 1
+
     content = render(digest_id, batch)  # read bodies before anything moves
     archive.mkdir(exist_ok=True)
     for r in batch:

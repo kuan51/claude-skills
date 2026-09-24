@@ -1878,7 +1878,9 @@ def test_adr_compact_archives_the_oldest_25_into_a_digest():
         (decisions / "DEC-0040-choice-40.md").write_text(
             (decisions / "DEC-0040-choice-40.md").read_text().replace(
                 "supersedes: []", "supersedes: [DEC-0005]"), encoding="utf-8")
-        before = (decisions / "DEC-0001-choice-1.md").read_bytes()
+        subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t",
+                        "commit", "-qam", "supersede"], check=True)
+        before =(decisions / "DEC-0001-choice-1.md").read_bytes()
         result = _compact(repo)
         assert result.returncode == 0, result.stderr
         archive = decisions / "archive"
@@ -1958,6 +1960,36 @@ def test_adr_compact_refuses_to_overwrite_an_archived_file():
         assert result.returncode == 1 and "DEC-0013" in result.stderr, result
         assert len(list(decisions.glob("DEC-*.md"))) == 50, "moved despite the clash"
         assert (decisions / "archive" / "DEC-0013-choice-13.md").read_text() == "old\n"
+
+
+def test_adr_compact_refuses_a_dirty_tree():
+    """Compaction lands as its own commit, so it must never pick up work in
+    progress: any tracked change or untracked file stops it before anything
+    moves. --dry-run and --check never ask git."""
+    reason = "compaction must land as its own commit"
+    git = ["-c", "user.name=t", "-c", "user.email=t@t"]
+    for dirty in ("untracked", "modified"):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            decisions = _decisions_repo(repo, 50)
+            if dirty == "untracked":
+                (repo / "notes.txt").write_text("wip\n")
+            else:
+                p = decisions / "DEC-0050-choice-50.md"
+                p.write_text(p.read_text() + "wip\n")
+            result = _compact(repo)
+            assert result.returncode == 1 and reason in result.stderr, (dirty, result)
+            assert not (decisions / "archive").exists(), dirty
+            assert not list(decisions.glob("DEC-0051-*.md")), dirty
+            assert len(list(decisions.glob("DEC-*.md"))) == 50, dirty
+            dry = _compact(repo, "--dry-run")
+            assert dry.returncode == 0 and "DEC-0051" in dry.stdout, (dirty, dry)
+            check = _compact(repo, "--check")
+            assert check.returncode == 0 and "ready to archive" in check.stdout, (dirty, check)
+            subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+            subprocess.run(["git", "-C", str(repo), *git, "commit", "-qm", "wip"], check=True)
+            result = _compact(repo)
+            assert result.returncode == 0, (dirty, result.stderr)
 
 
 def test_adr_compact_section_ignores_headings_inside_code_fences():

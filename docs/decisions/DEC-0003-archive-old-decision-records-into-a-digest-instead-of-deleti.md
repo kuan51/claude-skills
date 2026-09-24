@@ -52,6 +52,7 @@ The trigger is a hook, run at session start and after an edit in
 (not proposed, not a digest) and prints one line at 50 or more, the same count the script uses. A hook cannot run the compaction itself; it
 tells the session to run the skill's `compact` mode, which runs
 `adr_compact.py --dry-run`, shows the mapping, and moves on a yes.
+Compaction lands as its own pull request.
 
 ## Consequences
 

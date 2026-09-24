@@ -172,15 +172,28 @@ digest), or by
 1. `scripts/adr_compact.py <repo> --dry-run` and show the human the mapping: the
    25 oldest non-proposed records that move to `docs/decisions/archive/`, and the
    id of the digest that replaces them.
-2. On a yes, run it without `--dry-run`. Files move with `git mv`, bytes untouched;
+2. On a yes, prepare a branch. Compaction is housekeeping and lands alone. Unlike
+   a doc update, which rides with the code it describes
+   (`references/anti-drift.md`, "Documents in the same pull request"), it
+   describes no code change. Start a new branch from the up-to-date default
+   branch. If the current checkout has work in progress or sits on another
+   branch, do not stash or switch it: use a separate worktree
+   (`git worktree add`) or ask the human when. The script refuses a working tree
+   that is not clean.
+3. Run it without `--dry-run`. Files move with `git mv`, bytes untouched;
    the digest is a new accepted record carrying each archived record's outcome
    and gaps verbatim. The history still reads from `docs/decisions/` alone.
-3. Re-run `scripts/adr_index.py`, then `audit.py`.
+4. Re-run `scripts/adr_index.py`, then `audit.py`.
+5. Commit the moves, the digest and the index as one commit. Offer to push it and
+   open it as its own pull request (merge request on GitLab). Never fold it into
+   a branch that carries code.
 
 If the line instead says 50 records exist but some are still proposed, nothing is
 due yet: list the proposed records oldest first and ask the human to accept or
 reject each. Never change a status without their word. Then re-run
-`scripts/adr_compact.py <repo> --check`.
+`scripts/adr_compact.py <repo> --check`. Status changes follow the same route
+as compaction: their own commit, in the same housekeeping pull request. A record
+accepted as part of the change that implements it stays with that change.
 
 The script archives nothing below 50 decided. Never edit the digest or the archived
 files. They are accepted records like any other.

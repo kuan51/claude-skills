@@ -128,6 +128,7 @@ the digest and not the archived records, and a moved record's `../` links are
 not reported. Digests are never archived, so what they carry stays at the top
 level. The plugin's hook prints a reminder once 50 archivable
 records exist, at session start and after an edit in `docs/decisions/`.
+Compaction lands as its own pull request.
 
 ## Migrating a monolithic decision log
 
