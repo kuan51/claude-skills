@@ -1,4 +1,10 @@
-# docs-warden: scope RUNLOG to operational archetypes and constrain its entries
+---
+owner: kuan51
+review_by: 2027-03-22
+generated: false
+---
+
+# docs-warden: Scope RUNLOG to operational archetypes and constrain its entries
 
 ## Behaviour
 

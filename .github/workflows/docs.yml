@@ -1,0 +1,69 @@
+# Lints and audits the documentation on every pull request: markdownlint,
+# docs-warden's audit (which also checks that generated documents are
+# current), then Vale on the changed files, as .pre-commit-config.yaml runs it.
+name: docs
+
+# Also on push to master: a pull_request run does not re-run when master
+# moves, so two PRs that each pass alone can merge into a stale
+# domain-model.md. This run shows that on master itself, not on the next PR.
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-24.04
+    env:
+      SCRIPTS: plugins/docs-warden/skills/docs-warden/scripts
+    # An explicit bash adds -o pipefail to the default -e, so a failing
+    # command before a pipe fails the step instead of feeding xargs nothing.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Full history: audit.py's adr-immutability check reads each decision
+      # record's git log, and a shallow clone cuts that log down to the PR
+      # head, so an edit to an accepted record would pass. The Vale step diffs
+      # against HEAD^1: on pull_request, HEAD is the merge commit and its first
+      # parent is the base branch tip. On push to master, HEAD^1 is the
+      # previous master tip when the push is a PR's merge commit.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - run: pip install pyyaml==6.0.3
+
+      - name: markdownlint
+        run: npx --yes markdownlint-cli2@0.23.2
+      # Before Vale is installed or synced, on purpose. With no vale on PATH,
+      # audit's lint row skips its repo-wide Vale run (the step below lints
+      # the changed files), and `vale sync` has not yet put untracked package
+      # Markdown under styles/ for the phi-secrets and glossary scans to read.
+      - name: audit.py
+        if: ${{ !cancelled() }}
+        run: python "$SCRIPTS/audit.py" .
+      - name: Install Vale 3.17.1
+        if: ${{ !cancelled() }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSLo vale.tar.gz https://github.com/errata-ai/vale/releases/download/v3.17.1/vale_3.17.1_Linux_64-bit.tar.gz
+          echo "db947f89f2292e6a0381a61de155f6a5f5cb4cb460ca178ea412ef605559cefd  vale.tar.gz" | sha256sum -c -
+          tar -xzf vale.tar.gz vale
+          echo "$PWD" >> "$GITHUB_PATH"
+      # Only the Markdown files this PR changes, as pre-commit lints only staged
+      # files: older documents are checked when someone next edits them.
+      # Warnings print; error-level rules block.
+      - name: Vale
+        if: ${{ !cancelled() }}
+        run: |
+          python "$SCRIPTS/glossary_to_vale.py" .
+          vale sync
+          git diff -z --name-only --diff-filter=ACMR HEAD^1 HEAD -- '*.md' \
+            | xargs -0 -r vale --minAlertLevel=warning
