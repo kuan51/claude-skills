@@ -148,11 +148,13 @@ function isLocalRun(seg, cwd) {
     break;
   }
   if (offline && !yes) return true;
-  if (!bin || !/^[\w.-]+$/.test(bin)) return false; // no @, / or :, so no version or package spec
+  // no @, / or :, so no version or package spec; `.` and `..` are directory specs, not bins
+  if (!bin || !/^[\w.-]+$/.test(bin) || /^\.+$/.test(bin)) return false;
+  const isFile = (p) => fs.statSync(p, { throwIfNoEntry: false })?.isFile() === true;
   try {
     for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
       const b = path.join(dir, 'node_modules', '.bin', bin);
-      if (fs.existsSync(b) || fs.existsSync(b + '.cmd')) return true;
+      if (isFile(b) || isFile(b + '.cmd')) return true;
       if (path.dirname(dir) === dir) return false;
     }
   } catch {
