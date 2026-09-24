@@ -345,6 +345,12 @@ function commands(s, level = 0) {
     }
     return Math.min(p, s.length);
   };
+  // True when s[k] is escaped by an odd run of backslashes before it.
+  const escaped = (k) => {
+    let n = 0;
+    while (k - n > 0 && s[k - n - 1] === '\\') n++;
+    return n % 2 === 1;
+  };
   // The index of the backtick closing the one at i, or -1.
   const tick = (i) => {
     for (let j = i + 1; j < s.length; j++) {
@@ -380,7 +386,8 @@ function commands(s, level = 0) {
       if (j < 0) return null;
       if (top) add(s.slice(i + 1, j));
       i = j + 1;
-    } else if (c === '#' && /[\s;&|()]/.test(s[i - 1] ?? ' ')) {
+    } else if (c === '#' && (i === 0 || (/[\s;&|(]/.test(s[i - 1]) && !escaped(i - 1)))) {
+      // A word starts after unescaped blanks and ; & | ( only: `$(a)#b` and `a\ #b` are one word.
       const k = s.indexOf('\n', i); // a comment runs to the end of its line, and is no command's text
       if (top) end(i);
       i = k < 0 ? s.length : k;

@@ -470,6 +470,9 @@ test('PR titles must carry the key', () => {
     assert.equal(shell(r.dir, 'gh pr create --title "ABC-1" --title "no key"').decision, 'deny', 'every --title');
     assert.equal(shell(r.dir, 'url=$(gh pr create --title "no key" --body x)').decision, 'deny', 'inside $(...)');
     assert.equal(shell(r.dir, '# then gh pr create\nls x#y').decision, 'allow', 'a comment is not a command');
+    for (const cmd of ['x=$(echo a)#b; gh pr create --fill', 'echo a\\;#b; gh pr create --fill', 'echo a\\ #b; gh pr create --fill']) {
+      assert.equal(shell(r.dir, cmd).decision, 'deny', `a # inside a word is no comment: ${cmd}`);
+    }
     const commitThenPr = shell(r.dir, 'git commit -m "x\n\nRefs: ABC-1" && gh pr create --fill');
     assert.equal(commitThenPr.decision, 'deny', 'a good commit does not excuse the PR title');
     assert.match(commitThenPr.reason, /pass --title/);
