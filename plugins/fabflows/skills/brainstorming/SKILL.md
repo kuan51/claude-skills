@@ -17,8 +17,8 @@ what is out of scope.
 ## Boundaries
 
 **This skill will:** size the request, send workers to gather facts, ask bounded rounds of
-questions with a recommended answer on each, cut the design to the smallest slice that
-can merge, run it past a reviewer, and write the spec.
+questions with a recommended answer on each, cut the design to the smallest slice worth
+delivering, run it past a reviewer, and write the spec.
 
 **This skill will not:** write or edit code, write a fixture whose body is a destructive
 command, spawn `fabflows:editor` or `fabflows:test-runner`, or start the build loop before
@@ -128,8 +128,8 @@ Deferred: <item> ...
 This is the coverage map. The user sees what is left, and the lead does not re-derive it.
 
 **Disagree.** If two answers contradict, say so and ask which wins. If an answer builds
-more than the premise needs, name the smaller version and ask. A run of three "agreed"
-answers in a row is the failure mode, not the goal: a spec the user only nodded at is the user's
+more than the premise needs, name the smaller version and ask. "Agreed" for three
+rounds in a row is the failure mode, not the goal: a spec the user only nodded at is the user's
 first guess with a heading.
 
 **Some questions cannot be answered by asking.** "How should it feel," "which layout,"
@@ -147,7 +147,7 @@ remaining item into Decided with its recommended answer as the default, mark the
 ## 4. Expand, then cut
 
 Once Open is empty, state the maximal version in five lines: everything the design could
-be. Then cut to the smallest slice that can merge and be checked, sized so the build fits
+be. Then cut to the smallest slice that can be delivered and checked, sized so the build fits
 in about half a fresh context. Larger than that is two specs, in order.
 
 Everything cut goes to Deferred with one line each. Deferred is a section of the spec,

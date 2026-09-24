@@ -94,9 +94,10 @@ forgets a link after its branch is gone.
   (unconfirmed, so Claude asks first), or a reminder that the branch has none.
 - PreToolUse denies a `git commit` with an inline message that lacks `Refs: <key>` (and
   `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key. It
-  splits a command at `&&`, `;`, pipes and newlines, minding quotes, heredocs and comments,
-  and also reads the commands inside `$(...)` and backticks. Each commit needs the lines in
-  its own message: a trailer in an `echo` or in another commit does not count.
+  splits a command at `&&`, `||`, `;`, `|`, `&`, parentheses and newlines, minding quotes,
+  heredocs and comments, and also reads the commands inside `$(...)` and backticks, up to
+  eight levels deep. Each commit needs the lines in its own message: a trailer in an `echo`
+  or in another commit does not count.
 - PostToolUse reminds Claude to update the ticket after a push and a PR creation. After a
   merge (not `gh pr merge --auto` or `--disable-auto`) it finds the ticket by the PR the merge
   named, or, for a bare `gh pr merge`, by the branch it started on. It asks Claude to check
@@ -125,7 +126,8 @@ stored approved text so Claude can show the raw diff.
 and its key or hash must match exactly (`ABC-12` does not satisfy `ABC-1`, `#70` does not
 satisfy `#7`). Only an inline message (`-m`, `--message`, `-F -`) is checked; a commit
 written in the editor or from a file (`-F <file>`) is not. A trailer nested inside another
-quoted string still passes, and the hook does not look inside `bash -c`, `eval` or an alias.
+quoted string still passes, and the hook does not look inside `bash -c`, `eval`, an alias,
+a heredoc body, or a backtick nested in backticks.
 A command whose quotes don't balance is read whole, as one command. A `gh pr create` without
 `--title`/`-t` (`--fill`, `--web`) is denied on a linked branch, because its title can't be
 checked. The merge reminder also fires after a failed merge command, so it asks Claude to
