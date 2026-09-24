@@ -1,3 +1,9 @@
+---
+owner: kuan51
+review_by: 2027-03-23
+generated: false
+---
+
 # docs-warden: say why compaction waits, remind mid-session, land it as its own PR
 
 The docs-warden plugin already reminds at session start when `docs/decisions/` is due for
@@ -38,8 +44,8 @@ nothing to do with it.
    (including `SessionStart` and a missing name) behaves as today: `--check` on `cwd`,
    plain stdout. So the waiting line also reaches Claude at session start.
 5. **Compact mode** (`SKILL.md`) handles the waiting line: list the proposed records
-   oldest first, ask the human to accept or reject each, never change a status without
-   their word, then re-run `--check`. The due-line steps are unchanged.
+   oldest first, ask the human to accept or reject each, and never change a status
+   without their word. Afterwards it re-runs `--check`. The due-line steps are unchanged.
 6. **Wording**, updated in the commit whose behaviour makes it stale:
    - One-line description, `plugin.json:4` and `marketplace.json:28`: "compacts the oldest
      of them into a digest once fifty exist" becomes "offers to archive the oldest of them
