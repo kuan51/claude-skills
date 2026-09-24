@@ -2166,6 +2166,7 @@ def test_status_matches_in_any_case_and_spacing():
         assert statuses["DEC-0049-x.md"] == statuses["DEC-0050-x.md"] == "accepted", statuses
         assert "50 decision records" in _compact(repo, "--check").stdout
 
+
 def test_digest_tag_matches_in_any_case_and_only_whole():
     """The digest test was `"compaction" in tags`: exact case, so a digest
     tagged [Compaction] counted as an archivable record, and a substring test
@@ -2180,6 +2181,7 @@ def test_digest_tag_matches_in_any_case_and_only_whole():
             "---\nid: x\nstatus: accepted\ntags: no-compaction-needed\n---\n")
         out = _compact(repo, "--check").stdout
         assert "50 decision records" in out and "ready to archive" in out, out
+
 
 def test_decisions_check_hook_speaks_only_at_50():
     hook = SCRIPTS.parent.parent.parent / "hooks" / "decisions_check.py"
