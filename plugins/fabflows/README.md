@@ -267,15 +267,23 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   so `--force-with-lease` on your own feature branch still works.
 - **Destructive commands**: `rm -rf` and `Remove-Item -Recurse -Force` at a home,
   root, parent, or `.git` target; `git reset --hard`; `git clean -fd`; `git branch -D`
-  (but not `-d`); `sudo`; `chmod 777`; `dd of=`; `mkfs`; `Set-ExecutionPolicy`; and
-  piping a download straight into a shell. Under home, a delete is blocked at home itself
+  (but not `-d`); `sudo`; a `chmod` that makes a path world-writable; `dd of=`; `mkfs`;
+  `Set-ExecutionPolicy`; and piping a download straight into a shell. A root followed by a
+  glob is the root: `rm -rf /*`, `'/'`, `/?*` and `C:\*` are blocked, while `C:*`, the
+  current directory on drive C, passes. `chmod` is blocked when any word after it is a
+  `777`-shaped octal mode (`-R 777`, `0777`) or a symbolic mode that gives others write
+  (`o+w`, `a+rwx`, `go+w`, `o=u`); `+w` with no who-part, `u+w` and `755` pass. Under home,
+  a delete is blocked at home itself
   in any spelling (`~`, `$HOME`, `/root`, `/home/<user>`, `C:\Users\<user>`), at `~/*`,
   at a direct child such as `~/projects`, anywhere under `.ssh`, `.claude`, `.aws`,
   `.config` or `.gnupg`, and at any target with a `..` segment, which can climb back to
   home. A deeper path such as `rm -rf ~/.cache/pip` passes. A dry run (`git clean -nd`)
   passes too.
 - **Credential files**: reading, staging, or writing `.env`, `*.pem`, `*.key`,
-  `id_rsa`, `~/.ssh/`, `~/.aws/credentials`, `.npmrc`, `.pypirc`. Committed examples
+  `id_rsa`, `~/.ssh/`, `~/.aws/credentials`, `.npmrc`, `.pypirc`. A `Read` or `Grep`
+  of a bare `~/.ssh` or `~/.aws` directory counts, whatever trailing `/` or `/.` follows
+  it, and so does a `Grep` whose `glob` can match one of a fixed list of sample secret
+  names (`.env`, `*.pem`, `.en*`, `.*`, `**/.ssh/**`). Committed examples
   (`.env.example`, `.env.sample`, `.env.template`) are exempt. A `.pem` or `.key` name
   followed by a source or prose extension (`monkey.pem.md`, `api.key.ts`) is not a secret,
   but `sa.key.json` still is. A `.env` directory, such as a Python virtual environment, is
@@ -346,6 +354,19 @@ be walked around:
   `canUseTool` callback, or `--permission-prompt-tool` can approve it automatically.
 - Workers are told apart by the `agent_id` field. Whether agent-team teammates carry it
   is not documented.
+- A delete of a system directory such as `/usr`, `/etc` or `/var` is not blocked; only
+  the root itself is. Neither is a root hidden by a brace or bracket glob
+  (`rm -rf /{*,.*}`, `rm -rf /[a-z]*`).
+- An octal mode with the world-write bit that is not `77`-shaped (`chmod 666`,
+  `chmod 002`) passes, and so does `chmod --reference`. A file literally named `777`
+  (`chmod 644 777`) is read as a mode and blocked.
+- A `Grep` glob is tested against a fixed list of sample secret names, so a glob that
+  matches only a secret name missing from the list (`prod.env`) passes. A glob of only
+  `*`, `?` and `/` (`*`, `**/*`) is not checked. Rare broad globs such as `*.local`, `*rc`
+  and `*.p*` are blocked because they can match a secret name.
+- A `Grep` over `.` or `~` with no glob can still read `.env` or `~/.ssh`: the guard
+  cannot see which files a search opens. The `Glob` tool is not checked; it lists names
+  but not contents.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.

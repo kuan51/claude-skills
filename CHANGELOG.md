@@ -160,6 +160,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.7.2** -- the guard closes three misses against rules its README already
+  states. A recursive delete of a root followed by a glob (`rm -rf /*`, `'/'`, `/?*`,
+  `C:\*`) is blocked as the root itself. `chmod` is blocked when any word after it grants
+  world write, so a flag (`chmod -R 777 .`) no longer hides the mode and symbolic modes
+  (`o+w`, `a+rwx`, `o=u`) count; a runner file carrying either is blocked too. A `Grep`
+  whose `glob` can match a sample secret name (`.env`, `*.pem`, `.*`) is denied, and so is a
+  `Read` or `Grep` of a bare `~/.ssh` or `~/.aws` directory. System directories, other
+  octal world-write modes and secret names outside the sample list stay known gaps.
 - **fabflows 0.7.1** -- the guard stops blocking about twenty everyday commands its README
   never claimed to block, and each narrowed rule keeps a test that the nearby real threat is
   still caught. Commands split only on separators outside quotes, so a commit message, a PR
