@@ -78,7 +78,9 @@ dropping its `installed_plugins.json` entry, and checking the marketplace clone 
 
 `docs/` follows the docs-warden layout (`docs/CONVENTIONS.md` for current state, `docs/decisions/`
 for why, `docs/GLOSSARY.md`, `docs/SECURITY.md`,
-`docs/specs/` for fabflows design records). `.docs-warden.yml` at the root drives it. The
+`docs/specs/` for fabflows design records; when `.claude/fabflows.json` names a tracker, the
+spec lives in the linked ticket instead, and the approval fingerprint plus each commit's `Spec:`
+trailer replace the "never overwritten" guarantee). `.docs-warden.yml` at the root drives it. The
 `docs-warden` plugin in this repo is also the installed tool: invoke the `docs-warden:docs-warden`
 skill and it picks the mode, or run its scripts directly from the installed plugin, never from a
 copy in this repo:

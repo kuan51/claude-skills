@@ -32,7 +32,11 @@ yourself before running docs-warden's scripts locally).
 - `docs/`: this document set, plus `docs/specs/`: dated design records written
   by `fabflows:brainstorming`, one per change (`<YYYY-MM-DD>-<slug>.md`), never
   renamed or overwritten. A spec describes the behaviour, how to check it, what
-  is out of scope, the decisions taken and what was deferred.
+  is out of scope, the decisions taken and what was deferred. When
+  `.claude/fabflows.json` names a tracker, the spec lives in the linked ticket
+  instead of `docs/specs/`; a ticket can be edited, so the approval fingerprint
+  (`ticket.js approve`) and each commit's `Spec:` trailer replace the "never
+  overwritten" guarantee.
 
 ## Branches and commits
 

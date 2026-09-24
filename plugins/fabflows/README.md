@@ -66,6 +66,46 @@ to the smallest shippable slice, and sends the draft to `refuter` in spec mode, 
 attacks it across seven lenses and blocks on a security gap. The user reads the spec before
 `fabflows:build` launches.
 
+## Tickets
+
+A repository can keep its specs in a tracker ticket instead of `docs/specs/`, so a PR diff
+carries no spec file and the spec sits where managers track the work.
+
+**Setup.** Run `/fabflows-setup` once. It asks for GitHub Issues, Jira, Linear or none,
+checks that the tracker's MCP tools are loaded, asks for the project, and writes
+`.claude/fabflows.json`, which is committed. It never connects a server and never handles a
+secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carries the
+rules after that: the tool table, the ticket body template, what a confirmed link lets
+Claude do without asking, and how status moves from in progress to in review to done.
+
+**Hooks.** `hooks/ticket.js` keeps the branch's link in
+`git rev-parse --git-path fabflows/ticket`, never in the working tree, and reads only that
+local state; every tracker write is Claude's own MCP call.
+
+- SessionStart prints one line: the linked ticket, a link found only in a `Refs:` trailer
+  (unconfirmed, so Claude asks first), or a reminder that the branch has none.
+- PreToolUse denies a `git commit` with an inline message that lacks `Refs: <key>` (and
+  `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key.
+- PostToolUse reminds Claude to update the ticket after a push, a PR creation and a merge.
+
+The approval fingerprint (`ticket.js approve`) and the `Spec:` trailer on every commit tie
+the build to the text the user approved: `ticket.js check` fails if the ticket changed
+since.
+
+**Fail-open limits.** The hooks fail open, like the guard, so these pass unchecked:
+
+- The plugin is disabled: no hook runs at all.
+- The tracker's MCP server is disconnected: the hooks still demand trailers, but nothing
+  updates the ticket.
+- SessionStart does not fire on your surface: no reminder line, so Claude learns of the
+  link only from a later hook.
+
+**Key-matching limits.** The key must stand alone (`ABC-12` does not satisfy `ABC-1`, `#70`
+does not satisfy `#7`), and matching is case-sensitive. Only an inline message
+(`-m`, `--message`, `-F -`) is checked; a commit written in the editor or from a file is
+not. A PR title is checked only when passed as `--title`/`-t` or the MCP `title`, so
+`gh pr create --fill` is not.
+
 ## The build loop
 
 `fabflows:build` takes one spec'd change through build and review: an Opus `editor`
