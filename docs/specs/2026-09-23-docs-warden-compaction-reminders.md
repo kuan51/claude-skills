@@ -4,7 +4,7 @@ review_by: 2027-03-23
 generated: false
 ---
 
-# docs-warden: say why compaction waits, remind mid-session, land it as its own PR
+# Make docs-warden say why compaction waits, remind mid-session, and land it as its own PR
 
 The docs-warden plugin already reminds at session start when `docs/decisions/` is due for
 compaction (`hooks/decisions_check.py` runs `adr_compact.py --check`), and compaction runs
@@ -45,7 +45,7 @@ nothing to do with it.
    permissions docs, path patterns and Windows normalization).
 4. **Session start unchanged.** Every `hook_event_name` other than `PostToolUse`
    (including `SessionStart` and a missing name) behaves as today: `--check` on `cwd`,
-   plain stdout. So the waiting line also reaches Claude at session start.
+   plain stdout. The waiting line therefore also reaches Claude at session start.
 5. **Compact mode** (`SKILL.md`) handles the waiting line: list the proposed records
    oldest first, ask the human to accept or reject each, and never change a status
    without their word. Afterwards it re-runs `--check`. The due-line steps are unchanged.
@@ -116,7 +116,7 @@ Tests in `plugins/docs-warden/test/test_scripts.py`:
   nothing and `<repo>/docs/decisions/archive/DEC-0001-x.md` gives nothing. 49 accepted and
   none proposed gives nothing. No `tool_input` gives nothing and exit 0. The payload
   `{"hook_event_name":"SessionStart","cwd":<repo>}` gives plain, non-JSON stdout containing
-  "ready to archive". `hooks.json` holds exactly two PostToolUse entries: matcher `Edit`
+  "ready to archive." `hooks.json` holds exactly two PostToolUse entries: matcher `Edit`
   with `if` `Edit(//**/docs/decisions/*)`, and matcher `Write` with `if`
   `Write(//**/docs/decisions/*)`.
 - **New** `test_adr_compact_refuses_a_dirty_tree`: `_decisions_repo(repo, 50)` plus an

@@ -124,7 +124,7 @@ per-plugin history until entries are recorded here going forward.
   Python's locale codec, cp1252 on Windows, so in a repository whose path held a non-ASCII
   character, such as `café`, the compaction reminder never appeared.
 - **fabflows 0.3.6** -- `fabflows:build` failed on Windows before it ran, with the harness
-  error "script contains control characters". The plugin cache is a git checkout, and with
+  error "script contains control characters." The plugin cache is a git checkout, and with
   `core.autocrlf=true` the workflow script arrived as CRLF; the harness hands that file to
   the Workflow tool verbatim and refuses the carriage returns. A root `.gitattributes` now
   pins LF on every platform and a test keeps the script free of control bytes. A cache

@@ -194,7 +194,7 @@ by "compact decisions," "too many decision records."
 5. Commit the moves, the digest and the index as one commit. Offer to push it and
    open it as its own pull request (merge request on GitLab). Never fold it into
    a branch that carries code. Once it is pushed, offer to remove a worktree you
-   made (`git worktree remove <path>`); the branch stays on the remote.
+   made (`git worktree remove <path>`). The branch stays on the remote.
 
 If the line instead says 50 records exist but some are still proposed, nothing is
 due yet: list the proposed records oldest first and ask the human to accept or
@@ -299,10 +299,10 @@ non-empty diff. A generated document that someone can hand-edit will be hand-edi
 ## Glossary seeding
 
 Run `extract_concepts.py <repo>` from the `ontological-documentation` skill, which
-ships with this plugin. It prints JSON to stdout and nothing else.
+comes with this plugin. It prints JSON to stdout and nothing else.
 
 Keep the concepts whose `category` is `"domain"`. For each one `docs/GLOSSARY.md`
-does not already have, add a row: Term is the concept name; Definition is its
+does not already have, add a row where Term is the concept name; Definition is its
 `summary`, or the template's placeholder when the code gave none; `Do not use` is
 empty; Source is its `defined_in`. **Never touch an existing row**, and never
 invent a definition.
