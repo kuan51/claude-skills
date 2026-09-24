@@ -114,8 +114,12 @@ Tests in `plugins/docs-warden/test/test_scripts.py`:
   no digest, and all 50 records in place; the same with a modified tracked file instead;
   `--dry-run` and `--check` on the dirty tree still exit 0 with their usual output; after
   committing, `_compact(repo)` exits 0.
-- **Unchanged**: the existing compaction tests still pass. Their fixtures commit before
-  compacting (`_decisions_repo`, `_grow`).
+- **Changed setup, same assertions**:
+  `test_adr_compact_archives_the_oldest_25_into_a_digest` adds `supersedes: [DEC-0005]` to
+  DEC-0040 and compacts without committing, which the clean-tree refusal now forbids. In
+  commit 3 it commits that edit before calling `_compact(repo)`; its assertions do not
+  change. Every other existing compaction test passes unchanged, because its fixture
+  commits before compacting (`_decisions_repo`, `_grow`).
 
 Run by the lead after the build: the installed `adr_index.py .` leaves no diff, and the
 installed `audit.py .` reports no new fail or warn against the base.
