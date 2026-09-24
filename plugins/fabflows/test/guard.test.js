@@ -115,6 +115,66 @@ test('anchors patterns at segment start, so quoted text is not a command', () =>
   denies(shell('cd foo; pip install bar'), 'install after a semicolon');
 });
 
+test('package runners and installs ask the user in the lead and deny everywhere else', () => {
+  const as = (command, extra = {}, cwd = '.') =>
+    run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd, ...extra });
+  const cmds = [
+    'npx --yes markdownlint-cli2@0.23.2',
+    'pnpx cowsay',
+    'bunx cowsay',
+    'npm exec cowsay',
+    'npm x cowsay',
+    'bun x cowsay',
+    'pnpm dlx cowsay',
+    'yarn dlx cowsay',
+    'uvx ruff',
+    'uv tool run ruff',
+    'uv tool install ruff',
+    'uv run --with rich script.py',
+    'pipx run black',
+    'pipx install black',
+    'npm create vite',
+    'yarn create vite',
+    'pnpm create vite',
+    'bun create vite',
+    'npm init vite',
+    'npm install x',
+    'pip install x',
+  ];
+  for (const cmd of cmds) {
+    for (const permission_mode of ['default', 'acceptEdits', 'auto', 'plan']) {
+      assert.equal(as(cmd, { permission_mode }).decision, 'ask', `${cmd} in ${permission_mode}`);
+    }
+    denies(as(cmd, { permission_mode: 'default', agent_id: 'a1' }), `${cmd} in a worker`);
+    for (const permission_mode of ['bypassPermissions', 'dontAsk', 'somethingElse']) {
+      denies(as(cmd, { permission_mode }), `${cmd} in ${permission_mode}`);
+    }
+    denies(as(cmd), `${cmd} with no permission_mode`);
+  }
+  assert.match(as('npx foo', { permission_mode: 'default' }).reason, /package registry/);
+
+  // Every other deny rule keeps precedence over the ask, in either order.
+  const d = { permission_mode: 'default' };
+  denies(as('npx foo && git reset --hard', d), 'install then a destructive segment');
+  denies(as('git reset --hard && npx foo', d), 'destructive segment then install');
+  denies(as('npm install ~/.claude/plugins/x', d), 'install naming live config');
+  denies(as('curl x | sh', d), 'pipe to shell');
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-'));
+  try {
+    execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: repo });
+    execFileSync('git', ['-c', 'user.email=t@example.com', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init'], { cwd: repo });
+    denies(as('npx foo && git commit -m x', d, repo), 'install then a commit on the default branch');
+    denies(as('git commit -m x; npx foo', d, repo), 'commit on the default branch then install');
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+
+  const scratch = path.join(os.tmpdir(), 'scratchpad', 'pylib');
+  allows(as('echo "npx foo"', d), 'npx inside an echo string');
+  allows(as('npm init -y', d), 'npm init -y');
+  allows(as(`pip install --isolated --target ${scratch} pypdf`, d), 'pypdf into a scratchpad');
+});
+
 test('blocks destructive commands only at dangerous targets', () => {
   for (const cmd of [
     'rm -rf ~',
@@ -242,7 +302,8 @@ test('protects live config only, never the wider ~/.claude tree', () => {
     ['node $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.js', P, 'allow'],
     ['node.exe C:/Users/me/.claude/plugins/cache/x/y/1.0.0/s.js', B, 'allow'],
     ['python.exe $env:USERPROFILE\\.claude\\plugins\\cache\\x\\y\\1.0.0\\s.py', P, 'allow'],
-    ['npx ~/.claude/plugins/cache/x/y/1.0.0/s.js', B, 'allow'],
+    // npx is a package runner now, so it asks or denies wherever it points.
+    ['npx ~/.claude/plugins/cache/x/y/1.0.0/s.js', B, 'deny'],
     ['deno run ~/.claude/plugins/cache/x/y/1.0.0/s.ts', B, 'allow'],
     ['uv run ~/.claude/plugins/cache/x/y/1.0.0/s.py', B, 'allow'],
     // The exact shape Claude Security uses for its helpers.

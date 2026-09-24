@@ -127,8 +127,12 @@ case they cannot, a workflow error in place of a result.
 
 ## Guard hook
 
-This plugin ships an active `PreToolUse` guard that blocks package installs (except `pypdf`
-into a literal `scratchpad` `--target` with `--isolated`, for reading a PDF),
+This plugin ships an active `PreToolUse` guard that stops package installs and package
+runners such as `npx` (except `pypdf` into a literal `scratchpad` `--target` with
+`--isolated`, for reading a PDF): the lead gets the user's permission prompt, a worker is
+denied. Before any install, any package runner, or any script you know will fetch a
+package, stop. Name the package, the version and where it lands, and ask the user. If the
+guard asks or denies, look for no other route until the user says yes. It also blocks
 commits and pushes on a default branch, destructive shell commands, credential-file access,
 and writes to live Claude Code configuration. It is a tripwire, not a sandbox: it matches shell strings, it
 is bypassable, and it fails open. A call that was not blocked was not approved. The real
@@ -154,4 +158,4 @@ containment on a worker is its tool allowlist. Rules and known gaps: the plugin 
 | A report is missing a contract field | The worker skipped it | Send it back once with the field named; on a second miss, redo the step yourself |
 | A report's first line is a permission denial | The guard or the session's permission mode refused a call | Surface it to the user with the exact call; never re-issue it yourself |
 | `fabflows:build` throws instead of returning a result | A budget or token limit ended a round mid-flight | `references/build-loop.md`: resume with the same args and the run ID; never restart with a fresh `baseRef` |
-| An install is denied | The guard blocks package installs by design | Report the missing dependency as a blocker. The one exception is `pypdf` into a literal `scratchpad` `--target` with `--isolated`, for reading a PDF |
+| An install is denied | The guard stops package installs and package runners by design | Before any install, runner, or script you know will fetch a package, stop: name the package, the version and where it lands, and ask the user. If the guard asks or denies, look for no other route until the user says yes. A worker reports it as a blocker. The one exception is `pypdf` into a literal `scratchpad` `--target` with `--isolated`, for reading a PDF |

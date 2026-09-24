@@ -46,6 +46,29 @@ function deny(reason) {
   process.exit(0);
 }
 
+// A package download the user may approve. `ask` hands the call to the native permission
+// prompt, which only a human in the main thread can answer. A worker (agent_id present)
+// cannot show one, and a mode that does not prompt, or an unknown or missing mode, gets
+// today's deny, so nothing regresses.
+const ASK_MODES = ['default', 'acceptEdits', 'auto', 'plan'];
+function install(seg, input) {
+  if (!input.agent_id && ASK_MODES.includes(input.permission_mode)) {
+    process.stdout.write(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'ask',
+          permissionDecisionReason: `fabflows: this downloads from a package registry (${seg.slice(0, 60)}). Approve only if you want it installed.`,
+        },
+      })
+    );
+    process.exit(0);
+  }
+  deny(
+    `fabflows: package installs and package runners are blocked (${seg.slice(0, 60)}). Stop. Name the package, the version and where it lands, and ask the user. Do not try another runner, package manager, manual download or script until the user says yes. A worker reports the package to the lead as a blocker.`
+  );
+}
+
 function block(reason) {
   process.stdout.write(JSON.stringify({ decision: 'block', reason }));
   process.exit(0);
@@ -69,6 +92,16 @@ const INSTALL = [
   /^apt(-get)?\s+install\b/i,
   /^(brew|winget|choco|scoop)\s+install\b/i,
   /^install-(module|package|script)\b/i,
+  // Ephemeral package runners download just the same, into a cache outside the repo.
+  /^(npx|pnpx|bunx|uvx)\b/i,
+  /^npm\s+(exec|x)\b/i,
+  /^bun\s+x\b/i,
+  /^(pnpm|yarn)\s+dlx\b/i,
+  /^uv\s+tool\s+(run|install)\b/i,
+  /^uv\s+run\b.*\s--with\b/i,
+  /^pipx\s+(run|install)\b/i,
+  /^(npm|yarn|pnpm|bun)\s+create\b/i,
+  /^npm\s+init\s+(-\S*\s+)*[^-\s]/i,
 ];
 
 // The one install the guard lets through: pypdf, pure Python, into a `--target` with a
@@ -284,7 +317,10 @@ function branches(cwd) {
 }
 
 // ---------------------------------------------------------------- shell rules
+// Returns the first install segment, if any, so the caller can ask or deny only after
+// every other rule has had its chance to deny.
 function checkShell(command, cwd) {
+  let pendingInstall = null;
   for (const re of PIPE_TO_SHELL) {
     if (re.test(command)) {
       deny('fabflows: piping a download straight into a shell is blocked. Download it, read it, then run it.');
@@ -325,12 +361,8 @@ function checkShell(command, cwd) {
       effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
     }
 
-    for (const re of INSTALL) {
-      if (re.test(seg) && !isScratchPypdf(seg, effCwd)) {
-        deny(
-          `fabflows: package installs are blocked (${seg.slice(0, 60)}). Ask the user to install it themselves, or report the missing dependency as a blocker.`
-        );
-      }
+    if (!pendingInstall && INSTALL.some((re) => re.test(seg)) && !isScratchPypdf(seg, effCwd)) {
+      pendingInstall = seg;
     }
 
     if (isDangerousDelete(seg)) {
@@ -381,6 +413,7 @@ function checkShell(command, cwd) {
       }
     }
   }
+  return pendingInstall;
 }
 
 // ---------------------------------------------------------------- event handlers
@@ -391,7 +424,8 @@ function preToolUse(input) {
 
   if (tool === 'Bash' || tool === 'PowerShell') {
     if (typeof ti.command !== 'string') return;
-    checkShell(ti.command, cwd);
+    const seg = checkShell(ti.command, cwd);
+    if (seg) install(seg, input);
     return;
   }
 

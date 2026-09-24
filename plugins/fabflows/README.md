@@ -5,7 +5,7 @@ the lead prove what those workers claim.
 
 > **This plugin installs an active hook.** Once enabled, a `PreToolUse` hook runs on
 > every `Bash`, `PowerShell`, `Read`, `Grep`, `Edit`, and `Write` call in your session
-> and can block it. It blocks package installs, commits and pushes on a default branch,
+> and can block it. It asks before package installs and package runners, and blocks commits and pushes on a default branch,
 > destructive shell commands, reads and writes of credential files, and writes to live
 > Claude Code configuration. Read [Guard rules](#guard-rules) before you install it,
 > including its [known gaps](#known-gaps). It behaves like a tripwire. It offers no
@@ -148,8 +148,16 @@ replacement for it.
 
 A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
 
-- **Package installs** across npm, pnpm, yarn, bun, pip, uv, dotnet, cargo, go, gem,
-  apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`. One exception:
+- **Package installs and package runners** across npm, pnpm, yarn, bun, pip, uv, dotnet,
+  cargo, go, gem, apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`,
+  plus the runners that download on the fly: `npx`, `pnpx`, `bunx`, `npm exec`/`npm x`,
+  `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool run`/`install`, `uv run --with`,
+  `pipx run`/`install`, `npm|yarn|pnpm|bun create`, and `npm init <name>` (`npm init -y`
+  is allowed). In the lead, in the `default`, `acceptEdits`, `auto` or `plan` mode, the
+  guard returns `ask`, so you approve or refuse it in the normal permission prompt. It
+  only asks once every other rule has passed, so an install next to a denied segment is
+  still denied. A worker, and any other mode (`bypassPermissions`, `dontAsk`, missing),
+  gets `deny`. One exception:
   `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
   literal path with a `scratchpad` directory in it and outside the live configuration below,
   so a session can read a PDF without anything landing in site-packages. `--isolated` is
@@ -205,6 +213,14 @@ be walked around:
   judged there, whatever branch the session is on.
 - The runner-file rule keys on the **file name**. A payload written to `notes.txt` and
   then run with `bash notes.txt` is not caught, and neither is one assembled from pieces.
+- A script that spawns a package runner itself is invisible to it, since only the shell
+  string is checked. The one known site, docs-warden's `audit.py`, no longer does so.
+- `env npm`, `command npm`, `npm.cmd`, and flags before the subcommand
+  (`npm --global install`) evade the install rules, just as full binary paths do.
+- An `ask` can be answered with no human looking: a `PermissionRequest` hook, an SDK
+  `canUseTool` callback, or `--permission-prompt-tool` can approve it automatically.
+- Workers are told apart by the `agent_id` field. Whether agent-team teammates carry it
+  is not documented.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.
