@@ -216,9 +216,11 @@ function compliance(text) {
   };
 }
 
-// The tracker labels for a valid section: lowercase and hyphen-only, so never parsed back.
-const labels = (c) =>
-  [...c.controls.map((id) => 'ctl-' + id.replace(/\./g, '-')), 'change-' + c.change, 'class-' + c.cls.replace('n/a', 'na')].map((l) => l.toLowerCase());
+// The tracker labels for a valid section, each once: lowercase and hyphen-only, so never
+// parsed back, and soc2-cc8.1 and soc2-cc8-1 give the same label.
+const labels = (c) => [
+  ...new Set([...c.controls.map((id) => 'ctl-' + id.replace(/\./g, '-')), 'change-' + c.change, 'class-' + c.cls.replace('n/a', 'na')].map((l) => l.toLowerCase())),
+];
 
 // 'on', 'off' or 'invalid', from .claude/fabflows.json at the top level as SessionStart reads it.
 function complianceMode(cwd) {

@@ -219,6 +219,8 @@ test('labels are computed from the Compliance section', () => {
     assert.equal(long.status, 1, 'a 51-character label');
     assert.equal(long.stdout, '');
     assert.equal(cli(r.dir, ['labels'], CLASSIFIED.replace('soc2-cc8.1', `soc2-${'x'.repeat(41)}`)).status, 0, 'a 50-character label');
+    const twice = cli(r.dir, ['labels'], CLASSIFIED.replace('soc2-cc8.1', 'soc2-cc8.1, soc2-cc8-1'));
+    assert.equal(twice.stdout, 'ctl-soc2-cc8-1\nctl-iso27001-a-8-32\nchange-normal\nclass-b\n', 'each label once');
   } finally {
     r.done();
   }
