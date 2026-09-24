@@ -1,6 +1,18 @@
 {
-  "description": "fabflows guard -- blocks package installs, default-branch commits and pushes, destructive shell commands, and reads or writes of credential files; checks that a worker's final report carries the required contract fields.",
+  "description": "fabflows guard -- blocks package installs, default-branch commits and pushes, destructive shell commands, and reads or writes of credential files; checks that a worker's final report carries the required contract fields. fabflows ticket.js -- links a branch to its tracker ticket, requires Refs and Spec commit trailers and the key in the PR title, and reminds Claude to update the ticket after a push, PR creation and merge.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "^(Bash|PowerShell|Read|Grep|Edit|Write|NotebookEdit)$",
@@ -8,6 +20,28 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.js\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "^(Bash|PowerShell|mcp__.*create_pull_request)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Bash|PowerShell|mcp__.*(create|merge)_pull_request)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js\"",
             "timeout": 5
           }
         ]

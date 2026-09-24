@@ -423,11 +423,13 @@ test('SubagentStop blocks a report missing its contract fields', () => {
 
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
+  // Only the guard's own entries; ticket.js has its own wiring test.
+  const guarded = (entries) => entries.filter((e) => e.hooks.some((h) => /guard\.js/.test(h.command)));
   // One anchored matcher, so every guarded tool is named explicitly.
-  assert.deepEqual(cfg.hooks.PreToolUse.map((e) => e.matcher), ['^(Bash|PowerShell|Read|Grep|Edit|Write|NotebookEdit)$']);
-  assert.ok(cfg.hooks.SubagentStop, 'the worker report contract check must be wired');
+  assert.deepEqual(guarded(cfg.hooks.PreToolUse).map((e) => e.matcher), ['^(Bash|PowerShell|Read|Grep|Edit|Write|NotebookEdit)$']);
+  assert.ok(guarded(cfg.hooks.SubagentStop).length, 'the worker report contract check must be wired');
 
-  const commands = [...cfg.hooks.PreToolUse, ...cfg.hooks.SubagentStop].flatMap((e) =>
+  const commands = [...guarded(cfg.hooks.PreToolUse), ...guarded(cfg.hooks.SubagentStop)].flatMap((e) =>
     e.hooks.map((h) => h.command)
   );
   assert.ok(commands.length > 0);
