@@ -1,7 +1,8 @@
 # Copy to the repository root, then run: pre-commit install
 #
-# Same three linters as CI, so the feedback arrives before the push rather than
-# after it. Pin these versions; verify a version exists before writing it down.
+# The linters CI runs, so the feedback arrives before the push rather than
+# after it. In this repository CI runs markdownlint and Vale but not lychee,
+# so this hook is the only link check. Pin these versions; verify a version exists before writing it down.
 repos:
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.23.2
