@@ -14,11 +14,22 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit",
         "hooks": [
           {
             "type": "command",
             "if": "Edit(//**/docs/decisions/*)",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/decisions_check.py\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Write(//**/docs/decisions/*)",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/decisions_check.py\"",
             "timeout": 5
           }

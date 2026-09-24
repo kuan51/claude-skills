@@ -2145,9 +2145,12 @@ def test_decisions_check_hook_after_edit():
         repo = Path(tmp)
         _decisions_repo(repo, 49)
         assert after("Edit", repo / "docs" / "decisions" / "DEC-0049-x.md", repo) == ""
-    entry = json.loads((hooks_dir / "hooks.json").read_text(encoding="utf-8"))["hooks"]["PostToolUse"][0]
-    assert entry["matcher"] == "Edit|Write", entry
-    assert entry["hooks"][0]["if"] == "Edit(//**/docs/decisions/*)", entry
+    # One handler per tool: in a hook's `if`, an Edit(...) rule does not match
+    # Write calls (seen in a live session), unlike in permission rules.
+    entries = json.loads((hooks_dir / "hooks.json").read_text(encoding="utf-8"))["hooks"]["PostToolUse"]
+    ifs = {e["matcher"]: [h["if"] for h in e["hooks"]] for e in entries}
+    assert ifs == {"Edit": ["Edit(//**/docs/decisions/*)"],
+                   "Write": ["Write(//**/docs/decisions/*)"]}, ifs
 
 
 # --- ontological-documentation -------------------------------------------------
