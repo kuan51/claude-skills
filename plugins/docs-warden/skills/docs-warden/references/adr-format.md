@@ -43,7 +43,8 @@ tags: []
 ---
 ```
 
-`status` has exactly three values, matched in any case: `Accepted` is accepted.
+`status` has exactly three values, matched in any case and ignoring surrounding
+spaces: `Accepted` is accepted, and the index and digests print it as `accepted`.
 No `superseded` status exists. See below.
 
 ## Body sections, in this order

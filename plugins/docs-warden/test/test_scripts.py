@@ -2148,6 +2148,24 @@ def test_waiting_line_names_undecided_records_not_proposed_ones():
         assert "proposed" not in out, out
 
 
+def test_status_matches_in_any_case_and_spacing():
+    """Status matched in any case but not with stray spaces, and load_adrs kept
+    the raw value, so the index and digests printed "ACCEPTED" and "accepted"
+    side by side."""
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        decisions = _decisions_repo(repo, 48)
+        (decisions / "DEC-0049-x.md").write_text('---\nid: x\nstatus: " Accepted "\n---\n')
+        (decisions / "DEC-0050-x.md").write_text("---\nid: x\nstatus: ACCEPTED\n---\n")
+        sys.path.insert(0, str(SCRIPTS))
+        try:
+            import _common  # noqa: E402
+            statuses = {r["path"].name: r["status"] for r in _common.load_adrs(repo)}
+        finally:
+            sys.path.remove(str(SCRIPTS))
+        assert statuses["DEC-0049-x.md"] == statuses["DEC-0050-x.md"] == "accepted", statuses
+        assert "50 decision records" in _compact(repo, "--check").stdout
+
 def test_decisions_check_hook_speaks_only_at_50():
     hook = SCRIPTS.parent.parent.parent / "hooks" / "decisions_check.py"
     for count, expect in ((49, False), (50, True)):
