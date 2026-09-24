@@ -256,8 +256,16 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // The key must stand alone: `Refs: ABC-12` is not ABC-1, and `#70` or `x/y#7` is not #7.
 const hasKey = (text, prefix, key) =>
   new RegExp(`${esc(prefix)}(?<![A-Za-z0-9/#-])${esc(key)}(?![A-Za-z0-9-])`).test(text);
+// A trailer stands on its own line of the message: in the command it starts at a line start,
+// after a quote or after `-m `, and ends at a line end or a quote. The label is
+// case-insensitive; the value is exact. A trailer nested in another quoted string still passes.
+const anyCase = (s) => s.replace(/[A-Za-z]/g, (c) => `[${c.toLowerCase()}${c.toUpperCase()}]`);
+const hasTrailer = (text, label, value) =>
+  new RegExp(`(?:^|["']|-m )[ \\t]*${anyCase(label)}:[ \\t]*${esc(value)}[ \\t]*(?=$|["'])`, 'm').test(text);
 
-const GIT = String.raw`(?:^|[\s;&|(])git(?:\s+-[Cc]\s+(?:"[^"]*"|'[^']*'|\S+))*\s+`;
+// git by name or path, then any global options (`-C d`, `-c k=v`, `--git-dir=x`, `-P`).
+const ARG = String.raw`(?:"[^"]*"|'[^']*'|\S+)`;
+const GIT = String.raw`(?:^|[\s;&|(])(?:[^\s;&|()]*[/\\])?git(?:\.exe)?(?:\s+(?:-[Cc]\s+${ARG}|--[A-Za-z-]+(?:=${ARG})?|-[A-Za-z](?=\s)))*\s+`;
 const COMMIT = new RegExp(GIT + String.raw`commit\b`);
 const PUSH = new RegExp(GIT + String.raw`push\b`);
 const INLINE_MSG = /\s(?:-[a-zA-Z]*m|--message)(?:[\s="']|$)|\s(?:-F\s*-|--file[=\s]-)(?:\s|$)/;
@@ -317,11 +325,11 @@ function preToolUse(tool, ti, cwd) {
   if (commit && INLINE_MSG.test(cmd.slice(commit.index))) {
     const l = linked(cwd);
     if (!l || !l.key) return;
-    const need = [['Refs: ', l.key]];
-    if (l.specHash) need.push(['Spec: ', l.specHash]);
-    if (need.every(([p, v]) => hasKey(cmd, p, v))) return;
+    const need = [['Refs', l.key]];
+    if (l.specHash) need.push(['Spec', l.specHash]);
+    if (need.every(([p, v]) => hasTrailer(cmd, p, v))) return;
     return deny(
-      `fabflows: this branch is linked to ticket ${l.key}. Put these lines in the commit message's last paragraph, next to any Co-Authored-By trailer:\n${need.map(([p, v]) => p + v).join('\n')}`
+      `fabflows: this branch is linked to ticket ${l.key}. Put these lines in the commit message's last paragraph, next to any Co-Authored-By trailer:\n${need.map(([p, v]) => `${p}: ${v}`).join('\n')}`
     );
   }
   const pr = GH_PR('create').exec(cmd);

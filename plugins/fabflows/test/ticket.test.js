@@ -302,6 +302,25 @@ test('commits need Refs and Spec when linked', () => {
     assert.equal(shell(r.dir, 'git commit -F msg.txt').decision, 'allow', '-F <file>');
     assert.equal(shell(r.dir, 'git commit').decision, 'allow', 'editor');
 
+    for (const cmd of [
+      'git --no-pager commit -m x',
+      '/usr/bin/git commit -m x',
+      'git.exe commit -m x',
+      'git --git-dir=.git commit -m x',
+      'git -P commit -m x',
+      'git -C d commit -m x',
+      'git -c k=v commit -m x',
+    ]) {
+      assert.equal(shell(r.dir, cmd).decision, 'deny', cmd);
+    }
+
+    cli(r.dir, ['link', 'ABC-2', URL, 'jira']);
+    assert.equal(shell(r.dir, "git commit -m 'Refs: ABC-2 fix'").decision, 'deny', 'a trailer must stand alone');
+    assert.equal(shell(r.dir, "git commit -m x -m 'Refs:ABC-2'").decision, 'allow', 'no space after the colon');
+    assert.equal(shell(r.dir, "git commit -m x -m 'refs: ABC-2'").decision, 'allow', 'lower-case label');
+    assert.equal(shell(r.dir, "git commit -m x -m 'Refs: abc-2'").decision, 'deny', 'the key is exact');
+    assert.equal(shell(r.dir, "git commit -F - <<'EOF'\nx\n\n  Refs: ABC-2  \nEOF").decision, 'allow', 'heredoc');
+
     cli(r.dir, ['link', '#7', 'https://github.com/o/r/issues/7', 'github']);
     assert.equal(shell(r.dir, 'git commit -m "x\n\nRefs: #7"').decision, 'allow', 'Refs: #7 satisfies #7');
     assert.equal(shell(r.dir, 'git commit -m "x\n\nRefs: #70"').decision, 'deny', '#70 is not #7');
