@@ -10,7 +10,7 @@
 //   normalize < spec             print the text the fingerprint is taken over
 //   fingerprint < spec           print the fingerprint approve would store
 //   labels < spec                print the labels for the spec's Compliance section
-//   pr <url>                    record the pull request
+//   pr <url>                     record the pull request
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
 //
