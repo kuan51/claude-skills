@@ -458,9 +458,10 @@ const anyCase = (s) => s.replace(/[A-Za-z]/g, (c) => `[${c.toLowerCase()}${c.toU
 const hasTrailer = (text, label, value) =>
   new RegExp(`(?:^|["']|-m )[ \\t]*${anyCase(label)}:[ \\t]*${esc(value)}[ \\t]*(?=$|["'])`, 'm').test(text);
 
-// git by name or path, then any global options (`-C d`, `-c k=v`, `--git-dir=x`, `-P`).
+// git by name or path, then any global options (`-C d`, `-c k=v`, `--git-dir=x`, `-P`). A
+// one-letter flag is never C or c, so each option reads one way and nothing backtracks.
 const ARG = String.raw`(?:"[^"]*"|'[^']*'|\S+)`;
-const GIT = String.raw`(?:^|[\s;&|(])(?:[^\s;&|()]*[/\\])?git(?:\.exe)?(?:\s+(?:-[Cc]\s+${ARG}|--[A-Za-z-]+(?:=${ARG})?|-[A-Za-z](?=\s)))*\s+`;
+const GIT = String.raw`(?:^|[\s;&|(])(?:[^\s;&|()]*[/\\])?git(?:\.exe)?(?:\s+(?:-[Cc]\s+${ARG}|--[A-Za-z-]+(?:=${ARG})?|-[ABD-Zabd-z](?=\s)))*\s+`;
 const COMMIT = new RegExp(GIT + String.raw`commit\b`);
 const PUSH = new RegExp(GIT + String.raw`push\b`);
 const INLINE_MSG = /\s(?:-[a-zA-Z]*m|--message)(?:[\s="']|$)|\s(?:-F\s*-|--file[=\s]-)(?:\s|$)/;

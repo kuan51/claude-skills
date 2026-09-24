@@ -391,6 +391,10 @@ test('commits need Refs and Spec when linked', () => {
     ]) {
       assert.equal(shell(r.dir, cmd).decision, 'deny', cmd);
     }
+    // `-C` read as a flag or as a flag with a value: a failed match tried every mix of the two.
+    const t0 = Date.now();
+    assert.equal(shell(r.dir, `git ${'-C '.repeat(40)}x -m y`).decision, 'allow');
+    assert.ok(Date.now() - t0 < 1000, `40 x -C took ${Date.now() - t0} ms`);
 
     cli(r.dir, ['link', 'ABC-2', URL, 'jira']);
     assert.equal(shell(r.dir, "git commit -m 'Refs: ABC-2 fix'").decision, 'deny', 'a trailer must stand alone');
