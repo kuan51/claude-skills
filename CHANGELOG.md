@@ -19,10 +19,13 @@ per-plugin history until entries are recorded here going forward.
   `ticket.js check` before the build. The user approves the ticket description as raw text: a
   raw diff when Claude wrote it, the full raw text when it did not. `ticket.js normalize`
   removes only HTML comments outside fences, invisible and control characters, and the Links
-  section, so the build gets the approved text unchanged. Links are per-branch, one state file
-  each, and the merge reminder finds the ticket by PR, skips `--auto`, and leaves a Refs-only
-  ticket open. The `ticket.js` hook requires `Refs:` and `Spec:` trailers on their own line in
-  commit messages and the key in the PR title.
+  section, so the build gets the approved text unchanged, and `ticket.js approve` refuses text
+  with an unclosed `<!--`. Links are per-branch, one state file each, shared by every
+  worktree. The merge reminder finds the ticket by PR, or for a bare `gh pr merge` by the
+  branch it started on, skips `--auto` and `--disable-auto`, and leaves a Refs-only ticket
+  open. The `ticket.js` hook requires `Refs:` and `Spec:` trailers on their own line in each
+  commit's own message, reading a chained command as the shell does, and the key in the PR
+  title.
 - **fabflows 0.5.0** -- brought in line with Anthropic's skill guide. The guard gains one
   exception: `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>`
   is a literal path with a `scratchpad` directory in it and outside live configuration, so a
