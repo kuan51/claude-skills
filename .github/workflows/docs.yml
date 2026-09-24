@@ -1,6 +1,6 @@
-# Lints and audits the documentation on every pull request: markdownlint and
-# Vale as .pre-commit-config.yaml runs them, then docs-warden's audit, which
-# also checks that generated documents are current.
+# Lints and audits the documentation on every pull request: markdownlint,
+# docs-warden's audit (which also checks that generated documents are
+# current), then Vale on the changed files, as .pre-commit-config.yaml runs it.
 name: docs
 
 on: pull_request
@@ -32,16 +32,24 @@ jobs:
         with:
           python-version: "3.14"
       - run: pip install pyyaml==6.0.3
+
+      - name: markdownlint
+        run: npx --yes markdownlint-cli2@0.23.2
+      # Before Vale is installed or synced, on purpose. With no vale on PATH,
+      # audit's lint row skips its repo-wide Vale run (the step below lints
+      # the changed files), and `vale sync` has not yet put untracked package
+      # Markdown under styles/ for the phi-secrets and glossary scans to read.
+      - name: audit.py
+        if: ${{ !cancelled() }}
+        run: python "$SCRIPTS/audit.py" .
       - name: Install Vale 3.17.1
+        if: ${{ !cancelled() }}
         working-directory: ${{ runner.temp }}
         run: |
           curl -fsSLo vale.tar.gz https://github.com/errata-ai/vale/releases/download/v3.17.1/vale_3.17.1_Linux_64-bit.tar.gz
           echo "db947f89f2292e6a0381a61de155f6a5f5cb4cb460ca178ea412ef605559cefd  vale.tar.gz" | sha256sum -c -
           tar -xzf vale.tar.gz vale
           echo "$PWD" >> "$GITHUB_PATH"
-
-      - name: markdownlint
-        run: npx --yes markdownlint-cli2@0.23.2
       # Only the Markdown files this PR changes, as pre-commit lints only staged
       # files: older documents are checked when someone next edits them.
       # Warnings print; error-level rules block.
@@ -52,6 +60,3 @@ jobs:
           vale sync
           git diff -z --name-only --diff-filter=ACMR HEAD^1 HEAD -- '*.md' \
             | xargs -0 -r vale --minAlertLevel=warning
-      - name: audit.py
-        if: ${{ !cancelled() }}
-        run: python "$SCRIPTS/audit.py" .
