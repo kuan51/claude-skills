@@ -215,7 +215,7 @@ test('a locally installed bin is not a download', () => {
     fs.mkdirSync(sub);
     for (const cmd of ['npx vitest run', 'npm exec -- vitest', 'npx --no eslint .']) allows(as(cmd, proj, w), cmd);
     allows(as('npx vitest run', sub, w), 'a bin found in a parent directory');
-    for (const cmd of ['npx vitest@1 run', 'npx -p vitest vitest', 'npx notinstalled']) {
+    for (const cmd of ['npx vitest@1 run', 'npx -p vitest vitest', 'npx notinstalled', 'npx --no --yes notinstalled', 'npx --no -y notinstalled', 'npx -y --offline notinstalled']) {
       denies(as(cmd, proj, w), `${cmd} in a worker`);
       assert.equal(as(cmd, proj, d).decision, 'ask', `${cmd} in the lead`);
     }

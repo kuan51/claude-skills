@@ -137,13 +137,17 @@ function isLocalRun(seg, cwd) {
   if (!m) return false;
   if (/(^|\s)(-p|--package)(\s|=|$)/i.test(seg)) return false;
   let bin = null;
+  let offline = false;
+  let yes = false; // a --yes or -y turns downloading back on, so it voids --no
   for (const a of (m[1] || '').split(/\s+/).filter(Boolean)) {
     if (a === '--') continue;
-    if (/^(--no|--no-install|--offline)$/i.test(a)) return true;
+    if (/^(--no|--no-install|--offline)$/i.test(a)) offline = true;
+    else if (/^(--yes|-y)(=.*)?$/i.test(a)) yes = true;
     if (a.startsWith('-')) continue;
     bin = a;
     break;
   }
+  if (offline && !yes) return true;
   if (!bin || !/^[\w.-]+$/.test(bin)) return false; // no @, / or :, so no version or package spec
   try {
     for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
