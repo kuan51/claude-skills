@@ -129,6 +129,101 @@ test('approve then check passes on the same text and fails on changed text', () 
   }
 });
 
+const SECTION = '- Controls: soc2-cc8.1, iso27001-a.8.32\n- Change: normal\n- Class: B\n- Traces: REQ-AUTH-1';
+const CLASSIFIED = `spec\n\n## Compliance\n${SECTION}`;
+
+test('the Compliance section: headings, fields and bounds', () => {
+  const { compliance } = require(TICKET);
+  const want = { controls: ['soc2-cc8.1', 'iso27001-a.8.32'], change: 'normal', cls: 'B', traces: ['REQ-AUTH-1'] };
+  assert.deepEqual(compliance(CLASSIFIED), want, '## Compliance');
+  assert.deepEqual(compliance(`**Compliance**\n${SECTION}`), want, '**Compliance**');
+  assert.deepEqual(compliance(`**Compliance:**\n${SECTION}\n## Next\n- Change: urgent`), want, 'ends at the next heading');
+  assert.deepEqual(compliance('## Compliance\n- Controls: none\n- Class: A\n## Other\n- Change: normal').errors, ['Change is missing'], 'a later Change is not read');
+  assert.deepEqual(compliance('## Compliance\n- Controls: none\n- Change: emergency\n- Class: n/a').controls, [], 'Controls: none');
+
+  for (const [from, to, field] of [
+    ['- Class: B\n', '', 'Class'],
+    ['Change: normal', 'Change: urgent', 'Change'],
+    ['Class: B', 'Class: D', 'Class'],
+    ['soc2-cc8.1', 'SOC2-CC8.1', 'Controls'],
+    ['soc2-cc8.1', 'soc2', 'Controls'],
+    ['REQ-AUTH-1', 'REQ-1', 'Traces'],
+  ]) {
+    const { errors } = compliance(CLASSIFIED.replace(from, to));
+    assert.equal(errors.length, 1, to);
+    assert.match(errors[0], new RegExp(`^${field} `), to);
+  }
+
+  const none = ['no Compliance section'];
+  assert.deepEqual(compliance(`\`\`\`\n## Compliance\n${SECTION}\n\`\`\``).errors, none, 'inside a code fence');
+  assert.deepEqual(compliance(`Compliance matters here.\n${SECTION}`).errors, none, 'prose is not a heading');
+  const bad = '## Compliance\n- Controls: none\n- Change: urgent\n- Class: A';
+  assert.deepEqual(compliance(`${bad}\n${CLASSIFIED}`), want, 'the last heading wins');
+  assert.deepEqual(compliance(`${CLASSIFIED}\n${bad}`).errors, ['Change must be normal, standard or emergency'], 'the last heading wins');
+});
+
+test('with compliance on, approve and fingerprint refuse an unclassified spec', () => {
+  const r = repo();
+  const config = (v) => {
+    fs.mkdirSync(path.join(r.dir, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(r.dir, '.claude', 'fabflows.json'), JSON.stringify(v));
+  };
+  const approved = r.state.replace(/\.json$/, '.approved.md');
+  try {
+    assert.equal(cli(r.dir, ['link', 'ABC-1', URL, 'jira']).status, 0);
+    config({ tracker: 'jira', compliance: { frameworks: ['soc2', 'iso27001'] } });
+    for (const cmd of ['approve', 'fingerprint']) {
+      const refused = cli(r.dir, [cmd], 'spec\n\n## Compliance\n- Controls: none\n- Class: D');
+      assert.equal(refused.status, 1, cmd);
+      assert.equal(refused.stdout, '', cmd);
+      assert.match(refused.stderr, /Change is missing; Class must be/, cmd);
+    }
+    assert.equal(JSON.parse(fs.readFileSync(r.state, 'utf8')).specHash, null, 'a refused approve writes nothing');
+    assert.ok(!fs.existsSync(approved), 'and no approved text');
+
+    const printed = cli(r.dir, ['fingerprint'], CLASSIFIED + '\n\n## Links\n- x');
+    assert.equal(printed.status, 0, printed.stderr);
+    assert.equal(cli(r.dir, ['approve'], CLASSIFIED).status, 0);
+    assert.equal(printed.stdout, JSON.parse(fs.readFileSync(r.state, 'utf8')).specHash + '\n', 'fingerprint prints what approve stores');
+
+    for (const cfg of [{ tracker: 'jira' }, { compliance: { frameworks: [] } }]) {
+      config(cfg);
+      for (const cmd of ['approve', 'fingerprint']) {
+        const ok = cli(r.dir, [cmd], 'plain spec');
+        assert.equal(ok.status, 0, `${cmd} with ${JSON.stringify(cfg)}`);
+        assert.equal(ok.stderr, '');
+      }
+    }
+    for (const frameworks of [['SOC 2'], 'soc2', ['soc2', 7], ['x'.repeat(31)]]) {
+      config({ compliance: { frameworks } });
+      for (const cmd of ['approve', 'fingerprint']) {
+        const ok = cli(r.dir, [cmd], 'plain spec');
+        assert.equal(ok.status, 0, `${cmd}: an invalid list counts as off`);
+        assert.equal(ok.stderr, 'ticket.js: warning: compliance.frameworks in .claude/fabflows.json is invalid, so compliance is off\n');
+      }
+    }
+  } finally {
+    r.done();
+  }
+});
+
+test('labels are computed from the Compliance section', () => {
+  const r = repo();
+  try {
+    const out = cli(r.dir, ['labels'], CLASSIFIED);
+    assert.equal(out.status, 0, out.stderr);
+    assert.equal(out.stdout, 'ctl-soc2-cc8-1\nctl-iso27001-a-8-32\nchange-normal\nclass-b\n');
+    assert.match(cli(r.dir, ['labels'], CLASSIFIED.replace('Class: B', 'Class: n/a')).stdout, /^class-na$/m);
+    assert.equal(cli(r.dir, ['labels'], 'spec').status, 1, 'no section');
+    const long = cli(r.dir, ['labels'], CLASSIFIED.replace('soc2-cc8.1', `soc2-${'x'.repeat(42)}`));
+    assert.equal(long.status, 1, 'a 51-character label');
+    assert.equal(long.stdout, '');
+    assert.equal(cli(r.dir, ['labels'], CLASSIFIED.replace('soc2-cc8.1', `soc2-${'x'.repeat(41)}`)).status, 0, 'a 50-character label');
+  } finally {
+    r.done();
+  }
+});
+
 test('validation rejects bad values on the CLI and in the state file', () => {
   const r = repo();
   try {

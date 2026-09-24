@@ -8,7 +8,9 @@
 //   approve < spec               store the fingerprint and the normalized approved spec
 //   check < spec                 exit 0 when the spec still matches that fingerprint
 //   normalize < spec             print the text the fingerprint is taken over
-//   pr <url>                     record the pull request
+//   fingerprint < spec           print the fingerprint approve would store
+//   labels < spec                print the labels for the spec's Compliance section
+//   pr <url>                    record the pull request
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
 //
@@ -148,6 +150,92 @@ const unclosed = (line) => `line ${line}: a <!-- is never closed, so it removes 
 const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 const fingerprint = (text) => 'sha256:' + sha(normalize(text));
 
+// ---------------------------------------------------------------- compliance
+// The Compliance section of normalized text, so it sits inside the fingerprint: the last
+// Compliance heading outside a fence, to the next heading, holding four labelled bullets.
+const COMPLIANCE = /^ {0,3}(?:#{1,6}[ \t]+Compliance|\*\*Compliance(?::\*\*|\*\*:?))[ \t]*$/;
+const HEADING = /^ {0,3}(?:#{1,6}(?:[ \t]|$)|\*\*[^*]+\*\*:?[ \t]*$)/;
+const CONTROL = /^[a-z][a-z0-9]*(-[a-z0-9.]+)+$/;
+const TRACE = /^REQ-[A-Z][A-Z0-9]*-[0-9]+$/;
+const items = (v) => v.split(',').map((s) => s.trim());
+const FIELDS = {
+  Controls: [(v) => v === 'none' || items(v).every((x) => CONTROL.test(x)), 'a comma list of control IDs like soc2-cc8.1, or none'],
+  Change: [(v) => /^(normal|standard|emergency)$/.test(v), 'normal, standard or emergency'],
+  Class: [(v) => /^(A|B|C|n\/a)$/.test(v), 'A, B, C or n/a'],
+  Traces: [(v) => items(v).every((x) => TRACE.test(x)), 'a comma list of IDs like REQ-AUTH-1'],
+};
+
+// The lines of normalized text, each { line, code }: code is true on a fenced block's lines,
+// found as normalizeInfo finds them.
+function fencedLines(text) {
+  const out = [];
+  let closer = null;
+  for (const line of text.split('\n')) {
+    if (closer) {
+      out.push({ line, code: true });
+      if (closer.test(line)) closer = null;
+      continue;
+    }
+    const f = /^[ \t]*(`{3,}|~{3,})/.exec(line);
+    if (f) closer = new RegExp(`^[ \\t]*${f[1][0]}{${f[1].length},}[ \\t]*$`);
+    out.push({ line, code: Boolean(f) });
+  }
+  return out;
+}
+
+// { controls, change, cls, traces }, or { errors } naming each missing or bad field. Values
+// are never echoed: they are ticket text.
+function compliance(text) {
+  const lines = fencedLines(text);
+  let at = -1;
+  lines.forEach((l, i) => {
+    if (!l.code && COMPLIANCE.test(l.line)) at = i;
+  });
+  if (at < 0) return { errors: ['no Compliance section'] };
+  const got = {};
+  const errors = [];
+  for (const { line, code } of lines.slice(at + 1)) {
+    if (code) continue;
+    if (HEADING.test(line)) break;
+    const m = /^[ \t]*[-*+][ \t]+(Controls|Change|Class|Traces):[ \t]*(.*)$/.exec(line);
+    if (!m) continue;
+    if (m[1] in got) errors.push(`${m[1]} is given twice`);
+    got[m[1]] = m[2];
+  }
+  for (const [k, [ok, want]] of Object.entries(FIELDS)) {
+    if (got[k] === undefined) {
+      if (k !== 'Traces') errors.push(`${k} is missing`);
+    } else if (!ok(got[k])) errors.push(`${k} must be ${want}`);
+  }
+  if (errors.length) return { errors };
+  return {
+    controls: got.Controls === 'none' ? [] : items(got.Controls),
+    change: got.Change,
+    cls: got.Class,
+    traces: got.Traces === undefined ? [] : items(got.Traces),
+  };
+}
+
+// The tracker labels for a valid section: lowercase and hyphen-only, so never parsed back.
+const labels = (c) =>
+  [...c.controls.map((id) => 'ctl-' + id.replace(/\./g, '-')), 'change-' + c.change, 'class-' + c.cls.replace('n/a', 'na')].map((l) => l.toLowerCase());
+
+// 'on', 'off' or 'invalid', from .claude/fabflows.json at the top level as SessionStart reads it.
+function complianceMode(cwd) {
+  const top = tryGit(['rev-parse', '--show-toplevel'], cwd);
+  if (!top) return 'off';
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(top, '.claude', 'fabflows.json'), 'utf8'));
+  } catch {
+    return 'off';
+  }
+  if (!cfg || cfg.compliance == null) return 'off';
+  const f = cfg.compliance.frameworks;
+  if (!Array.isArray(f) || !f.every((x) => str(x) && /^[a-z0-9-]{1,30}$/.test(x))) return 'invalid';
+  return f.length ? 'on' : 'off';
+}
+
 // ---------------------------------------------------------------- git and state
 function git(args, cwd) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
@@ -242,6 +330,14 @@ function cli(cmd, args) {
     return l;
   };
   const state = ({ key, url, tracker, branch, specHash, pr }) => ({ key, url, tracker, branch, specHash, pr });
+  // With compliance on, refuse normalized text without a valid Compliance section.
+  const gate = (text) => {
+    const mode = complianceMode(cwd);
+    if (mode === 'invalid') process.stderr.write('ticket.js: warning: compliance.frameworks in .claude/fabflows.json is invalid, so compliance is off\n');
+    if (mode !== 'on') return;
+    const { errors } = compliance(text);
+    if (errors) fail(`compliance is on, so the spec needs a valid Compliance section: ${errors.join('; ')}`);
+  };
 
   if (cmd === 'normalize') {
     const { text, unclosedAt } = normalizeInfo(stdin());
@@ -257,8 +353,19 @@ function cli(cmd, args) {
     const l = confirmed();
     const { text, unclosedAt } = normalizeInfo(stdin());
     if (unclosedAt) fail(`${unclosed(unclosedAt)}, then ask the user to approve again`);
+    gate(text);
     fs.writeFileSync(approvedPath(statePath(cwd, l.branch)), text + '\n');
     writeState(cwd, { ...state(l), specHash: 'sha256:' + sha(text) });
+  } else if (cmd === 'fingerprint') {
+    const { text } = normalizeInfo(stdin());
+    gate(text);
+    process.stdout.write('sha256:' + sha(text) + '\n');
+  } else if (cmd === 'labels') {
+    const c = compliance(normalize(stdin()));
+    if (c.errors) fail(`no valid Compliance section: ${c.errors.join('; ')}`);
+    const out = labels(c);
+    if (out.some((l) => l.length > 50)) fail("a control ID makes a label longer than GitHub's 50 characters");
+    process.stdout.write(out.join('\n') + '\n');
   } else if (cmd === 'check') {
     const l = confirmed();
     const got = fingerprint(stdin());
@@ -295,7 +402,7 @@ function cli(cmd, args) {
       removeState(statePath(cwd, branch));
     }
   } else {
-    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, pr, status or clear`);
+    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status or clear`);
   }
   process.exit(0);
 }
@@ -668,7 +775,7 @@ function hook() {
   else if (input.hook_event_name === 'PostToolUse') postToolUse(input.tool_name, ti, cwd);
 }
 
-module.exports = { normalize, normalizeInfo, fingerprint, valid };
+module.exports = { normalize, normalizeInfo, fingerprint, valid, compliance, labels };
 
 if (require.main === module) {
   if (process.argv[2]) {
