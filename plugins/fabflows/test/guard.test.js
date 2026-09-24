@@ -282,13 +282,19 @@ test('a locally installed bin is not a download', () => {
     fs.writeFileSync(path.join(proj, 'node_modules', '.bin', 'tsc'), 'echo inert stand-in\n');
     const sub = path.join(proj, 'src');
     fs.mkdirSync(sub);
-    // A nested package with no node_modules of its own: npm stops there and would download.
+    // A workspace package whose bins are hoisted to the monorepo root: npm keeps looking
+    // in node_modules/.bin of every directory above the project root.
     const nested = path.join(proj, 'pkg');
     fs.mkdirSync(nested);
     fs.writeFileSync(path.join(nested, 'package.json'), '{}\n');
+    const hoisted = path.join(proj, 'pkg2');
+    fs.mkdirSync(path.join(hoisted, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(hoisted, 'package.json'), '{}\n');
     for (const cmd of ['npx vitest run', 'npm exec -- vitest', 'npx tsc -p tsconfig.build.json']) allows(as(cmd, proj, w), cmd);
     allows(as('npx vitest run', sub, w), 'a bin found in a parent directory');
-    denies(as('npx vitest run', nested, w), 'a bin above the nearest package.json');
+    allows(as('npx vitest run', nested, w), 'a bin above the nearest package.json');
+    allows(as('npx vitest run', hoisted, w), 'a bin hoisted above a package with its own node_modules');
+    denies(as('npx cowsay', nested, w), 'npx cowsay with no local bin anywhere up the tree');
     for (const cmd of ['npx vitest@1 run', 'npx -p vitest vitest', 'npx notinstalled', 'npx --no --yes notinstalled', 'npx --no -y notinstalled', 'npx -y --offline notinstalled', 'npx ..', 'npx .', 'npm exec ..', 'bunx .', 'npx adir',
       'npx --no eslint .', 'npx --no vitest', 'npx --cache vitest cowsay', 'npx -w vitest cowsay', 'npm exec --prefix vitest -- cowsay', 'npx --no -c "npm install evil"', 'npx -c vitest', 'npx --call vitest', 'pnpx vitest', 'pnpx --no evilpkg', 'bunx --no evilpkg', 'bunx vitest', 'bun x vitest']) {
       denies(as(cmd, proj, w), `${cmd} in a worker`);

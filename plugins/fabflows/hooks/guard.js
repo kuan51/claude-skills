@@ -174,12 +174,13 @@ function isLocalRun(seg, cwd) {
   const isFile = (p) => fs.statSync(p, { throwIfNoEntry: false })?.isFile() === true;
   try {
     // npm's project root is the nearest directory with a package.json or node_modules;
-    // it looks for the bin there and nowhere above.
+    // it looks for the bin there and in every directory above, up to `/` (libnpmexec),
+    // which is how a workspace package finds bins hoisted to the monorepo root.
+    let root = false;
     for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
-      if (exists(path.join(dir, 'package.json')) || exists(path.join(dir, 'node_modules'))) {
-        const b = path.join(dir, 'node_modules', '.bin', bin);
-        return isFile(b) || isFile(b + '.cmd');
-      }
+      root = root || exists(path.join(dir, 'package.json')) || exists(path.join(dir, 'node_modules'));
+      const b = path.join(dir, 'node_modules', '.bin', bin);
+      if (root && (isFile(b) || isFile(b + '.cmd'))) return true;
       if (path.dirname(dir) === dir) return false;
     }
   } catch {
