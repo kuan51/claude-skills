@@ -466,8 +466,10 @@ const hasTrailer = (text, label, value) =>
   new RegExp(`(?:^|["']|-m )[ \\t]*${anyCase(label)}:[ \\t]*${esc(value)}[ \\t]*(?=$|["'])`, 'm').test(text);
 
 // git by name or path, then any global options (`-C d`, `-c k=v`, `--git-dir=x`, `-P`). A
-// one-letter flag is never C or c, so each option reads one way and nothing backtracks.
-const ARG = String.raw`(?:"[^"]*"|'[^']*'|\S+)`;
+// one-letter flag is never C or c, and a value is quoted and unquoted pieces where an
+// unquoted piece runs to the next quote or blank, so each option reads one way and a failed
+// match does not backtrack through every mix.
+const ARG = String.raw`(?:"[^"]*"|'[^']*'|[^\s"']+(?=["'\s]|$))+`;
 const GIT = String.raw`(?:^|[\s;&|(])(?:[^\s;&|()]*[/\\])?git(?:\.exe)?(?:\s+(?:-[Cc]\s+${ARG}|--[A-Za-z-]+(?:=${ARG})?|-[ABD-Zabd-z](?=\s)))*\s+`;
 const COMMIT = new RegExp(GIT + String.raw`commit\b`);
 const PUSH = new RegExp(GIT + String.raw`push\b`);
