@@ -33,7 +33,9 @@ const valid = {
   branch: (v) => str(v) && /^[A-Za-z0-9._/-]{1,200}$/.test(v),
   specHash: (v) => str(v) && /^sha256:[0-9a-f]{64}$/.test(v),
 };
-valid.pr = valid.url;
+// A GitHub PR or GitLab MR: no query, fragment or shell characters.
+const PR_URL = /^https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+)+\/(pull|-\/merge_requests)\/[0-9]+$/;
+valid.pr = (v) => valid.url(v) && PR_URL.test(v);
 const OPTIONAL = ['specHash', 'pr'];
 
 function validState(s) {
@@ -263,14 +265,20 @@ const GH_PR = (verb) => new RegExp(String.raw`(?:^|[\s;&|(])gh\s+pr\s+${verb}\b`
 const TITLE_ARG = /\s(?:--title|-t)(?:\s+|=)("(?:[^"\\]|\\.)*"|'[^']*'|\S+)/;
 const isMcp = (tool, verb) => new RegExp(`^mcp__.*${verb}_pull_request$`).test(tool);
 
+// What to do once a PR merged. Without a PR URL, `clear` works on the current branch only.
+function afterMerge(key, pr, note = '') {
+  const [what, clear] = pr ? [`PR ${pr}`, `ticket.js clear --pr '${pr}'`] : [`the PR for ${key}`, 'ticket.js clear'];
+  return `If ${what} merged${note}: if it carried a closing phrase for ${key}, confirm ${key} is closed and transition it if not, then run \`${clear}\`. If it was Refs-only, leave ${key} open.`;
+}
+
 function sessionStart(cwd) {
   const l = linked(cwd);
   if (l && l.confirmed) {
-    const tail = '. Follow fabflows:ticket; if the PR merged, close the ticket and run `ticket.js clear`.';
-    const pr = l.pr ? `, PR ${l.pr}` : '';
-    let line = `fabflows: this branch is linked to ticket ${l.key} (${l.url})${pr}${tail}`;
-    if (line.length > 300) line = `fabflows: this branch is linked to ticket ${l.key}${tail}`;
-    return context('SessionStart', line.slice(0, 300));
+    // 600: the after-merge text names the PR URL twice.
+    let line = `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`;
+    if (line.length > 600) line = `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`;
+    if (line.length > 600) line = `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, null)}`;
+    return context('SessionStart', line.slice(0, 600));
   }
   if (l && l.key) {
     return context('SessionStart', `fabflows: ticket ${l.key} found in commit trailers, not confirmed: ask the user before editing it.`);
@@ -326,17 +334,64 @@ function preToolUse(tool, ti, cwd) {
   }
 }
 
+const unconfirmed = (key) => ` The link to ${key} came from commit trailers and is not confirmed: ask the user before touching the ticket.`;
+
+// The PR a merge named: { url }, { suffix } for a number, {} for none, or null for no merge.
+// `gh pr merge --auto` only queues a merge, so it is none of these.
+const VALUE_FLAG = /^(-[AbFtR]|--(author-email|body|body-file|match-head-commit|subject|repo))$/;
+function mergeTarget(tool, ti) {
+  if (isMcp(tool, 'merge')) {
+    const n = String(ti.pullNumber ?? '');
+    if (!/^[0-9]+$/.test(n)) return {};
+    const repo = [ti.owner, ti.repo].every((v) => str(v) && /^[A-Za-z0-9_.-]+$/.test(v)) ? `/${ti.owner}/${ti.repo}` : '';
+    return { suffix: `${repo}/pull/${n}` };
+  }
+  const cmd = str(ti.command) ? ti.command : '';
+  const m = GH_PR('merge').exec(cmd);
+  if (!m) return null;
+  const rest = cmd.slice(m.index + m[0].length).split(/[;&|\n]/)[0];
+  const tokens = (rest.match(/"(?:[^"\\]|\\.)*"|'[^']*'|\S+/g) || []).map((t) => t.replace(/^(["'])([\s\S]*)\1$/, '$2'));
+  if (tokens.includes('--auto')) return null;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (VALUE_FLAG.test(t)) i++;
+    else if (t.startsWith('-')) continue;
+    else if (/^#?[0-9]+$/.test(t)) return { suffix: `/pull/${t.replace('#', '')}` };
+    else if (/^https?:/.test(t)) return { url: t }; // an invalid URL matches no state
+    else return {}; // a branch name
+  }
+  return {};
+}
+
 function postToolUse(tool, ti, cwd) {
   const cmd = str(ti.command) ? ti.command : '';
-  const merged = isMcp(tool, 'merge') || GH_PR('merge').test(cmd);
-  const pushed = isMcp(tool, 'create') || PUSH.test(cmd) || GH_PR('create').test(cmd);
-  if (!merged && !pushed) return;
+  const target = mergeTarget(tool, ti);
+  if (target) return mergeReminder(target, cwd);
+  if (!(isMcp(tool, 'create') || PUSH.test(cmd) || GH_PR('create').test(cmd))) return;
   const l = linked(cwd);
   if (!l || !l.key) return;
-  let text = merged
-    ? `fabflows: PR merged: confirm ${l.key} is closed, transition it if not, then run \`ticket.js clear\`.`
-    : `fabflows: update ticket ${l.key}: Links and status, per fabflows:ticket.`;
-  if (!l.confirmed) text += ` The link to ${l.key} came from commit trailers and is not confirmed: ask the user before touching the ticket.`;
+  let text = `fabflows: update ticket ${l.key}: Links and status, per fabflows:ticket.`;
+  if (!l.confirmed) text += unconfirmed(l.key);
+  context('PostToolUse', text);
+}
+
+// Found by PR first: `gh pr merge -d` has already switched branch when this runs.
+function mergeReminder(target, cwd) {
+  let found;
+  if (target.url) found = allStates(cwd).map((e) => e.s).filter((s) => s.pr === target.url);
+  else if (target.suffix) found = allStates(cwd).map((e) => e.s).filter((s) => s.pr && s.pr.endsWith(target.suffix));
+  else {
+    const l = linked(cwd);
+    found = l && l.key ? [l] : [];
+  }
+  if (found.length === 0) return;
+  if (found.length > 1) {
+    const keys = found.map((s) => s.key).join(', ');
+    return context('PostToolUse', `fabflows: this merge matches several linked tickets (${keys}): ask the user which one merged, then follow fabflows:ticket for it.`);
+  }
+  const l = found[0];
+  let text = `fabflows: ${afterMerge(l.key, l.pr, ' (check first: this also fires after a failed merge command)')}`;
+  if (l.confirmed === false) text += unconfirmed(l.key);
   context('PostToolUse', text);
 }
 

@@ -128,8 +128,21 @@ test('validation rejects bad values on the CLI and in the state file', () => {
     assert.equal(cli(r.dir, ['pr', 'https://github.com/o/r/pull/3']).status, 0);
     assert.equal(JSON.parse(fs.readFileSync(r.state, 'utf8')).pr, 'https://github.com/o/r/pull/3');
     const before = fs.readFileSync(r.state, 'utf8');
-    assert.equal(cli(r.dir, ['pr', "https://x/'y"]).status, 1);
+    for (const bad of [
+      "https://x/'y",
+      'https://github.com/o/r/pull/3?x=1',
+      'https://github.com/o/r/pull/3#x',
+      'https://github.com/o/$(echo x)/pull/3',
+      'https://github.com/o/r/issues/3',
+      'https://github.com/o/r/pull/3/files',
+    ]) {
+      assert.equal(cli(r.dir, ['pr', bad]).status, 1, bad);
+    }
     assert.equal(fs.readFileSync(r.state, 'utf8'), before, 'a bad pr writes nothing');
+    for (const good of ['https://github.com/kuan51/claude-skills/pull/67', 'https://gitlab.example:8443/g/sub/p/-/merge_requests/5']) {
+      assert.equal(cli(r.dir, ['pr', good]).status, 0, good);
+    }
+    assert.equal(cli(r.dir, ['pr', 'https://github.com/o/r/pull/3']).status, 0);
 
     // A hand-edited state file with any bad value counts as unlinked.
     const good = { key: 'ABC-1', url: URL, tracker: 'jira', branch: 'feature', specHash: null, pr: null };
@@ -244,10 +257,15 @@ test('SessionStart prints one line per case', () => {
     r.git('checkout', '-q', 'feature');
 
     assert.equal(cli(r.dir, ['link', 'ABC-1', URL, 'jira']).status, 0);
+    const short = start(r.dir);
+    assert.ok(short.includes(URL) && short.includes('the PR for ABC-1') && short.includes('Refs-only'), short);
     assert.equal(cli(r.dir, ['pr', 'https://github.com/o/r/pull/3']).status, 0);
     const line = start(r.dir);
-    assert.ok(line.length <= 300);
-    for (const s of ['ABC-1', URL, 'https://github.com/o/r/pull/3', 'fabflows:ticket', '`ticket.js clear`']) assert.ok(line.includes(s), s);
+    assert.ok(line.length <= 600);
+    for (const s of ['ABC-1', URL, 'https://github.com/o/r/pull/3', 'fabflows:ticket', "clear --pr 'https://github.com/o/r/pull/3'", 'Refs-only']) {
+      assert.ok(line.includes(s), s);
+    }
+    assert.ok(!line.includes('close the ticket'), 'no bare close instruction');
   } finally {
     r.done();
   }
@@ -316,7 +334,7 @@ test('PR titles must carry the key', () => {
   }
 });
 
-test('PostToolUse asks for a ticket update after push, PR creation and merge', () => {
+test('PostToolUse asks for a ticket update after push and PR creation', () => {
   const r = repo();
   try {
     assert.equal(after(r.dir, 'Bash', { command: 'git push' }).context, undefined, 'not linked');
@@ -328,18 +346,51 @@ test('PostToolUse asks for a ticket update after push, PR creation and merge', (
     ]) {
       assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket ABC-1: Links and status, per fabflows:ticket.', tool);
     }
-    for (const [tool, input] of [
-      ['Bash', { command: 'gh pr merge 3 --squash' }],
-      ['mcp__github__merge_pull_request', { pullNumber: 3 }],
-    ]) {
-      assert.match(after(r.dir, tool, input).context, /PR merged: confirm ABC-1 is closed.*ticket\.js clear/, tool);
-    }
     assert.equal(after(r.dir, 'Bash', { command: 'git status' }).context, undefined, 'unrelated command');
-
     cli(r.dir, ['clear']);
     r.git('commit', '-q', '--allow-empty', '-m', 'x\n\nRefs: ABC-1');
     assert.match(after(r.dir, 'Bash', { command: 'git push' }).context, /ask the user before touching the ticket/);
-    assert.match(after(r.dir, 'Bash', { command: 'gh pr merge 3' }).context, /ask the user before touching the ticket/);
+  } finally {
+    r.done();
+  }
+});
+
+test('the merge reminder finds the ticket by PR, only after a real merge', () => {
+  const r = repo();
+  const PR = 'https://github.com/o/r/pull/3';
+  const merge = (command) => after(r.dir, 'Bash', { command }).context;
+  try {
+    r.git('checkout', '-q', '-b', 'feat-b');
+    cli(r.dir, ['link', 'ABC-2', URL, 'jira']);
+    cli(r.dir, ['pr', PR]);
+    r.git('checkout', '-q', 'main');
+
+    assert.equal(merge('gh pr merge 3 --squash --auto'), undefined, '--auto is not a merge');
+    const text = merge('gh pr merge 3 --squash -d');
+    assert.ok(text.includes('ABC-2'), text);
+    assert.ok(text.includes('Refs-only') && text.includes(`clear --pr '${PR}'`), text);
+    assert.match(text, /check first/);
+    assert.equal(after(r.dir, 'mcp__github__merge_pull_request', { pullNumber: 3 }).context, text, 'MCP merge');
+    assert.equal(after(r.dir, 'mcp__github__merge_pull_request', { owner: 'o', repo: 'r', pullNumber: 3 }).context, text, 'MCP with repo');
+    assert.equal(after(r.dir, 'mcp__github__merge_pull_request', { owner: 'x', repo: 'r', pullNumber: 3 }).context, undefined, 'other repo');
+    assert.equal(merge(`gh pr merge ${PR} --squash`), text, 'by URL');
+    assert.equal(merge('gh pr merge 9'), undefined, 'a number that matches nothing');
+    assert.equal(merge('gh pr merge https://github.com/o/r/pull/9'), undefined, 'a URL that matches nothing');
+
+    r.git('checkout', '-q', '-b', 'feat-c');
+    cli(r.dir, ['link', 'ABC-3', URL, 'jira']);
+    cli(r.dir, ['pr', 'https://github.com/x/y/pull/3']);
+    const both = merge('gh pr merge 3');
+    assert.ok(both.includes('ABC-2') && both.includes('ABC-3') && /ask the user/.test(both), both);
+
+    r.git('checkout', '-q', '-b', 'feat-d');
+    cli(r.dir, ['link', 'ABC-4', URL, 'jira']);
+    const nopr = merge('gh pr merge --squash');
+    assert.ok(nopr.includes('the PR for ABC-4') && nopr.includes('`ticket.js clear`'), nopr);
+
+    cli(r.dir, ['clear']);
+    r.git('commit', '-q', '--allow-empty', '-m', 'x\n\nRefs: ABC-5');
+    assert.match(merge('gh pr merge'), /the PR for ABC-5.*not confirmed: ask the user before touching the ticket/);
   } finally {
     r.done();
   }
