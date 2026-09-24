@@ -24,8 +24,8 @@ per-plugin history until entries are recorded here going forward.
   worktree. The merge reminder finds the ticket by PR, or for a bare `gh pr merge` by the
   branch it started on, skips `--auto` and `--disable-auto`, and leaves a Refs-only ticket
   open. The `ticket.js` hook requires `Refs:` and `Spec:` trailers on their own line in each
-  commit's own message, reading a chained command as the shell does, and the key in the PR
-  title.
+  commit's own message, including commits chained with `&&` or run inside `$(...)`, and the
+  key in the PR title.
 - **docs-warden 0.6.0** -- compaction reminders that explain themselves. When fifty
   decision records exist but fewer than fifty are decided, `adr_compact.py --check` now says
   how many are still proposed instead of staying silent, and compact mode walks the human
