@@ -235,7 +235,7 @@ const DESTRUCTIVE = [
   [/^git\s+(-c\s+\S+\s+)?reset\s+--hard\b/i, 'git reset --hard discards uncommitted work'],
   // A dry run (-n or --dry-run) only lists what it would delete.
   [/^git\s+(-c\s+\S+\s+)?clean(?!.*\s(-[a-z]*n|--dry-run))\s+-[a-z]*d/i, 'git clean -d deletes untracked files'],
-  [/^chmod\s+[0-7]*7{2,3}\b/i, 'chmod 777 makes a path world-writable'],
+  [{ test: (seg) => worldWritable(seg) }, 'chmod makes a path world-writable'],
   [/^dd\b[^|]*\bof=/i, 'dd with of= overwrites a device or file wholesale'],
   [/^mkfs(\.|\s)/i, 'mkfs formats a filesystem'],
   [/^format-volume\b/i, 'Format-Volume formats a volume'],
@@ -243,6 +243,21 @@ const DESTRUCTIVE = [
   [/^sudo\b/i, 'sudo escalates privileges'],
   [SYSTEM_REDIRECT, 'writing into a system path'],
 ];
+
+// A chmod mode word that grants world write: a `77`-shaped octal mode, or a symbolic clause
+// whose who-part names o or a and whose + or = grants w or copies u, g or o. Every word
+// after chmod is checked, since a symbolic mode can start with `-` (`chmod -x,o+w f`), so a
+// file literally named `777` is read as a mode.
+function worldWritable(seg) {
+  if (!/^chmod\s/i.test(seg)) return false;
+  return seg.split(/\s+/).slice(1).some((w) =>
+    /^[0-7]*7{2,3}$/.test(w) ||
+    w.split(',').some((c) => {
+      const m = /^([ugoa]*)((?:[-+=][rwxXstugo]*)+)$/.exec(c);
+      return !!m && /[oa]/.test(m[1]) && /[+=][rwxXstugo]*[wugo]/.test(m[2]);
+    })
+  );
+}
 
 // Home in every spelling a shell string can carry it: the real home is spelled out too,
 // plus the usual absolute homes on Windows, Linux and macOS.

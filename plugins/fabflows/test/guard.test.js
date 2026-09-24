@@ -827,6 +827,21 @@ test('a root followed by a glob is the root', () => {
   denies(write('package.json', '{"scripts":{"nuke":"rm -rf /*"}}'), 'npm script running rm -rf /*');
 });
 
+test('chmod is blocked for any mode word that grants world write', () => {
+  for (const m of [
+    '-R 777 .', '--recursive 777 x', '0777 f', '1777 f', 'a+rwx f', 'o+w f', '-R a+w /', 'ugo+w f', 'go+w f',
+    'a=rwx f', 'u+x,o+w f', '-x,o+w f', '-r,a+w f', 'o-r+w f', 'o+rw-x f', 'o=u f', 'a=g f',
+  ]) {
+    const r = shell(`chmod ${m}`);
+    denies(r, `chmod ${m}`);
+    assert.match(r.reason, /chmod makes a path world-writable/);
+  }
+  for (const m of ['+x f', '+w f', 'u+w f', 'g+w f', 'o-w f', 'a-w f', '755 f', '-R 755 x', '644 f', '-v 644 f', '-R u+rwX,go+rX x']) {
+    allows(shell(`chmod ${m}`), `chmod ${m}`);
+  }
+  denies(write('package.json', '{"scripts":{"open":"chmod -R 777 ."}}'), 'npm script running chmod -R 777 .');
+});
+
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
   // Only the guard's own entries; ticket.js has its own wiring test.
