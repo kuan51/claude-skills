@@ -38,7 +38,7 @@ Every Tier 1 case, positive and negative alike, runs against a seeded fixture re
 (the scaffold script runs as you, not as Claude, so it works natively). The negatives are
 seeded deliberately: in an empty workspace there is no CODEOWNERS, run log or glossary for
 a near-miss prompt to collide with, so a quiet skill proves nothing. Tier 2 needs the
-sandbox because the runner refuses to hand Claude a shell unconfined. Native Windows has no sandbox backend; the runner says so and scores
+sandbox because the runner refuses to hand Claude a shell unconfined. Native Windows has no sandbox back end; the runner says so and scores
 the case 0. On Windows the runner also warns it cannot seal the workspace after a run,
 so treat native results as advisory for anything the plugin wrote.
 
@@ -125,7 +125,7 @@ list-price cost is the proxy.
 | `maintain-targeted-update` | maintain | it-tooling, uncommitted rename | fixes the README's `-HubName`, leaves the runbook's other cmdlets and the RUNLOG history alone, edits rather than rewrites, re-runs freshness or audit |
 | `decide-admission-refusal` | decide | it-tooling | a dependency bump gets no record and an explanation of the admission test |
 | `decide-scaffold-record` | decide | it-tooling | with all three answers and two rejected alternatives given, writes `DEC-0002` with `status: proposed`, the stated deciders and both alternatives; regenerates the index rather than hand-adding a row; leaves the accepted `DEC-0001` and the run log alone |
-| `adr-immutability-refusal` | (rule 4) | it-tooling, typo planted in accepted `DEC-0001` | asked to fix "our accepted ADR", the typo survives, no superseding record is written unasked, and the reply explains immutability or offers one |
+| `adr-immutability-refusal` | (rule 4) | it-tooling, typo planted in accepted `DEC-0001` | the typo survives a request to fix "our accepted ADR" with no superseding record written unasked, and the reply explains immutability or offers one |
 | `req-rewrite-refusal` | clarity | regulated | `REQ-FIX-002` survives untouched; the reply cites traceability |
 
 Fixtures come from `../test/fixtures/`, copied into the workspace and committed by
@@ -179,7 +179,7 @@ Per case, with the turn count of each run:
 **The most useful result is a controlled pair.** Two cases describe the same situation
 against the same repository: a technology choice the code plainly embodies, PowerShell
 rather than Python, whose reasoning appears in no document. They differ in one respect.
-One asks "why did we choose", the phrase the skill's description lists, and uses the word
+One asks "why did we choose" (the phrase the skill's description lists) and uses the word
 recorded. The other asks "why we went with" and says captured, avoiding the skill's
 vocabulary entirely. Twelve runs each:
 
@@ -205,7 +205,7 @@ three environment variables against a deploy script that reads seven. The it-too
 fixture contained no environment variables and no deploy script at all, so the prompt
 asked about something that was not there, Claude found nothing and answered directly.
 Its `fixture.sh` now plants the drift, and the case was re-run ten times against the
-corrected fixture: 3/10. So it is genuinely weak-triggering and high-variance, but not
+corrected fixture: 3/10. It is genuinely weak-triggering and high-variance, but not
 the 0/3 the first matrix reported. Treat the 10/18 headline as measured on a suite
 containing one invalid case; excluding it, the other five positives were 10/15.
 

@@ -74,7 +74,7 @@ session at startup**, so a newly installed skill is not invocable until a new se
 for a restart rather than assuming a mid-session rescan. Revert by deleting the version directory,
 dropping its `installed_plugins.json` entry, and checking the marketplace clone back to `master`.
 
-## Maintaining documentation: use docs-warden
+## Maintaining documentation with docs-warden
 
 `docs/` follows the docs-warden layout (`docs/CONVENTIONS.md` for current state, `docs/decisions/`
 for why, `docs/GLOSSARY.md`, `docs/SECURITY.md`,
@@ -98,7 +98,7 @@ Rules that bite here:
   specific edits, then re-run `adr_index.py` and `audit.py`.
 - **A decision record only when all three are yes:** reversing it costs more than one PR, it
   constrains work outside the component touched, and a rejected alternative exists. Otherwise the
-  reasoning goes in the PR description. Accepted records are never edited; supersede them.
+  reasoning goes in the PR description. Accepted records are never edited. Supersede them instead.
 - **Generated files are never hand-edited:** `docs/DECISIONS.md`, `docs/decisions/README.md`,
   `docs/architecture/domain-model.md` (see the table in `docs/CONVENTIONS.md`).
 - **This repo keeps no run log** (its archetype is `library`). Operational narrative, such as
