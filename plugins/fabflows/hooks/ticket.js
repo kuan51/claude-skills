@@ -307,7 +307,8 @@ function cli(cmd, args) {
 // parentheses. Each is { text, words }: text is its source plus the body of any heredoc it
 // opened, words its arguments with quotes removed. It knows quotes, \ escapes, $(...),
 // backticks and heredocs at any depth, and the commands inside $(...) and backticks are
-// listed too; not aliases, eval, functions, here-strings, case patterns or # comments.
+// listed too, and # comments are skipped; not aliases, eval, functions, here-strings or
+// case patterns.
 // Returns null when quotes or parentheses don't balance.
 function commands(s, level = 0) {
   const out = [];
@@ -381,6 +382,11 @@ function commands(s, level = 0) {
       if (j < 0) return null;
       if (top) add(s.slice(i + 1, j));
       i = j + 1;
+    } else if (c === '#' && /[\s;&|()]/.test(s[i - 1] ?? ' ')) {
+      const k = s.indexOf('\n', i); // a comment runs to the end of its line, and is no command's text
+      if (top) end(i);
+      i = k < 0 ? s.length : k;
+      if (top) begin(i);
     } else if (c === '"') {
       if (top) open = i;
       stack.push('"');

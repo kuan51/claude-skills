@@ -416,6 +416,7 @@ test('each commit in a command needs its own trailers', () => {
       `git commit -m "b" && echo "${T}"`,
       `echo "${T}"; git commit -m b`,
       `git commit -F - <<EOF && echo "${T}"\nx\nEOF`,
+      `git commit -m "b" && echo "${T}" # it's a comment`,
     ]) {
       assert.equal(shell(r.dir, cmd).decision, 'deny', cmd);
     }
@@ -426,6 +427,7 @@ test('each commit in a command needs its own trailers', () => {
       `git commit -m "a\n\n${T}" && git commit -m "b\n\n${T}"`,
       `git add . && git commit -F - <<EOF && git push\nx\n\n${T}\nEOF`,
       `cd d && (git commit -m 'x\n\n${T}')`,
+      `# note: git commit -m later\ngit commit -m "x\n\n${T}"`,
     ]) {
       assert.equal(shell(r.dir, cmd).decision, 'allow', cmd);
     }
@@ -456,6 +458,7 @@ test('PR titles must carry the key', () => {
     assert.equal(shell(r.dir, 'gh pr create --body "run with -t ABC-1" --title "no key"').decision, 'deny', 'the body is not the title');
     assert.equal(shell(r.dir, 'gh pr create --title=ABC-1:x').decision, 'allow', '--title=');
     assert.equal(shell(r.dir, 'url=$(gh pr create --title "no key" --body x)').decision, 'deny', 'inside $(...)');
+    assert.equal(shell(r.dir, '# then gh pr create\nls x#y').decision, 'allow', 'a comment is not a command');
     assert.equal(shell(r.dir, 'url=$(gh pr create --title "ABC-1 x")').decision, 'allow', 'inside $(...) with the key');
     for (const cmd of ['gh pr create --fill', 'gh pr create --web', 'git push && gh pr create', 'x=`gh pr create --fill`']) {
       const d = shell(r.dir, cmd);
