@@ -143,6 +143,10 @@ flag hides it, and it knows only numeric modes.
 - **Two lens passes.** The second found the bare quoted root (`'/'`, allowed on `8c37ebd`),
   `/?*`, and `.aws/.` path forms; all three are closed above. Every rule's final form was
   re-run as a `node -e` prototype against its full Denied and Still allowed lists.
+- **Amendment after the build: the directory regex is `([\\/]\.?)*`, case-insensitive.**
+  The `([\\/]+\.?)*` form above backtracks exponentially on a run of slashes (26 slashes
+  took 492 ms), and a guard that times out fails open. The shorter form matches the same
+  strings in 0 ms. The `i` flag matches `SECRET_PATH`, so `~/.SSH` is denied too.
 - **Directory rule local to Read and Grep** (user, Q3b). Changing `SECRET_PATH` would also
   change the shell rules, for example `ls ~/.ssh`, which is not in this spec.
 - **Patch bump** to 0.7.2: each item closes a gap against a rule the README already states.
