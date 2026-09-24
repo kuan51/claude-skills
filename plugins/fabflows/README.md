@@ -95,7 +95,7 @@ forgets a link after its branch is gone.
 - PreToolUse denies a `git commit` with an inline message that lacks `Refs: <key>` (and
   `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key.
 - PostToolUse reminds Claude to update the ticket after a push and a PR creation. After a
-  merge (not `gh pr merge --auto`) it finds the ticket by the PR the merge named, asks Claude
+  merge (not `gh pr merge --auto` or `--disable-auto`) it finds the ticket by the PR the merge named, asks Claude
   to check the merge happened, and closes the ticket only for a PR with a closing phrase: a
   Refs-only PR leaves it open.
 

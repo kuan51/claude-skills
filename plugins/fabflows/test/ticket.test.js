@@ -462,6 +462,7 @@ test('the merge reminder finds the ticket by PR, only after a real merge', () =>
     r.git('checkout', '-q', 'main');
 
     assert.equal(merge('gh pr merge 3 --squash --auto'), undefined, '--auto is not a merge');
+    assert.equal(merge('gh pr merge 3 --disable-auto'), undefined, '--disable-auto is not a merge');
     const text = merge('gh pr merge 3 --squash -d');
     assert.ok(text.includes('ABC-2'), text);
     assert.ok(text.includes('Refs-only') && text.includes(`clear --pr '${PR}'`), text);

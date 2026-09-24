@@ -399,7 +399,7 @@ function preToolUse(tool, ti, cwd) {
 const unconfirmed = (key) => ` The link to ${key} came from commit trailers and is not confirmed: ask the user before touching the ticket.`;
 
 // The PR a merge named: { url }, { suffix } for a number, {} for none, or null for no merge.
-// `gh pr merge --auto` only queues a merge, so it is none of these.
+// `gh pr merge --auto` only queues a merge and `--disable-auto` cancels one, so neither counts.
 const VALUE_FLAG = /^(-[AbFtR]|--(author-email|body|body-file|match-head-commit|subject|repo))$/;
 function mergeTarget(tool, ti) {
   if (isMcp(tool, 'merge')) {
@@ -413,7 +413,7 @@ function mergeTarget(tool, ti) {
   if (!m) return null;
   const rest = cmd.slice(m.index + m[0].length).split(/[;&|\n]/)[0];
   const tokens = (rest.match(/"(?:[^"\\]|\\.)*"|'[^']*'|\S+/g) || []).map((t) => t.replace(/^(["'])([\s\S]*)\1$/, '$2'));
-  if (tokens.includes('--auto')) return null;
+  if (tokens.includes('--auto') || tokens.includes('--disable-auto')) return null;
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
     if (VALUE_FLAG.test(t)) i++;
