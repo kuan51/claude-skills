@@ -77,8 +77,8 @@ Compaction lands as its own pull request.
 
 ## Gaps accepted
 
-- The 50 and 25 are constants in `adr_compact.py`; the hook runs the script's
-  `--check` so there is one definition of "due". A repo wanting different
+- The 50 and 25 are constants in `adr_compact.py`; the hook imports the same
+  check `--check` prints, so there is one definition of "due". A repo wanting different
   numbers edits the script; a manifest key can come later.
 - The immutability check sees an archived record's history only from the move
   onward; an edit made between acceptance and archiving is not visible after.
