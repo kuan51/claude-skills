@@ -40,7 +40,7 @@ they rot.
 - **`compact`**: once `docs/decisions/` holds fifty decided records, move the oldest 25
   unchanged into `docs/decisions/archive/` and write one digest record carrying
   their outcomes and accepted gaps. A hook says when it is due, or how many records
-  are still proposed, at session start and after an edit in `docs/decisions/`.
+  are not yet accepted or rejected, at session start and after an edit in `docs/decisions/`.
   Compaction lands as its own pull request.
 
 Repositories under a standard such as IEC 62304 take a further overlay, scaled by

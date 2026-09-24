@@ -283,12 +283,15 @@ def load_adrs(repo: Path, archived: bool = False):
 
 
 def adr_status(record) -> str:
-    """A decision record's status, lowercased, from a load_adrs record or a
-    parsed front-matter dict. Status matches in any case, so "Accepted" is
-    accepted, and str() comes first because YAML can hand back a bool, a date
-    or a list. One definition, so the audit and compaction cannot drift into
+    """A decision record's status, trimmed and lowercased, from a load_adrs
+    record or a parsed front-matter dict. Status matches in any case and
+    spacing, so " Accepted " is accepted. load_adrs keeps the value as
+    written, because the generated index prints it and a consuming repo's
+    committed index must not change on upgrade; compare through this
+    instead. str() comes first because YAML can hand back a bool, a date or
+    a list. One definition, so the audit and compaction cannot drift into
     two answers for what a record's status is."""
-    return str(record.get("status") or "").lower()
+    return str(record.get("status") or "").strip().lower()
 
 
 def git(repo: Path, *args):
