@@ -120,7 +120,7 @@ function normalize(text) {
   // Entities are decoded last, so a decoded character is never read as markup.
   const entities = (s) => s.replace(/&#(?:[xX]([0-9a-fA-F]{1,6})|([0-9]{1,7}));/g, decode);
   let out = parts.map((p) => (p.code ? p.s : entities(p.s.replace(DEF, (m, label) => (used(label) ? m : ''))))).join('');
-  out = out.replace(/[\p{Cf}︀-️\u{E0100}-\u{E01EF}]/gu, '').replace(/\[[xX]\]/g, '[ ]');
+  out = out.replace(/[\p{Cf}\uFE00-\uFE0F\u{E0100}-\u{E01EF}]/gu, '').replace(/\[[xX]\]/g, '[ ]');
   const lines = out.split('\n');
   for (let i = lines.length - 1; i >= 0; i--) {
     if (/^\s*(#{1,6}\s*)?(\*\*)?Links\b/.test(lines[i])) {
