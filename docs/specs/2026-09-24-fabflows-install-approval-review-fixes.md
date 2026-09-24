@@ -24,7 +24,7 @@ contradict the new rule. Ticket: fabflows package guard gap.
      directory. A plain bin name has no `@`, no `/` and no `:`. The segment must also carry
      no `-p` or `--package` flag. Use `fs.existsSync`, and fail toward install when unsure.
 
-   So `npx vitest run`, `npx tsc --noEmit`, `npm exec -- jest` and `npx --no eslint .` are
+   Under this rule, `npx vitest run`, `npx tsc --noEmit`, `npm exec -- jest` and `npx --no eslint .` are
    allowed in a project that has them installed. `npx vitest@1 run`, `npx -p x y`,
    `npx @scope/pkg` and a bin that is not installed still count as installs. `uvx`,
    `pnpm dlx`, `yarn dlx`, `pipx` and `uv tool` always download, so they stay installs.
@@ -44,15 +44,15 @@ contradict the new rule. Ticket: fabflows package guard gap.
 4. **`uv run --with` matches only uv's own options.** `--with`, `--with-requirements` or
    `--with-editable`, followed by a space or `=`, matches only when it comes before the
    command. Only flags and their values may come before it, never a bare positional token.
-   So `uv run pytest --with-coverage`, `uv run script.py --with foo` and
+   Under this rule, `uv run pytest --with-coverage`, `uv run script.py --with foo` and
    `uv run pytest -k with --with-foo` are not installs. `uv run --python 3.12 --with foo x`
    is an install.
 5. **`npm init <initializer>` matches only when the token right after `init` is a
-   non-flag.** So `npm init -w packages/a`, `npm init --scope myorg` and
+   non-flag.** Under this rule, `npm init -w packages/a`, `npm init --scope myorg` and
    `npm init --init-author-name "A B"` are not installs, and `npm init vite` still is.
 6. **Transparent prefixes are stripped before the anchor**, the same way as `(`, shell
    keywords and `VAR=`. The prefixes are `time`, `exec`, `nohup`, `command`, `!`, `{`, `env`
-   followed by any `VAR=value` pairs, and `xargs` followed by its flags. So `time npx foo`,
+   followed by any `VAR=value` pairs, and `xargs` followed by its flags. Under this rule, `time npx foo`,
    `exec npx foo`, `xargs -n1 npx foo`, `! npx foo`, `{ npx foo; }`, `env FOO=1 npm install x`
    and `command npm install x` are judged as the runner or installer they wrap. This helps
    every rule, not only installs.
