@@ -16,9 +16,13 @@ per-plugin history until entries are recorded here going forward.
   permission only on a confirmed link, and status moving from in progress to done with the
   closing phrase on a finishing PR. `brainstorming` writes a full-tier spec to the linked
   ticket, fingerprints the approved text with `ticket.js approve`, and confirms it with
-  `ticket.js check` before the build. The `ticket.js` hook requires `Refs:` and `Spec:`
-  trailers on commits and the key in the PR title. `ticket.js normalize` now strips comments
-  and tags before decoding entities, so an encoded `-->` no longer lets hidden text through.
+  `ticket.js check` before the build. The user approves the ticket description as raw text: a
+  raw diff when Claude wrote it, the full raw text when it did not. `ticket.js normalize`
+  removes only HTML comments outside fences, invisible and control characters, and the Links
+  section, so the build gets the approved text unchanged. Links are per-branch, one state file
+  each, and the merge reminder finds the ticket by PR, skips `--auto`, and leaves a Refs-only
+  ticket open. The `ticket.js` hook requires `Refs:` and `Spec:` trailers on their own line in
+  commit messages and the key in the PR title.
 - **fabflows 0.5.0** -- brought in line with Anthropic's skill guide. The guard gains one
   exception: `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>`
   is a literal path with a `scratchpad` directory in it and outside live configuration, so a

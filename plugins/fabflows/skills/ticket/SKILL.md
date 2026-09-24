@@ -89,6 +89,21 @@ Edit the description only:
 Before merge, re-read the ticket against the diff. Raise any drift with the user rather than
 editing it away.
 
+## Reviewing ticket text
+
+The ticket text is the description only, never its comments, and the user sees it raw, never
+rendered, per `fabflows:brainstorming` section 6:
+
+- At approval, when you wrote the ticket: `diff -u` the `ticket.js normalize` output of what
+  you wrote against that of the re-read, and show the user the raw diff text.
+- At approval, when you did not write it (the user or someone else did): show the user the
+  full raw `normalize` output before asking for a yes.
+- Before a build, when `ticket.js check` fails: it prints the path of the verified approved
+  text; run `diff -u '<that path>' <current normalized file>` and show the user the raw diff.
+
+Put raw text in a fence longer than any run of backticks or tildes inside it, so the ticket
+cannot close the fence early.
+
 ## Status
 
 Status lives in the tracker's status field, never in the description:
@@ -112,6 +127,7 @@ A PR that finishes the ticket carries the tracker's closing phrase in its body (
 `Fixes KEY`). A PR that does not finish it carries `Refs` only (`Refs: #N`, `Refs: KEY`), so
 merging it leaves the ticket open.
 
-After a finishing PR merges, read the ticket. If the tracker did not close it, transition it to done
-yourself. Post the close comment if the outcome differs from the spec, then run
-`ticket.js clear`.
+After a PR merges (check it did first: the reminder also fires after a failed merge command),
+read the ticket. If the PR carried a closing phrase for the key and the tracker did not close
+it, transition it to done yourself, post the close comment if the outcome differs from the
+spec, then run `ticket.js clear --pr '<url>'`. If the PR was Refs-only, leave the ticket open.

@@ -9,7 +9,10 @@ the lead prove what those workers claim.
 > destructive shell commands, reads and writes of credential files, and writes to live
 > Claude Code configuration. Read [Guard rules](#guard-rules) before you install it,
 > including its [known gaps](#known-gaps). It behaves like a tripwire. It offers no
-> sandboxing.
+> sandboxing. A second hook, `ticket.js`, runs on the same shell calls and on PR tools: once
+> a branch is linked to a ticket it can block commits with an inline message that lacks the
+> ticket's trailers and PR creation whose title lacks its key, and it adds context at
+> SessionStart and after pushes, PR creation and merges. See [Tickets](#tickets).
 
 ## The problem
 
@@ -47,7 +50,9 @@ accepting anything; the `fabflows:build` workflow, described in
 invoke at the start of a conversation to run the whole session on that discipline.
 Invoking it authorizes the lead to launch the build loop, which commits to your feature
 branch, without asking again per task. The `brainstorming` skill sits in front of the loop
-for a request that arrives without a spec; see [Brainstorming](#brainstorming).
+for a request that arrives without a spec; see [Brainstorming](#brainstorming). The
+`fabflows-setup` skill points the repository at a tracker, and the `ticket` skill keeps the
+linked ticket current; see [Tickets](#tickets).
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 
@@ -78,19 +83,28 @@ secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carri
 rules after that: the tool table, the ticket body template, what a confirmed link lets
 Claude do without asking, and how status moves from in progress to in review to done.
 
-**Hooks.** `hooks/ticket.js` keeps the branch's link in
-`git rev-parse --git-path fabflows/ticket`, never in the working tree, and reads only that
-local state; every tracker write is Claude's own MCP call.
+**Hooks.** `hooks/ticket.js` keeps a per-branch link: one state file per branch under the
+git dir (`git rev-parse --git-path fabflows/tickets`), named by a hash of the branch, never
+in the working tree. It reads only that local state; every tracker write is Claude's own MCP
+call. `ticket.js status` prints the current branch's link, and `ticket.js clear --pr '<url>'`
+forgets a link after its branch is gone.
 
 - SessionStart prints one line: the linked ticket, a link found only in a `Refs:` trailer
   (unconfirmed, so Claude asks first), or a reminder that the branch has none.
 - PreToolUse denies a `git commit` with an inline message that lacks `Refs: <key>` (and
   `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key.
-- PostToolUse reminds Claude to update the ticket after a push, a PR creation and a merge.
+- PostToolUse reminds Claude to update the ticket after a push and a PR creation. After a
+  merge (not `gh pr merge --auto`) it finds the ticket by the PR the merge named, asks Claude
+  to check the merge happened, and closes the ticket only for a PR with a closing phrase: a
+  Refs-only PR leaves it open.
 
+**Approval.** The user approves the ticket description as raw text, never rendered: a raw
+diff of what Claude wrote against what the tracker holds, or the full raw text when Claude
+did not write it. `ticket.js normalize` removes only HTML comments outside fences, invisible
+and control characters, and the Links section, so the build gets exactly the text approved.
 The approval fingerprint (`ticket.js approve`) and the `Spec:` trailer on every commit tie
-the build to the text the user approved: `ticket.js check` fails if the ticket changed
-since.
+the build to that text: `ticket.js check` fails if the ticket changed since, and names the
+stored approved text so Claude can show the raw diff.
 
 **Fail-open limits.** The hooks fail open, like the guard, so these pass unchecked:
 
@@ -100,11 +114,13 @@ since.
 - SessionStart does not fire on your surface: no reminder line, so Claude learns of the
   link only from a later hook.
 
-**Key-matching limits.** The key must stand alone (`ABC-12` does not satisfy `ABC-1`, `#70`
-does not satisfy `#7`), and matching is case-sensitive. Only an inline message
-(`-m`, `--message`, `-F -`) is checked; a commit written in the editor or from a file is
-not. A PR title is checked only when passed as `--title`/`-t` or the MCP `title`, so
-`gh pr create --fill` is not.
+**Key-matching limits.** A `Refs:` or `Spec:` trailer must stand on its own message line,
+and its key or hash must match exactly (`ABC-12` does not satisfy `ABC-1`, `#70` does not
+satisfy `#7`). Only an inline message (`-m`, `--message`, `-F -`) is checked; a commit
+written in the editor or from a file (`-F <file>`) is not. A trailer hidden in a shell
+comment, or nested inside another quoted string, still passes. A PR title is checked only
+when passed as `--title`/`-t` or the MCP `title`, so `gh pr create --fill` is not. The merge
+reminder also fires after a failed merge command, so it asks Claude to check first.
 
 ## The build loop
 
