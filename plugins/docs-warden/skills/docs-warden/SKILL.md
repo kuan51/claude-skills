@@ -180,17 +180,21 @@ by "compact decisions," "too many decision records."
    branch, do not stash or switch it: use a separate worktree
    (`git worktree add`) or ask the human when. The script refuses a working tree
    that is not clean.
-3. In that branch, run `scripts/adr_compact.py <repo> --dry-run` again. If the
-   mapping differs from the one the human agreed to, because the default branch
-   holds different records, show the new one and ask again. Then run
-   `scripts/adr_compact.py <repo>` without `--dry-run`. Files move with `git mv`,
-   bytes untouched; the digest is a new accepted record carrying each archived
-   record's outcome and gaps verbatim. The history still reads from
+3. From here on, `<repo>` is that branch's checkout: the worktree's own path if
+   you made one, never the checkout the session started in. The clean-tree
+   refusal cannot tell a clean feature branch from the new one, so the path is
+   what keeps the moves off it. Run `scripts/adr_compact.py <repo> --dry-run`
+   again. If the mapping differs from the one the human agreed to, because the
+   default branch holds different records, show the new one and ask again. Then
+   run `scripts/adr_compact.py <repo>` without `--dry-run`. Files move with
+   `git mv`, bytes untouched; the digest is a new accepted record carrying each
+   archived record's outcome and gaps verbatim. The history still reads from
    `docs/decisions/` alone.
-4. Re-run `scripts/adr_index.py`, then `audit.py`.
+4. Re-run `scripts/adr_index.py <repo>`, then `audit.py <repo>`.
 5. Commit the moves, the digest and the index as one commit. Offer to push it and
    open it as its own pull request (merge request on GitLab). Never fold it into
-   a branch that carries code.
+   a branch that carries code. Once it is pushed, offer to remove a worktree you
+   made (`git worktree remove <path>`); the branch stays on the remote.
 
 If the line instead says 50 records exist but some are still proposed, nothing is
 due yet: list the proposed records oldest first and ask the human to accept or

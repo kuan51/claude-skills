@@ -1,5 +1,5 @@
 {
-  "description": "docs-warden -- at session start and after an edit in docs/decisions/, says when docs/decisions has reached the compaction point so the compact mode gets run.",
+  "description": "docs-warden -- at session start and after an edit in docs/decisions/, says when docs/decisions has reached the compaction point, or how many records are still proposed, so the compact mode gets run.",
   "hooks": {
     "SessionStart": [
       {
