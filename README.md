@@ -34,7 +34,7 @@ so it picks up the newly installed plugin.
 - **[docs-warden](plugins/docs-warden/)**: repository documentation governance:
   scaffolds a document set scaled to what the repo actually is, audits it for what is
   missing, stale, or off-standard, keeps architecture decision records append-only
-  and indexed, compacts the oldest into a digest once fifty exist, and reports
+  and indexed, offers to archive the oldest into a digest once fifty are decided, and reports
   where the docs have drifted from the code instead of silently rewriting them.
   Includes a domain-model skill that maps a repo's concepts, their relationships,
   and which document describes each, in Python, JS/TS, PowerShell and Terraform;
