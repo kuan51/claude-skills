@@ -1880,7 +1880,7 @@ def test_adr_compact_archives_the_oldest_25_into_a_digest():
                 "supersedes: []", "supersedes: [DEC-0005]"), encoding="utf-8")
         subprocess.run(["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t",
                         "commit", "-qam", "supersede"], check=True)
-        before =(decisions / "DEC-0001-choice-1.md").read_bytes()
+        before = (decisions / "DEC-0001-choice-1.md").read_bytes()
         result = _compact(repo)
         assert result.returncode == 0, result.stderr
         archive = decisions / "archive"
