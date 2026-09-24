@@ -1154,8 +1154,9 @@ def test_adr_immutability_asks_accepted_the_same_way_load_adrs_does():
     'accepted' at end of line. status: "accepted" and an accepted line with a
     trailing comment satisfy one and not the other, so a real post-acceptance
     edit was reported as 'skipped | not yet committed' -- a false reason on a
-    record that is committed."""
-    for status_line in ['accepted', '"accepted"', 'accepted  # ratified']:
+    record that is committed. Any case is accepted: 'Accepted' matched neither
+    and was never checked at all."""
+    for status_line in ['accepted', '"accepted"', 'accepted  # ratified', 'Accepted']:
         with tempfile.TemporaryDirectory() as tmp:
             repo = _accepted_record_edited_after_acceptance(tmp, status_line)
             entry = _audit_check(repo, "adr-immutability")
