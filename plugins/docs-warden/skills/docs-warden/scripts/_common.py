@@ -287,8 +287,8 @@ def adr_status(record) -> str:
     record or a parsed front-matter dict. Status matches in any case and
     spacing, so " Accepted " is accepted, and load_adrs stores this form so
     the index and digests print one spelling. str() comes first because YAML
-    can hand back a bool, a date or a list. One definition, so the audit and compaction cannot drift into
-    two answers for what a record's status is."""
+    can hand back a bool, a date or a list. One definition, so the audit and
+    compaction cannot drift into two answers for what a record's status is."""
     return str(record.get("status") or "").strip().lower()
 
 

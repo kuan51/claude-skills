@@ -15,9 +15,9 @@ archived, so what they carry stays at the top level.
 
 The script archives nothing below 50 decided. Re-run adr_index.py afterwards.
 --check prints one line when compaction is due, or when 50 records exist but
-too many are not yet accepted or rejected, and nothing otherwise. That line comes from
-check_line(), which the hook imports at session start and after an edit in
-docs/decisions/, so "due" is defined in exactly one place.
+too many are not yet accepted or rejected, and nothing otherwise. That line
+comes from check_line(), which the hook imports at session start and after
+an edit in docs/decisions/, so "due" is defined in exactly one place.
 """
 import argparse
 import datetime as dt
