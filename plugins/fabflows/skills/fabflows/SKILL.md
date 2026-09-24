@@ -10,7 +10,7 @@ A lead doing mechanical work burns the expensive tier on typing. A lead that acc
 worker's report unchecked has bought a confident lie at a discount. This skill is both
 halves: hand work down when that pays, then prove what comes back.
 
-The workers ship with this plugin and are namespaced: `fabflows:explorer`, not `explorer`.
+The workers come with this plugin and are namespaced: `fabflows:explorer`, not `explorer`.
 None of them can spawn a worker, so the tree stays one level deep.
 
 ## When to delegate
@@ -21,14 +21,14 @@ test log, a multi-file read. Volume is decided by what must be read, not by whet
 follows: a read of more than a handful of files is volume even when you will summarise or
 judge the result, so delegate the reading and keep the judging. Do the task yourself when the
 brief would take longer to write than the task takes to do; when it is one short dependent
-chain (measured: one model at low effort beats any split of it); or when the task *is* the
+chain (measured: one model at low effort beats any split of it); or when the task itself is the
 judgement call, a root cause, an architecture choice, a refactor across coupled files, rather
 than the reading that precedes one. After two failed verifications on the same brief, do it
 yourself or bump a tier: a third spawn buys another confident wrong answer.
 
 A one-file grep, a one-line edit, a known command with short output: just do it. The brief,
 the report contract and the gate below exist for worker reports. What you read from your own
-tools is already evidence; do not re-run it to confirm it.
+tools is already evidence. Do not re-run it to confirm it.
 
 ## Routing
 
@@ -49,7 +49,7 @@ about what searching yourself would. `fabflows:explorer` is the cheap tier.
 
 ## Who leads
 
-The lead plans, briefs, verifies and takes every escalation; workers type. The lead runs at
+The lead plans, briefs, verifies and takes every escalation. Workers type. The lead runs at
 whatever effort the session is set to, and workers pin their own. A lead on Opus 5 reaches
 for subagents readily: delegate only independent, sizeable work, and skip `fabflows:refuter`
 for routine edits.
@@ -97,7 +97,7 @@ Trusting the report is how this pattern fails. Before accepting a worker's resul
 | `fabflows:investigator` | Run the reproduction command yourself, output capped, and confirm the failure it reports. |
 
 Anything you cannot confirm is `UNVERIFIABLE`, not done: say so. Surface a permission denial
-to the user; never re-issue the denied call yourself. A worker's report of scope creep is
+to the user. Never re-issue the denied call yourself. A worker's report of scope creep is
 your decision, not its.
 
 Narrate delegation in-session: what you are handing off and why before the spawn, what you
@@ -127,12 +127,12 @@ case they cannot, a workflow error in place of a result.
 
 ## Guard hook
 
-This plugin ships an active `PreToolUse` guard that stops package installs and package
+This plugin includes an active `PreToolUse` guard that stops package installs and package
 runners such as `npx` (except `pypdf` into a literal `scratchpad` `--target` with
 `--isolated`, for reading a PDF): in the default, acceptEdits and auto modes the lead gets
 the user's permission prompt, and a worker is denied. In any other mode the lead is denied
 too, and asks the user to run the command themselves. Before any install, any package runner, or any script you know will fetch a
-package, stop. Name the package, the version and where it lands, and ask the user. If the
+package, stop. Name the package, the version and where it installs, and ask the user. If the
 guard asks or denies, look for no other route until the user says yes. It also blocks
 commits and pushes on a default branch, destructive shell commands, credential-file access,
 and writes to live Claude Code configuration. It is a tripwire, not a sandbox: it matches shell strings, it
@@ -159,4 +159,4 @@ containment on a worker is its tool allowlist. Rules and known gaps: the plugin 
 | A report is missing a contract field | The worker skipped it | Send it back once with the field named; on a second miss, redo the step yourself |
 | A report's first line is a permission denial | The guard or the session's permission mode refused a call | Surface it to the user with the exact call; never re-issue it yourself |
 | `fabflows:build` throws instead of returning a result | A budget or token limit ended a round mid-flight | `references/build-loop.md`: resume with the same args and the run ID; never restart with a fresh `baseRef` |
-| An install is denied | The guard stops package installs and package runners by design | Before any install, runner, or script you know will fetch a package, stop: name the package, the version and where it lands, and ask the user. If the guard asks or denies, look for no other route until the user says yes. A worker reports it as a blocker. The one exception is `pypdf` into a literal `scratchpad` `--target` with `--isolated`, for reading a PDF |
+| An install is denied | The guard stops package installs and package runners by design | Before any install, runner, or script you know will fetch a package, stop: name the package, the version and where it installs, and ask the user. If the guard asks or denies, look for no other route until the user says yes. A worker reports it as a blocker. The one exception is `pypdf` into a literal `scratchpad` `--target` with `--isolated`, for reading a PDF |

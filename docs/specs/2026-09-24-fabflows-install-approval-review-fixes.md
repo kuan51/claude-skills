@@ -87,7 +87,7 @@ contradict the new rule. Ticket: fabflows package guard gap.
     `command[0]` basename, with any `.cmd` or `.exe` removed, is a package runner: `npx`,
     `pnpx`, `bunx`, `uvx` or `pipx`. The same applies when `command[0:2]` is `pnpm dlx`,
     `yarn dlx`, `npm exec`, `npm x` or `bun x`. The skip is reported in the existing
-    skipped list with the reason "package runner; ask the user to run it". Fix the stale
+    skipped list with the reason `package runner; ask the user to run it`. Fix the stale
     comment at `audit.py` near line 577, which cites `_lint_runner` resolving npx. It
     should cite the `.CMD` shim of the tool itself.
 14. **Docs.**
@@ -170,7 +170,7 @@ contradict the new rule. Ticket: fabflows package guard gap.
 ## Decisions
 
 - **Local bins are detected by `node_modules/.bin`, not by allowing all of `npx`.** npx runs
-  a local bin before it downloads anything. So an existing bin with no version or package
+  a local bin before it downloads anything. An existing bin with no version or package
   spec cannot download, and a missing one can. That restores the build loop's
   `npx vitest run` without reopening the gap. Rejected: allowing `npx` for workers, which
   reopens the gap. Rejected: `npx --no` only, which would make every JS repo rewrite its

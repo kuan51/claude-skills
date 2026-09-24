@@ -82,9 +82,9 @@ the old default.
 
 ## Measured performance
 
-fabflows ships with a benchmark (`evals/`) that runs a headless Fable lead on the same task
+fabflows includes a benchmark (`evals/`) that runs a headless Fable lead on the same task
 with and without the plugin and grades the result programmatically, never from what the lead
-said it did. Six iterations have run; every number below is a mean of two runs per arm from
+said it did. Every number below is a mean of two runs per arm from
 `evals/RESULTS.md`, which also carries the caveats.
 
 **The build loop, on the task fabflows is for** (iteration 6, 2026-09-22: a library and CLI
@@ -110,20 +110,20 @@ test file) the skill is overhead: about +21% list price for identical results, b
 loads the skill and deliberates instead of just doing it. On a large read (13 records, ~60k
 characters) the Haiku explorer came in 12% cheaper with a lead context 12k tokens smaller. On
 the same build task under Opus 5, with shell denials knocking the review out of the loop, the
-loop cost +53% (iteration 5); the fixes that followed (DEC-0016) and Opus 5.5 turned that into
+loop cost +53% (iteration 5). The fixes that followed (DEC-0016) and Opus 5.5 turned that into
 the table above. The `brainstorming` skill's own evals score 100% with the skill against 87.5%
 without on spec quality.
 
 **What the review does and does not catch** (iterations 7 and 8, a brownfield fixture with one
 planted bug). When the spec states the rule the bug breaks, every lead and builder fixes it before
-any review runs (9 of 9). When the spec is silent on it, the bug ships every time (10 of 10), and
+any review runs (9 of 9). When the spec is silent on it, the bug survives every time (10 of 10), and
 the loop's reviewer returns ACCEPT every time (5 of 5): it checks the diff against the spec, line
-by line, and does not audit baseline code the spec does not describe. So `fabflows:build` gets a
-spec'd change implemented and checked against its spec by a second model; it is not a bug hunt.
+by line, and does not audit baseline code the spec does not describe. `fabflows:build` gets a
+spec'd change implemented and checked against its spec by a second model. It is not a bug hunt.
 On that small task the loop cost +31% list price and 1.65x wall clock over inline for the same
-result, while moving 40% of the lead's output onto Opus. Two runs to five per arm give direction,
-not significance. Delegate sizeable, spec'd work; do the small things yourself; write the rule
-into the spec if you need it enforced.
+result, while moving 40% of the lead's output onto Opus. With two to five runs per arm, these
+numbers give direction, not significance. Delegate sizeable, spec'd work; do the small things
+yourself; write the rule into the spec if you need it enforced.
 
 ## Long sessions
 
@@ -170,7 +170,7 @@ rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alik
   not turn an install into a deny. A local bin is not a download: `npx` and `npm exec`/`npm x` pass when they name
   a plain bin (no `@`, `/` or `:`) as the first word, with no runner flag before it
   found in `node_modules/.bin` of the nearest directory with a `package.json` or
-  `node_modules`, which is where npm looks. So `npx vitest run` and `npx tsc -p x.json`
+  `node_modules`, which is where npm looks. That lets `npx vitest run` and `npx tsc -p x.json`
   work in a project that has them installed. `pnpx`, `bunx` and `bun x` always count as
   downloads. One more exception:
   `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a

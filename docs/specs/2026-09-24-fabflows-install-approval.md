@@ -30,7 +30,7 @@ hook can see it, and fell back to `bunx` when `npx` was missing. The package lan
    - The guard **records** the match and keeps checking every remaining segment and rule.
      If any rule denies, that deny is returned as today. Only when the whole command
      passes every other rule does the guard emit the recorded decision. That is emitted
-     in `preToolUse` after `checkShell` returns. So an install next to a destructive
+     in `preToolUse` after `checkShell` returns. An install next to a destructive
      segment, a git op on a default branch, or an install that names a live-config path
      (`~/.claude/plugins`, `~/.claude/hooks`) is still denied.
    - The guard returns `permissionDecision: "ask"` only when `agent_id` is absent (the
@@ -72,7 +72,7 @@ hook can see it, and fell back to `bunx` when `npx` was missing. The package lan
      judgement". The user, not the model, approves an install through the guard's ask
      prompt, and workers are still denied.
    - fabflows goes from `0.5.2` to `0.6.0` and docs-warden from `0.5.0` to `0.6.0`. The
-     fabflows `description` stops saying the guard "blocks package installs", and
+     fabflows `description` stops saying the guard `blocks package installs`, and
      `.claude-plugin/marketplace.json` and the root `README.md` bullet change to match in
      the same commit.
 
@@ -123,7 +123,7 @@ hook can see it, and fell back to `bunx` when `npx` was missing. The package lan
   and deny is today's behaviour, so nothing regresses (refuter S4).
 - The ask is deferred to the end of the check so every deny rule keeps precedence
   (refuter S1, S2). A must-fix security gap found in the lens pass is closed by design.
-- Accept the gap that a `PermissionRequest` hook or SDK host can auto-answer an `ask`, and
+- Accept the gap that a `PermissionRequest` hook or SDK host can answer an `ask` automatically, and
   document it (refuter S3). Denying instead would remove the approval path the user asked
   for, and whoever configures such a hook or host has chosen to automate prompts.
 - Both plugins take a minor bump. fabflows gets a new guard decision type. docs-warden's
