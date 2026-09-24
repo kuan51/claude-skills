@@ -42,7 +42,7 @@ DEC-0002 stands.
    `acceptEdits` or `auto`, and `deny` otherwise. `plan` is not an ask mode: a hook `ask`
    is not documented as enforced there, and plan mode has no reason to install. A bin
    already in `node_modules/.bin` (a plain name, no version or `-p`), or a runner with
-   `--no`, `--no-install` or `--offline`, is not a download, because npx runs a local bin
+   `--no`, `--no-install` or `--offline` before the bin name and no `--yes`/`-y`, is not a download, because npx runs a local bin
    before it fetches anything. `audit.py` runs markdownlint only when it is on PATH, and
    `--run-generators` skips a generator that is a package runner.
 2. **Deny only** -- add the runners to the install patterns and keep denying. Rejected: it

@@ -163,7 +163,7 @@ rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alik
   configuration (a `cd` or session directory there, a `VAR=` prefix or a `--prefix=` /
   `--target=` naming it) is always denied. A local bin is not a download: `npx`, `pnpx`,
   `bunx`, `npm exec`/`npm x` and `bun x` pass when they carry `--no`, `--no-install` or
-  `--offline`, or when they name a plain bin (no `@`, `/` or `:`, no `-p`/`--package`)
+  `--offline` before the bin name and no `--yes`/`-y`, or when they name a plain bin (no `@`, `/` or `:`, no `-p`/`--package`)
   found in `node_modules/.bin` in the working directory or a parent. So `npx vitest run`
   works in a project that has vitest installed. One more exception:
   `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
@@ -210,7 +210,9 @@ be walked around:
 - Base64, variable expansion (`X=rm; $X -rf ~`), command substitution (`$(...)`),
   heredocs, `bash -c`, `python -c`, and full binary paths all evade it. Newlines, `&`, a
   leading `(`, a `VAR=value` prefix, and the prefixes `time`, `exec`, `nohup`, `command`,
-  `!`, `{`, `env` and `xargs` do not: each segment is anchored separately.
+  `!`, `{`, `env` and `xargs` do not: each segment is anchored separately. Only flags
+  without a separate value are stripped, so `xargs -n 1 npx foo`, `xargs -I {} npx {}`
+  and `env -i npx foo` still evade it.
 - Any binary whose basename is an interpreter name (`./x/python.exe`) is trusted to run a
   script from the plugin cache.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
