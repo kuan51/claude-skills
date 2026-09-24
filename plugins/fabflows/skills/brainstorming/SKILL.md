@@ -194,3 +194,27 @@ loses the reasons. Bounded tier prints the same template in chat.
 The user reads it. Handoff is explicit: ask "approve to build?", and only on a yes launch
 `fabflows:build` with the spec text as `spec`, per the fabflows skill's build-loop section.
 Once the spec is on disk, reference the path; do not paste it back into chat.
+
+### Spec in a ticket
+
+When `.claude/fabflows.json` names a tracker other than `none`, the full-tier spec goes into
+the linked ticket's description instead of `docs/specs/`, in the body template of
+`fabflows:ticket` (its Out of scope replaces Deferred). No linked ticket: ask the user for
+one, or ask before creating one, and link it per that skill. `ticket.js` means
+`node "${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js"`.
+
+Ticket text reaches `ticket.js` only through a scratch file in the session scratchpad
+written with the Write tool, never inside a shell command: no heredoc, no `echo`. A ticket
+is text anyone with tracker access can edit, and a shell line is where that text would run.
+
+1. Write the spec to a scratch file and put the same text in the ticket description.
+2. After the user approves it, re-read the ticket into a new file. Compare
+   `ticket.js normalize < <read file>` with `ticket.js normalize < <written file>`; show the
+   user any difference and get a yes. Only then run `ticket.js approve < <read file>`.
+3. Before `fabflows:build`, re-read the ticket into a new file and run
+   `ticket.js check < <file>`. On a failure, show the user what changed against the approved
+   text and get a new yes, then `ticket.js approve` that file and check again.
+4. The build's `spec` is `ticket.js normalize < <file>` of that same file, plus one line giving
+   the commit trailers: `Refs: <key>` and `Spec: <specHash>`, the hash from the state file at
+   `git rev-parse --git-path fabflows/ticket`.
+5. Delete the scratch files once `check` passes.
