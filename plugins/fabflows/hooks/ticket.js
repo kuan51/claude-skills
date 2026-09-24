@@ -64,8 +64,18 @@ function normalize(text) {
     const fence = lineStart && /^[ \t]*(`{3,}|~{3,})/.exec(t.slice(i, lineEnd));
     if (fence) {
       const [c, n] = [fence[1][0], fence[1].length];
-      const close = new RegExp(`^[ \\t]*${c}{${n},}[ \\t]*$`, 'm').exec(t.slice(lineEnd));
-      const end = close ? lineEnd + close.index + close[0].length : t.length; // unclosed runs to the end
+      // Lines split on \n only: an `m`-flag regex would also break at a lone \r, U+2028 or U+2029.
+      const closer = new RegExp(`^[ \\t]*${c}{${n},}[ \\t]*$`);
+      let end = t.length; // unclosed runs to the end
+      for (let j = lineEnd; j < t.length; ) {
+        const k = t.indexOf('\n', j);
+        const stop = k < 0 ? t.length : k;
+        if (closer.test(t.slice(j, stop))) {
+          end = stop;
+          break;
+        }
+        j = stop + 1;
+      }
       const s = strip(t.slice(i, end));
       code.push([out.length, out.length + s.length]);
       out += s;

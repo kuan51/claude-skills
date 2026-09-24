@@ -71,6 +71,11 @@ test('normalize removes comments, invisible characters and Links, and nothing el
     assert.equal(normalize(`spec\n\n${heading}\n- https://a`), 'spec', heading);
   }
   assert.equal(normalize('a\n## Links\nb\n## Links\nc'), 'a\n## Links\nb', 'the last Links heading');
+  // A fence closes only on its own \n-delimited line; a lone \r or U+2028 is not a line break.
+  for (const sep of ['\r', ' ', ' ']) {
+    const t = '```\na' + sep + '```\n## Links\nsecret\n```';
+    assert.ok(normalize(t).includes('secret'), `fence must not close at ${JSON.stringify(sep)}`);
+  }
 
   const big = '[a\n'.repeat(64 * 1024 / 3);
   const t0 = Date.now();
