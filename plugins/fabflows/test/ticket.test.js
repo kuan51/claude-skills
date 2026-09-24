@@ -718,3 +718,92 @@ test('garbage stdin exits 0 with no output', () => {
     assert.equal(r.stdout, '', input);
   }
 });
+
+// A repo whose main holds every kind of change trace reports, with fixed identities and
+// dates. Returns { r, g, from, sha } where sha maps each subject to its commit.
+const BODY = {
+  'ABC-1': CLASSIFIED,
+  'ABC-2': 'two\n\n## Compliance\n- Controls: none\n- Change: standard\n- Class: n/a',
+  'ABC-3': 'three\n\n## Compliance\n- Controls: none\n- Change: normal\n- Class: A',
+};
+function history() {
+  const { fingerprint } = require(TICKET);
+  const r = repo(false);
+  const at = '2026-01-02T03:04:05Z';
+  const env = { ...process.env, GIT_AUTHOR_NAME: 'Dev', GIT_AUTHOR_EMAIL: 'dev@example.com', GIT_COMMITTER_NAME: 'Dev', GIT_COMMITTER_EMAIL: 'dev@example.com', GIT_AUTHOR_DATE: at, GIT_COMMITTER_DATE: at };
+  const g = (...args) => execFileSync('git', args, { cwd: r.dir, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  const commit = (msg, ...extra) => g('commit', '-q', '--allow-empty', ...extra, '-m', msg);
+  g('checkout', '-q', 'main');
+  commit('init', '--amend'); // dated like the rest: git reads a range wrongly across clock skew
+  const from = g('rev-parse', 'HEAD');
+  g('checkout', '-q', '-b', 'f1');
+  commit(`feat: a\n\nRefs: ABC-1\nSpec: ${fingerprint(BODY['ABC-1'])}\nCo-Authored-By: Claude <noreply@anthropic.com>`);
+  commit('feat: b\n\nRefs: not-a-key\nSpec: sha256:short');
+  g('checkout', '-q', 'main');
+  g('merge', '-q', '--no-ff', 'f1', '-m', 'Merge pull request #5 from o/f1');
+  for (const [b, k] of [['o1', 'ABC-2'], ['o2', 'ABC-3']]) {
+    g('checkout', '-q', '-b', b, 'main');
+    commit(`feat: ${b}\n\nRefs: ${k}\nSpec: ${fingerprint(BODY[k])}`);
+  }
+  g('checkout', '-q', 'main');
+  g('merge', '-q', '--no-ff', 'o1', 'o2', '-m', 'Merge branches o1 and o2');
+  commit('feat: x (ABC-7) (#12)');
+  commit('feat: y (#12)');
+  commit('feat: z (#66) (#67)');
+  commit('fix: w\n\nRefs: ABC-8\nRefs: ABC-8', '--author', 'Copilot <copilot@example.com>');
+  commit('chore: direct');
+  const sha = Object.fromEntries(g('log', '--first-parent', '--format=%s%x1f%H', `${from}..main`).split('\n').map((l) => l.split('\x1f')));
+  return { r, g, from, sha };
+}
+
+test('trace --json lists each first-parent commit with no free text', () => {
+  const { fingerprint } = require(TICKET);
+  const { r, from, sha } = history();
+  try {
+    const out = cli(r.dir, ['trace', from, '--json']);
+    assert.equal(out.status, 0, out.stderr);
+    assert.equal(out.stderr, '');
+    const rows = JSON.parse(out.stdout);
+    for (const row of rows) row.keys.sort();
+    const row = (subject, pr, keys, keySource, specs, ai) => ({ sha: sha[subject], date: '2026-01-02T03:04:05+00:00', pr, keys, keySource, specs, ai });
+    assert.deepEqual(rows, [
+      row('chore: direct', null, [], 'none', [], false),
+      row('fix: w', null, ['ABC-8'], 'commit', [], true),
+      row('feat: z (#66) (#67)', 67, ['#66'], 'subject', [], false),
+      row('feat: y (#12)', 12, [], 'none', [], false),
+      row('feat: x (ABC-7) (#12)', 12, ['ABC-7'], 'subject', [], false),
+      row('Merge branches o1 and o2', null, ['ABC-2', 'ABC-3'], 'merged', rows[5].specs, false),
+      row('Merge pull request #5 from o/f1', 5, ['ABC-1'], 'merged', [fingerprint(BODY['ABC-1'])], true),
+    ]);
+    assert.deepEqual(rows[5].specs.sort(), [fingerprint(BODY['ABC-2']), fingerprint(BODY['ABC-3'])].sort(), 'an octopus merge brings in every branch');
+    assert.doesNotMatch(out.stdout, /feat|fix|chore|Merge|Dev|Copilot|Claude|not-a-key/, 'no subject, author or co-author text');
+    assert.deepEqual(JSON.parse(cli(r.dir, ['trace', from, 'main', '--json']).stdout).length, 7, 'an explicit <to>');
+  } finally {
+    r.done();
+  }
+});
+
+test('trace refuses option-like refs and warns on shallow or unrelated ranges', () => {
+  const { r, g, from } = history();
+  const clone = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-shallow-'));
+  try {
+    for (const args of [['--output=x', '--json'], [from, '--output=x', '--json'], ['nope', '--json'], [from]]) {
+      const bad = cli(r.dir, ['trace', ...args]);
+      assert.equal(bad.status, 1, args.join(' '));
+      assert.equal(bad.stdout, '', args.join(' '));
+    }
+    const back = cli(r.dir, ['trace', 'main', from, '--json']);
+    assert.equal(back.status, 0);
+    assert.match(back.stderr, /warning: from is not an ancestor of to/);
+    assert.equal(back.stdout, '[]\n');
+
+    g('clone', '-q', '--depth', '2', `file://${r.dir}`, clone);
+    const shallow = cli(clone, ['trace', 'HEAD~1', '--json']);
+    assert.equal(shallow.status, 0, shallow.stderr);
+    assert.match(shallow.stderr, /warning: this is a shallow clone/);
+    assert.equal(JSON.parse(shallow.stdout).length, 1);
+  } finally {
+    r.done();
+    fs.rmSync(clone, { recursive: true, force: true });
+  }
+});

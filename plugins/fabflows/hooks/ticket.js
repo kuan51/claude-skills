@@ -13,6 +13,7 @@
 //   pr <url>                     record the pull request
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
+//   trace <from> [<to>] --json   print each first-parent commit's PR, keys and specs
 //
 // State is one file per branch, fabflows/tickets/<h>.json in the common git dir, where <h> is
 // the first 16 hex characters of sha256(branch); approve adds <h>.approved.md beside it.
@@ -318,6 +319,55 @@ function linked(cwd) {
   return key ? { key, confirmed: false } : null;
 }
 
+// ---------------------------------------------------------------- trace
+// The first-parent commits from..to, one row each, as an auditor samples merged changes.
+// Subjects and names stay in the row's free-text fields, which --json never prints: commit
+// text can hold instructions, and that output reaches Claude.
+const traceGit = (args, cwd) =>
+  execFileSync('git', args, { cwd, encoding: 'utf8', timeout: 30000, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
+const LOG_FORMAT = ['%H', '%P', '%cI', '%an <%ae>', '%s', ...['Refs', 'Spec', 'Co-Authored-By'].map((k) => `%(trailers:key=${k},valueonly)`)].join('%x1f');
+// A key on a key boundary, as hasKey finds one; `x/y#7` is not #7.
+const SUBJECT_KEY = /(?<![A-Za-z0-9/#-])(?:[A-Z][A-Z0-9]*-[0-9]+|(?:[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*)?#[0-9]+)(?![A-Za-z0-9-])/g;
+const MERGE_PR = /^Merge pull request #([0-9]{1,9})\b/;
+const TRAILING_PR = /\s*\(#([0-9]{1,9})\)\s*$/;
+const AI = /noreply@anthropic\.com|claude|copilot/i;
+const uniq = (a) => [...new Set(a)];
+
+// One commit of LOG_FORMAT output. Every field is validated where it is used, so a unit
+// separator inside commit text can shift fields but never put free text in a row.
+function parseCommit(rec) {
+  const [sha, parents = '', date, author = '', subject = '', refs, specs, co] = rec.replace(/^\n/, '').split('\x1f');
+  const lines = (v) => (v || '').split('\n').map((s) => s.trim()).filter(Boolean);
+  return { sha, parents: parents.split(' ').filter(Boolean), date, author, subject, refs: lines(refs), specs: lines(specs), co: lines(co) };
+}
+
+function traceRows(from, to, cwd) {
+  const records = (out) => out.split('\0').filter((r) => r.trim()).map(parseCommit);
+  return records(traceGit(['log', '--first-parent', '-z', `--format=${LOG_FORMAT}`, `${from}..${to}`], cwd)).map((c) => {
+    // Every commit a merge brought in, from each parent after the first.
+    const merged =
+      c.parents.length > 1 && /^[0-9a-f]{40,64}$/.test(c.sha)
+        ? records(traceGit(['rev-list', '--no-commit-header', `--format=${LOG_FORMAT}%x00`, `${c.sha}^1..${c.sha}`], cwd)).filter((m) => m.sha !== c.sha)
+        : [];
+    const own = c.refs.filter(valid.key);
+    const brought = merged.flatMap((m) => m.refs).filter(valid.key);
+    const subject = c.parents.length < 2 ? (c.subject.replace(TRAILING_PR, '').match(SUBJECT_KEY) || []).filter(valid.key) : [];
+    const pr = MERGE_PR.exec(c.subject) || TRAILING_PR.exec(c.subject);
+    return {
+      sha: c.sha,
+      date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}(Z|[+-][0-9]{2}:[0-9]{2})$/.test(c.date) ? c.date : null,
+      pr: pr ? Number(pr[1]) : null,
+      keys: uniq([...own, ...brought, ...subject]),
+      keySource: own.length ? 'commit' : brought.length ? 'merged' : subject.length ? 'subject' : 'none',
+      specs: uniq([c, ...merged].flatMap((m) => m.specs).filter(valid.specHash)),
+      ai: [c, ...merged].some((m) => [m.author, ...m.co].some((v) => AI.test(v))),
+      // Free text, for the report files only.
+      subject: c.subject,
+      authors: [c.author, ...c.co],
+    };
+  });
+}
+
 // ---------------------------------------------------------------- CLI
 function cli(cmd, args) {
   const cwd = process.cwd();
@@ -403,8 +453,35 @@ function cli(cmd, args) {
       if (!branch) fail('not on a branch; use clear --pr <url>');
       removeState(statePath(cwd, branch));
     }
+  } else if (cmd === 'trace') {
+    const refs = [];
+    const o = {};
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--json') o.json = true;
+      else refs.push(args[i]);
+    }
+    if (refs.length < 1 || refs.length > 2 || !o.json) fail('usage: trace <from> [<to>] --json');
+    const [from, to] = [refs[0], refs[1] || 'HEAD'].map((ref, n) => {
+      const which = n ? 'to' : 'from';
+      if (ref.startsWith('-')) fail(`the ${which} ref may not start with -`);
+      try {
+        return traceGit(['rev-parse', '--verify', '--end-of-options', ref + '^{commit}'], cwd).trim();
+      } catch {
+        return fail(`the ${which} ref is not a commit`);
+      }
+    });
+    if (traceGit(['rev-parse', '--is-shallow-repository'], cwd).trim() === 'true') {
+      process.stderr.write('ticket.js: warning: this is a shallow clone, so history may be missing\n');
+    }
+    try {
+      traceGit(['merge-base', '--is-ancestor', from, to], cwd);
+    } catch {
+      process.stderr.write('ticket.js: warning: from is not an ancestor of to, so the range may not be what you meant\n');
+    }
+    const rows = traceRows(from, to, cwd);
+    process.stdout.write(JSON.stringify(rows.map(({ sha, date, pr, keys, keySource, specs, ai }) => ({ sha, date, pr, keys, keySource, specs, ai }))) + '\n');
   } else {
-    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status or clear`);
+    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status, clear or trace`);
   }
   process.exit(0);
 }
