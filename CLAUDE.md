@@ -104,5 +104,6 @@ Rules that bite here:
 - **This repo keeps no run log** (its archetype is `library`). Operational narrative, such as
   commands run and checks skipped, goes in the PR description; durable conclusions go in a
   decision record or spec.
-- **Nothing runs these checks in CI yet**, so run `audit.py` yourself before opening a PR that
-  touches `docs/`.
+- **CI runs markdownlint, Vale and `audit.py` on every pull request** (`.github/workflows/docs.yml`),
+  from the PR's own checkout. Vale lints only the Markdown files the PR changes, as pre-commit does.
+  lychee and `freshness.py` still run only by hand.
