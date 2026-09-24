@@ -240,10 +240,20 @@ const DESTRUCTIVE = [
   [SYSTEM_REDIRECT, 'writing into a system path'],
 ];
 
+// Home in every spelling a shell string can carry it: the real home is spelled out too,
+// plus the usual absolute homes on Windows, Linux and macOS.
+const HOME_LITERAL = os.homedir().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const HOME_SPELLINGS = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+|/root|/home/[^\s/]+|/users/[^\s/]+|${HOME_LITERAL})`;
+
 // rm -rf / Remove-Item -Recurse -Force are only destructive at a dangerous target.
-// `rm -rf ./build` is routine; `rm -rf ~` is not.
-const RM_DANGER =
-  /(^|\s)(\/|~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]?)(\s|$)|(^|\s)(~|\$HOME|\$env:USERPROFILE)[\\/]|\s\.\.(\s|[\\/]|$)|\s\*(\s|$)|(^|\s|[\\/])\.git(\s|[\\/]|$)/i;
+// `rm -rf ./build` is routine; `rm -rf ~` is not. Under home, only home itself, a direct
+// child (`~/projects`, `~/*`) and anything in a credential or config directory count, so
+// `rm -rf ~/.cache/pip` passes. A target may be quoted.
+const RM_HOME = String.raw`(^|\s)["']?${HOME_SPELLINGS}([\\/][^\s\\/"']*)?[\\/]?["']?(\s|$)|(^|\s)["']?${HOME_SPELLINGS}[\\/]\.(ssh|claude|aws|config|gnupg)([\\/"'\s]|$)`;
+const RM_DANGER = new RegExp(
+  String.raw`(^|\s)(\/|[a-z]:[\\/]?)(\s|$)|${RM_HOME}|\s\.\.(\s|[\\/]|$)|\s\*(\s|$)|(^|\s|[\\/])\.git(\s|[\\/]|$)`,
+  'i'
+);
 
 function isDangerousDelete(seg) {
   const posix = /^rm\b/i.test(seg);
@@ -265,13 +275,23 @@ const RUNNER_EXT = 'mk|sh|bash|zsh|ps1|cmd|bat';
 const RUNNER_FILE = new RegExp(String.raw`(^|[\\/])(makefile|justfile|package\.json|[^\\/]+\.(${RUNNER_EXT}))$`, 'i');
 const RUNNER_REDIRECT = new RegExp(String.raw`(>>?|\|\s*tee(\s+-a)?)\s*["']?(\S*?(makefile|justfile|package\.json|\S+\.(${RUNNER_EXT})))["']?(\s|$)`, 'i');
 
+// A comment, or an echo with no redirect and no `| tee` outside quotes, runs nothing.
+const isMessageLine = (line) =>
+  /^\s*#/.test(line) ||
+  (/^\s*(echo|printf|write-host|write-output)(\s|$)/i.test(line) && !/>|\|\s*tee\b/i.test(unquoted(line)));
+
 function destructiveLine(content) {
   const text = String(content).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
   // A Makefile recipe line starts with a tab and maybe `@` or `-`; an npm script is a
   // quoted JSON value; a printf/echo payload is a quoted string that may span lines.
-  // Check every line, and every line of every quoted string.
+  // Check every line, and every line of every quoted string, except a string on a comment
+  // line or on an echo line that goes to the terminal: that one is a message.
   const units = [text];
-  for (const m of text.matchAll(/"((?:[^"\\]|\\.)*)"|'([^']*)'/g)) units.push((m[1] ?? m[2]).replace(/\\(.)/g, '$1'));
+  for (const m of text.matchAll(/"((?:[^"\\]|\\.)*)"|'([^']*)'/g)) {
+    const end = text.indexOf('\n', m.index + m[0].length);
+    if (isMessageLine(text.slice(text.lastIndexOf('\n', m.index) + 1, end < 0 ? text.length : end))) continue;
+    units.push((m[1] ?? m[2]).replace(/\\(.)/g, '$1'));
+  }
   for (const unit of units) {
     for (const raw of unit.split(/\r?\n/)) {
       const c = raw.replace(/^[\s@-]+/, '').trim();
@@ -389,9 +409,7 @@ function splitSegments(command) {
 // variable the rules below cannot follow, so it is read-only only when the body is too.
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
-// The real home is spelled out too, plus the usual absolute homes on Linux and macOS.
-const HOME_LITERAL = os.homedir().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+|/root|/home/[^\s/]+|/users/[^\s/]+|${HOME_LITERAL})[\\/]\.claude[\\/]`;
+const CLAUDE_HOME = String.raw`${HOME_SPELLINGS}[\\/]\.claude[\\/]`;
 const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s;|&)]|$))|[\\/]\.git[\\/]hooks([\\/"'\s;|&)]|$)`, 'i');
 // Discarding or merging a stream (`2>/dev/null`, `2>&1`) is not a write. Stripped from the
 // raw command before the split, because `2>&1` would otherwise be cut on its `&`. A digit
