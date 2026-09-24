@@ -201,6 +201,48 @@ const SECRET_EXEMPT = /\.env\.(example|sample|template|dist)\b/i;
 
 const isSecretPath = (p) => !!p && !SECRET_EXEMPT.test(p) && SECRET_PATH.test(p);
 
+// A bare `.ssh` or `.aws` directory handed to Read or Grep, whatever trailing `/`, `//` or
+// `/.` follows it. `([\\/]\.?)*` matches the same strings as `([\\/]+\.?)*` without the
+// latter's exponential backtracking on a long run of slashes. Not used by the shell rules.
+const SECRET_DIR = /(^|[\\/])\.(ssh|aws)([\\/]\.?)*$/i;
+
+// A Grep glob is converted to a regex and tried against sample secret names.
+// ponytail: this list is the ceiling; a glob that only matches a secret name missing from it
+// (`prod.env`) passes. Add the name here to cover it.
+const SECRET_SAMPLES = ['.env', '.env.local', '.env.production', 'x.pem', 'x.key', 'id_rsa', 'id_ed25519', '.ssh/id_rsa', '.aws/credentials', '.npmrc', '.pypirc'];
+function isSecretGlob(glob) {
+  if (typeof glob !== 'string') return false;
+  // Split on whitespace in case the tool splits it. An exclusion, or a glob of only `*`, `?`
+  // and `/`, is not checked: `*` and `**/*` search what no glob would, a known gap.
+  return glob.split(/\s+/).some((g) => {
+    if (!g || g.startsWith('!') || /^[*?/]+$/.test(g)) return false;
+    let re = '';
+    let depth = 0;
+    for (let i = 0; i < g.length; i++) {
+      const c = g[i];
+      if (c === '*' && g[i + 1] === '*') {
+        re += '.*';
+        i += g[i + 2] === '/' ? 2 : 1;
+      } else if (c === '*') re += '[^/]*';
+      else if (c === '?') re += '[^/]';
+      else if (c === '{') (re += '(?:'), depth++;
+      else if (c === '}' && depth) (re += ')'), depth--;
+      else if (c === ',' && depth) re += '|';
+      else if (c === '[' && g.indexOf(']', i + 1) > i) {
+        const end = g.indexOf(']', i + 1);
+        re += g.slice(i, end + 1);
+        i = end;
+      } else re += c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    try {
+      const rx = new RegExp(`(^|/)${re}$`, 'i');
+      return SECRET_SAMPLES.some((s) => rx.test(s));
+    } catch {
+      return true; // a glob the conversion cannot compile is denied
+    }
+  });
+}
+
 const SECRET_CONTENT =
   /AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|xox[baprs]-[0-9A-Za-z-]{10,}|AIza[0-9A-Za-z_-]{35}/;
 
@@ -673,7 +715,7 @@ function preToolUse(input) {
 
   if (tool === 'Read' || tool === 'Grep') {
     const target = ti.file_path || ti.path;
-    if (isSecretPath(target)) {
+    if (isSecretPath(target) || SECRET_DIR.test(target || '') || (tool === 'Grep' && isSecretGlob(ti.glob))) {
       deny('fabflows: reading a credential-bearing file is blocked. If it is genuinely needed, read it yourself outside the session.');
     }
     return;

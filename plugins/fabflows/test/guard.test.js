@@ -842,6 +842,30 @@ test('chmod is blocked for any mode word that grants world write', () => {
   denies(write('package.json', '{"scripts":{"open":"chmod -R 777 ."}}'), 'npm script running chmod -R 777 .');
 });
 
+test('Grep checks its glob, and Read and Grep check a bare secret directory', () => {
+  const grep = (tool_input) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', ...tool_input }, cwd: '.' });
+  for (const glob of [
+    '.env', '*.env', '**/.env*', '.env*', '.env.*', '*.pem', '*.key', 'id_rsa', '*.{env,pem}', '**/.ssh/**', '.en*', '*env',
+    'id_*', '*.pe?', '.ssh/*', '**/.aws/**', '.e[n]v', '.*', '*.*', '**/.*', '*.env.production', '**/.env.prod*', '*.md .env',
+  ]) {
+    denies(grep({ glob }), `Grep glob ${glob}`);
+  }
+  for (const glob of [
+    '.env.example', '*.env.example', '*.md', '*.ts', '*.{ts,tsx}', 'src/**', 'package.json', '*', '**/*', '?*', '!.env',
+    '*config*', '**/config', 'config', '*.yml',
+  ]) {
+    allows(grep({ glob }), `Grep glob ${glob}`);
+  }
+  for (const p of ['~/.ssh', '/root/.aws/', '.ssh', 'C:\\Users\\a\\.ssh', '/root/.aws/.', '/root/.aws//', '/root/.aws/./']) {
+    denies(read(p), `Read of ${p}`);
+    denies(grep({ path: p }), `Grep in ${p}`);
+  }
+  for (const p of ['deploy.ssh', '~/.sshd', 'x.aws', '/a/.aws/cli', '/a/.aws/config']) {
+    allows(read(p), `Read of ${p}`);
+    allows(grep({ path: p }), `Grep in ${p}`);
+  }
+});
+
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
   // Only the guard's own entries; ticket.js has its own wiring test.
