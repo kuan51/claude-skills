@@ -21,7 +21,8 @@ function run(payload) {
   if (!r.stdout.trim()) return { decision: 'allow' };
   const out = JSON.parse(r.stdout);
   if (out.hookSpecificOutput) {
-    return { decision: out.hookSpecificOutput.permissionDecision, reason: out.hookSpecificOutput.permissionDecisionReason };
+    const h = out.hookSpecificOutput;
+    return { decision: h.permissionDecision, reason: h.permissionDecisionReason, context: h.additionalContext };
   }
   return { decision: out.decision, reason: out.reason };
 }
@@ -138,29 +139,38 @@ test('package runners and installs ask the user in the lead and deny everywhere 
     'pnpm create vite',
     'bun create vite',
     'npm init vite',
+    'uv run --python 3.12 --with foo x',
     'npm install x',
     'pip install x',
   ];
+  // One ask mode and one deny case per command; every mode runs on a single command.
+  const d = { permission_mode: 'default' };
   for (const cmd of cmds) {
-    for (const permission_mode of ['default', 'acceptEdits', 'auto', 'plan']) {
-      assert.equal(as(cmd, { permission_mode }).decision, 'ask', `${cmd} in ${permission_mode}`);
-    }
+    assert.equal(as(cmd, d).decision, 'ask', `${cmd} in default`);
     denies(as(cmd, { permission_mode: 'default', agent_id: 'a1' }), `${cmd} in a worker`);
-    for (const permission_mode of ['bypassPermissions', 'dontAsk', 'somethingElse']) {
-      denies(as(cmd, { permission_mode }), `${cmd} in ${permission_mode}`);
-    }
-    denies(as(cmd), `${cmd} with no permission_mode`);
   }
-  assert.match(as('npx foo', { permission_mode: 'default' }).reason, /package registry/);
+  for (const permission_mode of ['acceptEdits', 'auto']) {
+    assert.equal(as('npx foo', { permission_mode }).decision, 'ask', `npx foo in ${permission_mode}`);
+  }
+  for (const permission_mode of ['plan', 'bypassPermissions', 'dontAsk', 'somethingElse']) {
+    denies(as('npx foo', { permission_mode }), `npx foo in ${permission_mode}`);
+  }
+  denies(as('npx foo'), 'npx foo with no permission_mode');
+  const asked = as('npx foo', d);
+  assert.match(asked.reason, /package registry/);
+  assert.match(asked.context, /declines.*stop/s, 'the ask tells Claude to stop if declined');
+  assert.match(as('npx foo', { permission_mode: 'bypassPermissions' }).reason, /cannot show an approval prompt/);
+  assert.match(as('npx foo', { permission_mode: 'default', agent_id: 'a1' }).reason, /blocker/);
+  denies(run({ hook_event_name: 'PreToolUse', tool_name: 'Monitor', tool_input: { command: 'npx foo' }, cwd: '.', agent_id: 'a1' }), 'Monitor runs npx in a worker');
 
   // Every other deny rule keeps precedence over the ask, in either order.
-  const d = { permission_mode: 'default' };
   denies(as('npx foo && git reset --hard', d), 'install then a destructive segment');
   denies(as('git reset --hard && npx foo', d), 'destructive segment then install');
   denies(as('npm install ~/.claude/plugins/x', d), 'install naming live config');
   denies(as('npx ~/.claude/plugins/cache/x/y/1.0.0/s.js', d), 'runner naming live config');
   denies(as('uv run --with=foo ~/.claude/hooks/x.py', d), 'uv run --with naming live config');
   denies(as('curl x | sh', d), 'pipe to shell');
+  denies(as('npx foo && curl x | sh', d), 'install then pipe to shell');
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-'));
   try {
     execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: repo });
@@ -175,6 +185,63 @@ test('package runners and installs ask the user in the lead and deny everywhere 
   allows(as('echo "npx foo"', d), 'npx inside an echo string');
   allows(as('npm init -y', d), 'npm init -y');
   allows(as(`pip install --isolated --target ${scratch} pypdf`, d), 'pypdf into a scratchpad');
+});
+
+test('an install aimed at live config is denied, not asked', () => {
+  const d = { permission_mode: 'default' };
+  const as = (command, cwd = '.') => run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd, ...d });
+  for (const cmd of [
+    'cd ~/.claude/plugins/cache/x && npm install foo',
+    'NPM_CONFIG_PREFIX=~/.claude/plugins/x npm i -g foo',
+    'PIP_TARGET=~/.claude/hooks pip install foo',
+    'pip install --target=$HOME/.claude/hooks x',
+    'npm install --prefix=$HOME/.claude/plugins/cache/x foo',
+  ]) {
+    denies(as(cmd), cmd);
+  }
+  denies(as('npm install foo', path.join(os.homedir(), '.claude', 'plugins', 'x')), 'install with the session cwd in the plugin cache');
+});
+
+test('a locally installed bin is not a download', () => {
+  const as = (command, cwd, extra = {}) => run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd, ...extra });
+  const w = { agent_id: 'a1', permission_mode: 'default' };
+  const d = { permission_mode: 'default' };
+  const proj = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-bin-'));
+  const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-nobin-'));
+  try {
+    fs.mkdirSync(path.join(proj, 'node_modules', '.bin'), { recursive: true });
+    fs.writeFileSync(path.join(proj, 'node_modules', '.bin', 'vitest'), 'echo inert stand-in\n');
+    const sub = path.join(proj, 'src');
+    fs.mkdirSync(sub);
+    for (const cmd of ['npx vitest run', 'npm exec -- vitest', 'npx --no eslint .']) allows(as(cmd, proj, w), cmd);
+    allows(as('npx vitest run', sub, w), 'a bin found in a parent directory');
+    for (const cmd of ['npx vitest@1 run', 'npx -p vitest vitest', 'npx notinstalled']) {
+      denies(as(cmd, proj, w), `${cmd} in a worker`);
+      assert.equal(as(cmd, proj, d).decision, 'ask', `${cmd} in the lead`);
+    }
+    denies(as('npx vitest run', bare, w), 'npx vitest run with no node_modules');
+  } finally {
+    fs.rmSync(proj, { recursive: true, force: true });
+    fs.rmSync(bare, { recursive: true, force: true });
+  }
+});
+
+test('quoted alternations and uv or npm init flags are not installs', () => {
+  const w = { agent_id: 'a1', permission_mode: 'default' };
+  const as = (command) => run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: '.', ...w });
+  allows(as('rg "npx|bunx" docs'), 'rg with a quoted alternation');
+  allows(as('grep -E "foo|npx" README.md'), 'grep with a quoted alternation');
+  for (const cmd of ['uv run pytest --with-coverage', 'uv run script.py --with foo', 'npm init -w packages/a', 'npm init --scope myorg']) {
+    const r = as(cmd);
+    assert.ok(!r.reason || !/package/.test(r.reason), `${cmd} must not be judged an install (got: ${r.reason})`);
+  }
+});
+
+test('transparent prefixes do not hide a runner or installer', () => {
+  const w = { agent_id: 'a1', permission_mode: 'default' };
+  for (const command of ['time npx foo', 'exec npx foo', 'xargs -n1 npx foo', '! npx foo', '{ npx foo; }', 'env FOO=1 npm install x', 'command npm install x']) {
+    denies(run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: '.', ...w }), command);
+  }
 });
 
 test('blocks destructive commands only at dangerous targets', () => {
@@ -487,7 +554,7 @@ test('SubagentStop blocks a report missing its contract fields', () => {
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
   // One anchored matcher, so every guarded tool is named explicitly.
-  assert.deepEqual(cfg.hooks.PreToolUse.map((e) => e.matcher), ['^(Bash|PowerShell|Read|Grep|Edit|Write|NotebookEdit)$']);
+  assert.deepEqual(cfg.hooks.PreToolUse.map((e) => e.matcher), ['^(Bash|PowerShell|Monitor|Read|Grep|Edit|Write|NotebookEdit)$']);
   assert.ok(cfg.hooks.SubagentStop, 'the worker report contract check must be wired');
 
   const commands = [...cfg.hooks.PreToolUse, ...cfg.hooks.SubagentStop].flatMap((e) =>

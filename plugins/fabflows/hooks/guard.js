@@ -33,39 +33,35 @@ const expandHome = (p) => p.replace(/^~(?=[\\/]|$)/, os.homedir());
 const unquote = (s) => s.replace(/^(["'])(.*)\1$/, '$2');
 
 // ---------------------------------------------------------------- decisions
-function deny(reason) {
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
-        permissionDecision: 'deny',
-        permissionDecisionReason: reason,
-      },
-    })
-  );
+function decide(decision, reason, context) {
+  const out = { hookEventName: 'PreToolUse', permissionDecision: decision, permissionDecisionReason: reason };
+  if (context) out.additionalContext = context;
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: out }));
   process.exit(0);
 }
+const deny = (reason) => decide('deny', reason);
 
 // A package download the user may approve. `ask` hands the call to the native permission
 // prompt, which only a human in the main thread can answer. A worker (agent_id present)
 // cannot show one, and a mode that does not prompt, or an unknown or missing mode, gets
-// today's deny, so nothing regresses.
-const ASK_MODES = ['default', 'acceptEdits', 'auto', 'plan'];
+// a deny. A hook `ask` is not documented as enforced in plan mode, so plan is not listed.
+const ASK_MODES = ['default', 'acceptEdits', 'auto'];
 function install(seg, input) {
-  if (!input.agent_id && ASK_MODES.includes(input.permission_mode)) {
-    process.stdout.write(
-      JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'ask',
-          permissionDecisionReason: `fabflows: this downloads from a package registry (${seg.slice(0, 60)}). Approve only if you want it installed.`,
-        },
-      })
+  const what = seg.slice(0, 60);
+  if (input.agent_id) {
+    deny(
+      `fabflows: package installs and package runners are blocked in a worker (${what}). Stop. Report the package, the version and where it lands to the lead as a blocker, and do not work around it.`
     );
-    process.exit(0);
+  }
+  if (ASK_MODES.includes(input.permission_mode)) {
+    decide(
+      'ask',
+      `fabflows: this downloads from a package registry (${what}). Approve only if you want it installed.`,
+      `fabflows asked the user to approve a package download (${what}). If the user declines, or the call is not approved, name the package and stop. Try no other runner, package manager, manual download or script.`
+    );
   }
   deny(
-    `fabflows: package installs and package runners are blocked (${seg.slice(0, 60)}). Stop. Name the package, the version and where it lands, and ask the user. Do not try another runner, package manager, manual download or script until the user says yes. A worker reports the package to the lead as a blocker.`
+    `fabflows: package installs and package runners need the user's yes (${what}), and this permission mode cannot show an approval prompt, so a yes cannot let the command through. Stop. Name the package, the version and where it lands, and ask the user to run it themselves, for example with the ! prefix, or to switch to a mode that prompts. Try no other runner, package manager, manual download or script.`
   );
 }
 
@@ -93,15 +89,16 @@ const INSTALL = [
   /^(brew|winget|choco|scoop)\s+install\b/i,
   /^install-(module|package|script)\b/i,
   // Ephemeral package runners download just the same, into a cache outside the repo.
-  /^(npx|pnpx|bunx|uvx)\b/i,
+  /^(npx|pnpx|bunx|uvx)(\s|$)/i,
   /^npm\s+(exec|x)\b/i,
   /^bun\s+x\b/i,
   /^(pnpm|yarn)\s+dlx\b/i,
   /^uv\s+tool\s+(run|install)\b/i,
-  /^uv\s+run\b.*\s--with\b/i,
+  // Only uv's own options may come before --with, never the command it runs.
+  /^uv\s+run\s+(-\S+\s+([^-\s]\S*\s+)?)*--with(-requirements|-editable)?(\s|=)/i,
   /^pipx\s+(run|install)\b/i,
   /^(npm|yarn|pnpm|bun)\s+create\b/i,
-  /^npm\s+init\s+(-\S*\s+)*[^-\s]/i,
+  /^npm\s+init\s+[^-\s]/i,
 ];
 
 // The one install the guard lets through: pypdf, pure Python, into a `--target` with a
@@ -129,6 +126,34 @@ function isScratchPypdf(seg, cwd) {
   if (!pkg || !isolated || !target || /[$`%]/.test(target)) return false;
   const t = norm(path.resolve(cwd, expandHome(target)));
   return /(^|\/)scratchpad(\/|$)/.test(t) && !isProtectedPath(t);
+}
+
+// npx and its kin run a bin from node_modules/.bin before they download anything, so a
+// plain bin name that is already installed, or a run that cannot download, is not an install.
+// Only the runner's own flags (before the bin name) count; anything after belongs to the bin.
+const LOCAL_RUNNER = /^(?:npx|pnpx|bunx|npm\s+(?:exec|x)|bun\s+x)(?:\s+(.*))?$/i;
+function isLocalRun(seg, cwd) {
+  const m = LOCAL_RUNNER.exec(seg);
+  if (!m) return false;
+  if (/(^|\s)(-p|--package)(\s|=|$)/i.test(seg)) return false;
+  let bin = null;
+  for (const a of (m[1] || '').split(/\s+/).filter(Boolean)) {
+    if (a === '--') continue;
+    if (/^(--no|--no-install|--offline)$/i.test(a)) return true;
+    if (a.startsWith('-')) continue;
+    bin = a;
+    break;
+  }
+  if (!bin || !/^[\w.-]+$/.test(bin)) return false; // no @, / or :, so no version or package spec
+  try {
+    for (let dir = path.resolve(cwd); ; dir = path.dirname(dir)) {
+      const b = path.join(dir, 'node_modules', '.bin', bin);
+      if (fs.existsSync(b) || fs.existsSync(b + '.cmd')) return true;
+      if (path.dirname(dir) === dir) return false;
+    }
+  } catch {
+    return false; // unsure, so it counts as an install
+  }
 }
 
 // Secret-bearing paths. Accepts either separator so a Windows path matches too.
@@ -257,6 +282,16 @@ const INERT = /^(done|fi|esac)$/i;
 // a redirect in the value is not swallowed: `X=1>file` truncates file, so the value stops
 // at a redirect and the segment is judged whole.
 const VAR_PREFIX = /^(\w+=(\$\(|[^\s<>]*(\s+|$)))+/;
+// Prefixes that run the command after them: `time npx foo` is judged as `npx foo`. `env`
+// leaves its `VAR=value` pairs to VAR_PREFIX, and `xargs` drops its flags.
+const TRANSPARENT = /^((time|exec|nohup|command|env)\s+|!\s*|\{\s+|xargs(\s+-\S+)*\s+)/i;
+const stripPrefixes = (s) => {
+  for (let prev; prev !== s; ) {
+    prev = s;
+    s = s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(VAR_PREFIX, '').replace(TRANSPARENT, '');
+  }
+  return s.trim();
+};
 // A `>` inside quotes is text (`echo "a -> b"`), not a redirect.
 // ponytail: no real quote parsing; an unbalanced quote is left in, which errs toward deny.
 const redirects = (s) => s.replace(/"[^"]*"|'[^']*'/g, '').includes('>');
@@ -265,7 +300,7 @@ const redirects = (s) => s.replace(/"[^"]*"|'[^']*'/g, '').includes('>');
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
 const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;
-const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)`, 'i');
+const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s]|$))|[\\/]\.git[\\/]hooks([\\/"'\s]|$)`, 'i');
 // Discarding or merging a stream (`2>/dev/null`, `2>&1`) is not a write. Stripped from the
 // raw command before the split, because `2>&1` would otherwise be cut on its `&`. A digit
 // is required after `>&`, so `cat x >& file` still counts as a redirect.
@@ -274,7 +309,7 @@ const HARMLESS_REDIRECT = /\d*>&\d+|\d*>>?\s*(\/dev\/null|\$null)\b/gi;
 // write. Only a path directly after the interpreter (past its flags) qualifies, so
 // `python fix.py ~/.claude/settings.json` stays denied. The interpreter may sit at a path
 // (`./.venv/Scripts/python.exe`); only its basename is checked. Redirects still deny below.
-const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^["']?(\S*[\\/])?(node|deno|bun|npx|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?["']?\s+(run\s+)?(-\S+\s+)*["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
+const RUNS_PROTECTED_SCRIPT = new RegExp(String.raw`^["']?(\S*[\\/])?(node|deno|bun|python3?|py|uv|bash|sh|pwsh|powershell|&)(\.exe)?["']?\s+(run\s+)?(-\S+\s+)*["']?${CLAUDE_HOME}(plugins|hooks)[\\/]`, 'i');
 // The marketplace clone is source, not live config: nothing under it runs until it is
 // copied into the cache, and that copy stays denied. So git may fetch and check it out.
 // Only these subcommands, and checkout/switch take one bare branch: `worktree add`,
@@ -338,14 +373,16 @@ function checkShell(command, cwd) {
 
   // Split on shell separators, then anchor every pattern at segment start. That is what
   // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
-  // to parse quoting. Newlines and `&` separate too, a leading `(` is dropped, and a
-  // `VAR=value` prefix is stripped, even when it is the whole segment, so none of them
-  // hides a command from the anchor.
-  const segments = command
+  // to parse quoting. Newlines and `&` separate too, and a leading `(`, a shell keyword, a
+  // `VAR=value` prefix (even when it is the whole segment) and a transparent prefix such
+  // as `time` are stripped, so none of them hides a command from the anchor. The raw
+  // segment is kept, because `NPM_CONFIG_PREFIX=<path> npm i` names its target there.
+  const parts = command
     .replace(HARMLESS_REDIRECT, '')
     .split(/&&|\|\||[;|&\r\n]/)
-    .map((s) => s.replace(/^[\s(]+/, '').replace(SHELL_KEYWORD, '').replace(VAR_PREFIX, '').trim())
-    .filter(Boolean);
+    .map((raw) => [raw.trim(), stripPrefixes(raw)])
+    .filter(([, s]) => s);
+  const segments = parts.map(([, s]) => s);
 
   // `for d in ~/.claude/plugins; do rm -rf "$d"; done` must not pass on its header alone.
   const loopReadOnly = segments.every(
@@ -355,15 +392,20 @@ function checkShell(command, cwd) {
   // `cd x && git commit` is judged in x, not in the session cwd, so a command that
   // moves into a worktree is checked against that worktree's branch.
   let effCwd = cwd;
-  for (const seg of segments) {
+  for (const [raw, seg] of parts) {
     const cd = /^cd\s+(.+)$/.exec(seg);
     if (cd) {
       effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
     }
 
-    const isInstall = INSTALL.some((re) => re.test(seg));
-    if (!pendingInstall && isInstall && !isScratchPypdf(seg, effCwd)) {
-      pendingInstall = seg;
+    const isInstall =
+      INSTALL.some((re) => re.test(seg)) && !isLocalRun(seg, effCwd) && !isScratchPypdf(seg, effCwd);
+    if (isInstall) {
+      // Aimed at live config, by cwd, by a VAR= prefix or by a flag: never askable.
+      if (isProtectedPath(effCwd) || PROTECTED_SHELL.test(raw)) {
+        deny(`fabflows: this install lands in live Claude Code configuration (${seg.slice(0, 60)}), which is blocked. That is what stops a worker from disarming this guard. Stop and report it; do not work around it.`);
+      }
+      pendingInstall = pendingInstall || seg;
     }
 
     if (isDangerousDelete(seg)) {
@@ -424,7 +466,7 @@ function preToolUse(input) {
   const ti = input.tool_input || {};
   const cwd = input.cwd || process.cwd();
 
-  if (tool === 'Bash' || tool === 'PowerShell') {
+  if (tool === 'Bash' || tool === 'PowerShell' || tool === 'Monitor') {
     if (typeof ti.command !== 'string') return;
     const seg = checkShell(ti.command, cwd);
     if (seg) install(seg, input);
