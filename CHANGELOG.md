@@ -8,6 +8,24 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.6.0** -- specs can live in the tracker ticket instead of `docs/specs/`
+  (#66). `fabflows-setup` asks once for GitHub Issues, Jira, Linear or none, checks that the
+  tracker's MCP tools are loaded without ever adding a server or handling a secret, and
+  writes a committed `.claude/fabflows.json`. The `ticket` skill carries the rules: the tool
+  table per tracker, a plain-bullet body template, the description edited in place, standing
+  permission only on a confirmed link, and status moving from in progress to done with the
+  closing phrase on a finishing PR. `brainstorming` writes a full-tier spec to the linked
+  ticket, fingerprints the approved text with `ticket.js approve`, and confirms it with
+  `ticket.js check` before the build. The user approves the ticket description as raw text: a
+  raw diff when Claude wrote it, the full raw text when it did not. `ticket.js normalize`
+  removes only HTML comments outside fences, invisible and control characters, and the Links
+  section, so the build gets the approved text unchanged, and `ticket.js approve` refuses text
+  with an unclosed `<!--`. Links are per-branch, one state file each, shared by every
+  worktree. The merge reminder finds the ticket by PR, or for a bare `gh pr merge` by the
+  branch it started on, skips `--auto` and `--disable-auto`, and leaves a Refs-only ticket
+  open. The `ticket.js` hook requires `Refs:` and `Spec:` trailers on their own line in each
+  commit's own message, including commits chained with `&&` or run inside `$(...)`, and the
+  key in the PR title.
 - **docs-warden 0.6.0** -- compaction reminders that explain themselves. When fifty
   decision records exist but fewer than fifty are decided, `adr_compact.py --check` now says
   how many are still proposed instead of staying silent, and compact mode walks the human
@@ -87,6 +105,28 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.7.0** -- the guard now covers package runners (`npx`, `pnpx`, `bunx`,
+  `npm exec`, `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool`, `uv run --with`, `pipx`,
+  `npm|yarn|pnpm|bun create`, `npm init <pkg>`), not only installers. An install or runner in
+  the lead now returns `ask`, so the user approves it in a native prompt, but only in the
+  `default`, `acceptEdits` and `auto` modes; a worker, `plan`, `bypassPermissions`,
+  `dontAsk`, or a missing mode still gets `deny`, and every decision tells Claude to stop.
+  The ask is emitted only after every other rule has passed, and an install aimed at live
+  config (by `cd`, `pushd`, `Set-Location`, session directory, `VAR=` prefix or
+  `--prefix=`, with `~`, `$HOME` or an absolute home) is always denied, and the prompt
+  names every install in the command. An `npx` or `npm exec` of a bin already in the project's
+  `node_modules/.bin` is not a download, so `npx vitest run` still works; `pnpx` and
+  `bunx` always count as downloads. Prefixes such as `time`, `timeout`, `nice`, `env` and
+  `xargs`, and a quoted command name, no longer hide a command, and the `Monitor` tool is guarded like Bash. The build brief makes
+  a denied install a blocker. The skill tells Claude to name the package and ask before
+  trying any other route. DEC-0023 supersedes DEC-0002's "no installs regardless of model
+  judgement".
+- **docs-warden 0.7.0** -- `audit.py` no longer runs markdownlint-cli2 through `npx --yes` or
+  `bunx`, which downloaded it into a cache outside the repo where no hook could see it. Lint
+  runs only when `markdownlint-cli2` is on PATH; otherwise the check reports `skipped` and
+  names the `npx` command to ask the user to approve. `--run-generators` skips a generator
+  that is a package runner or installer (`npm ci`, `pip install`, `uv sync`) and asks the
+  user to run it.
 - **docs-warden 0.4.2** -- the concept extractor reads tracked files when the repository is a
   git checkout, so untracked worktrees and scratch under `.claude/` no longer leak into
   `docs/architecture/domain-model.md` and trip the `ontology` check.
@@ -120,7 +160,7 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
-- **docs-warden 0.6.2** -- the compaction waiting line counted every record that was not
+- **docs-warden 0.7.1** -- the compaction waiting line counted every record that was not
   accepted or rejected as "still proposed" in its text. A draft or a stored `superseded` then
   sent compact mode looking for proposed records that did not exist, and the line never
   cleared. The line now names them as "not yet accepted or rejected" and compact mode lists

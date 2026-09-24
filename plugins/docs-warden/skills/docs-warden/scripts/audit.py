@@ -517,6 +517,35 @@ GENERATED_DOCS_FIX = ("Give generated_docs as a list of entries, each a mapping 
                       "See references/audit-schema.md.")
 
 
+PACKAGE_RUNNERS = {"npx", "pnpx", "bunx", "uvx", "pipx"}
+# `npm init <initializer>` is `npm exec create-<initializer>`; a flag-only `npm init`
+# is caught too, which errs toward skipping.
+# Installers download too: `npm ci`, `pip install -r`, `uv sync`.
+PACKAGE_RUNNER_PAIRS = {("pnpm", "dlx"), ("yarn", "dlx"), ("npm", "exec"),
+                        ("npm", "x"), ("bun", "x"), ("npm", "create"),
+                        ("yarn", "create"), ("pnpm", "create"), ("bun", "create"),
+                        ("npm", "init"), ("npm", "install"), ("npm", "i"),
+                        ("npm", "ci"), ("npm", "add"), ("pnpm", "install"),
+                        ("pnpm", "i"), ("pnpm", "add"), ("yarn", "install"),
+                        ("yarn", "add"), ("bun", "install"), ("bun", "i"),
+                        ("bun", "add"), ("pip", "install"), ("pip3", "install"),
+                        ("uv", "add"), ("uv", "sync"), ("uv", "pip")}
+
+
+def _is_package_runner(command):
+    """True when a generator command would fetch a package, to run or to install."""
+    words = [str(a).lower() for a in command]
+    first = re.sub(r"\.(cmd|exe)$", "", Path(words[0]).name)
+    second = words[1] if len(words) > 1 else ""
+    third = words[2] if len(words) > 2 else ""
+    uv_with = (first, second) == ("uv", "run") and any(
+        a.startswith("--with") for a in words[2:])
+    uv_tool = (first, second) == ("uv", "tool") and third in ("run", "install")
+    pip_module = re.match(r"python\d*(\.\d+)?$", first) and words[1:4] == ["-m", "pip", "install"]
+    return bool(first in PACKAGE_RUNNERS or (first, second) in PACKAGE_RUNNER_PAIRS
+                or uv_with or uv_tool or pip_module)
+
+
 def check_generated_docs(repo, config, run_generators):
     entries = (config or {}).get("generated_docs") or []
     if not entries:
@@ -575,9 +604,14 @@ def check_generated_docs(repo, config, run_generators):
             # Rejected here rather than passing vacuously.
             rejected.append(f"{path} (is a directory, not a document)")
             continue
-        # Same reason _lint_runner resolves its runner: a bare name that which()
-        # found is still unrunnable on Windows, where npm and npx are .CMD
-        # shims, and the FileNotFoundError would cost the whole scorecard.
+        # A package runner downloads from a registry, and a subprocess spawn is
+        # invisible to any shell-string hook, so the user runs it, not the audit.
+        if _is_package_runner(command):
+            skipped.append(f"{path} (downloads a package; ask the user to run it)")
+            continue
+        # Same reason _lint_runner resolves the tool: a bare name that which()
+        # found is still unrunnable on Windows, where the tool itself is a .CMD
+        # shim, and the FileNotFoundError would cost the whole scorecard.
         executable = shutil.which(command[0])
         if executable is None:
             skipped.append(f"{path} ({command[0]} not on PATH)")
@@ -728,7 +762,7 @@ def check_links(repo):
 # copies the configs, and running one without its config either errors out or
 # silently applies defaults nobody chose.
 # One source for the pin: anti-drift.md requires every tool version pinned, and
-# it now appears in both runner argvs and the install hint.
+# it appears in the install hint.
 MARKDOWNLINT = "markdownlint-cli2@0.23.2"
 
 LINT_TOOLS = [
@@ -738,22 +772,16 @@ LINT_TOOLS = [
         "blocking": True,
         # No path argument: the config's globs decide, exactly as CI invokes it.
         "argv": lambda path: [path],
-        # CI never installs it globally, so accept a package runner instead.
-        # Ordered fallbacks, each with its own argv: npx requires --yes to
-        # skip its install prompt, and bunx documents no such flag (it never
-        # prompts). Verified: bun 1.3.11 silently ignores a stray --yes, so
-        # one shared argv happens to work today -- on undocumented tolerance.
-        # npx stays first so a machine with both keeps running what CI runs.
-        "runners": [["npx", "--yes", MARKDOWNLINT], ["bunx", MARKDOWNLINT]],
-        "install": f"npx --yes {MARKDOWNLINT}, or bunx {MARKDOWNLINT} "
-                   "(no install needed)",
+        # Never through a package runner: npx or bunx would download it into
+        # a cache outside the repo without the user saying yes.
+        "install": f"put it on PATH, or ask the user to approve npx --yes "
+                   f"{MARKDOWNLINT} first, because it downloads into the npm cache",
     },
     {
         "name": "vale",
         "configs": (".vale.ini",),
         "blocking": False,
         "argv": lambda path: [path, "--minAlertLevel=warning", "."],
-        "runners": [],
         "install": "download vale 3.17.1 from errata-ai/vale releases",
     },
     {
@@ -761,7 +789,6 @@ LINT_TOOLS = [
         "configs": ("lychee.toml",),
         "blocking": True,
         "argv": lambda path: [path, "--config", "lychee.toml", "--no-progress", "."],
-        "runners": [],
         "install": "download lychee 0.24.2 from lycheeverse/lychee releases",
     },
 ]
@@ -769,18 +796,12 @@ LINT_TOOLS = [
 
 def _lint_runner(tool):
     """How to invoke this tool here, or None if it cannot run."""
-    path = shutil.which(tool["name"])
-    if path:
-        return tool["argv"](path)
     # Resolved, not the bare name: subprocess.run does not go through a shell,
-    # and Windows CreateProcess does no PATHEXT probing -- Node ships npx.CMD
-    # and Bun ships bunx.exe, so a bare name raises FileNotFoundError and costs
+    # and Windows CreateProcess does no PATHEXT probing -- npm ships
+    # markdownlint-cli2.CMD, so a bare name raises FileNotFoundError and costs
     # the whole scorecard. which() resolves it; do not discard the answer.
-    for runner in tool["runners"]:
-        resolved = shutil.which(runner[0])
-        if resolved:
-            return [resolved, *runner[1:]]
-    return None
+    path = shutil.which(tool["name"])
+    return tool["argv"](path) if path else None
 
 
 def check_lint(repo):

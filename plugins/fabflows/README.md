@@ -4,12 +4,16 @@ Routes mechanical work from an expensive lead model down to cheaper workers, and
 the lead prove what those workers claim.
 
 > **This plugin installs an active hook.** Once enabled, a `PreToolUse` hook runs on
-> every `Bash`, `PowerShell`, `Read`, `Grep`, `Edit`, and `Write` call in your session
-> and can block it. It blocks package installs, commits and pushes on a default branch,
+> every `Bash`, `PowerShell`, `Monitor`, `Read`, `Grep`, `Edit`, `Write`, and `NotebookEdit`
+> call in your session
+> and can block it. It asks before package installs and package runners, and blocks commits and pushes on a default branch,
 > destructive shell commands, reads and writes of credential files, and writes to live
 > Claude Code configuration. Read [Guard rules](#guard-rules) before you install it,
 > including its [known gaps](#known-gaps). It behaves like a tripwire. It offers no
-> sandboxing.
+> sandboxing. A second hook, `ticket.js`, runs on the same shell calls and on PR tools: once
+> a branch is linked to a ticket it can block commits with an inline message that lacks the
+> ticket's trailers and PR creation whose title lacks its key, and it adds context at
+> SessionStart and after pushes, PR creation and merges. See [Tickets](#tickets).
 
 ## The problem
 
@@ -47,7 +51,9 @@ accepting anything; the `fabflows:build` workflow, described in
 invoke at the start of a conversation to run the whole session on that discipline.
 Invoking it authorizes the lead to launch the build loop, which commits to your feature
 branch, without asking again per task. The `brainstorming` skill sits in front of the loop
-for a request that arrives without a spec; see [Brainstorming](#brainstorming).
+for a request that arrives without a spec; see [Brainstorming](#brainstorming). The
+`fabflows-setup` skill points the repository at a tracker, and the `ticket` skill keeps the
+linked ticket current; see [Tickets](#tickets).
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 
@@ -66,6 +72,68 @@ to the smallest shippable slice, and sends the draft to `refuter` in spec mode, 
 attacks it across seven lenses and blocks on a security gap. The user reads the spec before
 `fabflows:build` launches.
 
+## Tickets
+
+A repository can keep its specs in a tracker ticket instead of `docs/specs/`, so a PR diff
+carries no spec file and the spec sits where managers track the work.
+
+**Setup.** Run `/fabflows-setup` once. It asks for GitHub Issues, Jira, Linear or none,
+checks that the tracker's MCP tools are loaded, asks for the project, and writes
+`.claude/fabflows.json`, which is committed. It never connects a server and never handles a
+secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carries the
+rules after that: the tool table, the ticket body template, what a confirmed link lets
+Claude do without asking, and how status moves from in progress to in review to done.
+
+**Hooks.** `hooks/ticket.js` keeps a per-branch link: one state file per branch under
+`fabflows/tickets` in the common git dir (`git rev-parse --git-common-dir`), named by a hash
+of the branch, never in the working tree. Every worktree of the repository sees the same
+links. It reads only that local state; every tracker write is Claude's own MCP
+call. `ticket.js status` prints the current branch's link, and `ticket.js clear --pr '<url>'`
+forgets a link after its branch is gone.
+
+- SessionStart prints one line: the linked ticket, a link found only in a `Refs:` trailer
+  (unconfirmed, so Claude asks first), or a reminder that the branch has none.
+- PreToolUse denies a `git commit` with an inline message that lacks `Refs: <key>` (and
+  `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key. It
+  splits a command at `&&`, `||`, `;`, `|`, `&`, parentheses and newlines, minding quotes,
+  heredocs and comments, and also reads the commands inside `$(...)` and backticks, up to
+  eight levels deep. Each commit needs the lines in its own message: a trailer in an `echo`
+  or in another commit does not count.
+- PostToolUse reminds Claude to update the ticket after a push and a PR creation. After a
+  merge (not `gh pr merge --auto` or `--disable-auto`) it finds the ticket by the PR the merge
+  named, or, for a bare `gh pr merge`, by the branch it started on. It asks Claude to check
+  the merge happened, and closes the ticket only for a PR with a closing phrase: a Refs-only
+  PR leaves it open.
+
+**Approval.** The user approves the ticket description as raw text, never rendered: a raw
+diff of what Claude wrote against what the tracker holds, or the full raw text when Claude
+did not write it. `ticket.js normalize` removes only HTML comments outside fences, invisible
+and control characters, and the Links section, so the build gets exactly the text approved.
+A `<!--` inside inline code is kept. An unclosed `<!--` removes everything after it, as a
+renderer hides it, so `ticket.js approve` refuses that text and names the line.
+The approval fingerprint (`ticket.js approve`) and the `Spec:` trailer on every commit tie
+the build to that text: `ticket.js check` fails if the ticket changed since, and names the
+stored approved text so Claude can show the raw diff.
+
+**Fail-open limits.** The hooks fail open, like the guard, so these pass unchecked:
+
+- The plugin is disabled: no hook runs at all.
+- The tracker's MCP server is disconnected: the hooks still demand trailers, but nothing
+  updates the ticket.
+- SessionStart does not fire on your surface: no reminder line, so Claude learns of the
+  link only from a later hook.
+
+**Key-matching limits.** A `Refs:` or `Spec:` trailer must stand on its own message line,
+and its key or hash must match exactly (`ABC-12` does not satisfy `ABC-1`, `#70` does not
+satisfy `#7`). Only an inline message (`-m`, `--message`, `-F -`) is checked; a commit
+written in the editor or from a file (`-F <file>`) is not. A trailer nested inside another
+quoted string still passes, and the hook does not look inside `bash -c`, `eval`, an alias,
+a heredoc body, or a backtick nested in backticks.
+A command whose quotes don't balance is read whole, as one command. A `gh pr create` without
+`--title`/`-t` (`--fill`, `--web`) is denied on a linked branch, because its title can't be
+checked. The merge reminder also fires after a failed merge command, so it asks Claude to
+check first.
+
 ## The build loop
 
 `fabflows:build` takes one spec'd change through build and review: an Opus `editor`
@@ -81,9 +149,9 @@ the old default.
 
 ## Measured performance
 
-fabflows ships with a benchmark (`evals/`) that runs a headless Fable lead on the same task
+fabflows includes a benchmark (`evals/`) that runs a headless Fable lead on the same task
 with and without the plugin and grades the result programmatically, never from what the lead
-said it did. Six iterations have run; every number below is a mean of two runs per arm from
+said it did. The benchmark has run six iterations. Every number below is a mean of two runs per arm from
 `evals/RESULTS.md`, which also carries the caveats.
 
 **The build loop, on the task fabflows is for** (iteration 6, 2026-09-22: a library and CLI
@@ -109,18 +177,18 @@ test file) the skill is overhead: about +21% list price for identical results, b
 loads the skill and deliberates instead of just doing it. On a large read (13 records, ~60k
 characters) the Haiku explorer came in 12% cheaper with a lead context 12k tokens smaller. On
 the same build task under Opus 5, with shell denials knocking the review out of the loop, the
-loop cost +53% (iteration 5); the fixes that followed (DEC-0016) and Opus 5.5 turned that into
+loop cost +53% (iteration 5). The fixes that followed (DEC-0016) and Opus 5.5 turned that into
 the table above. The `brainstorming` skill's own evals score 100% with the skill against 87.5%
 without on spec quality.
 
 **What the review does and does not catch** (iterations 7 and 8, a brownfield fixture with one
 planted bug). When the spec states the rule the bug breaks, every lead and builder fixes it before
-any review runs (9 of 9). When the spec is silent on it, the bug ships every time (10 of 10), and
+any review runs (9 of 9). When the spec is silent on it, the bug survives every time (10 of 10), and
 the loop's reviewer returns ACCEPT every time (5 of 5): it checks the diff against the spec, line
-by line, and does not audit baseline code the spec does not describe. So `fabflows:build` gets a
-spec'd change implemented and checked against its spec by a second model; it is not a bug hunt.
+by line, and does not audit baseline code the spec does not describe. `fabflows:build` gets a
+spec'd change implemented and checked against its spec by a second model. It is not a bug hunt.
 On that small task the loop cost +31% list price and 1.65x wall clock over inline for the same
-result, while moving 40% of the lead's output onto Opus. Two runs to five per arm give direction,
+result, while moving 40% of the lead's output onto Opus. With two to five runs per arm, these figures give direction,
 not significance. Delegate sizeable, spec'd work; do the small things yourself; write the rule
 into the spec if you need it enforced.
 
@@ -146,10 +214,32 @@ replacement for it.
 
 ## Guard rules
 
-A `hooks/guard.js` file (Node, no dependencies) implements every rule below:
+A `hooks/guard.js` file (Node, no dependencies) implements every rule below. The shell
+rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alike:
 
-- **Package installs** across npm, pnpm, yarn, bun, pip, uv, dotnet, cargo, go, gem,
-  apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`. One exception:
+- **Package installs and package runners** across npm, pnpm, yarn, bun, pip, uv (including
+  `uv sync`), dotnet,
+  cargo, go, gem, apt, brew, winget, choco, scoop, and PowerShell's `Install-Module`,
+  plus the runners that download on the fly: `npx`, `pnpx`, `bunx`, `npm exec`/`npm x`,
+  `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool run`/`install`, `uv run --with`,
+  `pipx run`/`install`, `npm|yarn|pnpm|bun create`, and `npm init <name>` (`npm init -y`
+  is allowed). In the lead, in the `default`, `acceptEdits` or `auto` mode, the
+  guard returns `ask`, so you approve or refuse it in the normal permission prompt, and
+  Claude is told to stop if you decline. It only asks once every other rule has passed,
+  so an install next to a denied segment is still denied. A worker, and any other mode
+  (`plan`, `bypassPermissions`, `dontAsk`, missing), gets `deny`; in a mode that cannot
+  prompt, Claude asks you to run the command yourself. The prompt names every install in
+  the command, not only the first. An install aimed at live configuration is always
+  denied: run from a session directory there, after a `cd`, `pushd` or `Set-Location`
+  into it, or naming it in its own `VAR=` prefix, `--prefix=` or `--target=`, whether
+  written as `~`, `$HOME` or an absolute home such as `/home/<user>` or `/root`. A
+  mention of live config elsewhere in the command (`cat ~/.claude/settings.json`) does
+  not turn an install into a deny. A local bin is not a download: `npx` and `npm exec`/`npm x` pass when they name
+  a plain bin (no `@`, `/` or `:`) as the first word, with no runner flag before it
+  found in `node_modules/.bin` of the nearest directory with a `package.json` or
+  `node_modules`, which is where npm looks. That lets `npx vitest run` and `npx tsc -p x.json`
+  work in a project that has them installed. `pnpx`, `bunx` and `bun x` always count as
+  downloads. One more exception:
   `pip install --isolated --target <dir> pypdf` (also `python -m pip`) when `<dir>` is a
   literal path with a `scratchpad` directory in it and outside the live configuration below,
   so a session can read a PDF without anything landing in site-packages. `--isolated` is
@@ -191,9 +281,16 @@ fields, and sends it back to be re-emitted if two or more are missing.
 The guard matches patterns on shell strings. It does not understand shells, and it can
 be walked around:
 
-- Base64, variable expansion (`X=rm; $X -rf ~`), command substitution, `xargs`,
-  heredocs, `python -c`, and full binary paths all evade it. Newlines, `&`, a leading
-  `(`, and a `VAR=value` prefix do not: each segment is anchored separately.
+- Base64, variable expansion (`X=rm; $X -rf ~`), command substitution (`$(...)`),
+  heredocs, `bash -c`, `python -c`, and full binary paths all evade it. Newlines, `&`, a
+  leading `(`, a `VAR=value` prefix, a quoted command name (`"npx" foo`), and the prefixes
+  `time`, `exec`, `nohup`, `command`, `timeout`, `nice`, `stdbuf`, `watch`, `ionice`, `!`,
+  `{`, `env` and `xargs`, with their flags, do not: each segment is anchored separately.
+  Any other wrapper (`taskset`, `chrt`, `unbuffer`, `caffeinate`) still hides the command
+  after it. A prefix flag whose value is a separate word is stripped only when the
+  guard knows it takes one (`xargs -n 1`, `xargs --max-args 1`, `xargs -I {}`,
+  `env -u VAR`, `exec -a name`); an unlisted one hides the command after it, and so does
+  `env -S'cmd'` written with no space. Prefix names match in any case (`Env`, `TIME`).
 - Any binary whose basename is an interpreter name (`./x/python.exe`) is trusted to run a
   script from the plugin cache.
 - `git -C <other-repo> commit` is evaluated against the session's directory, not the
@@ -205,6 +302,18 @@ be walked around:
   judged there, whatever branch the session is on.
 - The runner-file rule keys on the **file name**. A payload written to `notes.txt` and
   then run with `bash notes.txt` is not caught, and neither is one assembled from pieces.
+- A script that spawns a package runner itself is invisible to it, since only the shell
+  string is checked. docs-warden's `audit.py --run-generators` skips a runner or installer generator,
+  but any other script, and `pre-commit` on its first run, can still download where no
+  hook sees it.
+- `npm.cmd` and flags before the subcommand (`npm --global install`) evade the install
+  rules, just as full binary paths do.
+- A multi-line `git commit -m` body with a line that starts with a runner is judged as a
+  command. That errs toward ask or deny.
+- An `ask` can be answered with no human looking: a `PermissionRequest` hook, an SDK
+  `canUseTool` callback, or `--permission-prompt-tool` can approve it automatically.
+- Workers are told apart by the `agent_id` field. Whether agent-team teammates carry it
+  is not documented.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.

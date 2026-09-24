@@ -49,8 +49,8 @@ the one that matters:
 `skipped` is never reported as `pass`. A scorecard that quietly passes checks it
 never ran is worse than no scorecard, because people believe it.
 
-A document the audit can discover but not open -- permission-restricted, a
-device node, a directory someone named `x.md` -- follows the same rule. The
+A document the audit can discover but not open (permission-restricted, a
+device node, a directory someone named `x.md`) follows the same rule. The
 check reports on what it did read and names what it did not in its `reason`,
 after `-- not examined (unreadable):`. It downgrades to `warn` where it would
 otherwise have passed, and to `skipped` when nothing at all could be read. It
@@ -157,8 +157,10 @@ start and Vale advisory until its rules are promoted:
 | nothing could run | `skipped` |
 
 A tool that could not run is always named in the reason, and the `fix` field
-carries the command that would let it run: for markdownlint that is the same
-`npx` invocation CI uses, so no global install is needed. `pass` is never reported
+carries the command that would let it run. The audit never runs a package
+runner: markdownlint runs only when `markdownlint-cli2` is on PATH, and its fix
+names the approved `npx` command as one to ask the user to approve first, because
+it downloads into the npm cache. `pass` is never reported
 while anything went unrun.
 **Fix:** whatever the linter said, or the command in the `fix` field.
 
@@ -265,14 +267,14 @@ against it. Runs `domain_model.py <repo> --check` from the
 
 | State | When |
 |-------|------|
-| `skipped` | There is no `docs/architecture/domain-model.md`. The document is optional. |
+| `skipped` | `docs/architecture/domain-model.md` does not exist. The document is optional. |
 | `skipped` | `--check` exited 2: no source file the extractor reads (Python, JS/TS, PowerShell, Terraform). |
 | `fail` | `--check` exited 1: the committed document is stale or hand-edited. |
 | `warn` | The document is current, but a domain concept is named by no document's `concepts:` front matter, or a `concepts:` entry names something the model does not contain. Up to ten of each are listed. |
 | `pass` | Current, every domain concept documented, every tag resolves. |
 
 Coverage never fails. Which document describes which concept is organisation, and
-organisation is advice; a stale generated file is a defect. A document with no
+organisation is advice. A stale generated file is a defect. A document with no
 `concepts:` key is fine, and only ever shows up through the untagged-concept warn.
 
 Concepts in the wrong table are corrected with `ontology.overrides:` in
