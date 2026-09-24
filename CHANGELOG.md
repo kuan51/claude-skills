@@ -160,6 +160,21 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.7.1** -- the guard stops blocking about twenty everyday commands its README
+  never claimed to block, and each narrowed rule keeps a test that the nearby real threat is
+  still caught. Commands split only on separators outside quotes, so a commit message, a PR
+  body or a `grep` pattern that mentions `npx` or `sudo` is text. Git ops follow a branch
+  created in the same command and every directory change, not only `cd`, and a push is judged
+  by the branch it writes to, which also catches `git push origin HEAD:main` from a feature
+  branch. `merge-base`, `merge --abort` and `git clean -n` pass. A delete under home is
+  blocked only at home, its direct children, its credential and config directories, and any
+  target with a `..` segment, which also catches `rm -rf /root` and `rm -rf "$HOME"`. An
+  echoed message in a runner file is not a command. `monkey.pem.md`, `api.key.ts` and a
+  `.env` virtual environment directory are not secrets. `bat`, `sed` without `-i`, a copy out
+  of live configuration and a hook script run directly count as reads, and a backup such as
+  `settings.json.bak` is not live configuration. The worker report check accepts a
+  researcher's searches and fetches and an `exit status`. A local bin hoisted above the
+  project root, as in a monorepo workspace, is not a download.
 - **docs-warden 0.7.1** -- the compaction waiting line counted every record that was not
   accepted or rejected as "still proposed" in its text. A draft or a stored `superseded` then
   sent compact mode looking for proposed records that did not exist, and the line never
