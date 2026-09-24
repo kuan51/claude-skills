@@ -46,8 +46,8 @@ const deny = (reason) => decide('deny', reason);
 // cannot show one, and a mode that does not prompt, or an unknown or missing mode, gets
 // a deny. A hook `ask` is not documented as enforced in plan mode, so plan is not listed.
 const ASK_MODES = ['default', 'acceptEdits', 'auto'];
-function install(seg, input) {
-  const what = seg.slice(0, 60);
+function install(segs, input) {
+  const what = segs.map((s) => s.slice(0, 60)).join('; ');
   if (input.agent_id) {
     deny(
       `fabflows: package installs and package runners are blocked in a worker (${what}). Stop. Report the package, the version and where it lands to the lead as a blocker, and do not work around it.`
@@ -82,7 +82,7 @@ const INSTALL = [
   /^(pnpm|yarn|bun)\s+(global\s+)?(i|install|add|a)\b/i,
   /^pip3?\s+install\b/i,
   /^python3?\s+-m\s+pip\s+install\b/i,
-  /^uv\s+(pip\s+install|add)\b/i,
+  /^uv\s+(pip\s+install|add|sync)\b/i,
   /^dotnet\s+(add\s+package|tool\s+install)\b/i,
   /^(cargo|go|gem)\s+(install|add|get)\b/i,
   /^apt(-get)?\s+install\b/i,
@@ -95,12 +95,27 @@ const INSTALL = [
   /^(pnpm|yarn)\s+dlx\b/i,
   /^uv\s+tool\s+(run|install)\b/i,
   // Only uv's own options may come before --with, never the command it runs.
-  /^uv\s+run\s+(-\S+\s+([^-\s]\S*\s+)?)*--with(-requirements|-editable)?(\s|=)/i,
+  { test: (seg) => uvRunWith(seg) },
   /^pipx\s+(run|install)\b/i,
   /^(npm|yarn|pnpm|bun)\s+create\b/i,
   // `npm init <initializer>` runs `npm exec create-<initializer>`, whatever flags come first.
   { test: (seg) => npmInitializer(seg) },
 ];
+
+// `uv run --with pkg cmd` fetches pkg; a `--with` after the command belongs to the command.
+// Only flags known to take a separate value skip it; any other bare word is the command.
+const UV_VALUE_FLAG = /^(-p|--python|--directory|--project|--package|--extra|--group|--only-group|--index|--index-url|--extra-index-url|--default-index|-f|--find-links|--env-file|--color|--cache-dir|--config-file|-m|--module)$/;
+function uvRunWith(seg) {
+  const m = /^uv\s+run(\s+.*)?$/i.exec(seg);
+  if (!m) return false;
+  const args = (m[1] || '').trim().split(/\s+/).filter(Boolean);
+  for (let i = 0; i < args.length; i++) {
+    if (/^--with(-requirements|-editable)?(=|$)/.test(args[i])) return true;
+    if (UV_VALUE_FLAG.test(args[i])) i++;
+    else if (!args[i].startsWith('-')) return false;
+  }
+  return false;
+}
 
 // Flags of `npm init` whose value is a separate word, so the value is not an initializer.
 const NPM_INIT_VALUE_FLAG = /^(-w|--workspace|--scope|--init-[\w-]+)$/i;
@@ -302,12 +317,13 @@ const VAR_PREFIX = /^(\w+=(\$\(|[^\s<>]*(\s+|$)))+/;
 // flags go too, including the value of a flag that takes one as a separate word
 // (`xargs -n 1`, `xargs -I {}`, `env -u VAR`, `exec -a name`). `env` leaves its
 // `VAR=value` pairs to VAR_PREFIX. `env -S 'cmd'` leaves a quoted command, whose quote
-// goes next. `command -v`/`-V` only looks a name up, so it is left alone. The flags are
+// goes next. `timeout`, `nice`, `stdbuf`, `watch` and `ionice` wrap a command the same way.
+// `command -v`/`-V` (in any flag cluster) only looks a name up, so it is left alone. The flags are
 // case-sensitive (`-P` and `-p` differ for xargs), so the prefix name is lower-cased
 // first: `Env` and `TIME` run the same binary on a case-insensitive filesystem.
 const TRANSPARENT =
-  /^((time|nohup)(\s+-\S+)*\s+|command(?!\s+-[vV]\b)(\s+-\S+)*\s+|exec(\s+(-a\s+\S+|-\S+))*\s+|env(\s+(-[uC]\s*\S+|--(unset|chdir)\s+\S+|-\S+))*\s+|xargs(\s+(-[nILPsdEa]\s*\S+|--(max-args|max-lines|max-procs|max-chars|delimiter|arg-file|eof|replace)\s+\S+|-\S+))*\s+|!\s*|\{\s+)/;
-const TRANSPARENT_NAME = /^(time|nohup|command|exec|env|xargs)(?=\s)/i;
+  /^((time|nohup)(\s+-\S+)*\s+|command(?!(\s+-\w+)*\s+-\w*[vV]\b)(\s+-\S+)*\s+|timeout(\s+(-[sk]\s*\S+|--(signal|kill-after)\s+\S+|-\S+))*\s+\S+\s+|nice(\s+(-n\s*\S+|--adjustment\s+\S+|-\S+))*\s+|stdbuf(\s+(-[ioe]\s*\S+|-\S+))*\s+|watch(\s+(-[n]\s*\S+|--interval\s+\S+|-\S+))*\s+|ionice(\s+(-[cnp]\s*\S+|-\S+))*\s+|exec(\s+(-a\s+\S+|-\S+))*\s+|env(\s+(-[uC]\s*\S+|--(unset|chdir)\s+\S+|-\S+))*\s+|xargs(\s+(-[nILPsdEa]\s*\S+|--(max-args|max-lines|max-procs|max-chars|delimiter|arg-file|eof|replace)\s+\S+|-\S+))*\s+|!\s*|\{\s+)/;
+const TRANSPARENT_NAME = /^(time|nohup|command|exec|env|xargs|timeout|nice|stdbuf|watch|ionice)(?=\s)/i;
 const stripPrefixes = (s) => {
   for (let prev; prev !== s; ) {
     prev = s;
@@ -317,6 +333,7 @@ const stripPrefixes = (s) => {
       .replace(VAR_PREFIX, '')
       .replace(TRANSPARENT_NAME, (w) => w.toLowerCase())
       .replace(TRANSPARENT, '')
+      .replace(/^(["'])([^"'\s]+)\1(?=\s|$)/, '$2')
       .replace(/^["'](?=\S)/, '');
   }
   return s.trim();
@@ -328,7 +345,9 @@ const redirects = (s) => s.replace(/"[^"]*"|'[^']*'/g, '').includes('>');
 // variable the rules below cannot follow, so it is read-only only when the body is too.
 const FOR_HEADER = /^for\s+\w+\s+in\s+(?!.*(\$\(|`))/i;
 // `~/.claude/` in every spelling a shell string can carry it.
-const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+)[\\/]\.claude[\\/]`;
+// The real home is spelled out too, plus the usual absolute homes on Linux and macOS.
+const HOME_LITERAL = os.homedir().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const CLAUDE_HOME = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[\\/]users[\\/][^\s\\/]+|/root|/home/[^\s/]+|/users/[^\s/]+|${HOME_LITERAL})[\\/]\.claude[\\/]`;
 const PROTECTED_SHELL = new RegExp(String.raw`(^|[\s"'>=])${CLAUDE_HOME}(settings\.json|settings\.local\.json|(hooks|plugins)([\\/"'\s;|&)]|$))|[\\/]\.git[\\/]hooks([\\/"'\s;|&)]|$)`, 'i');
 // Discarding or merging a stream (`2>/dev/null`, `2>&1`) is not a write. Stripped from the
 // raw command before the split, because `2>&1` would otherwise be cut on its `&`. A digit
@@ -383,8 +402,10 @@ function branches(cwd) {
 // ---------------------------------------------------------------- shell rules
 // Returns the first install segment, if any, so the caller can ask or deny only after
 // every other rule has had its chance to deny.
+// Commands that move the shell into a directory the guard cannot always follow.
+const CHANGE_DIR = /^(cd|pushd|set-location|sl|chdir)(\s|$)/i;
 function checkShell(command, cwd) {
-  let pendingInstall = null;
+  const installs = [];
   for (const re of PIPE_TO_SHELL) {
     if (re.test(command)) {
       deny('fabflows: piping a download straight into a shell is blocked. Download it, read it, then run it.');
@@ -404,12 +425,14 @@ function checkShell(command, cwd) {
   // makes `echo "npm install"` allowed and a bare `npm install` blocked, without having
   // to parse quoting. Newlines and `&` separate too, and a leading `(`, a shell keyword, a
   // `VAR=value` prefix (even when it is the whole segment) and a transparent prefix such
-  // as `time` are stripped, so none of them hides a command from the anchor.
-  const segments = command
+  // as `time` are stripped, so none of them hides a command from the anchor. The raw
+  // segment is kept, because `NPM_CONFIG_PREFIX=<path> npm i` names its target there.
+  const parts = command
     .replace(HARMLESS_REDIRECT, '')
     .split(/&&|\|\||[;|&\r\n]/)
-    .map(stripPrefixes)
-    .filter(Boolean);
+    .map((raw) => [raw.trim(), stripPrefixes(raw)])
+    .filter(([, s]) => s);
+  const segments = parts.map(([, s]) => s);
 
   // `for d in ~/.claude/plugins; do rm -rf "$d"; done` must not pass on its header alone.
   const loopReadOnly = segments.every(
@@ -419,22 +442,24 @@ function checkShell(command, cwd) {
   // `cd x && git commit` is judged in x, not in the session cwd, so a command that
   // moves into a worktree is checked against that worktree's branch.
   let effCwd = cwd;
-  for (const seg of segments) {
+  let movedIntoConfig = false;
+  for (const [raw, seg] of parts) {
     const cd = /^cd\s+(.+)$/.exec(seg);
     if (cd) {
       effCwd = path.resolve(effCwd, expandHome(unquote(cd[1].trim())));
     }
+    // `cd $HOME/...`, `pushd` and `Set-Location` into live config, which effCwd cannot follow.
+    if (CHANGE_DIR.test(seg) && PROTECTED_SHELL.test(seg)) movedIntoConfig = true;
 
     const isInstall =
       INSTALL.some((re) => re.test(seg)) && !isLocalRun(seg, effCwd) && !isScratchPypdf(seg, effCwd);
     if (isInstall) {
-      // Aimed at live config, by cwd, by a VAR= prefix or by a flag: never askable. The
-      // whole command is checked, not only this segment, because `cd $HOME/...`, `pushd`
-      // and `Set-Location` move into live config in a way effCwd cannot follow.
-      if (isProtectedPath(effCwd) || PROTECTED_SHELL.test(command)) {
+      // Aimed at live config, by the directory it runs in, by a VAR= prefix or by a flag:
+      // never askable. A mention of live config elsewhere in the command does not count.
+      if (isProtectedPath(effCwd) || movedIntoConfig || PROTECTED_SHELL.test(raw)) {
         deny(`fabflows: this install lands in live Claude Code configuration (${seg.slice(0, 60)}), which is blocked. That is what stops a worker from disarming this guard. Stop and report it; do not work around it.`);
       }
-      pendingInstall = pendingInstall || seg;
+      installs.push(seg);
     }
 
     if (isDangerousDelete(seg)) {
@@ -486,7 +511,7 @@ function checkShell(command, cwd) {
       }
     }
   }
-  return pendingInstall;
+  return installs;
 }
 
 // ---------------------------------------------------------------- event handlers
@@ -497,8 +522,8 @@ function preToolUse(input) {
 
   if (tool === 'Bash' || tool === 'PowerShell' || tool === 'Monitor') {
     if (typeof ti.command !== 'string') return;
-    const seg = checkShell(ti.command, cwd);
-    if (seg) install(seg, input);
+    const installs = checkShell(ti.command, cwd);
+    if (installs.length) install(installs, input);
     return;
   }
 

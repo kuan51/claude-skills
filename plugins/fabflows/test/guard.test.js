@@ -206,6 +206,38 @@ test('an install aimed at live config is denied, not asked', () => {
   denies(as('npm install foo', path.join(os.homedir(), '.claude', 'plugins', 'x')), 'install with the session cwd in the plugin cache');
 });
 
+test('fourth review: absolute homes, wrappers, quoted names, multiple installs', () => {
+  const lead = (command) => run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: '.', permission_mode: 'default' });
+  const worker = (command) => run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd: '.', permission_mode: 'default', agent_id: 'a1' });
+  const home = os.homedir();
+  // An absolute home path into live config is denied, never asked.
+  for (const cmd of [
+    `npm i --prefix=${home}/.claude/plugins evil`,
+    `pip install --target=${home}/.claude/hooks evil`,
+    `pushd ${home}/.claude/plugins && npm i evil`,
+    'npm i --prefix=/home/someone/.claude/plugins evil',
+    'npm i --prefix /Users/someone/.claude/hooks evil',
+  ]) {
+    const r = lead(cmd);
+    denies(r, cmd);
+    assert.match(r.reason, /live Claude Code configuration/, cmd);
+  }
+  // Merely reading live config elsewhere in the command does not make an install unapprovable.
+  assert.equal(lead('npx prettier --check . && cat ~/.claude/settings.json').decision, 'ask', 'install next to a read of settings.json');
+  // Every install in the command is named in the prompt.
+  const multi = lead('npx prettier --check . && npm i some-typosquat');
+  assert.equal(multi.decision, 'ask');
+  assert.match(multi.reason, /prettier/);
+  assert.match(multi.reason, /some-typosquat/);
+  // Wrappers and quoted names do not hide a runner.
+  for (const cmd of ['timeout 60 npx foo', 'timeout -s KILL 60 npx foo', 'nice npx foo', 'nice -n 5 npx foo', 'stdbuf -oL npx foo', 'watch -n 5 npx foo', 'ionice -c 3 npx foo', '"npx" foo', "'npm' install x", 'uv sync']) {
+    denies(worker(cmd), cmd);
+  }
+  // Lookups are not runs, and a script's own --with is not uv's.
+  for (const cmd of ['command -p -v npx', 'command -pv npx', 'uv run --no-project script.py --with x']) allows(worker(cmd), cmd);
+  for (const cmd of ['uv run --no-project --with foo x.py', 'uv run --python 3.12 --with foo x.py']) denies(worker(cmd), cmd);
+});
+
 test('a locally installed bin is not a download', () => {
   const as = (command, cwd, extra = {}) => run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd, ...extra });
   const w = { agent_id: 'a1', permission_mode: 'default' };
