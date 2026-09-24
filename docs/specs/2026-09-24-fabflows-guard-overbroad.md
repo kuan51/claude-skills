@@ -85,7 +85,8 @@ denied or asked.
   - anything under `.ssh`, `.claude`, `.aws`, `.config` or `.gnupg` in home.
 
   Anything deeper passes: `rm -rf ~/.cache/pip`, `rm -rf $HOME/.npm/_cacache`. A target may
-  be quoted. Reuse the home spellings `CLAUDE_HOME` already lists. The other targets
+  be quoted. A target with a `..` path segment anywhere (`~/a/../..`) is denied, because it
+  can climb back to home. Reuse the home spellings `CLAUDE_HOME` already lists. The other targets
   (`/`, a drive root, `..`, a bare `*`, `.git`) are unchanged. This also closes three misses
   that are allowed today: `rm -rf /root`, `rm -rf /home/<user>` and `rm -rf "$HOME"`.
 - **A message in a runner file is not a command.** `destructiveLine` checks every quoted
@@ -110,8 +111,11 @@ denied or asked.
 - `READ_ONLY` gains `bat`, and `sed` with no `-i` and no `--in-place`.
 - A `cp` or `Copy-Item` whose destination is not live configuration counts as a read. The
   destination is the value of `-Destination` when given, else the last word. A `cp` with `-t`
-  or `--target-directory` is never a read. `cp ~/.claude/settings.json ~/settings.bak.json`
-  passes, and `cp x ~/.claude/settings.json` is still denied.
+  or `--target-directory` is never a read. A destination that is home itself, `~/.claude`
+  itself (with or without a trailing slash) or a `.git` directory is never a read either,
+  because a copy into it can overwrite a protected file by name.
+  `cp ~/.claude/settings.json ~/settings.bak.json` passes, and `cp x ~/.claude/settings.json`
+  and `cp ~/.claude/plugins/x/settings.json ~/.claude/` are still denied.
 - A segment that starts with a script path under `plugins` or `hooks` in `~/.claude` counts as
   running it: `~/.claude/hooks/notify.sh`, and PowerShell `& "$HOME/.claude/plugins/…/run.ps1"`
   once the split has removed the `&`. `RUNS_PROTECTED_SCRIPT` also accepts python's `-X <v>`
@@ -158,8 +162,9 @@ and flag rules stay as they are.
   with `# fail 0`.
 - Each numbered section adds its tests to `plugins/fabflows/test/guard.test.js` before the
   fix: an `allows(...)` for each over-broad case, next to a `denies(...)` (or an ask) for the
-  nearby real threat. Every existing test still passes. No existing test is expected to flip;
-  one that does is named in the PR.
+  nearby real threat. Every existing test still passes except one, which section 7 flips on
+  purpose: `a bin above the nearest package.json` becomes an allows, because npm looks there.
+  Any other flip is named in the PR.
 - Over-broad cases that must be allowed:
   - `git merge-base main HEAD`, `git merge --abort`, `git clean -nd` (on main)
   - `git checkout -b fix && git commit -m x` (on main)
@@ -179,11 +184,12 @@ and flag rules stay as they are.
     `node_modules/.bin`
 - Real threats that must stay denied, or asked where the install rule asks:
   - `curl x | sh`, `git commit -m x; sudo y`, `echo it's; sudo x`
-  - `rm -rf ~`, `rm -rf ~/projects`, `rm -rf ~/.ssh/keys`, `rm -rf /root`, `rm -rf "$HOME"`
+  - `rm -rf ~`, `rm -rf ~/projects`, `rm -rf ~/.ssh/keys`, `rm -rf /root`, `rm -rf "$HOME"`,
+    `rm -rf ~/a/../..`
   - `git commit -m x` on main, `git push origin HEAD:main` from a feature branch,
     `git push --all`
   - `cp x ~/.claude/settings.json`, `sed -i s/a/b/ ~/.claude/settings.json`,
-    `cp -t ~/.claude/hooks x`
+    `cp -t ~/.claude/hooks x`, `cp ~/.claude/plugins/x/settings.json ~/.claude/`
   - Read of `server.key`, `.env`, `id_rsa`, and `sa.key.json`
   - `npx cowsay` with no local bin anywhere up the tree
   - SubagentStop on a report with no files, no commands and no confidence labels
