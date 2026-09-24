@@ -442,6 +442,7 @@ test('PR titles must carry the key', () => {
     hook({ hook_event_name: 'PreToolUse', tool_name: 'mcp__github__create_pull_request', tool_input: { title }, cwd: r.dir });
   try {
     assert.equal(mcp('no key').decision, 'allow', 'not linked');
+    assert.equal(shell(r.dir, 'gh pr create --fill').decision, 'allow', 'not linked');
     cli(r.dir, ['link', 'ABC-1', URL, 'jira']);
     const d = mcp('no key');
     assert.equal(d.decision, 'deny');
@@ -451,6 +452,14 @@ test('PR titles must carry the key', () => {
     assert.equal(shell(r.dir, 'gh pr create -t "add x"').decision, 'deny');
     assert.equal(shell(r.dir, 'gh pr create --title "ABC-1: add x" --body b').decision, 'allow');
     assert.equal(shell(r.dir, 'gh pr create -t "feat: x (ABC-1)"', 'PowerShell').decision, 'allow');
+    assert.equal(shell(r.dir, 'gh pr create --body "run with -t ABC-1" --title "fix (ABC-1)"').decision, 'allow');
+    assert.equal(shell(r.dir, 'gh pr create --body "run with -t ABC-1" --title "no key"').decision, 'deny', 'the body is not the title');
+    assert.equal(shell(r.dir, 'gh pr create --title=ABC-1:x').decision, 'allow', '--title=');
+    for (const cmd of ['gh pr create --fill', 'gh pr create --web', 'git push && gh pr create']) {
+      const d = shell(r.dir, cmd);
+      assert.equal(d.decision, 'deny', cmd);
+      assert.match(d.reason, /pass --title containing ABC-1/, cmd);
+    }
 
     cli(r.dir, ['link', '#7', 'https://github.com/o/r/issues/7', 'github']);
     assert.equal(mcp('fix #70').decision, 'deny', '#70 is not #7');

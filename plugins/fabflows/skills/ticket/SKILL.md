@@ -120,7 +120,7 @@ transitions and pick the one whose name matches.
 ## The pull request
 
 Always pass an explicit title that contains the key: the hook checks `--title` and the MCP
-`title`, and does not see what `gh pr create --fill` would pick. Then run
+`title`, and denies `gh pr create --fill` or `--web`, whose title it can't see. Then run
 `ticket.js pr '<url>'`.
 
 A PR that finishes the ticket carries the tracker's closing phrase in its body (`Closes #N`,

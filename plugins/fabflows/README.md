@@ -123,8 +123,9 @@ stored approved text so Claude can show the raw diff.
 and its key or hash must match exactly (`ABC-12` does not satisfy `ABC-1`, `#70` does not
 satisfy `#7`). Only an inline message (`-m`, `--message`, `-F -`) is checked; a commit
 written in the editor or from a file (`-F <file>`) is not. A trailer hidden in a shell
-comment, or nested inside another quoted string, still passes. A PR title is checked only
-when passed as `--title`/`-t` or the MCP `title`, so `gh pr create --fill` is not. The merge
+comment, or nested inside another quoted string, still passes. A `gh pr create` without
+`--title`/`-t` (`--fill`, `--web`) is denied on a linked branch, because its title can't be
+checked. The merge
 reminder also fires after a failed merge command, so it asks Claude to check first.
 
 ## The build loop

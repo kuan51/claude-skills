@@ -445,7 +445,19 @@ const COMMIT = new RegExp(GIT + String.raw`commit\b`);
 const PUSH = new RegExp(GIT + String.raw`push\b`);
 const INLINE_MSG = /\s(?:-[a-zA-Z]*m|--message)(?:[\s="']|$)|\s(?:-F\s*-|--file[=\s]-)(?:\s|$)/;
 const GH_PR = (verb) => new RegExp(String.raw`(?:^|[\s;&|(])gh\s+pr\s+${verb}\b`);
-const TITLE_ARG = /\s(?:--title|-t)(?:\s+|=)("(?:[^"\\]|\\.)*"|'[^']*'|\S+)/;
+// The arguments after `gh pr <verb>` in a command's words, or null.
+function ghArgs(words, verb) {
+  const k = words.findIndex((w, j) => /(^|[/\\])gh(\.exe)?$/.test(w) && words[j + 1] === 'pr' && words[j + 2] === verb);
+  return k < 0 ? null : words.slice(k + 3);
+}
+// The title a `gh pr create` passes: the word after --title or -t, or the rest of --title=.
+function prTitle(args) {
+  for (let k = 0; k < args.length; k++) {
+    if (args[k] === '--title' || args[k] === '-t') return args[k + 1] ?? '';
+    if (args[k].startsWith('--title=')) return args[k].slice(8);
+  }
+  return null;
+}
 const isMcp = (tool, verb) => new RegExp(`^mcp__.*${verb}_pull_request$`).test(tool);
 
 // What to do once a PR merged. Without a PR URL, `clear` works on the current branch only.
@@ -495,9 +507,9 @@ function preToolUse(tool, ti, cwd) {
     return;
   }
   if (!str(ti.command)) return;
-  const cmd = ti.command;
+  const cmds = split(ti.command);
   // Each commit's trailers must be in its own text: not in an echo, not in another commit.
-  const commits = split(cmd).filter((c) => {
+  const commits = cmds.filter((c) => {
     const m = COMMIT.exec(c.text);
     return m && INLINE_MSG.test(c.text.slice(m.index));
   });
@@ -512,13 +524,14 @@ function preToolUse(tool, ti, cwd) {
     if (commits.length > 1) reason += `\nEvery commit in the command needs them; this one does not: ${bad.text.split('\n')[0].slice(0, 80)}`;
     return deny(reason);
   }
-  const pr = GH_PR('create').exec(cmd);
-  if (pr) {
-    const title = TITLE_ARG.exec(cmd.slice(pr.index));
-    const l = title && linked(cwd);
-    if (l && l.key && !hasKey(title[1], '', l.key)) {
-      deny(`fabflows: this branch is linked to ticket ${l.key}; put ${l.key} in the pull request title (--title).`);
-    }
+  for (const c of cmds) {
+    const args = ghArgs(c.words, 'create');
+    if (!args) continue;
+    const l = linked(cwd);
+    if (!l || !l.key) return;
+    const title = prTitle(args); // null for --fill, --web or none: the key can't be checked
+    if (title === null) return deny(`fabflows: this branch is linked to ticket ${l.key}; pass --title containing ${l.key}.`);
+    if (!hasKey(title, '', l.key)) return deny(`fabflows: this branch is linked to ticket ${l.key}; put ${l.key} in the pull request title (--title).`);
   }
 }
 
