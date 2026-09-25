@@ -633,18 +633,32 @@ test('PostToolUse asks for a ticket update after push and PR creation', () => {
   try {
     assert.equal(after(r.dir, 'Bash', { command: 'git push' }).context, undefined, 'not linked');
     cli(r.dir, ['link', 'ABC-1', URL, 'jira']);
+    assert.equal(after(r.dir, 'Bash', { command: 'git push -u origin feature' }).context, 'fabflows: update ticket ABC-1: Links and status, per fabflows:ticket.');
     for (const [tool, input] of [
-      ['Bash', { command: 'git push -u origin feature' }],
       ['Bash', { command: 'gh pr create --title "ABC-1 x"' }],
       ['Bash', { command: 'url=$(gh pr create --title "ABC-1 x")' }],
       ['mcp__github__create_pull_request', { title: 'ABC-1 x' }],
+      ['Bash', { command: 'git push -u origin feature && gh pr create --title "ABC-1 x"' }],
     ]) {
-      assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket ABC-1: Links and status, per fabflows:ticket.', tool);
+      assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket ABC-1: Links, web link and status, per fabflows:ticket.', tool);
     }
+    cli(r.dir, ['pr', 'https://github.com/o/r/pull/9']);
+    assert.equal(after(r.dir, 'Bash', { command: 'gh pr create --title "ABC-1 x"' }).context, 'fabflows: update ticket ABC-1: Links and status, per fabflows:ticket.', 'PR already recorded: no second web link');
+    cli(r.dir, ['link', '#7', 'https://github.com/o/r/issues/7', 'github']);
+    for (const [tool, input] of [
+      ['Bash', { command: 'gh pr create --title "#7 x"' }],
+      ['mcp__github__create_pull_request', { title: '#7 x' }],
+    ]) {
+      assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket #7: Links and status, per fabflows:ticket.', `github has no web link: ${tool}`);
+    }
+    cli(r.dir, ['link', 'ABC-1', URL, 'jira']);
     assert.equal(after(r.dir, 'Bash', { command: 'git status' }).context, undefined, 'unrelated command');
     cli(r.dir, ['clear']);
     r.git('commit', '-q', '--allow-empty', '-m', 'x\n\nRefs: ABC-1');
     assert.match(after(r.dir, 'Bash', { command: 'git push' }).context, /ask the user before touching the ticket/);
+    const unconfirmed = after(r.dir, 'Bash', { command: 'gh pr create --title "ABC-1 x"' }).context;
+    assert.match(unconfirmed, /: Links and status, per/, 'no web link on an unconfirmed ticket');
+    assert.match(unconfirmed, /ask the user before touching the ticket/);
   } finally {
     r.done();
   }

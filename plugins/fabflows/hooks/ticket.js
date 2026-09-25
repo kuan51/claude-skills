@@ -977,10 +977,14 @@ function postToolUse(tool, ti, cwd) {
   const cmd = str(ti.command) ? ti.command : '';
   const target = mergeTarget(tool, ti);
   if (target) return mergeReminder(target, cwd);
-  if (!(isMcp(tool, 'create') || PUSH.test(cmd) || split(cmd).some((c) => ghArgs(c.words, 'create')))) return;
+  const created = isMcp(tool, 'create') || split(cmd).some((c) => ghArgs(c.words, 'create'));
+  if (!(created || PUSH.test(cmd))) return;
   const l = linked(cwd);
   if (!l || !l.key) return;
-  let text = `fabflows: update ticket ${l.key}: Links and status, per fabflows:ticket.`;
+  // Only the first PR on a Jira ticket gets the web link: `ticket.js pr` records it, so a
+  // later push or a retried create doesn't ask again.
+  const what = created && l.tracker === 'jira' && !l.pr ? 'Links, web link and status' : 'Links and status';
+  let text = `fabflows: update ticket ${l.key}: ${what}, per fabflows:ticket.`;
   if (!l.confirmed) text += unconfirmed(l.key);
   context('PostToolUse', text);
 }

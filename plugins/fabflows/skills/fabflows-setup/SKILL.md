@@ -22,9 +22,9 @@ the removal. Stop: `fabflows:brainstorming` keeps writing to `docs/specs/`.
 ## 2. Check the tools are loaded
 
 Search with ToolSearch for the tracker's tools, named in `fabflows:ticket`'s tool table:
-`issue_write` for GitHub, `getJiraIssue` for Jira (also search `discover` and `execute`:
-some Atlassian servers expose only those two), `save_issue` for Linear, the tracker's name
-for Other.
+`issue_write` for GitHub, `getJiraIssue` or `jira_get_issue` for Jira (also search
+`discover` and `execute`: some Atlassian servers expose only those two), `save_issue` for
+Linear, the tracker's name for Other.
 
 Nothing found: say which server is missing, then tell the user to connect it themselves:
 `/mcp` to authenticate a server that is already configured, or the tracker's own MCP setup

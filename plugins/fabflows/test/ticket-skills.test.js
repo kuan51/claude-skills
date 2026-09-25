@@ -13,7 +13,7 @@ const has = (text, needles, file) => {
 };
 
 test('fabflows-setup asks once, writes the config, and never connects a server', () => {
-  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), ['AskUserQuestion', '.claude/fabflows.json', 'never runs `claude mcp add`', '"parent"', 'filed under a parent', 'hold child tickets'], 'fabflows-setup/SKILL.md');
+  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), ['AskUserQuestion', '.claude/fabflows.json', 'never runs `claude mcp add`', '"parent"', 'filed under a parent', 'hold child tickets', 'jira_get_issue'], 'fabflows-setup/SKILL.md');
 });
 
 test('ticket names every tool, every template label and each standing rule', () => {
@@ -23,9 +23,10 @@ test('ticket names every tool, every template label and each standing rule', () 
     'addCommentToJiraIssue', 'addOrEditJiraIssueComment',
     'get_issue', 'save_issue', 'save_comment',
     'parent_issue_number', 'parent_owner',
+    'getJiraIssueRemoteIssueLinks', 'jira_create_remote_issue_link',
   ];
   const labels = ['## Why', '## Behaviour', '## Check', '## Out of scope', '## Decisions', '## Links'];
-  const rules = ['## Parent', 'never re-parents', 'read the parent', '**confirmed**', 'Closes #N', 'Fixes KEY', 'carries `Refs` only', 'edited in place'];
+  const rules = ['## Parent', 'never re-parents', 'read the parent', '**confirmed**', 'Closes #N', 'Fixes KEY', 'carries `Refs` only', 'edited in place', '## Web link', '| Web link |', 'include: "remote_links"', '`jira_links`', 'skip steps 2 and 3', 'never after a later push', 'as a web link by hand', 'never ask for, read or use an API token', 'add the web link', 'was really created', 'go to step 3', 'rather than replacing the list', 'jira_transition_issue', 'jira_add_comment'];
   has(read(PLUGIN, 'skills', 'ticket', 'SKILL.md'), [...tools, ...labels, ...rules], 'ticket/SKILL.md');
 });
 
