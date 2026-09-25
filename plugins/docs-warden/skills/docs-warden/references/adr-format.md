@@ -26,7 +26,7 @@ Any other change needs a record when all three hold:
 
 That covers a choice of technology, protocol, or storage; a boundary between
 components; a rule every future change must obey; a gap accepted on purpose for the
-life of the project. A CI gate's policy can be such a rule; a single threshold or
+life of the project. A CI gate's policy can be such a rule; a threshold or
 toggle in it is a value.
 
 ## Filename
