@@ -8,6 +8,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.8.0** -- a repository can file every ticket fabflows creates under one parent.
+  `fabflows-setup` asks for an optional parent epic, story or issue, reads it once to check
+  it can hold child tickets, and stores it as `parent` in `.claude/fabflows.json`. The
+  `ticket` skill sets the parent in the create call itself, so a refused parent leaves no
+  ticket behind: `parent` on `createJiraIssue` (a sub-task type under a story),
+  `parent_issue_number` on GitHub's `issue_write`, and `save_issue` on Linear (untested). A
+  linked existing ticket is never re-parented, and the parent itself is never edited.
 - **fabflows 0.6.0** -- specs can live in the tracker ticket instead of `docs/specs/`
   (#66). `fabflows-setup` asks once for GitHub Issues, Jira, Linear or none, checks that the
   tracker's MCP tools are loaded without ever adding a server or handling a secret, and
