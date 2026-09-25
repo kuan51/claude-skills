@@ -13,7 +13,7 @@ const has = (text, needles, file) => {
 };
 
 test('fabflows-setup asks once, writes the config, and never connects a server', () => {
-  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), ['AskUserQuestion', '.claude/fabflows.json', 'never runs `claude mcp add`'], 'fabflows-setup/SKILL.md');
+  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), ['AskUserQuestion', '.claude/fabflows.json', 'never runs `claude mcp add`', '"parent"', 'filed under a parent', 'hold child tickets'], 'fabflows-setup/SKILL.md');
 });
 
 test('ticket names every tool, every template label and each standing rule', () => {
@@ -22,9 +22,10 @@ test('ticket names every tool, every template label and each standing rule', () 
     'getJiraIssue', 'createJiraIssue', 'editJiraIssue', 'getTransitionsForJiraIssue', 'transitionJiraIssue',
     'addCommentToJiraIssue', 'addOrEditJiraIssueComment',
     'get_issue', 'save_issue', 'save_comment',
+    'parent_issue_number', 'parent_owner',
   ];
   const labels = ['## Why', '## Behaviour', '## Check', '## Out of scope', '## Decisions', '## Links'];
-  const rules = ['**confirmed**', 'Closes #N', 'Fixes KEY', 'carries `Refs` only', 'edited in place'];
+  const rules = ['## Parent', 'never re-parents', 'read the parent', '**confirmed**', 'Closes #N', 'Fixes KEY', 'carries `Refs` only', 'edited in place'];
   has(read(PLUGIN, 'skills', 'ticket', 'SKILL.md'), [...tools, ...labels, ...rules], 'ticket/SKILL.md');
 });
 
@@ -85,9 +86,9 @@ test('the README names the ticket hook, the ticket skills and raw review', () =>
   has(tickets, ['raw diff', 'per-branch', 'unclosed `<!--`', 'refuses', 'worktree'], 'README Tickets');
 });
 
-test('0.8.0 documents the trace report and the compliance limits', () => {
+test('0.9.0 documents the trace report and the compliance limits', () => {
   const plugin = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
-  assert.equal(plugin.version, '0.8.0');
+  assert.equal(plugin.version, '0.9.0');
   const market = JSON.parse(read(ROOT, '.claude-plugin', 'marketplace.json')).plugins.find((p) => p.name === 'fabflows');
   const bullet = read(ROOT, 'README.md').split('\n- **').find((b) => b.startsWith('[fabflows]'));
   for (const [text, file] of [[plugin.description, 'plugin.json'], [market.description, 'marketplace.json'], [bullet, 'root README bullet']]) {
@@ -102,7 +103,7 @@ test('0.8.0 documents the trace report and the compliance limits', () => {
     'A re-approved ticket marks earlier commits `spec-changed`', 'no proof of review quality',
   ];
   has(section, limits, 'README Compliance');
-  has(read(ROOT, 'CHANGELOG.md'), ['fabflows 0.8.0'], 'CHANGELOG.md');
+  has(read(ROOT, 'CHANGELOG.md'), ['fabflows 0.9.0'], 'CHANGELOG.md');
 });
 
 test('the current version is documented', () => {

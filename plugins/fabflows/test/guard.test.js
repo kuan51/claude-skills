@@ -814,6 +814,58 @@ test('SubagentStop blocks a report missing its contract fields', () => {
   }
 });
 
+test('a root followed by a glob is the root', () => {
+  for (const t of ['/*', '/.*', '"/"*', '/**', '/*/', '//*', '/.', '/?*', '/*?', "'/'?*", "'/'", '"/"', 'C:\\*', 'C:/*']) {
+    denies(shell(`rm -rf ${t}`), `rm -rf ${t}`);
+  }
+  denies(shell('Remove-Item -Recurse -Force C:\\*', 'PowerShell'), 'Remove-Item C:\\*');
+  // Already denied, unchanged.
+  for (const t of ['/', 'C:\\', 'C:']) denies(shell(`rm -rf ${t}`), `rm -rf ${t}`);
+  for (const t of ['./*', 'build/*', '/tmp/x/*', './build', '*.log', '/tmp', "'/tmp'", 'C:*', 'C:.*']) {
+    allows(shell(`rm -rf ${t}`), `rm -rf ${t}`);
+  }
+  denies(write('package.json', '{"scripts":{"nuke":"rm -rf /*"}}'), 'npm script running rm -rf /*');
+});
+
+test('chmod is blocked for any mode word that grants world write', () => {
+  for (const m of [
+    '-R 777 .', '--recursive 777 x', '0777 f', '1777 f', 'a+rwx f', 'o+w f', '-R a+w /', 'ugo+w f', 'go+w f',
+    'a=rwx f', 'u+x,o+w f', '-x,o+w f', '-r,a+w f', 'o-r+w f', 'o+rw-x f', 'o=u f', 'a=g f',
+  ]) {
+    const r = shell(`chmod ${m}`);
+    denies(r, `chmod ${m}`);
+    assert.match(r.reason, /chmod makes a path world-writable/);
+  }
+  for (const m of ['+x f', '+w f', 'u+w f', 'g+w f', 'o-w f', 'a-w f', '755 f', '-R 755 x', '644 f', '-v 644 f', '-R u+rwX,go+rX x']) {
+    allows(shell(`chmod ${m}`), `chmod ${m}`);
+  }
+  denies(write('package.json', '{"scripts":{"open":"chmod -R 777 ."}}'), 'npm script running chmod -R 777 .');
+});
+
+test('Grep checks its glob, and Read and Grep check a bare secret directory', () => {
+  const grep = (tool_input) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', ...tool_input }, cwd: '.' });
+  for (const glob of [
+    '.env', '*.env', '**/.env*', '.env*', '.env.*', '*.pem', '*.key', 'id_rsa', '*.{env,pem}', '**/.ssh/**', '.en*', '*env',
+    'id_*', '*.pe?', '.ssh/*', '**/.aws/**', '.e[n]v', '.*', '*.*', '**/.*', '*.env.production', '**/.env.prod*', '*.md .env',
+  ]) {
+    denies(grep({ glob }), `Grep glob ${glob}`);
+  }
+  for (const glob of [
+    '.env.example', '*.env.example', '*.md', '*.ts', '*.{ts,tsx}', 'src/**', 'package.json', '*', '**/*', '?*', '!.env',
+    '*config*', '**/config', 'config', '*.yml',
+  ]) {
+    allows(grep({ glob }), `Grep glob ${glob}`);
+  }
+  for (const p of ['~/.ssh', '/root/.aws/', '.ssh', 'C:\\Users\\a\\.ssh', '/root/.aws/.', '/root/.aws//', '/root/.aws/./']) {
+    denies(read(p), `Read of ${p}`);
+    denies(grep({ path: p }), `Grep in ${p}`);
+  }
+  for (const p of ['deploy.ssh', '~/.sshd', 'x.aws', '/a/.aws/cli', '/a/.aws/config']) {
+    allows(read(p), `Read of ${p}`);
+    allows(grep({ path: p }), `Grep in ${p}`);
+  }
+});
+
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
   // Only the guard's own entries; ticket.js has its own wiring test.
@@ -831,4 +883,101 @@ test('hooks.json wires every matcher to the guard', () => {
     assert.match(c, /\$\{CLAUDE_PLUGIN_ROOT\}/, 'paths must resolve via ${CLAUDE_PLUGIN_ROOT}');
   }
   assert.equal(new Set(commands).size, 1, 'all entries must use one identical command string, so they cannot drift');
+});
+
+test('a quoted chmod mode is still read as a mode', () => {
+  for (const cmd of [`chmod 'o+w' f`, `chmod "a+w" f`, `chmod o'+w' f`, `chmod -R "777" .`]) {
+    denies(shell(cmd), cmd);
+  }
+  for (const cmd of [`chmod 'u+w' f`, `chmod "755" f`]) {
+    allows(shell(cmd), cmd);
+  }
+});
+
+test('doubled separators and ./ segments do not hide a credential path', () => {
+  for (const p of ['/root/.aws//credentials', '/root/.aws/./credentials', '/root/.aws/.//credentials', 'C:\\Users\\a\\.aws\\\\credentials']) {
+    denies(read(p), `Read of ${p}`);
+    denies(write(p), `Write to ${p}`);
+    denies(shell(`cat ${p}`), `cat ${p}`);
+  }
+  for (const p of ['/root/.aws//config', 'src/./app.ts', 'a//b.md']) {
+    allows(read(p), `Read of ${p}`);
+  }
+});
+
+test('code review: Grep globs split like the tool, keep a directory prefix, and escape like rg', () => {
+  const grep = (glob) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', glob }, cwd: '.' });
+  for (const glob of [
+    '*.md,.env', '!x,.env', 'config/.env', 'apps/*/.env', '/.env', '/**/.env', 'src/**/.env', 'backend/.env*',
+    '**/root/.ssh/*', 'home/*/.ssh/*', '*/.aws/credentials', '\\.env', '.e\\nv', '.e[!x]v', '.env.development',
+    '.env.staging', '.ssh',
+  ]) {
+    denies(grep(glob), `Grep glob ${glob}`);
+  }
+  for (const glob of ['*.md', '*.{ts,tsx,js,jsx}', 'src/**', '**/*', '.env.example', '*.env.example', '**/config', 'src/*.md,docs/*.md']) {
+    allows(grep(glob), `Grep glob ${glob}`);
+  }
+});
+
+test('code review: a pathological Grep glob is decided quickly, never by the hook timeout', () => {
+  const grep = (glob) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', glob }, cwd: '.' });
+  for (const glob of ['*'.repeat(40) + 'x', '**/'.repeat(20) + 'id_rsa', '*?'.repeat(40) + 'z', '{*,*}'.repeat(30) + 'z', '{*,*}'.repeat(4) + 'z']) {
+    const start = Date.now();
+    grep(glob);
+    const ms = Date.now() - start;
+    assert.ok(ms < 1500, `Grep glob ${glob.slice(0, 20)}... took ${ms} ms`);
+  }
+  denies(grep('{*,*}'.repeat(30) + 'z'), 'a glob with too many brace groups');
+});
+
+test('code review: rm and chmod see a word as bash hands it over', () => {
+  for (const cmd of [
+    'rm -rf \\/*', 'rm -rf /""*', "rm -rf ''/*", 'rm -rf "/"*"/"', 'Remove-Item -Recurse -Force \\*',
+    'Remove-Item -Recurse -Force \\', 'chmod \\777 f', 'chmod o\\+w f', 'chmod 7\\77 f', 'chmod =777 f',
+    'chmod -R =777 .', 'chmod +777 f',
+  ]) {
+    denies(shell(cmd), cmd);
+  }
+  for (const cmd of [
+    'chmod 644 f # was 777', 'chmod a=rwx,o-w f', 'chmod a+w,o-w f', 'chmod o=g-w f', 'chmod 644 2077',
+    'chmod 644 777', 'rm -rf "/tmp/my dir"', 'rm -rf C:*',
+  ]) {
+    allows(shell(cmd), cmd);
+  }
+});
+
+test('code review: an exempt name or a .. segment does not hide a secret path', () => {
+  for (const cmd of ['cat .env.example .env', 'git add .env.example .env', 'cat /home/u/.aws/credentials .env.sample', 'cat /home/u/.aws/sso/../credentials']) {
+    denies(shell(cmd), cmd);
+  }
+  for (const p of ['/home/u/.aws/cli/../credentials', '/proj/.env.example/../.env']) {
+    denies(read(p), `Read of ${p}`);
+    denies(write(p), `Write to ${p}`);
+  }
+  const grep = (p) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', path: p }, cwd: '.' });
+  denies(grep('/home/u/.aws/cli/..'), 'Grep in /home/u/.aws/cli/..');
+  for (const cmd of ['cat .env.example', 'git add .env.example']) {
+    allows(shell(cmd), cmd);
+  }
+});
+
+test('code review, second pass: braces, plain tails, quoted paths, bracket roots, octal others', () => {
+  const grep = (glob) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', glob }, cwd: '.' });
+  for (const glob of ['{x,.env', '{x/.env,y}', '{config/.env,z}', '**/.env.staging', 'apps/*/.env.staging', '**/.ssh', '**/.aws']) {
+    denies(grep(glob), `Grep glob ${glob}`);
+  }
+  // The tool keeps a piece holding both braces whole, so rg sees one literal `,.env` name.
+  for (const glob of ['*.{ts,js},.env', '*.{md,mdx}', '**/*.test.js', 'src/**/*.ts', '**/*.pem.md']) {
+    allows(grep(glob), `Grep glob ${glob}`);
+  }
+  for (const cmd of [
+    'cat "/home/u/.aws/sso/"../credentials', "cat /home/u/.aws/sso/..'/credentials'", 'cat /home/u/.aws/"credentials"',
+    'git add .e"nv"', 'rm -rf /[a-z]*', "rm -rf $'/'*", 'rm -rf /{*,.*}', 'chmod 776 f', 'chmod 666 f', 'chmod 0002 f',
+    'chmod +002 f',
+  ]) {
+    denies(shell(cmd), cmd);
+  }
+  for (const cmd of ['chmod 2755 d', 'chmod 600 k', 'chmod -R u+rwX,go-w .', 'rm -rf /{tmp/a,tmp/b}', 'rm -rf ./build/*', 'cat "README.md"']) {
+    allows(shell(cmd), cmd);
+  }
 });

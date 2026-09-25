@@ -79,7 +79,8 @@ A repository can keep its specs in a tracker ticket instead of `docs/specs/`, so
 carries no spec file and the spec sits where managers track the work.
 
 **Setup.** Run `/fabflows-setup` once. It asks for GitHub Issues, Jira, Linear or none,
-checks that the tracker's MCP tools are loaded, asks for the project, and writes
+checks that the tracker's MCP tools are loaded, asks for the project and an optional parent
+epic, story or issue that every new ticket is filed under, and writes
 `.claude/fabflows.json`, which is committed. It never connects a server and never handles a
 secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carries the
 rules after that: the tool table, the ticket body template, what a confirmed link lets
@@ -332,16 +333,36 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   so `--force-with-lease` on your own feature branch still works.
 - **Destructive commands**: `rm -rf` and `Remove-Item -Recurse -Force` at a home,
   root, parent, or `.git` target; `git reset --hard`; `git clean -fd`; `git branch -D`
-  (but not `-d`); `sudo`; `chmod 777`; `dd of=`; `mkfs`; `Set-ExecutionPolicy`; and
-  piping a download straight into a shell. Under home, a delete is blocked at home itself
+  (but not `-d`); `sudo`; a `chmod` that makes a path world-writable; `dd of=`; `mkfs`;
+  `Set-ExecutionPolicy`. Piping a download straight into a shell is blocked too. A root followed by a
+  glob is the root: `rm -rf /*`, `'/'`, `/?*` and `C:\*` are blocked, while `C:*`, the
+  current directory on drive C, passes, and so does PowerShell's `\*` for the current
+  drive. Both rules read a word as bash hands it over, with quotes and backslash escapes
+  removed, so `\/*`, `/""*` and `o\+w` count too. `chmod` is blocked when its mode, the
+  first word that is not an option, is an octal mode that lets others write (`-R 777`,
+  `666`, `0002`, `=777`) or symbolic clauses that, applied in order, leave others able to write (`o+w`, `a+rwx`,
+  `-x,o+w`, `o=u`); `+w` with no who-part, `u+w`, `755` and `a+w,o-w` pass. Under home,
+  a delete is blocked at home itself
   in any spelling (`~`, `$HOME`, `/root`, `/home/<user>`, `C:\Users\<user>`), at `~/*`,
   at a direct child such as `~/projects`, anywhere under `.ssh`, `.claude`, `.aws`,
   `.config` or `.gnupg`, and at any target with a `..` segment, which can climb back to
   home. A deeper path such as `rm -rf ~/.cache/pip` passes. A dry run (`git clean -nd`)
   passes too.
 - **Credential files**: reading, staging, or writing `.env`, `*.pem`, `*.key`,
-  `id_rsa`, `~/.ssh/`, `~/.aws/credentials`, `.npmrc`, `.pypirc`. Committed examples
-  (`.env.example`, `.env.sample`, `.env.template`) are exempt. A `.pem` or `.key` name
+  `id_rsa`, `~/.ssh/`, `~/.aws/credentials`, `.npmrc`, `.pypirc`. A `Read` or `Grep`
+  of a bare `~/.ssh` or `~/.aws` directory counts, whatever trailing `/` or `/.` follows
+  it. A path is also checked with `//`, `./` and `..` segments resolved, so
+  `~/.aws/sso/../credentials` counts. A `Grep` `glob` is split the way the tool splits
+  it, on spaces and on commas outside braces. Each piece with no wildcard is checked like
+  a path (`config/.env`, `.env.development`). Otherwise its last one or two path parts
+  are tried against a fixed list of sample secret names: `.env`, `.env.local`,
+  `.env.production`, `x.pem`, `x.key`, `id_rsa`, `id_ed25519`, `.ssh/id_rsa`,
+  `.aws/credentials`, `.npmrc`, `.pypirc`. This blocks `.en*`, `.*`, `apps/*/.env` and
+  `**/.ssh/**`. A glob is blocked as too complex to check in time when it
+  expands to more than 64 names once its `{a,b}` groups are expanded.
+  Committed examples (`.env.example`, `.env.sample`,
+  `.env.template`) are exempt, but only the example itself: `cat .env.example .env` is
+  still blocked. A `.pem` or `.key` name
   followed by a source or prose extension (`monkey.pem.md`, `api.key.ts`) is not a secret,
   but `sa.key.json` still is. A `.env` directory, such as a Python virtual environment, is
   not a secret either.
@@ -411,6 +432,22 @@ be walked around:
   `canUseTool` callback, or `--permission-prompt-tool` can approve it automatically.
 - Workers are told apart by the `agent_id` field. Whether agent-team teammates carry it
   is not documented.
+- A delete of a system directory such as `/usr`, `/etc` or `/var` is not blocked; only
+  the root itself is, including behind a bracket or wildcard brace glob (`/[a-z]*`,
+  `/{*,.*}`).
+- `chmod --reference` passes, and so does a chmod run by its full path (`/bin/chmod`).
+- Removing every quote to read an `rm` target as bash would can join words that bash
+  keeps apart, so a quoted target with a `*` word of its own (`rm -rf "old *"`) is blocked.
+- A `Grep` glob is tested against a fixed list of sample secret names, so a glob that
+  matches only a secret name missing from the list (`prod.env`) passes. A glob of only
+  `*`, `?` and `/` (`*`, `**/*`) is not checked. Rare broad globs such as `*.local`, `*rc`
+  and `*.p*` are blocked because they can match a secret name.
+- Only the `Read` and `Grep` tools and cat-style shell readers (`cat`, `head`, `tail`,
+  `less` and similar) are checked for credential files. The same search run from the
+  shell is not: `rg -g .env`, `grep -r . ~/.aws`, `sed -n p .env` and `awk 1 .env` pass.
+- A `Grep` over `.` or `~` with no glob can still read `.env` or `~/.ssh`: the guard
+  cannot see which files a search opens. The `Glob` tool is not checked; it lists names
+  but not contents.
 - It matches on **paths, not content**. A `Grep` scoped at `~/.ssh/` is denied because
   the path gives it away, but a `Grep` over `.` searching for `AKIA` is not: the guard
   cannot see what a search is looking for, only where it is pointed.

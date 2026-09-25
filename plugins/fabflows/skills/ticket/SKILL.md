@@ -46,6 +46,23 @@ node "${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js" link '<key>' '<url>' '<tracker>'
 `<key>` is `#12` or `owner/repo#12` for GitHub, `ABC-12` for Jira and Linear. `<url>` is the
 ticket's `https://` address. `<tracker>` is the `tracker` value from `.claude/fabflows.json`.
 
+## Parent
+
+When `.claude/fabflows.json` has a non-empty `parent`, create every ticket under it in the
+create call itself, so a refused parent leaves no ticket behind:
+
+- Jira: read the parent with `getJiraIssue` first, then pass it as `parent` to
+  `createJiraIssue`. Under an epic, use Task or Story. Under a story or task, use the
+  project's sub-task type, the only type Jira nests there.
+- GitHub: pass the parent's number as `parent_issue_number` to `issue_write` create. For a
+  parent in another repository (`owner/repo#7`), also pass `parent_owner` and `parent_repo`.
+- Linear (untested): set the parent issue on `save_issue`.
+
+This applies only to tickets you create: linking an existing ticket never re-parents it.
+Attaching the new ticket is the only change the parent gets, and the user's yes to create
+the ticket covers it. Never edit the parent's description, status or fields. If the tracker
+refuses the parent, say so and ask before creating the ticket without it.
+
 ## Body template
 
 Plain bullets only: no task lists and no tables, because Jira drops both.
