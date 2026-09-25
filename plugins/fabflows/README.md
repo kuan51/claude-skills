@@ -274,8 +274,8 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   current directory on drive C, passes, and so does PowerShell's `\*` for the current
   drive. Both rules read a word as bash hands it over, with quotes and backslash escapes
   removed, so `\/*`, `/""*` and `o\+w` count too. `chmod` is blocked when its mode, the
-  first word that is not an option, is a `777`-shaped octal mode (`-R 777`, `0777`, `=777`)
-  or symbolic clauses that, applied in order, leave others able to write (`o+w`, `a+rwx`,
+  first word that is not an option, is an octal mode that lets others write (`-R 777`,
+  `666`, `0002`, `=777`) or symbolic clauses that, applied in order, leave others able to write (`o+w`, `a+rwx`,
   `-x,o+w`, `o=u`); `+w` with no who-part, `u+w`, `755` and `a+w,o-w` pass. Under home,
   a delete is blocked at home itself
   in any spelling (`~`, `$HOME`, `/root`, `/home/<user>`, `C:\Users\<user>`), at `~/*`,
@@ -293,8 +293,9 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   are tried against a fixed list of sample secret names: `.env`, `.env.local`,
   `.env.production`, `x.pem`, `x.key`, `id_rsa`, `id_ed25519`, `.ssh/id_rsa`,
   `.aws/credentials`, `.npmrc`, `.pypirc`. So `.en*`, `.*`, `apps/*/.env` and
-  `**/.ssh/**` are blocked. A glob with more than four brace groups is blocked as too
-  complex to check in time. Committed examples (`.env.example`, `.env.sample`,
+  `**/.ssh/**` are blocked. A glob is blocked as too complex to check in time when it
+  expands to more than 64 names once its `{a,b}` groups are expanded.
+  Committed examples (`.env.example`, `.env.sample`,
   `.env.template`) are exempt, but only the example itself: `cat .env.example .env` is
   still blocked. A `.pem` or `.key` name
   followed by a source or prose extension (`monkey.pem.md`, `api.key.ts`) is not a secret,
@@ -367,10 +368,9 @@ be walked around:
 - Workers are told apart by the `agent_id` field. Whether agent-team teammates carry it
   is not documented.
 - A delete of a system directory such as `/usr`, `/etc` or `/var` is not blocked; only
-  the root itself is. Neither is a root hidden by a brace or bracket glob
-  (`rm -rf /{*,.*}`, `rm -rf /[a-z]*`).
-- An octal mode with the world-write bit that is not `77`-shaped (`chmod 666`,
-  `chmod 002`) passes, and so does `chmod --reference`.
+  the root itself is, including behind a bracket or wildcard brace glob (`/[a-z]*`,
+  `/{*,.*}`).
+- `chmod --reference` passes, and so does a chmod run by its full path (`/bin/chmod`).
 - Removing every quote to read an `rm` target as bash would can join words that bash
   keeps apart, so a quoted target holding a lone `*` word (`rm -rf "old *"`) is blocked.
 - A `Grep` glob is tested against a fixed list of sample secret names, so a glob that

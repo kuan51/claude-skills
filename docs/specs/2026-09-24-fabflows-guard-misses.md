@@ -166,6 +166,15 @@ flag hides it, and it knows only numeric modes.
   because stacked alternations backtrack exponentially (ten groups took 16 s). Not fixed:
   shell readers such as `rg`, `grep`, `sed` and `awk` are not checked for credential
   files; the README now lists that as a known gap.
+- **Amendment after a refuter pass on the review fixes.** The Grep tool's own split
+  (read in the installed `cli.js`) keeps a piece whole only when it holds both `{` and
+  `}`, and the guard now matches it exactly. Braces are expanded before the tail check,
+  so a path inside braces is seen, and more than 64 expansions is denied; this replaces
+  the four-group cap. A wildcard-free tail is checked like a path (`**/.env.staging`,
+  `**/.ssh`). Paths are also tested in their shell-unquoted form. A root behind a
+  bracket or wildcard-only brace glob counts as the root, and `$'...'` is unquoted. The
+  octal chmod test now reads the others digit (`666`, `776`, `0002`), which drops the
+  `77`-shaped limit from Out of scope.
 - **Directory rule local to Read and Grep** (user, Q3b). Changing `SECRET_PATH` would also
   change the shell rules, for example `ls ~/.ssh`, which is not in this spec.
 - **Patch bump** to 0.7.2: each item closes a gap against a rule the README already states.

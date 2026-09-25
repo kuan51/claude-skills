@@ -199,16 +199,18 @@ const SECRET_PATH =
 // edit in most repos. Blocking them would be a false positive on nearly every project.
 const SECRET_EXEMPT = /\.env\.(example|sample|template|dist)\b/i;
 
-// A path is tested as written and normalized, since doubled separators, `./` and `..`
+// A path is tested as written and as the shell hands it over (`"sso/"../x`), each form
+// as written and normalized, since doubled separators, `./` and `..`
 // segments (`.aws//credentials`, `.aws/sso/../credentials`) name the same file. Both forms
 // are needed: normalizing a whole shell segment can let a later `..` swallow the secret.
 // Exempt names are cut out rather than exempting the string, so `cat .env.example .env`
 // still sees the `.env`.
 const EXEMPT_ALL = new RegExp(SECRET_EXEMPT.source, 'gi');
-const pathForms = (p) => {
-  const slashed = p.replace(/\\/g, '/');
-  return [slashed, path.posix.normalize(slashed)];
-};
+const pathForms = (p) =>
+  [p, shellWord(p)].flatMap((w) => {
+    const slashed = w.replace(/\\/g, '/');
+    return [slashed, path.posix.normalize(slashed)];
+  });
 const isSecretPath = (p) => !!p && pathForms(p).some((q) => SECRET_PATH.test(q.replace(EXEMPT_ALL, '')));
 
 // A bare `.ssh` or `.aws` directory handed to Read or Grep, whatever trailing `/` or `/.`
@@ -243,33 +245,54 @@ function globRe(g) {
   return new RegExp(`(^|/)${re}$`, 'i');
 }
 
+// A glob with its `{a,b}` groups expanded, innermost first, so a path inside braces
+// (`{x/.env,y}`) is seen whole. Stacked groups multiply, so more than 64 results is null:
+// too complex to check in time, and denied rather than left to time out.
+function expandBraces(g) {
+  let out = [g];
+  for (;;) {
+    let changed = false;
+    out = out.flatMap((s) => {
+      const m = /\{([^{}]*)\}/.exec(s);
+      if (!m) return [s];
+      changed = true;
+      return m[1].split(',').map((alt) => s.slice(0, m.index) + alt + s.slice(m.index + m[0].length));
+    });
+    if (out.length > 64) return null;
+    if (!changed) return out;
+  }
+}
+
 // A Grep glob that can match a sample secret name.
 // ponytail: this list is the ceiling; a glob that only matches a secret name missing from it
 // (`prod.env`) passes. Add the name here to cover it.
 const SECRET_SAMPLES = ['.env', '.env.local', '.env.production', 'x.pem', 'x.key', 'id_rsa', 'id_ed25519', '.ssh/id_rsa', '.aws/credentials', '.npmrc', '.pypirc'];
 function isSecretGlob(glob) {
   if (typeof glob !== 'string') return false;
-  // Split the way the Grep tool does: on whitespace, then on commas in a piece with no braces.
-  const pieces = glob.split(/\s+/).flatMap((g) => (/[{}]/.test(g) ? [g] : g.split(',')));
-  return pieces.some((g) => {
-    if (!g || g.startsWith('!')) return false; // an exclusion
-    if (!/[*?[{\\]/.test(g) && (isSecretPath(g) || isSecretDir(g))) return true; // a plain name
-    // Only the last one or two path components can name a sample, so a directory prefix
-    // (`apps/*/.env`, `/**/.env`) cannot hide it. A tail of only `*`, `?` and `/` searches
-    // what no glob would, a known gap.
-    const parts = g.replace(/^\/+/, '').split('/');
-    return [parts.slice(-1), parts.slice(-2)].some((tail) => {
-      const t = tail.join('/');
-      if (/^[*?/]+$/.test(t)) return false;
-      // Stacked brace groups backtrack exponentially (8 groups of `{*,*}` took 659 ms, 10
-      // took 16 s), so a glob too complex to check in time is denied, not timed out.
-      if ((t.match(/\{/g) || []).length > 4 || (t.match(/,/g) || []).length > 16) return true;
-      try {
-        const rx = globRe(t);
-        return SECRET_SAMPLES.some((s) => rx.test(s));
-      } catch {
-        return true; // a glob the conversion cannot compile is denied
-      }
+  // Split the way the Grep tool does (cli.js): on whitespace, then on commas unless the
+  // piece holds both `{` and `}`.
+  const pieces = glob.split(/\s+/).flatMap((g) => (g.includes('{') && g.includes('}') ? [g] : g.split(',')));
+  return pieces.some((piece) => {
+    if (!piece || piece.startsWith('!')) return false; // an exclusion
+    const expanded = expandBraces(piece);
+    if (!expanded) return true;
+    return expanded.some((g) => {
+      // Only the last one or two path components can name a sample, so a directory prefix
+      // (`apps/*/.env`, `/**/.env`) cannot hide it. A tail with no wildcard is checked like
+      // a path (`**/.env.staging`, `**/.ssh`). A tail of only `*`, `?` and `/` searches
+      // what no glob would, a known gap.
+      const parts = g.replace(/^\/+/, '').split('/');
+      return [parts.slice(-1), parts.slice(-2)].some((tail) => {
+        const t = tail.join('/');
+        if (!/[*?[\\]/.test(t) && (isSecretPath(t) || isSecretDir(t))) return true;
+        if (/^[*?/]*$/.test(t)) return false;
+        try {
+          const rx = globRe(t);
+          return SECRET_SAMPLES.some((s) => rx.test(s));
+        } catch {
+          return true; // a glob the conversion cannot compile is denied
+        }
+      });
     });
   });
 }
@@ -317,16 +340,16 @@ const DESTRUCTIVE = [
   [SYSTEM_REDIRECT, 'writing into a system path'],
 ];
 
-// A word as the command receives it: bash removes quotes and backslash escapes, so `\/*`,
-// `/""*` and `o\+w` reach rm and chmod as `/*` and `o+w`.
-const shellWord = (s) => s.replace(/\\(.)/g, '$1').replace(/["']/g, '');
+// A word as the command receives it: bash removes quotes, `$'...'` and backslash escapes,
+// so `\/*`, `/""*` and `o\+w` reach rm and chmod as `/*` and `o+w`.
+const shellWord = (s) => s.replace(/\$'/g, "'").replace(/\\(.)/g, '$1').replace(/["']/g, '');
 
 // chmod's options; the first word after chmod that is not one is its mode. A symbolic mode
 // can start with `-` (`chmod -x,o+w f`), so a word is an option only if it is one of these.
 const CHMOD_OPTION = /^(-[cfvRHLP]+|--[a-z-]*(=\S*)?)$/;
 
-// A chmod mode that leaves a path world-writable: a `77`-shaped octal mode, bare or after
-// `+` or `=` (`=777`), or symbolic clauses that, applied in order, end with others able to
+// A chmod mode that leaves a path world-writable: an octal mode whose last digit, the
+// others digit, has the write bit (`777`, `666`, `0002`), bare or after `+` or `=`, or symbolic clauses that, applied in order, end with others able to
 // write. A clause counts when its who-part names o or a; `+` or `=` with w or a copied
 // u, g or o grants write, and `-w` or an `=` without it takes it away (`a+w,o-w` passes).
 function worldWritable(seg) {
@@ -335,7 +358,7 @@ function worldWritable(seg) {
   const comment = words.findIndex((w) => w.startsWith('#'));
   const mode = (comment < 0 ? words : words.slice(0, comment)).find((w) => !CHMOD_OPTION.test(w));
   if (!mode) return false;
-  if (/^[+=]?[0-7]*7{2,3}$/.test(mode)) return true;
+  if (/^[+=]?[0-7]*[2367]$/.test(mode)) return true;
   let othersWrite = false;
   for (const clause of mode.split(',')) {
     const m = /^([ugoa]*)((?:[-+=][rwxXstugo]*)+)$/.exec(clause);
@@ -360,12 +383,13 @@ const HOME_SPELLINGS = String.raw`(~|\$HOME|\$\{HOME\}|\$env:USERPROFILE|[a-z]:[
 // child (`~/projects`, `~/*`) and anything in a credential or config directory count, so
 // `rm -rf ~/.cache/pip` passes. A target may be quoted. A `..` segment anywhere
 // (`~/a/../..`) can climb back to home, so it counts as dangerous too. A root followed by a
-// glob (`/*`, `'/'?*`, `C:\*`, and PowerShell's `\*` for the current drive) is the root;
+// glob (`/*`, `'/'?*`, `/[a-z]*`, `/{*,.*}`, `C:\*`, and PowerShell's `\*` for the current
+// drive) is the root;
 // `C:*` is the current directory on drive C, so a drive root needs the separator there.
 // isDangerousDelete also tests the segment as bash would hand it over (`\/*`, `/""*`).
 const RM_HOME = String.raw`(^|\s)["']?${HOME_SPELLINGS}([\\/][^\s\\/"']*)?[\\/]?["']?(\s|$)|(^|\s)["']?${HOME_SPELLINGS}[\\/]\.(ssh|claude|aws|config|gnupg)([\\/"'\s]|$)`;
 const RM_DANGER = new RegExp(
-  String.raw`(^|\s)[a-z]:(\s|$)|(^|\s)["']?(\/|\\|[a-z]:[\\/])["']?[*?.\\/]*["']?(\s|$)|${RM_HOME}|\s\.\.(\s|[\\/]|$)|[\\/]\.\.([\\/"'\s]|$)|\s\*(\s|$)|(^|\s|[\\/])\.git(\s|[\\/]|$)`,
+  String.raw`(^|\s)[a-z]:(\s|$)|(^|\s)["']?(\/|\\|[a-z]:[\\/])["']?(\[[^\]\s]*\]|\{[*?.,\\/]*\}|[*?.\\/])*["']?(\s|$)|${RM_HOME}|\s\.\.(\s|[\\/]|$)|[\\/]\.\.([\\/"'\s]|$)|\s\*(\s|$)|(^|\s|[\\/])\.git(\s|[\\/]|$)`,
   'i'
 );
 

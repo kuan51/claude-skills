@@ -960,3 +960,24 @@ test('code review: an exempt name or a .. segment does not hide a secret path', 
     allows(shell(cmd), cmd);
   }
 });
+
+test('code review, second pass: braces, plain tails, quoted paths, bracket roots, octal others', () => {
+  const grep = (glob) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', glob }, cwd: '.' });
+  for (const glob of ['{x,.env', '{x/.env,y}', '{config/.env,z}', '**/.env.staging', 'apps/*/.env.staging', '**/.ssh', '**/.aws']) {
+    denies(grep(glob), `Grep glob ${glob}`);
+  }
+  // The tool keeps a piece holding both braces whole, so rg sees one literal `,.env` name.
+  for (const glob of ['*.{ts,js},.env', '*.{md,mdx}', '**/*.test.js', 'src/**/*.ts', '**/*.pem.md']) {
+    allows(grep(glob), `Grep glob ${glob}`);
+  }
+  for (const cmd of [
+    'cat "/home/u/.aws/sso/"../credentials', "cat /home/u/.aws/sso/..'/credentials'", 'cat /home/u/.aws/"credentials"',
+    'git add .e"nv"', 'rm -rf /[a-z]*', "rm -rf $'/'*", 'rm -rf /{*,.*}', 'chmod 776 f', 'chmod 666 f', 'chmod 0002 f',
+    'chmod +002 f',
+  ]) {
+    denies(shell(cmd), cmd);
+  }
+  for (const cmd of ['chmod 2755 d', 'chmod 600 k', 'chmod -R u+rwX,go-w .', 'rm -rf /{tmp/a,tmp/b}', 'rm -rf ./build/*', 'cat "README.md"']) {
+    allows(shell(cmd), cmd);
+  }
+});

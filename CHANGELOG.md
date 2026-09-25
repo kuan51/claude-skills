@@ -177,9 +177,9 @@ per-plugin history until entries are recorded here going forward.
   credential path with doubled separators or `./` segments (`.aws//credentials`) are caught
   too, and so are the bypasses a code review found: a glob split on commas or behind a
   directory prefix, `..` segments, an example file named beside a real one, escaped or
-  empty-quoted roots and modes, and `=777`. A pathological glob is decided in milliseconds
-  instead of hanging past the hook timeout. System directories, other
-  octal world-write modes and secret names outside the sample list stay known gaps.
+  empty-quoted roots and modes, bracket and brace roots (`/[a-z]*`), and any octal
+  mode that lets others write (`=777`, `666`). A pathological glob is decided in milliseconds
+  instead of hanging past the hook timeout. System directories and secret names outside the sample list stay known gaps.
 - **fabflows 0.7.1** -- the guard stops blocking about twenty everyday commands its README
   never claimed to block, and each narrowed rule keeps a test that the nearby real threat is
   still caught. Commands split only on separators outside quotes, so a commit message, a PR
