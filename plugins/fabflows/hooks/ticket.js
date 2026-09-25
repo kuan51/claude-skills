@@ -995,7 +995,7 @@ function hook() {
   else if (input.hook_event_name === 'PostToolUse') postToolUse(input.tool_name, ti, cwd);
 }
 
-module.exports = { normalize, normalizeInfo, fingerprint, valid, compliance, labels };
+module.exports = { normalize, normalizeInfo, fingerprint, valid, compliance };
 
 if (require.main === module) {
   if (process.argv[2]) {
