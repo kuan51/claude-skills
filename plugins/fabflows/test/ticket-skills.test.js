@@ -26,7 +26,7 @@ test('ticket names every tool, every template label and each standing rule', () 
     'getJiraIssueRemoteIssueLinks', 'jira_create_remote_issue_link',
   ];
   const labels = ['## Why', '## Behaviour', '## Check', '## Out of scope', '## Decisions', '## Links'];
-  const rules = ['## Parent', 'never re-parents', 'read the parent', '**confirmed**', 'Closes #N', 'Fixes KEY', 'carries `Refs` only', 'edited in place', '## Web link', '| Web link |', 'include: "remote_links"', '`jira_links`', 'skip steps 2 and 3', 'never after a later push', 'as a web link by hand', 'never ask for, read or use an API token', 'add the web link', 'was really created', 'go to step 3', 'rather than replacing the list', 'jira_transition_issue', 'jira_add_comment', 'closest match', 'leave the status alone', 'Never create a status'];
+  const rules = ['## Parent', 'never re-parents', 'read the parent', '**confirmed**', 'Closes #N', 'Fixes KEY', 'carries `Refs` only', 'edited in place', '## Web link', '| Web link |', 'include: "remote_links"', '`jira_links`', 'skip steps 2 and 3', 'never after a later push', 'as a web link by hand', 'never ask for, read or use an API token', 'add the web link', 'was really created', 'go to step 3', 'rather than replacing the list', 'jira_transition_issue', 'jira_add_comment', 'closest match', 'leave the status alone', 'Never create a status', 'its `to` status', 'never on the transition name', 'Only move a ticket forward', 'none, use in progress', 'Done, Closed or Resolved', 'Wont Fix'];
   has(read(PLUGIN, 'skills', 'ticket', 'SKILL.md'), [...tools, ...labels, ...rules], 'ticket/SKILL.md');
 });
 
