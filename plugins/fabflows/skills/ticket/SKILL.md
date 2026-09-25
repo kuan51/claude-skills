@@ -19,11 +19,12 @@ tracker.
 
 MCP tool names carry a server prefix (`mcp__<server>__issue_read`), so match on the suffix.
 
-| Tracker | Read | Create / edit | Status | Comment |
-| --- | --- | --- | --- | --- |
-| GitHub Issues | `issue_read` | `issue_write` | `issue_write` (open, closed) | `add_issue_comment` |
-| Jira | `getJiraIssue` | `createJiraIssue`, `editJiraIssue` | `getTransitionsForJiraIssue`, then `transitionJiraIssue` | `addCommentToJiraIssue` (v2 servers: `addOrEditJiraIssueComment`) |
-| Linear (untested) | `get_issue` | `save_issue` | `save_issue` | `save_comment` |
+| Tracker | Read | Create / edit | Status | Comment | Web link |
+| --- | --- | --- | --- | --- | --- |
+| GitHub Issues | `issue_read` | `issue_write` | `issue_write` (open, closed) | `add_issue_comment` | none needed: the PR's closing phrase or `Refs` line links it |
+| Jira (Atlassian Rovo) | `getJiraIssue` | `createJiraIssue`, `editJiraIssue` | `getTransitionsForJiraIssue`, then `transitionJiraIssue` | `addCommentToJiraIssue` (v2 servers: `addOrEditJiraIssueComment`) | read: `getJiraIssueRemoteIssueLinks`. Create: none |
+| Jira (mcp-atlassian, untested) | `jira_get_issue` | `jira_create_issue`, `jira_update_issue` | `jira_get_transitions`, then `jira_transition_issue` | `jira_add_comment` | read: `jira_get_issue` with `include: "remote_links"`. Create: `jira_create_remote_issue_link` |
+| Linear (untested) | `get_issue` | `save_issue` | `save_issue` | `save_comment` | not covered |
 
 Other tracker: find the equivalent tools with ToolSearch and tell the user they are untested.
 
@@ -31,8 +32,9 @@ Other tracker: find the equivalent tools with ToolSearch and tell the user they 
 
 Standing permission covers only a **confirmed** link: the one `ticket.js link` recorded for
 this branch after the user said yes to that key. On it, without asking, you may edit the
-description, transition the status, add the PR link, and set the labels `ticket.js labels`
-prints, since they are computed from text the user approved.
+description, transition the status, add the PR link (in Links and, on Jira, as a web link),
+and set the labels `ticket.js labels` prints, since they are computed from text the user
+approved.
 
 Everything else needs the user's yes first: creating a ticket, touching any other ticket, and
 touching a ticket known only from a `Refs:` trailer (the SessionStart line says "not
@@ -166,7 +168,7 @@ transitions and pick the one whose name matches.
 
 Always pass an explicit title that contains the key: the hook checks `--title` and the MCP
 `title`, and denies `gh pr create --fill` or `--web`, whose title it can't see. Then run
-`ticket.js pr '<url>'`.
+`ticket.js pr '<url>'`, and on Jira add the web link (see Web link below).
 
 A PR that finishes the ticket carries the tracker's closing phrase in its body (`Closes #N`,
 `Fixes KEY`). A PR that does not finish it carries `Refs` only (`Refs: #N`, `Refs: KEY`), so
@@ -177,3 +179,28 @@ read the ticket. If the PR carried a closing phrase for the key, confirm the tic
 transition it to done yourself if not. Post the close comment if the outcome differs from the
 spec. Then run `ticket.js clear --pr '<url>'`, whether or not the tracker closed it. If the PR
 was Refs-only, leave the ticket open.
+
+## Web link
+
+On Jira, the PR also goes in the ticket's Web links panel. That panel is a remote issue link,
+a different API from the description. Do this only on a confirmed link (see Permission), and
+only when the reminder after a PR creation names the web link.
+First check the PR was really created: a failed create, `--dry-run` or `--help` makes none.
+The hook names the web link only until `ticket.js pr` records the PR, so it asks once per
+PR, never after a later push.
+
+1. Read the ticket's remote links with the Web link read tool from the tool table. If the PR
+   URL is there, skip steps 2 and 3. If no tool can read them, go to step 3.
+2. Create the link with the Web link create tool, passing the PR URL and the PR title. Then
+   read the links again to confirm it is there. The create tool takes no `globalId`, so
+   Jira cannot catch a duplicate: step 1 is the only guard.
+3. No read or create tool loaded: tell the user to add the PR URL as a web link by hand, then
+   go on. On mcp-atlassian (tools named `jira_*`), both tools sit in toolsets that
+   `TOOLSETS` can leave out: `jira_links` for the create tool, `jira_issues` for the read.
+   `TOOLSETS=default` leaves out `jira_links`, as an unset `TOOLSETS` will from mcp-atlassian
+   v0.22.0. Tell the user that adding the missing toolset to their `TOOLSETS` list,
+   rather than replacing the list, lets Claude do it. The Atlassian Rovo server has no
+   create tool. Claude must never ask for, read or use an API token to work around this.
+
+The key in the PR title also lets the GitHub for Jira app list the PR in the Development
+panel, which is not a web link.
