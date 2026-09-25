@@ -433,7 +433,10 @@ function enrichment(file) {
   const tickets = new Map();
   for (const [key, v] of entries(e.tickets)) {
     if (!(valid.key(key) && v && shortList(v.labels) && short(v.bodyFile) && /^[^/\\]+$/.test(v.bodyFile) && !/^\.\.?$/.test(v.bodyFile))) continue;
-    const body = readSmall(path.join(path.dirname(file), v.bodyFile), 256 * 1024, fs.constants.O_NOFOLLOW);
+    const bodyPath = path.join(path.dirname(file), v.bodyFile);
+    // lstat as well as O_NOFOLLOW, which Windows lacks.
+    if (fs.lstatSync(bodyPath, { throwIfNoEntry: false })?.isSymbolicLink()) continue;
+    const body = readSmall(bodyPath, 256 * 1024, fs.constants.O_NOFOLLOW || 0);
     if (body === null) continue;
     const text = normalize(body);
     const c = compliance(body);
