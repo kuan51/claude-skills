@@ -14,7 +14,8 @@
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
 //   trace <from> [<to>] --json   print each first-parent commit's PR, keys and specs; <to>
-//                                defaults to origin/HEAD, else main, else master
+//                                defaults to origin/HEAD, else main, master, origin/main or
+//                                origin/master
 //   trace <from> [<to>] [--enrich <file>] --out <dir>
 //                                write trace.md and trace.csv with PR, ticket and flag columns
 //
@@ -641,8 +642,8 @@ function cli(cmd, args) {
       process.stderr.write('ticket.js: warning: this is a shallow clone, so history may be missing\n');
     }
     // <to> defaults to the default branch, as SessionStart finds it.
-    const def = refs[1] || ['refs/remotes/origin/HEAD', 'main', 'master'].find((b) => tryGit(['rev-parse', '--verify', '-q', b + '^{commit}'], cwd));
-    if (!def) fail('no <to> given and no origin/HEAD, main or master to default to; pass <to>');
+    const def = refs[1] || ['refs/remotes/origin/HEAD', 'main', 'master', 'refs/remotes/origin/main', 'refs/remotes/origin/master'].find((b) => tryGit(['rev-parse', '--verify', '-q', b + '^{commit}'], cwd));
+    if (!def) fail('no <to> given and no origin/HEAD, main, master, origin/main or origin/master to default to; pass <to>');
     const [from, to] = [refs[0], def].map((ref, n) => {
       const which = n ? 'to' : 'from';
       if (ref.startsWith('-')) fail(`the ${which} ref may not start with -`);

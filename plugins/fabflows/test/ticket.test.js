@@ -919,12 +919,34 @@ test('trace <to> defaults to origin/HEAD, else main, else master', () => {
     h.g('branch', '-m', 'main', 'master');
     assert.equal(shas().length, 7, 'master');
     h.g('branch', '-m', 'master', 'trunk');
+    h.g('update-ref', '-d', 'refs/remotes/origin/main');
     const none = cli(h.r.dir, ['trace', h.from, '--json']);
     assert.equal(none.status, 1);
     assert.equal(none.stdout, '');
-    assert.match(none.stderr, /no <to> given and no origin\/HEAD, main or master/);
+    assert.match(none.stderr, /no <to> given and no origin\/HEAD, main, master, origin\/main or origin\/master/);
   } finally {
     h.r.done();
+  }
+});
+
+test('trace <to> falls back to origin/main in a clone with no origin/HEAD or local main', () => {
+  const h = history();
+  const clone = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-ci-'));
+  try {
+    h.g('clone', '-q', `file://${h.r.dir}`, clone);
+    const c = (...args) => execFileSync('git', args, { cwd: clone, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    c('checkout', '-q', '--detach');
+    c('branch', '-q', '-D', 'main');
+    c('remote', 'set-head', 'origin', '-d');
+    const got = cli(clone, ['trace', h.from, '--json']);
+    assert.equal(got.status, 0, got.stderr);
+    const want = cli(clone, ['trace', h.from, 'origin/main', '--json']);
+    assert.equal(want.status, 0, want.stderr);
+    assert.equal(JSON.parse(got.stdout).length, 7);
+    assert.deepEqual(JSON.parse(got.stdout), JSON.parse(want.stdout));
+  } finally {
+    h.r.done();
+    fs.rmSync(clone, { recursive: true, force: true });
   }
 });
 
