@@ -492,13 +492,7 @@ function writeReport(out, from, to, cells, cwd) {
   fs.mkdirSync(dir, { recursive: true });
   const [mdFile, csvFile] = ['trace.md', 'trace.csv'].map((n) => path.join(dir, n));
   for (const f of [mdFile, csvFile]) {
-    let there = true;
-    try {
-      fs.lstatSync(f);
-    } catch {
-      there = false;
-    }
-    if (there) throw new Error(`--out already holds ${path.basename(f)}; choose an empty directory`);
+    if (fs.lstatSync(f, { throwIfNoEntry: false })) throw new Error(`--out already holds ${path.basename(f)}; choose an empty directory`);
   }
   const md = [`# Trace ${from}..${to}`, '', `| ${COLUMNS.join(' | ')} |`, `|${' --- |'.repeat(COLUMNS.length)}`, ...cells.map((r) => `| ${r.map(mdCell).join(' | ')} |`)];
   fs.writeFileSync(mdFile, md.join('\n') + '\n', { flag: 'wx' });
