@@ -289,10 +289,10 @@ const DESTRUCTIVE = [
 // A chmod mode word that grants world write: a `77`-shaped octal mode, or a symbolic clause
 // whose who-part names o or a and whose + or = grants w or copies u, g or o. Every word
 // after chmod is checked, since a symbolic mode can start with `-` (`chmod -x,o+w f`), so a
-// file literally named `777` is read as a mode.
+// file literally named `777` is read as a mode. Quotes are dropped first, as the shell does.
 function worldWritable(seg) {
   if (!/^chmod\s/i.test(seg)) return false;
-  return seg.split(/\s+/).slice(1).some((w) =>
+  return seg.replace(/["']/g, '').split(/\s+/).slice(1).some((w) =>
     /^[0-7]*7{2,3}$/.test(w) ||
     w.split(',').some((c) => {
       const m = /^([ugoa]*)((?:[-+=][rwxXstugo]*)+)$/.exec(c);

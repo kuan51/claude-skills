@@ -884,3 +884,12 @@ test('hooks.json wires every matcher to the guard', () => {
   }
   assert.equal(new Set(commands).size, 1, 'all entries must use one identical command string, so they cannot drift');
 });
+
+test('a quoted chmod mode is still read as a mode', () => {
+  for (const cmd of [`chmod 'o+w' f`, `chmod "a+w" f`, `chmod o'+w' f`, `chmod -R "777" .`]) {
+    denies(shell(cmd), cmd);
+  }
+  for (const cmd of [`chmod 'u+w' f`, `chmod "755" f`]) {
+    allows(shell(cmd), cmd);
+  }
+});
