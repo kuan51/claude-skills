@@ -270,9 +270,12 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   (but not `-d`); `sudo`; a `chmod` that makes a path world-writable; `dd of=`; `mkfs`;
   `Set-ExecutionPolicy`. Piping a download straight into a shell is blocked too. A root followed by a
   glob is the root: `rm -rf /*`, `'/'`, `/?*` and `C:\*` are blocked, while `C:*`, the
-  current directory on drive C, passes. `chmod` is blocked when any word after it is a
-  `777`-shaped octal mode (`-R 777`, `0777`) or a symbolic mode that gives others write
-  (`o+w`, `a+rwx`, `go+w`, `o=u`); `+w` with no who-part, `u+w` and `755` pass. Under home,
+  current directory on drive C, passes, and so does PowerShell's `\*` for the current
+  drive. Both rules read a word as bash hands it over, with quotes and backslash escapes
+  removed, so `\/*`, `/""*` and `o\+w` count too. `chmod` is blocked when its mode, the
+  first word that is not an option, is a `777`-shaped octal mode (`-R 777`, `0777`, `=777`)
+  or symbolic clauses that, applied in order, leave others able to write (`o+w`, `a+rwx`,
+  `-x,o+w`, `o=u`); `+w` with no who-part, `u+w`, `755` and `a+w,o-w` pass. Under home,
   a delete is blocked at home itself
   in any spelling (`~`, `$HOME`, `/root`, `/home/<user>`, `C:\Users\<user>`), at `~/*`,
   at a direct child such as `~/projects`, anywhere under `.ssh`, `.claude`, `.aws`,
@@ -282,9 +285,17 @@ with a quote still open at the end is split everywhere, which errs toward deny.
 - **Credential files**: reading, staging, or writing `.env`, `*.pem`, `*.key`,
   `id_rsa`, `~/.ssh/`, `~/.aws/credentials`, `.npmrc`, `.pypirc`. A `Read` or `Grep`
   of a bare `~/.ssh` or `~/.aws` directory counts, whatever trailing `/` or `/.` follows
-  it, and so does a `Grep` whose `glob` can match one of a fixed list of sample secret
-  names (`.env`, `*.pem`, `.en*`, `.*`, `**/.ssh/**`). Committed examples
-  (`.env.example`, `.env.sample`, `.env.template`) are exempt. A `.pem` or `.key` name
+  it. A path is also checked with `//`, `./` and `..` segments resolved, so
+  `~/.aws/sso/../credentials` counts. A `Grep` `glob` is split the way the tool splits
+  it, on spaces and on commas outside braces. Each piece with no wildcard is checked like
+  a path (`config/.env`, `.env.development`). Otherwise its last one or two path parts
+  are tried against a fixed list of sample secret names: `.env`, `.env.local`,
+  `.env.production`, `x.pem`, `x.key`, `id_rsa`, `id_ed25519`, `.ssh/id_rsa`,
+  `.aws/credentials`, `.npmrc`, `.pypirc`. So `.en*`, `.*`, `apps/*/.env` and
+  `**/.ssh/**` are blocked. A glob with more than four brace groups is blocked as too
+  complex to check in time. Committed examples (`.env.example`, `.env.sample`,
+  `.env.template`) are exempt, but only the example itself: `cat .env.example .env` is
+  still blocked. A `.pem` or `.key` name
   followed by a source or prose extension (`monkey.pem.md`, `api.key.ts`) is not a secret,
   but `sa.key.json` still is. A `.env` directory, such as a Python virtual environment, is
   not a secret either.
@@ -358,12 +369,16 @@ be walked around:
   the root itself is. Neither is a root hidden by a brace or bracket glob
   (`rm -rf /{*,.*}`, `rm -rf /[a-z]*`).
 - An octal mode with the world-write bit that is not `77`-shaped (`chmod 666`,
-  `chmod 002`) passes, and so does `chmod --reference`. A file literally named `777`
-  (`chmod 644 777`) is read as a mode and blocked.
+  `chmod 002`) passes, and so does `chmod --reference`.
+- Removing every quote to read an `rm` target as bash would can join words that bash
+  keeps apart, so a quoted target holding a lone `*` word (`rm -rf "old *"`) is blocked.
 - A `Grep` glob is tested against a fixed list of sample secret names, so a glob that
   matches only a secret name missing from the list (`prod.env`) passes. A glob of only
   `*`, `?` and `/` (`*`, `**/*`) is not checked. Rare broad globs such as `*.local`, `*rc`
   and `*.p*` are blocked because they can match a secret name.
+- Only the `Read` and `Grep` tools and cat-style shell readers (`cat`, `head`, `tail`,
+  `less` and similar) are checked for credential files. The same search run from the
+  shell is not: `rg -g .env`, `grep -r . ~/.aws`, `sed -n p .env` and `awk 1 .env` pass.
 - A `Grep` over `.` or `~` with no glob can still read `.env` or `~/.ssh`: the guard
   cannot see which files a search opens. The `Glob` tool is not checked; it lists names
   but not contents.

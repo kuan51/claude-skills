@@ -904,3 +904,59 @@ test('doubled separators and ./ segments do not hide a credential path', () => {
     allows(read(p), `Read of ${p}`);
   }
 });
+
+test('code review: Grep globs split like the tool, keep a directory prefix, and escape like rg', () => {
+  const grep = (glob) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', glob }, cwd: '.' });
+  for (const glob of [
+    '*.md,.env', '!x,.env', 'config/.env', 'apps/*/.env', '/.env', '/**/.env', 'src/**/.env', 'backend/.env*',
+    '**/root/.ssh/*', 'home/*/.ssh/*', '*/.aws/credentials', '\\.env', '.e\\nv', '.e[!x]v', '.env.development',
+    '.env.staging', '.ssh',
+  ]) {
+    denies(grep(glob), `Grep glob ${glob}`);
+  }
+  for (const glob of ['*.md', '*.{ts,tsx,js,jsx}', 'src/**', '**/*', '.env.example', '*.env.example', '**/config', 'src/*.md,docs/*.md']) {
+    allows(grep(glob), `Grep glob ${glob}`);
+  }
+});
+
+test('code review: a pathological Grep glob is decided quickly, never by the hook timeout', () => {
+  const grep = (glob) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', glob }, cwd: '.' });
+  for (const glob of ['*'.repeat(40) + 'x', '**/'.repeat(20) + 'id_rsa', '*?'.repeat(40) + 'z', '{*,*}'.repeat(30) + 'z', '{*,*}'.repeat(4) + 'z']) {
+    const start = Date.now();
+    grep(glob);
+    const ms = Date.now() - start;
+    assert.ok(ms < 1500, `Grep glob ${glob.slice(0, 20)}... took ${ms} ms`);
+  }
+  denies(grep('{*,*}'.repeat(30) + 'z'), 'a glob with too many brace groups');
+});
+
+test('code review: rm and chmod see a word as bash hands it over', () => {
+  for (const cmd of [
+    'rm -rf \\/*', 'rm -rf /""*', "rm -rf ''/*", 'rm -rf "/"*"/"', 'Remove-Item -Recurse -Force \\*',
+    'Remove-Item -Recurse -Force \\', 'chmod \\777 f', 'chmod o\\+w f', 'chmod 7\\77 f', 'chmod =777 f',
+    'chmod -R =777 .', 'chmod +777 f',
+  ]) {
+    denies(shell(cmd), cmd);
+  }
+  for (const cmd of [
+    'chmod 644 f # was 777', 'chmod a=rwx,o-w f', 'chmod a+w,o-w f', 'chmod o=g-w f', 'chmod 644 2077',
+    'chmod 644 777', 'rm -rf "/tmp/my dir"', 'rm -rf C:*',
+  ]) {
+    allows(shell(cmd), cmd);
+  }
+});
+
+test('code review: an exempt name or a .. segment does not hide a secret path', () => {
+  for (const cmd of ['cat .env.example .env', 'git add .env.example .env', 'cat /home/u/.aws/credentials .env.sample', 'cat /home/u/.aws/sso/../credentials']) {
+    denies(shell(cmd), cmd);
+  }
+  for (const p of ['/home/u/.aws/cli/../credentials', '/proj/.env.example/../.env']) {
+    denies(read(p), `Read of ${p}`);
+    denies(write(p), `Write to ${p}`);
+  }
+  const grep = (p) => run({ hook_event_name: 'PreToolUse', tool_name: 'Grep', tool_input: { pattern: 'x', path: p }, cwd: '.' });
+  denies(grep('/home/u/.aws/cli/..'), 'Grep in /home/u/.aws/cli/..');
+  for (const cmd of ['cat .env.example', 'git add .env.example']) {
+    allows(shell(cmd), cmd);
+  }
+});

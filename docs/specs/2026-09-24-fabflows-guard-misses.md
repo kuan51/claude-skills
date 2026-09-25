@@ -151,6 +151,21 @@ flag hides it, and it knows only numeric modes.
   before reading modes, so `chmod 'o+w' f` is denied. `isSecretPath` collapses doubled
   separators and `./` segments first, so `Read`, `Write` and `cat` of `~/.aws//credentials`
   are denied; the fix sits in the shared function, so every caller gets it.
+- **Amendment after the code review: the rules now read words and paths the way the
+  shell and the Grep tool do.** A review of the PR found bypasses in every section, all
+  confirmed by probing the hook. `shellWord` removes quotes and backslash escapes before
+  the rm and chmod rules (`\/*`, `/""*`, `o\+w`). chmod now judges only its mode word,
+  the first non-option word, applies clauses in order (`a+w,o-w` passes) and accepts
+  `=777`; this replaces "chmod checks every word" above, so a file named `777` is no
+  longer misread. A PowerShell `\*` is a root. Paths are also tested after
+  `path.posix.normalize`, so `..` segments do not hide a secret, and an exempt name is cut
+  out instead of exempting the whole string. A Grep glob is split on commas as the tool
+  does, a piece with no wildcard is checked like a path, only its last one or two path
+  parts are tried against the samples, `\x` and `[!x]` mean what they mean to rg, runs
+  of `**` collapse to one `.*`, and a piece with more than four brace groups is denied
+  because stacked alternations backtrack exponentially (ten groups took 16 s). Not fixed:
+  shell readers such as `rg`, `grep`, `sed` and `awk` are not checked for credential
+  files; the README now lists that as a known gap.
 - **Directory rule local to Read and Grep** (user, Q3b). Changing `SECRET_PATH` would also
   change the shell rules, for example `ls ~/.ssh`, which is not in this spec.
 - **Patch bump** to 0.7.2: each item closes a gap against a rule the README already states.
