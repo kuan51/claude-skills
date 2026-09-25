@@ -22,10 +22,10 @@ test('ticket names every tool, every template label and each standing rule', () 
     'getJiraIssue', 'createJiraIssue', 'editJiraIssue', 'getTransitionsForJiraIssue', 'transitionJiraIssue',
     'addCommentToJiraIssue', 'addOrEditJiraIssueComment',
     'get_issue', 'save_issue', 'save_comment',
-    'sub_issue_write',
+    'parent_issue_number', 'parent_owner',
   ];
   const labels = ['## Why', '## Behaviour', '## Check', '## Out of scope', '## Decisions', '## Links'];
-  const rules = ['## Parent', 'never re-parents', '**confirmed**', 'Closes #N', 'Fixes KEY', 'carries `Refs` only', 'edited in place'];
+  const rules = ['## Parent', 'never re-parents', 'read the parent', '**confirmed**', 'Closes #N', 'Fixes KEY', 'carries `Refs` only', 'edited in place'];
   has(read(PLUGIN, 'skills', 'ticket', 'SKILL.md'), [...tools, ...labels, ...rules], 'ticket/SKILL.md');
 });
 
