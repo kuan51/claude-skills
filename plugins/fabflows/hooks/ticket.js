@@ -388,7 +388,7 @@ function traceRows(from, to, cwd) {
       ai: [c, ...merged].some((m) => [m.author, ...m.co].some(isAI)),
       // Free text, for the report files only.
       subject: c.subject,
-      authors: [c.author, ...c.co],
+      authors: uniq([c, ...merged].flatMap((m) => [m.author, ...m.co])),
     };
   });
 }

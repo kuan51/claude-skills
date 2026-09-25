@@ -1023,7 +1023,7 @@ test('trace --out writes the report and raises each flag in its own case', () =>
     assert.ok(plain.rows.slice(1).every((r) => r[17].split('; ').includes('not-enriched')), 'no --enrich');
     assert.ok(plain.md.includes('feat: z (#66) (#67)'), 'a subject is in trace.md');
     assert.match(plain.row('fix: w')[2], /^Copilot <copilot@example.com>$/);
-    assert.match(plain.row(MERGE5)[2], /^Dev <dev@example.com>$/, 'the merge author; its branch co-author sets AI');
+    assert.equal(plain.row(MERGE5)[2], 'Dev <dev@example.com>; Claude <noreply@anthropic.com>', 'the merge author and its branch authors, once each');
     assert.equal(plain.row(MERGE5)[3], 'yes');
 
     const base = report(h, clean(), FILES);
