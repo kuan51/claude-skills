@@ -84,7 +84,8 @@ epic, story or issue that every new ticket is filed under, and writes
 `.claude/fabflows.json`, which is committed. It never connects a server and never handles a
 secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carries the
 rules after that: the tool table, the ticket body template, what a confirmed link lets
-Claude do without asking, and how status moves from in progress to in review to done.
+Claude do without asking, and how status moves from in progress to in review to done, or to cancelled when that PR
+closes unmerged.
 On Jira it also adds the PR to the ticket's Web links panel, when the MCP server has a tool
 that creates a remote issue link. mcp-atlassian has one in its `jira_links` toolset, which
 `TOOLSETS=default` leaves out. The Atlassian Rovo server has none, so there Claude gives you
@@ -101,7 +102,7 @@ call. `ticket.js status` prints the current branch's link, `ticket.js prs` print
 link with a recorded PR (key, URL, tracker and PR, never a branch name), and
 `ticket.js clear --pr '<url>'` forgets a link after its branch is gone.
 
-- SessionStart prints one line: the linked ticket, a link found only in a `Refs:` trailer
+- SessionStart prints this branch's line: the linked ticket, a link found only in a `Refs:` trailer
   (unconfirmed, so Claude asks first), or a reminder that the branch has none. At startup
   only (not resume, clear or compact), on any checkout, it adds a line naming the other
   confirmed links with a recorded PR, so a PR merged or closed in the GitHub UI still gets

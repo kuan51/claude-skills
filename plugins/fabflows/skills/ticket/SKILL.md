@@ -168,7 +168,8 @@ Status lives in the tracker's status field, never in the description:
 | a PR that finishes it merges | done |
 | a PR that would finish it closes unmerged | cancelled |
 
-GitHub Issues has only open and closed, so it stays open until merge. On Jira, list the
+GitHub Issues has only open and closed, so it stays open until its PR merges, or closes
+unmerged (then it is closed as not planned). On Jira, list the
 transitions and pick the one whose name matches.
 
 ## The pull request
