@@ -38,7 +38,7 @@ hides it.
 - `destructiveLine` reuses `isDangerousDelete`, so a `package.json` script `rm -rf /*` is
   denied too.
 
-### 2. chmod: any mode word that grants world write
+### 2. Any chmod mode word that grants world write
 
 The rule `^chmod\s+[0-7]*7{2,3}\b` (line 239) needs the mode right after `chmod`, so any
 flag hides it, and it knows only numeric modes.

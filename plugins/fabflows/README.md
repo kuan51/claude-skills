@@ -268,7 +268,7 @@ with a quote still open at the end is split everywhere, which errs toward deny.
 - **Destructive commands**: `rm -rf` and `Remove-Item -Recurse -Force` at a home,
   root, parent, or `.git` target; `git reset --hard`; `git clean -fd`; `git branch -D`
   (but not `-d`); `sudo`; a `chmod` that makes a path world-writable; `dd of=`; `mkfs`;
-  `Set-ExecutionPolicy`; and piping a download straight into a shell. A root followed by a
+  `Set-ExecutionPolicy`. Piping a download straight into a shell is blocked too. A root followed by a
   glob is the root: `rm -rf /*`, `'/'`, `/?*` and `C:\*` are blocked, while `C:*`, the
   current directory on drive C, passes. `chmod` is blocked when any word after it is a
   `777`-shaped octal mode (`-R 777`, `0777`) or a symbolic mode that gives others write
