@@ -85,6 +85,9 @@ epic, story or issue that every new ticket is filed under, and writes
 secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carries the
 rules after that: the tool table, the ticket body template, what a confirmed link lets
 Claude do without asking, and how status moves from in progress to in review to done.
+On Jira it also adds the PR to the ticket's Web links panel, when the MCP server has a tool
+that creates a remote issue link. The Atlassian Rovo server has none, so there Claude gives
+you the PR URL to add by hand.
 
 **Hooks.** `hooks/ticket.js` keeps a per-branch link: one state file per branch under
 `fabflows/tickets` in the common git dir (`git rev-parse --git-common-dir`), named by a hash
