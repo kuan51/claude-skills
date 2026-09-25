@@ -207,6 +207,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.11.1** -- the `ticket` skill no longer stalls when a workflow's status names
+  differ from in progress, in review and done. It lists where the ticket can move and matches
+  on the target status, not the Jira transition name, since a transition named Reviewed can
+  lead to Working as Designed. It picks the closest match, uses in progress when there is no
+  review status, and never picks a status that drops the work, such as Wont Fix. It only moves
+  a ticket forward, so a push after the PR opens no longer sends an In Review or Blocked ticket
+  back. If nothing fits, it leaves the status alone and tells the user the names it saw.
 - **fabflows 0.9.1** -- the trace report closes the known gaps from 0.9.0 (#78).
   `self-approved` ignores case, since GitHub logins do. A merge row's author column names the
   merge's author and every author and co-author of the commits it brought in. `trace` no

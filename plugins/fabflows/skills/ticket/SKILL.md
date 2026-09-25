@@ -162,8 +162,24 @@ Status lives in the tracker's status field, never in the description:
 | the PR opens | in review |
 | a PR that finishes it merges | done |
 
-GitHub Issues has only open and closed, so it stays open until merge. On Jira, list the
-transitions and pick the one whose name matches.
+GitHub Issues has only open and closed, so it stays open until merge.
+
+On Jira and Linear, list where the ticket can move before choosing. On Jira, call
+`getTransitionsForJiraIssue` and match on each transition's target, its `to` status,
+never on the transition name: a transition named Reviewed can lead to Working as Designed.
+On Linear (untested), find the tool that lists the team's statuses with ToolSearch.
+
+Workflows name statuses differently, so pick the closest match:
+
+- in progress matches In Progress, In Development or Doing.
+- in review matches In Review, Code Review or Review. If the workflow has none, use in progress.
+- done matches Done, Closed or Resolved. Never pick a status that drops the work, such as
+  Wont Fix, Duplicate or Cannot Reproduce.
+
+Only move a ticket forward. Leave it where it is when it already sits at or past the target
+(for in review, that means In Review, Ready for Testing or QA) or in a status someone set to hold it, such as
+Blocked. If nothing fits, leave the status alone and tell the user the names you saw.
+Never create a status or edit the workflow.
 
 ## The pull request
 
@@ -200,7 +216,7 @@ merging it leaves the ticket open.
 
 After a PR merges (check it did first: the reminder also fires after a failed merge command),
 read the ticket. If the PR carried a closing phrase for the key, confirm the ticket is closed and
-transition it to done yourself if not. Post the close comment if the outcome differs from the
+transition it to done yourself if not, per [Status](#status). Post the close comment if the outcome differs from the
 spec. Then run `ticket.js clear --pr '<url>'`, whether or not the tracker closed it. If the PR
 was Refs-only, leave the ticket open.
 
