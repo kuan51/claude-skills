@@ -86,6 +86,8 @@ secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carri
 rules after that: the tool table, the ticket body template, what a confirmed link lets
 Claude do without asking, and how status moves from in progress to in review to done, or to cancelled when that PR
 closes unmerged.
+When a workflow names its statuses differently, Claude picks the closest match and only
+moves a ticket forward; if nothing fits, it leaves the status alone and tells you.
 On Jira it also adds the PR to the ticket's Web links panel, when the MCP server has a tool
 that creates a remote issue link. mcp-atlassian has one in its `jira_links` toolset, which
 `TOOLSETS=default` leaves out. The Atlassian Rovo server has none, so there Claude gives you
