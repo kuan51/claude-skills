@@ -885,6 +885,7 @@ test('trace refuses option-like refs and warns on shallow or unrelated ranges', 
       const bad = cli(r.dir, ['trace', ...args]);
       assert.equal(bad.status, 1, args.join(' '));
       assert.equal(bad.stdout, '', args.join(' '));
+      if (args.includes('--output=x')) assert.match(bad.stderr, /may not start with -/, args.join(' '));
     }
     const back = cli(r.dir, ['trace', 'main', from, '--json']);
     assert.equal(back.status, 0);
@@ -1069,7 +1070,10 @@ test('trace --enrich ignores every value of the wrong shape', () => {
     for (const [what, enrich, files] of [
       ['a bad prs key', tweak((e) => (e.prs['5.0'] = e.prs[5]) && delete e.prs[5]), FILES], // Number('5.0') is 5
       ['a bad tickets key', tweak((e) => (e.tickets['abc-1'] = e.tickets['ABC-1']) && delete e.tickets['ABC-1']), FILES],
-      ['a string over 200 characters', tweak((e) => (e.prs[5].approvers = ['x'.repeat(201)])), FILES],
+      ['an approver over 200 characters', tweak((e) => (e.prs[5].approvers = ['x'.repeat(201)])), FILES],
+      ['a PR author over 200 characters', tweak((e) => (e.prs[5].author = 'x'.repeat(201))), FILES],
+      ['a label over 200 characters', tweak((e) => e.tickets['ABC-1'].labels.push('x'.repeat(201))), FILES],
+      ['a bodyFile over 200 characters', moved('x'.repeat(198) + '.md'), { ...FILES, ['x'.repeat(198) + '.md']: BODY['ABC-1'] }],
       ['a bodyFile with a /', moved('sub/abc1.md'), { ...FILES, 'sub/abc1.md': BODY['ABC-1'] }],
       ['a bodyFile that is a symlink', moved('link.md'), { ...FILES, 'link.md': { link: 'abc1.md' } }],
       ['a bodyFile over 256 KB', moved('big.md'), { ...FILES, 'big.md': BODY['ABC-1'] + ' '.repeat(256 * 1024) }],
@@ -1201,7 +1205,7 @@ test('trace report cells cannot run as formulas or break the table', () => {
     return report(h, e, FILES);
   };
   try {
-    for (const v of ['=1+1', '+1', '-1', '@SUM(A1)', ' =1', '​=1', '＝1']) {
+    for (const v of ['=1+1', '+1', '-1', '@SUM(A1)', ' =1', '​=1', '＝1', '＋1', '－1', '＠SUM(A1)']) {
       assert.equal(author(v).row(MERGE5)[5], "'" + v, JSON.stringify(v));
     }
     const quoted = author('a,"b"');
