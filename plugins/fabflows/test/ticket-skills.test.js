@@ -61,6 +61,7 @@ test('trace enriches through MCP, reports flags only and keeps the report out of
   const needles = [
     'ticket.js trace', '--enrich', 'get_reviews', 'never commits', 'Write tool', 'newest tag',
     '--unshallow', 'Delete the scratch directory', 'outside the repo', 'SHA, PR, key and flags',
+    'merge_commit_sha', '$HOME', 'whether or not',
   ];
   has(read(PLUGIN, 'skills', 'trace', 'SKILL.md'), needles, 'trace/SKILL.md');
 });
