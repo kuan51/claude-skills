@@ -394,7 +394,7 @@ function traceRows(from, to, cwd) {
 
 // ---------------------------------------------------------------- trace report
 const COLUMNS = ['commit', 'date', 'author', 'AI', 'PR', 'PR author', 'approvers', 'tickets', 'key source', 'spec hashes', 'ticket fingerprints', 'controls', 'change', 'class', 'traces', 'expected labels', 'actual labels', 'flags'];
-const FLAGS = ['no-ticket', 'no-spec', 'no-pr', 'spec-changed', 'no-compliance', 'label-missing', 'emergency', 'no-approval', 'self-approved', 'not-enriched'];
+const FLAGS = ['no-ticket', 'no-spec', 'no-pr', 'pr-mismatch', 'spec-changed', 'no-compliance', 'label-missing', 'emergency', 'no-approval', 'self-approved', 'not-enriched'];
 const short = (v) => str(v) && v.length <= 200;
 const shortList = (v) => Array.isArray(v) && v.every(short);
 
@@ -426,7 +426,9 @@ function enrichment(file) {
   const entries = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? Object.entries(o) : []);
   const prs = new Map();
   for (const [n, v] of entries(e.prs)) {
-    if (/^[0-9]+$/.test(n) && v && short(v.author) && shortList(v.approvers)) prs.set(Number(n), { author: v.author, approvers: v.approvers });
+    if (!(/^[0-9]+$/.test(n) && v && short(v.author) && shortList(v.approvers))) continue;
+    if (v.mergeCommit !== undefined && !(str(v.mergeCommit) && HEX.test(v.mergeCommit))) continue;
+    prs.set(Number(n), { author: v.author, approvers: v.approvers, mergeCommit: v.mergeCommit });
   }
   const tickets = new Map();
   for (const [key, v] of entries(e.tickets)) {
@@ -451,6 +453,7 @@ function reportRows(rows, en, on) {
     if (!row.keys.length) flags.add('no-ticket');
     if (!row.specs.length) flags.add('no-spec');
     if (row.pr === null) flags.add('no-pr');
+    if (pr && pr.mergeCommit !== undefined && pr.mergeCommit !== row.sha) flags.add('pr-mismatch');
     if (row.specs.length && known.some((t) => !row.specs.includes(t.fingerprint))) flags.add('spec-changed');
     if (on && known.some((t) => t.c.errors)) flags.add('no-compliance');
     if (known.some((t) => t.expected.some((l) => !t.labels.some((have) => have.toLowerCase() === l)))) flags.add('label-missing');

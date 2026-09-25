@@ -1012,7 +1012,7 @@ test('trace --out writes the report and raises each flag in its own case', () =>
     assert.ok(!base.csv.includes('no-compliance'));
     const counts = Object.fromEntries(base.stdout.trim().replace(/^trace: 7 commits; /, '').split(', ').map((p) => p.split(' ')));
     for (const f of Object.keys(counts)) assert.equal(Number(counts[f]), base.rows.slice(1).filter((r) => r[17].split('; ').includes(f)).length, f);
-    assert.equal(Object.keys(counts).length, 10, base.stdout);
+    assert.equal(Object.keys(counts).length, 11, base.stdout);
     assert.equal(base.row(MERGE5)[5], 'alice');
     assert.equal(base.row(MERGE5)[16], EXPECTED.map((l) => l.toUpperCase()).join('; '));
 
@@ -1040,6 +1040,23 @@ test('trace --out writes the report and raises each flag in its own case', () =>
   }
 });
 
+test('trace flags a row whose PR merged as another commit', () => {
+  const h = history();
+  try {
+    h.g('commit', '-q', '--allow-empty', '-m', 'hotfix (#5)');
+    h.sha['hotfix (#5)'] = h.g('rev-parse', 'HEAD');
+    const e = clean();
+    e.prs[5].mergeCommit = h.sha[MERGE5];
+    const out = report(h, e, FILES);
+    assert.equal(out.status, 0, out.stderr);
+    assert.deepEqual(out.flags('hotfix (#5)'), ['no-ticket', 'no-spec', 'pr-mismatch']);
+    assert.deepEqual(out.flags(MERGE5), [], 'its own merge commit');
+    assert.match(out.stdout, /no-pr [0-9]+, pr-mismatch 1, spec-changed/, 'the summary lists it after no-pr');
+  } finally {
+    h.r.done();
+  }
+});
+
 test('trace --enrich ignores every value of the wrong shape', () => {
   const h = history();
   const tweak = (f) => {
@@ -1058,6 +1075,7 @@ test('trace --enrich ignores every value of the wrong shape', () => {
       ['a bodyFile over 256 KB', moved('big.md'), { ...FILES, 'big.md': BODY['ABC-1'] + ' '.repeat(256 * 1024) }],
       ['an enrichment file over 1 MB', JSON.stringify(clean()) + ' '.repeat(1024 * 1024), FILES],
       ['a wrong-shaped value', tweak((e) => (e.prs[5].approvers = 'bob')), FILES],
+      ['a mergeCommit that is not a hash', tweak((e) => (e.prs[5].mergeCommit = 'HEAD')), FILES],
     ]) {
       const out = report(h, enrich, files);
       assert.equal(out.status, 0, `${what}: ${out.stderr}`);
