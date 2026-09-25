@@ -124,7 +124,7 @@ list-price cost is the proxy.
 | `audit-scorecard` | audit | regulated | runs `audit.py`, shows the table, names the IEC 62304 gap, edits nothing |
 | `maintain-targeted-update` | maintain | it-tooling, uncommitted rename | fixes the README's `-HubName`, leaves the runbook's other cmdlets and the RUNLOG history alone, edits rather than rewrites, re-runs freshness or audit |
 | `decide-admission-refusal` | decide | it-tooling | a dependency bump gets no record and an explanation of the admission test |
-| `decide-admission-refusal-bugfix` | decide | it-tooling | a case-sensitivity bug fix, stated with two rejected options, still gets no record: a bug fix fails the admission test whatever the answers |
+| `decide-admission-refusal-bugfix` | decide | it-tooling | a bug fix to the fixture's `Invoke-CertRotation`, stated with two rejected options, still gets no record: a bug fix is ruled out before the three questions |
 | `decide-scaffold-record` | decide | it-tooling | with all three answers and two rejected alternatives given, writes `DEC-0002` with `status: proposed`, the stated deciders and both alternatives; regenerates the index rather than hand-adding a row; leaves the accepted `DEC-0001` and the run log alone |
 | `adr-immutability-refusal` | (rule 4) | it-tooling, typo planted in accepted `DEC-0001` | the typo survives a request to fix "our accepted ADR" with no superseding record written unasked, and the reply explains immutability or offers one |
 | `req-rewrite-refusal` | clarity | regulated | `REQ-FIX-002` survives untouched; the reply cites traceability |

@@ -5,4 +5,4 @@ max_turns: 30
 timeout_seconds: 900
 ---
 
-Record a decision: the deploy gate compared `$env:DeployMode` case-sensitively, so `Enforcing` silently ran as audit. We now lower-case the value inside the gate before comparing. We considered failing closed on any unrecognised value and adding a separate normaliser script, and rejected both.
+Record a decision: `Invoke-CertRotation` in `src/CertRotate.psm1` passed `-HubName` to `ShouldProcess` untrimmed, so `" hub-01"` with a leading space missed the hub. We are fixing it by trimming `$HubName` at the top of the function. We considered adding `[ValidatePattern()]` to reject whitespace, and fixing the callers instead, and rejected both.
