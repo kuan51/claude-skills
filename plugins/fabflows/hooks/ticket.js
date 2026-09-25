@@ -328,7 +328,7 @@ function linked(cwd) {
 // text can hold instructions, and that output reaches Claude.
 const traceGit = (args, cwd) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', timeout: 30000, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
-const LOG_FORMAT = ['%H', '%P', '%cI', '%an <%ae>', '%s', ...['Refs', 'Spec', 'Co-Authored-By'].map((k) => `%(trailers:key=${k},valueonly)`)].join('%x1f');
+const LOG_FORMAT = ['%H', '%P', '%cI', '%an <%ae>', '%s', '%B'].join('%x1f');
 // A key on a key boundary, as hasKey finds one; `x/y#7` is not #7.
 const SUBJECT_KEY = /(?<![A-Za-z0-9/#-])(?:[A-Z][A-Z0-9]*-[0-9]+|(?:[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*)?#[0-9]+)(?![A-Za-z0-9-])/g;
 const MERGE_PR = /^Merge pull request #([0-9]{1,9})\b/;
@@ -338,11 +338,17 @@ const uniq = (a) => [...new Set(a)];
 const HEX = /^[0-9a-f]{40,64}$/;
 
 // One commit of LOG_FORMAT output. Every field is validated where it is used, so a unit
-// separator inside commit text can shift fields but never put free text in a row.
+// separator inside commit text can shift fields but never put free text in a row. Refs, Spec
+// and Co-Authored-By count at the start of any line of the message, in any case: a squash
+// merge leaves them in the body, outside git's trailer block.
 function parseCommit(rec) {
-  const [sha, parents = '', date, author = '', subject = '', refs, specs, co] = rec.replace(/^\n/, '').split('\x1f');
-  const lines = (v) => (v || '').split('\n').map((s) => s.trim()).filter(Boolean);
-  return { sha, parents: parents.split(' ').filter(Boolean), date, author, subject, refs: lines(refs), specs: lines(specs), co: lines(co) };
+  const [sha, parents = '', date, author = '', subject = '', ...body] = rec.replace(/^\n/, '').split('\x1f');
+  const found = { refs: [], spec: [], 'co-authored-by': [] };
+  for (const line of body.join('\x1f').split('\n')) {
+    const m = /^(Refs|Spec|Co-Authored-By):(.*)$/i.exec(line);
+    if (m && m[2].trim()) found[m[1].toLowerCase()].push(m[2].trim());
+  }
+  return { sha, parents: parents.split(' ').filter(Boolean), date, author, subject, refs: found.refs, specs: found.spec, co: found['co-authored-by'] };
 }
 
 function traceRows(from, to, cwd) {

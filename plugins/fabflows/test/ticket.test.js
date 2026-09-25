@@ -812,6 +812,26 @@ test('trace --json lists each first-parent commit with no free text', () => {
   }
 });
 
+// Commits msg on history()'s main and returns trace --json's row for it.
+function traced(h, msg, ...extra) {
+  h.g('commit', '-q', '--allow-empty', ...extra, '-m', msg);
+  const out = cli(h.r.dir, ['trace', 'HEAD~1', '--json']);
+  assert.equal(out.status, 0, out.stderr);
+  return JSON.parse(out.stdout)[0];
+}
+
+test('trace reads Refs, Spec and Co-Authored-By on any line of the message', () => {
+  const { fingerprint } = require(TICKET);
+  const h = history();
+  try {
+    const spec = fingerprint(BODY['ABC-1']);
+    const row = traced(h, `feat: s (#9)\n\n* feat: a\n\nRefs: ABC-5\nSpec: ${spec}\n\nCo-authored-by: Claude <noreply@anthropic.com>`);
+    assert.deepEqual([row.pr, row.keys, row.keySource, row.specs, row.ai], [9, ['ABC-5'], 'commit', [spec], true]);
+  } finally {
+    h.r.done();
+  }
+});
+
 test('trace refuses option-like refs and warns on shallow or unrelated ranges', () => {
   const { r, g, from } = history();
   const clone = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-shallow-'));
