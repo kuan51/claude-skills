@@ -147,6 +147,10 @@ flag hides it, and it knows only numeric modes.
   The `([\\/]+\.?)*` form above backtracks exponentially on a run of slashes (26 slashes
   took 492 ms), and a guard that times out fails open. The shorter form matches the same
   strings in 0 ms. The `i` flag matches `SECRET_PATH`, so `~/.SSH` is denied too.
+- **Amendment after review: two one-token gaps closed.** `worldWritable` drops quotes
+  before reading modes, so `chmod 'o+w' f` is denied. `isSecretPath` collapses doubled
+  separators and `./` segments first, so `Read`, `Write` and `cat` of `~/.aws//credentials`
+  are denied; the fix sits in the shared function, so every caller gets it.
 - **Directory rule local to Read and Grep** (user, Q3b). Changing `SECRET_PATH` would also
   change the shell rules, for example `ls ~/.ssh`, which is not in this spec.
 - **Patch bump** to 0.7.2: each item closes a gap against a rule the README already states.
