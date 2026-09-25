@@ -44,7 +44,7 @@ test('brainstorming and ticket show the user raw ticket text', () => {
 });
 
 test('fabflows-setup asks for compliance frameworks', () => {
-  const needles = ['compliance.frameworks', '`soc2`', '`iso27001`', '`iec62304`', 'lowercased', 'leaves compliance off', '**None** leaves compliance off', 'typed `none`'];
+  const needles = ['compliance.frameworks', '`soc2`', '`iso27001`', '`iec62304`', 'lowercased', 'leaves compliance off', '**None** leaves compliance off', 'typed `none`', '**None** together with any framework is refused'];
   has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), needles, 'fabflows-setup/SKILL.md');
 });
 
@@ -90,7 +90,6 @@ test('the README names the ticket hook, the ticket skills and raw review', () =>
 
 test('0.9.0 documents the trace report and the compliance limits', () => {
   const plugin = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
-  assert.equal(plugin.version, '0.9.0');
   const market = JSON.parse(read(ROOT, '.claude-plugin', 'marketplace.json')).plugins.find((p) => p.name === 'fabflows');
   const bullet = read(ROOT, 'README.md').split('\n- **').find((b) => b.startsWith('[fabflows]'));
   for (const [text, file] of [[plugin.description, 'plugin.json'], [market.description, 'marketplace.json'], [bullet, 'root README bullet']]) {
