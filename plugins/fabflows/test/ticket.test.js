@@ -1076,6 +1076,8 @@ test('trace --enrich ignores every value of the wrong shape', () => {
       ['a bodyFile over 200 characters', moved('x'.repeat(198) + '.md'), { ...FILES, ['x'.repeat(198) + '.md']: BODY['ABC-1'] }],
       ['a bodyFile with a /', moved('sub/abc1.md'), { ...FILES, 'sub/abc1.md': BODY['ABC-1'] }],
       ['a bodyFile that is a symlink', moved('link.md'), { ...FILES, 'link.md': { link: 'abc1.md' } }],
+      ['a bodyFile with a NUL byte', moved('abc1.md\0'), FILES],
+      ['a bodyFile over 255 bytes', moved('é'.repeat(197) + '.md'), FILES],
       ['a bodyFile over 256 KB', moved('big.md'), { ...FILES, 'big.md': BODY['ABC-1'] + ' '.repeat(256 * 1024) }],
       ['an enrichment file over 1 MB', JSON.stringify(clean()) + ' '.repeat(1024 * 1024), FILES],
       ['a wrong-shaped value', tweak((e) => (e.prs[5].approvers = 'bob')), FILES],
