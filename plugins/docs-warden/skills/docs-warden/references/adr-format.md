@@ -94,10 +94,11 @@ Consequences worth stating plainly:
 
 - A typo in an accepted record stays. Fix it in the superseding record.
 - Marking something `accepted` is a real commitment. Leave it `proposed` while it
-  is still being argued, and until review of the pull request that implements it
-  is finished.
-  Accepted early, every later review round on that pull request becomes a new
-  superseding record.
+  is still being argued, and while the pull request that implements it is in
+  review. Accepted early, every later review round on that pull request becomes a
+  new superseding record. Make the change to `accepted` the last change to the
+  file, at the end of that pull request once no review ask is open or later in a
+  housekeeping pull request.
 
 ## The index
 

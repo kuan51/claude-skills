@@ -164,9 +164,13 @@ human to confirm them. Never scaffold without a yes.
 2. Fill the sections **with the human**, not from assumption. Considered options,
    consequences good and bad, and gaps accepted are the sections that matter most.
    A decision record without rejected alternatives is only a note.
-3. Leave `status: proposed` until review of the pull request that implements it is
-   finished and the human says it is accepted. A later review round on that pull
-   request edits the proposed record. It never adds a new one.
+3. Leave `status: proposed` while the pull request that implements it is in review.
+   A review round edits that proposed record. It never adds a new one. Accept only
+   when the human says so, and make the change to `accepted` the last change to the
+   file: at the end of that pull request once no review ask is open, or later
+   through the status-change route in `compact` mode. `audit.py` fails any edit after
+   acceptance, so a change asked for after that needs a superseding record. A
+   choice already merged, as in "why did we choose," has no review to wait for.
 4. Re-run `scripts/adr_index.py`.
 
 If the repo has a monolithic hand-written decision log with `DEC-NNN` entries,
