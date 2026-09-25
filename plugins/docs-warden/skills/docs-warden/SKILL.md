@@ -1,6 +1,6 @@
 ---
 name: docs-warden
-description: Maintain repository documentation consistently across a repo or a fleet of them. Use when scaffolding docs for a repo, auditing documentation, checking what docs are missing or stale, updating docs after a code change, or when the human explicitly asks to record an architecture decision. Triggers on README, docs folder, CONVENTIONS, RUNLOG, GLOSSARY, SECURITY.md, CODEOWNERS, "document this repo", "set up documentation", "scaffold docs", "audit our docs", "what's missing from our docs", "is this repo compliant", "docs are out of date", "the README is wrong", and on the explicit requests "record a decision", "new ADR", "why did we choose". Also offer a record, without writing one, when Claude's own answers to the three admission questions in decide mode are all yes. Also triggers on any request to create, review, or fix repository documentation even when the word documentation is not used.
+description: Maintain repository documentation consistently across a repo or a fleet of them. Use when scaffolding docs for a repo, auditing documentation, checking what docs are missing or stale, updating docs after a code change, or when the human explicitly asks to record an architecture decision. Triggers on README, docs folder, CONVENTIONS, RUNLOG, GLOSSARY, SECURITY.md, CODEOWNERS, "document this repo", "set up documentation", "scaffold docs", "audit our docs", "what's missing from our docs", "is this repo compliant", "docs are out of date", "the README is wrong", and on the explicit requests "record a decision", "new ADR", "why did we choose". Also offer a record, without writing one, when a change is none of the kinds decide mode excludes and Claude's own answers to its three admission questions are all yes. Also triggers on any request to create, review, or fix repository documentation even when the word documentation is not used.
 ---
 
 # Docs Warden
@@ -141,22 +141,25 @@ documented behavior.
 ### `decide` (record a decision)
 
 Triggered by an explicit ask ("record a decision," "new ADR," "why did we choose"),
-or by Claude answering the three questions below about a change just made and
-getting three yeses. In the second case, show the answers and ask the human to
-confirm them. Never scaffold without a yes.
+or by Claude finding that a change just made passes step 0 below: none of the
+excluded kinds, then three yeses. In the second case, show the answers and ask the
+human to confirm them. Never scaffold without a yes.
 
-0. Run the admission test with the human before scaffolding anything:
+0. Run the admission test with the human before scaffolding anything. First the
+   kind of change. These never earn a record, whatever else is true: a bug fix, a
+   fix for a review finding, a refactor, a rename, a wording change, a dependency
+   bump, a test change, a hook, CI, linter or config value (a threshold, timeout,
+   toggle or exclusion), a temporary switch with an exit condition, a rollout plan,
+   and a field, format or grouping choice inside one feature.
+   If the change is one of these, say which, put the reasoning in the pull request
+   description and stop. No record, and no questions.
+   Otherwise ask the three questions:
    1. Would reversing this cost more than one pull request?
    2. Does it constrain work outside the file or component just touched?
-   3. Is there a rejected alternative someone could reasonably re-propose after this
-      merges? An option rejected only while fixing a bug or answering a review does
-      not count.
+   3. Is there a rejected alternative someone could reasonably re-propose later?
+      An option weighed only as another way to fix a bug does not count.
    Any "no" means the change is not an architecture decision. Put the reasoning in the
    pull request description and stop. No record.
-   These fail the test whatever the answers: a bug fix, a fix for a review finding,
-   a CI or linter setting, a temporary switch with an exit condition, a rollout
-   plan, and a field, format or grouping choice inside one feature. Say which of
-   these the change is, or why it is none of them.
 1. `scripts/adr_new.py <repo> "<title>"` scaffolds the next `DEC-NNNN`.
 2. Fill the sections **with the human**, not from assumption. Considered options,
    consequences good and bad, and gaps accepted are the sections that matter most.

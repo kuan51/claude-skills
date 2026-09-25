@@ -34,10 +34,10 @@ they rot.
   or off-standard. Never fixes silently.
 - **`maintain`**: find documents that drifted from changed code and propose edits.
 - **`decide`**: scaffold and index records of architecture decisions. Runs on an
-  explicit ask, or offers one when its own answers to a three-question
-  admission test are all yes. It never writes without the human's yes. Development
-  history stays in the pull request. Bug fixes, review fixes and CI settings never
-  get a record.
+  explicit ask, or offers one when a change passes its admission test: not an
+  excluded kind of change, then three yeses. It never writes without the human's
+  yes. Bug fixes, review fixes, config values and other development history stay in
+  the pull request.
 - **`compact`**: once `docs/decisions/` holds fifty decided records, move the oldest 25
   unchanged into `docs/decisions/archive/` and write one digest record carrying
   their outcomes and accepted gaps. A hook says when it is due, or how many records

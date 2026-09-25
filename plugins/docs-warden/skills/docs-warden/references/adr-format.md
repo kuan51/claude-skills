@@ -9,23 +9,25 @@ itself justify a record.
 The ledger is a log of architecture decisions, not of development history. Git and
 pull requests already hold the history.
 
-A change needs a record when all three hold:
+Check the kind of change first. These never earn a record, whatever else is true:
+a bug fix, a fix for a review finding, a refactor, a rename, a wording change, a
+dependency bump, a test change, a hook, CI, linter or config value (a threshold,
+timeout, toggle or exclusion), a temporary switch with an exit condition, a rollout
+plan, and a field, format or grouping choice inside one feature. Neither does
+anything the pull request description already explains in full. Those are notes,
+and the pull request is where they live.
+
+Any other change needs a record when all three hold:
 
 1. Reversing it would cost more than one pull request.
 2. It constrains work outside the file or component just touched.
 3. A rejected alternative exists that someone could reasonably re-propose later.
+   An option weighed only as another way to fix a bug does not count.
 
 That covers a choice of technology, protocol, or storage; a boundary between
 components; a rule every future change must obey; a gap accepted on purpose for the
-life of the project.
-
-It does not cover bug fixes, fixes for review findings, refactors, renames, wording,
-dependency bumps, test changes, hook, CI or linter settings, temporary switches with
-an exit condition, rollout plans, field, format or grouping choices inside one
-feature, or anything the pull request description already explains in full. Those
-are notes, and the pull request is where they live. They fail the test even when
-all three answers look like yes. An option rejected only while fixing a bug or
-answering a review is not the rejected alternative of question 3.
+life of the project. A CI gate's policy can be such a rule; a single threshold or
+toggle in it is a value.
 
 ## Filename
 
