@@ -207,6 +207,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.11.1** -- when a PR opens on a linked branch and the tracker's workflow has no
+  review status, the `ticket` skill no longer stalls on "pick the one whose name matches". It
+  picks the closest match: a review-like status, else the in-progress one. If nothing fits,
+  it leaves the status alone and tells the user the names it saw. It never creates a status
+  or edits the workflow.
 - **fabflows 0.9.1** -- the trace report closes the known gaps from 0.9.0 (#78).
   `self-approved` ignores case, since GitHub logins do. A merge row's author column names the
   merge's author and every author and co-author of the commits it brought in. `trace` no

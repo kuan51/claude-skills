@@ -163,7 +163,13 @@ Status lives in the tracker's status field, never in the description:
 | a PR that finishes it merges | done |
 
 GitHub Issues has only open and closed, so it stays open until merge. On Jira, list the
-transitions and pick the one whose name matches.
+transitions and pick the one whose name matches. On Linear, set the state with `save_issue`.
+
+Workflows name statuses differently, so pick the closest match. For in review: a review-like
+name (In Review, Code Review, Review). If the workflow has none, use the in-progress one
+(In Progress, In Development, Doing), or leave the ticket there if it already is. If nothing
+fits, leave the status alone and tell the user the names you saw. Never create a status or
+edit the workflow.
 
 ## The pull request
 
