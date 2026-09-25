@@ -8,6 +8,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.10.0** -- when a PR opens on a linked branch, the `ticket` skill assigns the
+  PR and the confirmed ticket to the developer the MCP servers are signed in as (`get_me`
+  for GitHub, `atlassianUserInfo` for Jira, Linear untested). The PR is assigned through
+  `issue_write`, since GitHub's PR tools take no assignee. A ticket already assigned to
+  someone else is left alone until the user says yes, and a failed assignment never blocks
+  the PR.
 - **fabflows 0.9.0** -- compliance tracing for audits (#68). `fabflows-setup` asks which
   frameworks apply (SOC 2, ISO 27001, IEC 62304 or your own) and writes
   `compliance.frameworks`. With compliance on, each ticket spec carries a Compliance section

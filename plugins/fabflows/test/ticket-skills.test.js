@@ -29,6 +29,12 @@ test('ticket names every tool, every template label and each standing rule', () 
   has(read(PLUGIN, 'skills', 'ticket', 'SKILL.md'), [...tools, ...labels, ...rules], 'ticket/SKILL.md');
 });
 
+test('ticket assigns the PR and the linked ticket to the MCP user', () => {
+  const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
+  const pr = ticket.slice(ticket.indexOf('## The pull request'));
+  has(pr, ['get_me', 'atlassianUserInfo', 'issue_number', '--assignee @me', 'assignee: { accountId', 'assigned to someone else', 'never blocks'], 'ticket/SKILL.md pull request section');
+});
+
 test('brainstorming approves and checks the ticket through Write-tool files', () => {
   has(read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md'), ['ticket.js approve', 'ticket.js check', 'written with the Write tool'], 'brainstorming/SKILL.md');
 });

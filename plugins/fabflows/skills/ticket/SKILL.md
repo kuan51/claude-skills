@@ -31,8 +31,9 @@ Other tracker: find the equivalent tools with ToolSearch and tell the user they 
 
 Standing permission covers only a **confirmed** link: the one `ticket.js link` recorded for
 this branch after the user said yes to that key. On it, without asking, you may edit the
-description, transition the status, add the PR link, and set the labels `ticket.js labels`
-prints, since they are computed from text the user approved.
+description, transition the status, add the PR link, assign it to yourself per
+[The pull request](#the-pull-request), and set the labels `ticket.js labels` prints, since
+they are computed from text the user approved.
 
 Everything else needs the user's yes first: creating a ticket, touching any other ticket, and
 touching a ticket known only from a `Refs:` trailer (the SessionStart line says "not
@@ -167,6 +168,24 @@ transitions and pick the one whose name matches.
 Always pass an explicit title that contains the key: the hook checks `--title` and the MCP
 `title`, and denies `gh pr create --fill` or `--web`, whose title it can't see. Then run
 `ticket.js pr '<url>'`.
+
+Once the PR is open, assign it and the linked ticket to the developer the MCP servers
+are signed in as, so the tracker shows who is working on it:
+
+- The PR: with the gh CLI, pass `--assignee @me` to `gh pr create`. With MCP, read your
+  login with `get_me`, then call `issue_write` with `method: update`, `issue_number` set to
+  the PR number and `assignees: [<login>]`. The PR tools take no assignee, and a PR is an
+  issue to GitHub.
+- The ticket, on a confirmed link only: for GitHub Issues, `issue_write` with
+  `assignees: [<login>]` from `get_me`. For Jira, read your `account_id` with
+  `atlassianUserInfo`, then call `editJiraIssue` with
+  `fields: { assignee: { accountId: <account_id> } }`. For Linear (untested), set the
+  assignee on `save_issue`.
+
+Assign only an unassigned ticket or one already yours. If it is assigned to someone else,
+ask the user before changing it. Assignment is best-effort and never blocks the PR: if a
+server has no tool that names the signed-in user, or the tracker refuses the assignee, tell
+the user and carry on.
 
 A PR that finishes the ticket carries the tracker's closing phrase in its body (`Closes #N`,
 `Fixes KEY`). A PR that does not finish it carries `Refs` only (`Refs: #N`, `Refs: KEY`), so
