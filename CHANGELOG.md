@@ -126,6 +126,15 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **docs-warden 0.7.2** -- decide mode checks the kind of change before its three
+  admission questions (#81). A bug fix, a review fix, a refactor, a rename, a wording
+  change, a dependency or test change, a hook, CI, linter or config value, a temporary
+  switch, a rollout plan, or a field or format choice inside one feature never earns a
+  decision record. The proactive offer follows the same rule. Question 3 no longer counts
+  an option weighed only as another way to fix a bug. A record stays `proposed` while its
+  pull request is in review, and review rounds edit it in place, so they no longer produce
+  chains of superseding records. The change to `accepted` is the last edit to the file,
+  made on the human's word. A new eval covers a bug fix stated with rejected options.
 - **fabflows 0.7.0** -- the guard now covers package runners (`npx`, `pnpx`, `bunx`,
   `npm exec`, `bun x`, `pnpm dlx`, `yarn dlx`, `uvx`, `uv tool`, `uv run --with`, `pipx`,
   `npm|yarn|pnpm|bun create`, `npm init <pkg>`), not only installers. An install or runner in

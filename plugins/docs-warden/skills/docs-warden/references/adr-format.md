@@ -9,19 +9,25 @@ itself justify a record.
 The ledger is a log of architecture decisions, not of development history. Git and
 pull requests already hold the history.
 
-A change needs a record when all three hold:
+Check the kind of change first. These never earn a record, whatever else is true:
+a bug fix, a fix for a review finding, a refactor, a rename, a wording change, a
+dependency bump, a test change, a hook, CI, linter or config value (a threshold,
+timeout, toggle or exclusion), a temporary switch with an exit condition, a rollout
+plan, and a field, format or grouping choice inside one feature. Neither does
+anything the pull request description already explains in full. Those are notes,
+and the pull request is where they live.
+
+Any other change needs a record when all three hold:
 
 1. Reversing it would cost more than one pull request.
 2. It constrains work outside the file or component just touched.
 3. A rejected alternative exists that someone could reasonably re-propose later.
+   An option weighed only as another way to fix a bug does not count.
 
 That covers a choice of technology, protocol, or storage; a boundary between
 components; a rule every future change must obey; a gap accepted on purpose for the
-life of the project.
-
-It does not cover bug fixes, refactors, renames, wording, dependency bumps, test
-changes, hook or config tweaks, or anything the pull request description already
-explains in full. Those are notes, and the pull request is where they live.
+life of the project. A CI gate's policy can be such a rule; a threshold or
+toggle in it is a value.
 
 ## Filename
 
@@ -88,7 +94,11 @@ Consequences worth stating plainly:
 
 - A typo in an accepted record stays. Fix it in the superseding record.
 - Marking something `accepted` is a real commitment. Leave it `proposed` while it
-  is still being argued.
+  is still being argued, and while the pull request that implements it is in
+  review. Accepted early, every later review round on that pull request becomes a
+  new superseding record. Make the change to `accepted` the last change to the
+  file, at the end of that pull request once no review ask is open or later in a
+  housekeeping pull request.
 
 ## The index
 
