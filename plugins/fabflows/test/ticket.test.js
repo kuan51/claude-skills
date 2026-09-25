@@ -1190,8 +1190,10 @@ test('trace --out stays out of the main checkout and the git dir', () => {
     // A git dir that is not named .git has no main checkout above it.
     const work = path.join(tmp, 'work');
     const store = path.join(tmp, 'store.git');
-    h.g('init', '-q', '--separate-git-dir', store, work);
-    for (const m of ['a', 'b']) execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', m], { cwd: work });
+    h.g('init', '-q', '-b', 'main', '--separate-git-dir', store, work);
+    const at = '2026-01-02T03:04:05Z';
+    const env = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@example.com', GIT_AUTHOR_DATE: at, GIT_COMMITTER_DATE: at };
+    for (const m of ['a', 'b']) execFileSync('git', ['-c', 'commit.gpgsign=false', 'commit', '-q', '--allow-empty', '-m', m], { cwd: work, env });
     refused(work, path.join(store, 'out'), 'a separate git dir');
   } finally {
     h.r.done();
