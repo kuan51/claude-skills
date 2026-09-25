@@ -57,7 +57,7 @@ test('brainstorming and ticket show the user raw ticket text', () => {
   has(brainstorming, [...review, 'ticket.js status'], 'brainstorming/SKILL.md');
   const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
   has(ticket, review, 'ticket/SKILL.md');
-  const afterMerge = ticket.slice(ticket.indexOf('After a PR merges'));
+  const afterMerge = ticket.slice(ticket.indexOf('## After a PR closes'));
   has(afterMerge, ['Refs-only', 'clear --pr'], 'ticket/SKILL.md after-merge paragraph');
 });
 

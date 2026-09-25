@@ -22,7 +22,7 @@ function hook(payload) {
 }
 const shell = (cwd, command, tool = 'Bash') => hook({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { command }, cwd });
 const after = (cwd, tool, tool_input) => hook({ hook_event_name: 'PostToolUse', tool_name: tool, tool_input, cwd });
-const start = (cwd) => hook({ hook_event_name: 'SessionStart', source: 'startup', cwd }).context;
+const start = (cwd, source = 'startup') => hook({ hook_event_name: 'SessionStart', source, cwd }).context;
 
 // A temporary repo on branch `feature`, with origin/HEAD set or not.
 function repo(originHead = true) {
@@ -475,6 +475,96 @@ test('SessionStart prints one line per case', () => {
       assert.ok(line.includes(s), s);
     }
     assert.ok(!line.includes('close the ticket'), 'no bare close instruction');
+  } finally {
+    r.done();
+  }
+});
+
+// A state file for a branch that need not exist, as `ticket.js link` and `pr` would write it.
+const putState = (r, branch, key, pr = null) => {
+  fs.mkdirSync(path.dirname(r.stateOf(branch)), { recursive: true });
+  fs.writeFileSync(r.stateOf(branch), JSON.stringify({ key, url: URL, tracker: 'jira', branch, specHash: null, pr }) + '\n');
+};
+const SWEEP = /fabflows: (\d+) other linked ticket\(s\) have a recorded PR \(([^)]*)\): run `ticket\.js prs`/;
+
+test('SessionStart at startup sweeps other links with a PR, on the default branch or a detached HEAD', () => {
+  const r = repo();
+  try {
+    putState(r, 'feat-a', 'ABC-11', 'https://github.com/o/r/pull/11');
+    putState(r, 'feat-b', 'ABC-12', 'https://github.com/o/r/pull/12');
+    putState(r, 'feat-c', 'ABC-13');
+    r.git('checkout', '-q', 'main');
+    const onMain = start(r.dir);
+    r.git('checkout', '-q', '--detach');
+    const detached = start(r.dir);
+    for (const text of [onMain, detached]) {
+      const m = SWEEP.exec(text);
+      assert.ok(m, text);
+      assert.equal(m[1], '2');
+      assert.deepEqual(m[2].split(', ').sort(), ['ABC-11', 'ABC-12']);
+      assert.ok(!text.includes('ABC-13') && !text.includes('feat-'), text);
+    }
+    assert.equal(detached, onMain, 'a detached HEAD gets the same line');
+  } finally {
+    r.done();
+  }
+});
+
+test('SessionStart puts the branch line and the sweep line in one output of at most 600', () => {
+  const r = repo();
+  try {
+    assert.equal(cli(r.dir, ['link', 'ABC-1', URL, 'jira']).status, 0);
+    assert.equal(cli(r.dir, ['pr', 'https://github.com/o/r/pull/1']).status, 0);
+    const own = start(r.dir);
+    putState(r, 'feat-other', 'ABC-2', 'https://github.com/o/r/pull/2');
+    const spawned = spawnSync(process.execPath, [TICKET], { input: JSON.stringify({ hook_event_name: 'SessionStart', source: 'startup', cwd: r.dir }), encoding: 'utf8' });
+    const text = JSON.parse(spawned.stdout).hookSpecificOutput.additionalContext;
+    assert.ok(text.length <= 600, text.length);
+    assert.ok(text.startsWith(own + '\n'), 'the branch line first, unchanged');
+    // Here the branch line leaves too little room for the list, so the sweep line is the short one.
+    const sweep = text.slice(own.length + 1);
+    assert.equal(sweep, 'fabflows: 1 other linked tickets have a recorded PR: run `ticket.js prs`.');
+    assert.ok(!sweep.includes('ABC-1'), 'the current key is not swept');
+    assert.ok(!text.includes('feature') && !text.includes('feat-other'), 'no branch name');
+
+    for (const source of ['resume', 'compact']) assert.equal(start(r.dir, source), own, `${source}: no sweep`);
+
+    // 30 other links with long keys: the list stops before 600 and says how many it left out.
+    r.git('checkout', '-q', 'main');
+    for (let i = 0; i < 30; i++) putState(r, `many-${i}`, `LONGPROJECTNAME-1000${i}`, `https://github.com/o/r/pull/${100 + i}`);
+    const many = start(r.dir);
+    assert.ok(many.length <= 600, many.length);
+    assert.match(many, / and \d+ more\): run `ticket\.js prs`/);
+  } finally {
+    r.done();
+  }
+});
+
+test('ticket.js prs prints every link with a PR and no branch; a misnamed state file is ignored', () => {
+  const r = repo();
+  try {
+    const none = cli(r.dir, ['prs']);
+    assert.deepEqual([none.status, none.stdout], [0, ''], 'none: nothing, exit 0');
+    putState(r, 'feat-a', 'ABC-11', 'https://github.com/o/r/pull/11');
+    putState(r, 'feat-c', 'ABC-13');
+    // A valid state under another branch's hash name.
+    const s = { key: 'ABC-14', url: URL, tracker: 'jira', branch: 'feat-x', specHash: null, pr: 'https://github.com/o/r/pull/14' };
+    fs.writeFileSync(r.stateOf('feat-y'), JSON.stringify(s));
+    assert.equal(cli(r.dir, ['link', 'ABC-1', URL, 'jira']).status, 0);
+    assert.equal(cli(r.dir, ['pr', 'https://github.com/o/r/pull/1']).status, 0);
+    const out = cli(r.dir, ['prs']);
+    assert.equal(out.status, 0);
+    const rows = out.stdout.trim().split('\n').map((l) => JSON.parse(l));
+    assert.deepEqual(
+      rows.sort((a, b) => a.key.localeCompare(b.key)),
+      [
+        { key: 'ABC-1', url: URL, tracker: 'jira', pr: 'https://github.com/o/r/pull/1' },
+        { key: 'ABC-11', url: URL, tracker: 'jira', pr: 'https://github.com/o/r/pull/11' },
+      ]
+    );
+    r.git('checkout', '-q', 'main');
+    const text = start(r.dir);
+    assert.ok(SWEEP.exec(text)[2].split(', ').sort().join() === 'ABC-1,ABC-11' && !text.includes('ABC-14'), text);
   } finally {
     r.done();
   }
