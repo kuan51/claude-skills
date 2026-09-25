@@ -225,15 +225,21 @@ const labels = (c) => [
   ...new Set([...c.controls.map((id) => 'ctl-' + id.replace(/\./g, '-')), 'change-' + c.change, 'class-' + c.cls.replace('n/a', 'na')].map((l) => l.toLowerCase())),
 ];
 
-// 'on', 'off' or 'invalid', from .claude/fabflows.json at the top level as SessionStart reads it.
+// 'on', 'off' or 'invalid', from .claude/fabflows.json at the top level as SessionStart reads it:
+// a missing file is off, a file that is not JSON is invalid.
 function complianceMode(cwd) {
   const top = tryGit(['rev-parse', '--show-toplevel'], cwd);
   if (!top) return 'off';
-  let cfg;
+  let raw, cfg;
   try {
-    cfg = JSON.parse(fs.readFileSync(path.join(top, '.claude', 'fabflows.json'), 'utf8'));
+    raw = fs.readFileSync(path.join(top, '.claude', 'fabflows.json'), 'utf8');
   } catch {
     return 'off';
+  }
+  try {
+    cfg = JSON.parse(raw);
+  } catch {
+    return 'invalid';
   }
   if (!cfg || cfg.compliance == null) return 'off';
   const f = cfg.compliance.frameworks;

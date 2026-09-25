@@ -202,6 +202,14 @@ test('with compliance on, approve and fingerprint refuse an unclassified spec', 
         assert.equal(ok.stderr, 'ticket.js: warning: compliance.frameworks in .claude/fabflows.json is invalid, so compliance is off\n');
       }
     }
+    fs.writeFileSync(path.join(r.dir, '.claude', 'fabflows.json'), '{"compliance": ');
+    for (const cmd of ['approve', 'fingerprint']) {
+      const ok = cli(r.dir, [cmd], 'plain spec');
+      assert.equal(ok.status, 0, `${cmd}: a config that is not JSON counts as invalid`);
+      assert.match(ok.stderr, /warning: compliance\.frameworks in \.claude\/fabflows\.json is invalid/, cmd);
+    }
+    fs.rmSync(path.join(r.dir, '.claude', 'fabflows.json'));
+    for (const cmd of ['approve', 'fingerprint']) assert.equal(cli(r.dir, [cmd], 'plain spec').stderr, '', `${cmd}: a missing config is off`);
   } finally {
     r.done();
   }
