@@ -87,8 +87,8 @@ rules after that: the tool table, the ticket body template, what a confirmed lin
 Claude do without asking, and how status moves from in progress to in review to done.
 On Jira it also adds the PR to the ticket's Web links panel, when the MCP server has a tool
 that creates a remote issue link. mcp-atlassian has one in its `jira_links` toolset, which
-is off by default. The Atlassian Rovo server has none, so there Claude gives you the PR URL
-to add by hand.
+`TOOLSETS=default` leaves out. The Atlassian Rovo server has none, so there Claude gives you
+the PR URL to add by hand.
 
 **Hooks.** `hooks/ticket.js` keeps a per-branch link: one state file per branch under
 `fabflows/tickets` in the common git dir (`git rev-parse --git-common-dir`), named by a hash
