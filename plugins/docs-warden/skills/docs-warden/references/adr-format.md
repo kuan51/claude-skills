@@ -92,7 +92,10 @@ Consequences worth stating plainly:
 
 - A typo in an accepted record stays. Fix it in the superseding record.
 - Marking something `accepted` is a real commitment. Leave it `proposed` while it
-  is still being argued.
+  is still being argued, and until review of the pull request that implements it
+  is finished.
+  Accepted early, every later review round on that pull request becomes a new
+  superseding record.
 
 ## The index
 

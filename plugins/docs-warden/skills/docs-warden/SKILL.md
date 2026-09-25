@@ -161,7 +161,9 @@ confirm them. Never scaffold without a yes.
 2. Fill the sections **with the human**, not from assumption. Considered options,
    consequences good and bad, and gaps accepted are the sections that matter most.
    A decision record without rejected alternatives is only a note.
-3. Leave `status: proposed` until they say it is accepted.
+3. Leave `status: proposed` until review of the pull request that implements it is
+   finished and the human says it is accepted. A later review round on that pull
+   request edits the proposed record. It never adds a new one.
 4. Re-run `scripts/adr_index.py`.
 
 If the repo has a monolithic hand-written decision log with `DEC-NNN` entries,
