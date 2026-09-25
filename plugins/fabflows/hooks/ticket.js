@@ -888,7 +888,7 @@ function sweepLine(cwd, room) {
     const line = `fabflows: ${n} other linked ticket(s) have a recorded PR (${list}): run \`ticket.js prs\`, check each PR's state, and follow fabflows:ticket "After a PR closes" for each one merged or closed.`;
     if (line.length <= room) return line;
   }
-  const line = `fabflows: ${n} other linked tickets have a recorded PR: run \`ticket.js prs\`.`;
+  const line = `fabflows: ${n} other linked tickets have a recorded PR: run \`ticket.js prs\` and follow fabflows:ticket "After a PR closes" for each.`;
   return line.length <= room ? line : null;
 }
 

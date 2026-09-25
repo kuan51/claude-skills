@@ -523,7 +523,7 @@ test('SessionStart puts the branch line and the sweep line in one output of at m
     assert.ok(text.startsWith(own + '\n'), 'the branch line first, unchanged');
     // Here the branch line leaves too little room for the list, so the sweep line is the short one.
     const sweep = text.slice(own.length + 1);
-    assert.equal(sweep, 'fabflows: 1 other linked tickets have a recorded PR: run `ticket.js prs`.');
+    assert.equal(sweep, 'fabflows: 1 other linked tickets have a recorded PR: run `ticket.js prs` and follow fabflows:ticket "After a PR closes" for each.');
     assert.ok(!sweep.includes('ABC-1'), 'the current key is not swept');
     assert.ok(!text.includes('feature') && !text.includes('feat-other'), 'no branch name');
 
