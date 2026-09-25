@@ -70,9 +70,9 @@ function backtickRuns(t, from, to) {
   return runs;
 }
 
-// { text, unclosedAt }: unclosedAt is the line of a `<!--` that never closes, which removes
-// everything after it, as a renderer hides it; approve refuses such text.
-function normalizeInfo(text) {
+// { text, unclosedAt, lines }: unclosedAt is the line of a `<!--` that never closes, which
+// removes everything after it, as a renderer hides it; approve refuses such text.
+function scan(text) {
   const t = String(text).replace(/\r\n/g, '\n');
   const strip = (s) => s.replace(INVISIBLE, '');
   let out = '';
@@ -134,19 +134,30 @@ function normalizeInfo(text) {
     i = shut < 0 ? t.length : shut + 3; // an unclosed comment removes the rest
     lineStart = false;
   }
-  // Drop the Links section: from the last Links heading outside a fence to the end.
+  // Drop the Links section: from the last Links heading outside a fence to the end. lines
+  // keeps each line with whether it starts in a fence, so compliance reads fences the same way.
   const inCode = (o) => code.some(([s, e]) => o >= s && o < e);
-  let cut = -1;
+  const lines = [];
+  let cut = -1, cutLine = -1;
   for (let o = 0; o <= out.length; ) {
     const nl = out.indexOf('\n', o);
     const line = out.slice(o, nl < 0 ? out.length : nl);
-    if (LINKS.test(line) && !inCode(o)) cut = o;
+    const inside = inCode(o);
+    if (LINKS.test(line) && !inside) [cut, cutLine] = [o, lines.length];
+    lines.push({ line: line.trimEnd(), code: inside });
     if (nl < 0) break;
     o = nl + 1;
   }
-  if (cut >= 0) out = out.slice(0, cut);
-  return { text: out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd(), unclosedAt };
+  if (cut >= 0) {
+    out = out.slice(0, cut);
+    lines.length = cutLine;
+  }
+  return { text: out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd(), unclosedAt, lines };
 }
+const normalizeInfo = (text) => {
+  const { text: t, unclosedAt } = scan(text);
+  return { text: t, unclosedAt };
+};
 const normalize = (text) => normalizeInfo(text).text;
 const unclosed = (line) => `line ${line}: a <!-- is never closed, so it removes everything after it; close it with --> or put it in code`;
 
@@ -154,8 +165,9 @@ const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 const fingerprint = (text) => 'sha256:' + sha(normalize(text));
 
 // ---------------------------------------------------------------- compliance
-// The Compliance section of normalized text, so it sits inside the fingerprint: the last
-// Compliance heading outside a fence, to the next heading, holding four labelled bullets.
+// The Compliance section of the spec as written, read from its normalized lines so it sits
+// inside the fingerprint: the last Compliance heading outside a fence, to the next heading,
+// holding four labelled bullets.
 const COMPLIANCE = /^ {0,3}(?:#{1,6}[ \t]+Compliance|\*\*Compliance(?::\*\*|\*\*:?))[ \t]*$/;
 const HEADING = /^ {0,3}(?:#{1,6}(?:[ \t]|$)|\*\*[^*]+\*\*:?[ \t]*$)/;
 const CONTROL = /^[a-z][a-z0-9]*(-[a-z0-9.]+)+$/;
@@ -168,28 +180,10 @@ const FIELDS = {
   Traces: [(v) => items(v).every((x) => TRACE.test(x)), 'a comma list of IDs like REQ-AUTH-1'],
 };
 
-// The lines of normalized text, each { line, code }: code is true on a fenced block's lines,
-// found as normalizeInfo finds them.
-function fencedLines(text) {
-  const out = [];
-  let closer = null;
-  for (const line of text.split('\n')) {
-    if (closer) {
-      out.push({ line, code: true });
-      if (closer.test(line)) closer = null;
-      continue;
-    }
-    const f = /^[ \t]*(`{3,}|~{3,})/.exec(line);
-    if (f) closer = new RegExp(`^[ \\t]*${f[1][0]}{${f[1].length},}[ \\t]*$`);
-    out.push({ line, code: Boolean(f) });
-  }
-  return out;
-}
-
 // { controls, change, cls, traces }, or { errors } naming each missing or bad field. Values
 // are never echoed: they are ticket text.
 function compliance(text) {
-  const lines = fencedLines(text);
+  const { lines } = scan(text);
   let at = -1;
   lines.forEach((l, i) => {
     if (!l.code && COMPLIANCE.test(l.line)) at = i;
@@ -421,7 +415,7 @@ function enrichment(file) {
     const body = readSmall(path.join(path.dirname(file), v.bodyFile), 256 * 1024, fs.constants.O_NOFOLLOW);
     if (body === null) continue;
     const text = normalize(body);
-    const c = compliance(text);
+    const c = compliance(body);
     tickets.set(key, { fingerprint: 'sha256:' + sha(text), c, expected: c.errors ? [] : labels(c), labels: v.labels });
   }
   return { prs, tickets };
@@ -521,12 +515,12 @@ function cli(cmd, args) {
     return l;
   };
   const state = ({ key, url, tracker, branch, specHash, pr }) => ({ key, url, tracker, branch, specHash, pr });
-  // With compliance on, refuse normalized text without a valid Compliance section.
-  const gate = (text) => {
+  // With compliance on, refuse a spec (as written) without a valid Compliance section.
+  const gate = (raw) => {
     const mode = complianceMode(cwd);
     if (mode === 'invalid') process.stderr.write('ticket.js: warning: compliance.frameworks in .claude/fabflows.json is invalid, so compliance is off\n');
     if (mode !== 'on') return;
-    const { errors } = compliance(text);
+    const { errors } = compliance(raw);
     if (errors) fail(`compliance is on, so the spec needs a valid Compliance section: ${errors.join('; ')}`);
   };
 
@@ -542,17 +536,19 @@ function cli(cmd, args) {
     writeState(cwd, s);
   } else if (cmd === 'approve') {
     const l = confirmed();
-    const { text, unclosedAt } = normalizeInfo(stdin());
+    const raw = stdin();
+    const { text, unclosedAt } = normalizeInfo(raw);
     if (unclosedAt) fail(`${unclosed(unclosedAt)}, then ask the user to approve again`);
-    gate(text);
+    gate(raw);
     fs.writeFileSync(approvedPath(statePath(cwd, l.branch)), text + '\n');
     writeState(cwd, { ...state(l), specHash: 'sha256:' + sha(text) });
   } else if (cmd === 'fingerprint') {
-    const { text } = normalizeInfo(stdin());
-    gate(text);
+    const raw = stdin();
+    const { text } = normalizeInfo(raw);
+    gate(raw);
     process.stdout.write('sha256:' + sha(text) + '\n');
   } else if (cmd === 'labels') {
-    const c = compliance(normalize(stdin()));
+    const c = compliance(stdin());
     if (c.errors) fail(`no valid Compliance section: ${c.errors.join('; ')}`);
     const out = labels(c);
     if (out.some((l) => l.length > 50)) fail("a control ID makes a label longer than GitHub's 50 characters");

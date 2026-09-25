@@ -215,6 +215,27 @@ test('with compliance on, approve and fingerprint refuse an unclassified spec', 
   }
 });
 
+test('the Compliance section is fenced exactly where the Links cut says', () => {
+  const { compliance, normalize } = require(TICKET);
+  const r = repo();
+  try {
+    fs.mkdirSync(path.join(r.dir, '.claude'));
+    fs.writeFileSync(path.join(r.dir, '.claude', 'fabflows.json'), JSON.stringify({ compliance: { frameworks: ['soc2'] } }));
+    // After a comment, ``` is not at a line start, so it opens no fence.
+    const outside = 'spec\n<!-- x -->```\n## Compliance\n- Controls: none\n- Change: normal\n- Class: A\n## Links\n- x';
+    assert.ok(!normalize(outside).includes('## Links'), 'the cut reads the Links heading as outside a fence');
+    assert.deepEqual(compliance(outside), { controls: [], change: 'normal', cls: 'A', traces: [] });
+    assert.equal(cli(r.dir, ['fingerprint'], outside).status, 0);
+    // A closer ending in U+200B closes nothing: the fence runs to the end.
+    const inside = '```\ncode\n```​\n## Links\n- x\n## Compliance\n- Controls: none\n- Change: normal\n- Class: A';
+    assert.ok(normalize(inside).includes('## Links'), 'the cut reads the Links heading as inside a fence');
+    assert.deepEqual(compliance(inside).errors, ['no Compliance section']);
+    assert.equal(cli(r.dir, ['fingerprint'], inside).status, 1);
+  } finally {
+    r.done();
+  }
+});
+
 test('labels are computed from the Compliance section', () => {
   const r = repo();
   try {
