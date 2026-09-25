@@ -1082,6 +1082,33 @@ test('trace flags a row whose PR merged as another commit', () => {
   }
 });
 
+test("the trace skill's filter prints only each flagged row's SHA, PR, key and flags", () => {
+  const skill = fs.readFileSync(path.join(__dirname, '..', 'skills', 'trace', 'SKILL.md'), 'utf8');
+  const script = /^node -e '([^']+)' "\$HOME\/audit\/<repo>-<date>\/trace\.md"$/m.exec(skill)[1];
+  const h = history();
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-filter-')), 'trace.md');
+  try {
+    h.g('commit', '-q', '--allow-empty', '-m', 'feat: a | b `c`\nsecond line (#12)\n\nbody | `d`\n\nRefs: ABC-9');
+    const { md } = report(h);
+    assert.ok(md.includes('feat: a \\| b \\`c\\` second line (#12)'), 'the subject is in trace.md');
+    fs.writeFileSync(file, md);
+    const rows = JSON.parse(cli(h.r.dir, ['trace', h.from, '--json']).stdout);
+    const lines = execFileSync(process.execPath, ['-e', script, file], { encoding: 'utf8' }).trimEnd().split('\n');
+    assert.equal(lines.length, rows.length, 'every row is flagged not-enriched');
+    const flag = '(no-ticket|no-spec|no-pr|pr-mismatch|spec-changed|no-compliance|label-missing|emergency|no-approval|self-approved|not-enriched)';
+    rows.forEach((r, i) => {
+      const head = `${r.sha.slice(0, 12)} ${r.pr ?? '-'} ${r.keys.join('; ') || '-'} `;
+      assert.ok(lines[i].startsWith(head), `${lines[i]} starts with ${head}`);
+      assert.match(lines[i].slice(head.length), new RegExp(`^${flag}(; ${flag})*$`), lines[i]);
+    });
+    assert.ok(lines[0].startsWith(`${rows[0].sha.slice(0, 12)} 12 ABC-9 `), lines[0]);
+    assert.doesNotMatch(lines.join('\n'), /feat|fix|chore|Merge|second|body|`|\|/, 'no subject or body text');
+  } finally {
+    h.r.done();
+    fs.rmSync(path.dirname(file), { recursive: true, force: true });
+  }
+});
+
 test('trace --enrich ignores every value of the wrong shape', () => {
   const h = history();
   const tweak = (f) => {
