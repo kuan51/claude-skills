@@ -816,7 +816,7 @@ test('trace refuses option-like refs and warns on shallow or unrelated ranges', 
   const { r, g, from } = history();
   const clone = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-shallow-'));
   try {
-    for (const args of [['--output=x', '--json'], [from, '--output=x', '--json'], ['nope', '--json'], [from]]) {
+    for (const args of [['--output=x', '--json'], [from, '--output=x', '--json'], ['nope', '--json'], [from], [from, '--enrich', 'e.json', '--json']]) {
       const bad = cli(r.dir, ['trace', ...args]);
       assert.equal(bad.status, 1, args.join(' '));
       assert.equal(bad.stdout, '', args.join(' '));
@@ -831,9 +831,34 @@ test('trace refuses option-like refs and warns on shallow or unrelated ranges', 
     assert.equal(shallow.status, 0, shallow.stderr);
     assert.match(shallow.stderr, /warning: this is a shallow clone/);
     assert.equal(JSON.parse(shallow.stdout).length, 1);
+    const past = cli(clone, ['trace', from, '--json']);
+    assert.equal(past.status, 1);
+    assert.match(past.stderr, /warning: this is a shallow clone[^]*the from ref is not a commit/, 'the warning comes first');
   } finally {
     r.done();
     fs.rmSync(clone, { recursive: true, force: true });
+  }
+});
+
+test('trace <to> defaults to origin/HEAD, else main, else master', () => {
+  const h = history();
+  const shas = () => JSON.parse(cli(h.r.dir, ['trace', h.from, '--json']).stdout).map((r) => r.sha);
+  try {
+    h.g('checkout', '-q', 'f1');
+    assert.equal(shas().length, 7, 'main, not HEAD');
+    h.g('update-ref', 'refs/remotes/origin/main', h.sha['feat: y (#12)']);
+    h.g('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
+    assert.equal(shas()[0], h.sha['feat: y (#12)'], 'origin/HEAD first');
+    h.g('symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+    h.g('branch', '-m', 'main', 'master');
+    assert.equal(shas().length, 7, 'master');
+    h.g('branch', '-m', 'master', 'trunk');
+    const none = cli(h.r.dir, ['trace', h.from, '--json']);
+    assert.equal(none.status, 1);
+    assert.equal(none.stdout, '');
+    assert.match(none.stderr, /no <to> given and no origin\/HEAD, main or master/);
+  } finally {
+    h.r.done();
   }
 });
 

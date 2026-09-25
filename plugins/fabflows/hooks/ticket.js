@@ -13,7 +13,8 @@
 //   pr <url>                     record the pull request
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
-//   trace <from> [<to>] --json   print each first-parent commit's PR, keys and specs
+//   trace <from> [<to>] --json   print each first-parent commit's PR, keys and specs; <to>
+//                                defaults to origin/HEAD, else main, else master
 //   trace <from> [<to>] [--enrich <file>] --out <dir>
 //                                write trace.md and trace.csv with PR, ticket and flag columns
 //
@@ -597,8 +598,15 @@ function cli(cmd, args) {
       else refs.push(args[i]);
     }
     const usage = 'usage: trace <from> [<to>] --json, or trace <from> [<to>] [--enrich <file>] --out <dir>';
-    if (refs.length < 1 || refs.length > 2 || !(o.json || o.out) || ('enrich' in o && !o.enrich) || ('out' in o && !o.out)) fail(usage);
-    const [from, to] = [refs[0], refs[1] || 'HEAD'].map((ref, n) => {
+    if (refs.length < 1 || refs.length > 2 || !(o.json || o.out) || ('enrich' in o && !(o.enrich && o.out)) || ('out' in o && !o.out)) fail(usage);
+    // Before the refs, so a ref past the shallow cut fails after the warning that explains it.
+    if (traceGit(['rev-parse', '--is-shallow-repository'], cwd).trim() === 'true') {
+      process.stderr.write('ticket.js: warning: this is a shallow clone, so history may be missing\n');
+    }
+    // <to> defaults to the default branch, as SessionStart finds it.
+    const def = refs[1] || ['refs/remotes/origin/HEAD', 'main', 'master'].find((b) => tryGit(['rev-parse', '--verify', '-q', b + '^{commit}'], cwd));
+    if (!def) fail('no <to> given and no origin/HEAD, main or master to default to; pass <to>');
+    const [from, to] = [refs[0], def].map((ref, n) => {
       const which = n ? 'to' : 'from';
       if (ref.startsWith('-')) fail(`the ${which} ref may not start with -`);
       try {
@@ -607,9 +615,6 @@ function cli(cmd, args) {
         return fail(`the ${which} ref is not a commit`);
       }
     });
-    if (traceGit(['rev-parse', '--is-shallow-repository'], cwd).trim() === 'true') {
-      process.stderr.write('ticket.js: warning: this is a shallow clone, so history may be missing\n');
-    }
     try {
       traceGit(['merge-base', '--is-ancestor', from, to], cwd);
     } catch {
