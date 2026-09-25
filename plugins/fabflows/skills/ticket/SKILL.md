@@ -184,7 +184,7 @@ was Refs-only, leave the ticket open.
 On Jira, the PR also goes in the ticket's Web links panel. That panel is a remote issue link,
 a different API from the description. Do this only on a confirmed link (see Permission), and
 only once, right after the PR is created, never after a later push. The reminder after a PR
-is created names the web link; the one after a push does not.
+is created names the web link. The one after a push does not.
 
 1. Read the ticket's remote links with the Web link read tool from the tool table. If the PR
    URL is there, skip steps 2 and 3. If no tool can read them, go on.
