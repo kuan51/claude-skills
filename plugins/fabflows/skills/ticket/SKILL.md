@@ -31,8 +31,9 @@ Other tracker: find the equivalent tools with ToolSearch and tell the user they 
 
 Standing permission covers only a **confirmed** link: the one `ticket.js link` recorded for
 this branch after the user said yes to that key. On it, without asking, you may edit the
-description, transition the status, add the PR link, and set the labels `ticket.js labels`
-prints, since they are computed from text the user approved.
+description, transition the status, add the PR link (in Links and, on Jira, as a web link),
+and set the labels `ticket.js labels` prints, since they are computed from text the user
+approved.
 
 Everything else needs the user's yes first: creating a ticket, touching any other ticket, and
 touching a ticket known only from a `Refs:` trailer (the SessionStart line says "not
@@ -177,3 +178,21 @@ read the ticket. If the PR carried a closing phrase for the key, confirm the tic
 transition it to done yourself if not. Post the close comment if the outcome differs from the
 spec. Then run `ticket.js clear --pr '<url>'`, whether or not the tracker closed it. If the PR
 was Refs-only, leave the ticket open.
+
+## Web link
+
+On Jira, the PR also goes in the ticket's Web links panel. That panel is a remote issue link,
+a different API from the description. After the PR opens:
+
+1. Read the links with `getJiraIssueRemoteIssueLinks` or the server's equivalent. If the PR
+   URL is there, stop.
+2. Find a tool that creates one with ToolSearch, such as `jira_create_remote_issue_link` on
+   the community mcp-atlassian server. Pass the PR URL and the PR title, and `globalId` set
+   to the PR URL when the tool takes one. Read the links again to confirm it is there.
+3. No tool creates one (the Atlassian Rovo server has none): tell the user once to add it
+   by hand, Link → Web link on the ticket, with the PR URL. Then go on. Claude must
+   never ask for, read or use an API token to work around this.
+
+GitHub Issues needs no web link: the PR's closing phrase or `Refs` line links it. The key in
+the PR title also lets the GitHub for Jira app list the PR in the Development panel, which
+is not a web link.
