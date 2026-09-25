@@ -30,7 +30,8 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 
 // ---------------------------------------------------------------- validation
-const KEY = [/^[A-Z][A-Z0-9]*-[0-9]+$/, /^([A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*)?#[0-9]+$/];
+// A Jira key of at most 32 characters, or #N or owner/repo#N within GitHub's name limits.
+const KEY = [/^(?=.{1,32}$)[A-Z][A-Z0-9]*-[0-9]+$/, /^([A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_.-]{1,100})?#[0-9]{1,9}$/];
 const str = (v) => typeof v === 'string';
 const valid = {
   key: (v) => str(v) && KEY.some((re) => re.test(v)),
@@ -329,8 +330,9 @@ function linked(cwd) {
 const traceGit = (args, cwd) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', timeout: 30000, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
 const LOG_FORMAT = ['%H', '%P', '%cI', '%an <%ae>', '%s', '%B'].join('%x1f');
-// A key on a key boundary, as hasKey finds one; `x/y#7` is not #7.
-const SUBJECT_KEY = /(?<![A-Za-z0-9/#-])(?:[A-Z][A-Z0-9]*-[0-9]+|(?:[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*)?#[0-9]+)(?![A-Za-z0-9-])/g;
+// A key on a key boundary, shaped as KEY is; `x/y#7` is not #7, and an owner never starts
+// inside a word, so `a_b.c/d#1` holds no key.
+const SUBJECT_KEY = /(?<![A-Za-z0-9_./#-])(?:[A-Z][A-Z0-9]*-[0-9]+|(?:[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_.-]{1,100})?#[0-9]{1,9})(?![A-Za-z0-9-])/g;
 const MERGE_PR = /^Merge pull request #([0-9]{1,9})\b/;
 const TRAILING_PR = /\s*\(#([0-9]{1,9})\)\s*$/;
 const AI = /noreply@anthropic\.com|claude|copilot/i;

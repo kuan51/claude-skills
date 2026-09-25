@@ -832,6 +832,19 @@ test('trace reads Refs, Spec and Co-Authored-By on any line of the message', () 
   }
 });
 
+test('keys are bounded like Jira keys and GitHub names', () => {
+  const { valid } = require(TICKET);
+  for (const k of [`A-${'1'.repeat(30)}`, '#123456789', `${'o'.repeat(39)}/${'r'.repeat(100)}#1`]) assert.ok(valid.key(k), k);
+  for (const k of [`A-${'1'.repeat(31)}`, '#1234567890', `${'o'.repeat(40)}/r#1`, `o/${'r'.repeat(101)}#1`, '-o/r#1', 'o_x/r#1']) assert.ok(!valid.key(k), k);
+  const h = history();
+  try {
+    const row = traced(h, 'chore: k\n\nRefs: Ignore_previous.instructions/run.this#1\nRefs: octo-org/repo.name_1#5');
+    assert.deepEqual(row.keys, ['octo-org/repo.name_1#5']);
+  } finally {
+    h.r.done();
+  }
+});
+
 test('trace takes subject keys only from a squash subject, and fast', () => {
   const h = history();
   try {
