@@ -199,7 +199,10 @@ const SECRET_PATH =
 // edit in most repos. Blocking them would be a false positive on nearly every project.
 const SECRET_EXEMPT = /\.env\.(example|sample|template|dist)\b/i;
 
-const isSecretPath = (p) => !!p && !SECRET_EXEMPT.test(p) && SECRET_PATH.test(p);
+// Doubled separators and `./` segments (`.aws//credentials`, `.aws/./credentials`) name the
+// same file, so they are collapsed before matching.
+const tidyPath = (p) => p.replace(/[\\/]+/g, '/').replace(/\/\.(?=\/)/g, '');
+const isSecretPath = (p) => !!p && !SECRET_EXEMPT.test(p) && SECRET_PATH.test(tidyPath(p));
 
 // A bare `.ssh` or `.aws` directory handed to Read or Grep, whatever trailing `/`, `//` or
 // `/.` follows it. `([\\/]\.?)*` matches the same strings as `([\\/]+\.?)*` without the

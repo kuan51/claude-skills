@@ -893,3 +893,14 @@ test('a quoted chmod mode is still read as a mode', () => {
     allows(shell(cmd), cmd);
   }
 });
+
+test('doubled separators and ./ segments do not hide a credential path', () => {
+  for (const p of ['/root/.aws//credentials', '/root/.aws/./credentials', '/root/.aws/.//credentials', 'C:\\Users\\a\\.aws\\\\credentials']) {
+    denies(read(p), `Read of ${p}`);
+    denies(write(p), `Write to ${p}`);
+    denies(shell(`cat ${p}`), `cat ${p}`);
+  }
+  for (const p of ['/root/.aws//config', 'src/./app.ts', 'a//b.md']) {
+    allows(read(p), `Read of ${p}`);
+  }
+});

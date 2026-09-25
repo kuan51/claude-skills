@@ -166,7 +166,9 @@ per-plugin history until entries are recorded here going forward.
   world write, so a flag (`chmod -R 777 .`) no longer hides the mode and symbolic modes
   (`o+w`, `a+rwx`, `o=u`) count; a runner file carrying either is blocked too. A `Grep`
   whose `glob` can match a sample secret name (`.env`, `*.pem`, `.*`) is denied, and so is a
-  `Read` or `Grep` of a bare `~/.ssh` or `~/.aws` directory. System directories, other
+  `Read` or `Grep` of a bare `~/.ssh` or `~/.aws` directory. A quoted mode (`'o+w'`) and a
+  credential path with doubled separators or `./` segments (`.aws//credentials`) are caught
+  too. System directories, other
   octal world-write modes and secret names outside the sample list stay known gaps.
 - **fabflows 0.7.1** -- the guard stops blocking about twenty everyday commands its README
   never claimed to block, and each narrowed rule keeps a test that the nearby real threat is
