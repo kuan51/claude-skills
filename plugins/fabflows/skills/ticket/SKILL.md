@@ -108,8 +108,8 @@ auditor's record of what the change touches and how risky it is. With compliance
 After writing the section, write the ticket text to a scratch file with the Write tool and
 run `ticket.js labels < <file>`. Set the labels it prints with the tracker's label tools,
 Jira `editJiraIssue` with `fields: { labels: [...] }` (confirmed from the tool schema),
-GitHub `issue_write` with `labels`, which replaces the whole list (inferred from the REST
-API), Linear untested. Pass the ticket's other labels too. When replacing labels, remove
+GitHub `issue_write` with `labels`, which replaces the whole list (confirmed by a live
+test), Linear untested. Pass the ticket's other labels too. When replacing labels, remove
 only fabflows' own: any `ctl-` label, `change-normal`, `change-standard`,
 `change-emergency`, `class-a`, `class-b`, `class-c` and `class-na`. Keep every other label.
 Labels are a best-effort copy of the section: a label Claude cannot set (the tracker rejects

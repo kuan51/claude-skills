@@ -181,6 +181,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.9.1** -- the trace report closes the known gaps from 0.9.0 (#78).
+  `self-approved` ignores case, since GitHub logins do. A merge row's author column names the
+  merge's author and every author and co-author of the commits it brought in. `trace` no
+  longer needs git 2.31 or 2.33 and runs on git 2.24 or later. A test runs the trace skill's
+  row filter, word for word, on a real report. `fabflows-setup` refuses **None** picked
+  together with a framework, and the ticket skill's claim that GitHub's `issue_write`
+  `labels` replaces the whole list is now confirmed by a live test.
 - **fabflows 0.8.1** -- the guard closes three misses against rules its README already
   states. A recursive delete of a root followed by a glob (`rm -rf /*`, `'/'`, `/?*`,
   `C:\*`) is blocked as the root itself. `chmod` is blocked when its mode grants world

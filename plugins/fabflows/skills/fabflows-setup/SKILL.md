@@ -59,7 +59,8 @@ repository?" It has four options: **SOC 2** (`soc2`), **ISO 27001** (`iso27001`)
 **IEC 62304** (`iec62304`) and **None**. The built-in "Other" answer takes free text:
 lowercased, with spaces turned into `-`, and it must match `^[a-z0-9-]{1,30}$`. Ask again
 for a value that does not. A typed `none` under Other, in any case, is refused and never
-written as a framework: ask again, and point at the **None** option.
+written as a framework: ask again, and point at the **None** option. Picking
+**None** together with any framework is refused the same way: write nothing, and ask again.
 
 The chosen values go into `compliance.frameworks`. **None** leaves compliance off: write no
 `compliance` key. With compliance on, every ticket spec

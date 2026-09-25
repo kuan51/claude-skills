@@ -368,7 +368,7 @@ function traceRows(from, to, cwd) {
     // Every commit a merge brought in, from each parent after the first.
     const merged =
       c.parents.length > 1 && HEX.test(c.sha)
-        ? records(traceGit(['rev-list', '--no-commit-header', `--format=${LOG_FORMAT}%x00`, `${c.sha}^1..${c.sha}`], cwd)).filter((m) => m.sha !== c.sha)
+        ? records(traceGit(['log', '--no-show-signature', '-z', `--format=${LOG_FORMAT}`, `${c.sha}^1..${c.sha}`], cwd)).filter((m) => m.sha !== c.sha)
         : [];
     const own = c.refs.filter(valid.key);
     const brought = merged.flatMap((m) => m.refs).filter(valid.key);
@@ -388,7 +388,7 @@ function traceRows(from, to, cwd) {
       ai: [c, ...merged].some((m) => [m.author, ...m.co].some(isAI)),
       // Free text, for the report files only.
       subject: c.subject,
-      authors: [c.author, ...c.co],
+      authors: uniq([c, ...merged].flatMap((m) => [m.author, ...m.co])),
     };
   });
 }
@@ -467,7 +467,7 @@ function reportRows(rows, en, on) {
     if (known.some((t) => t.expected.some((l) => !t.labels.some((have) => have.toLowerCase() === l)))) flags.add('label-missing');
     if (known.some((t) => t.c.change === 'emergency')) flags.add('emergency');
     if (pr && !pr.approvers.length) flags.add('no-approval');
-    if (pr && pr.approvers.includes(pr.author)) flags.add('self-approved');
+    if (pr && pr.approvers.some((a) => a.toLowerCase() === pr.author.toLowerCase())) flags.add('self-approved');
     if (!en || (row.pr !== null && !pr) || known.length < found.length) flags.add('not-enriched');
     return [
       `${row.sha} ${row.subject}`,
@@ -517,7 +517,7 @@ function realOut(p) {
 // returns the summary line. The repo is this checkout, the main checkout when this is a
 // linked worktree, and the common git dir.
 function writeReport(out, from, to, cells, cwd) {
-  const common = traceGit(['rev-parse', '--path-format=absolute', '--git-common-dir'], cwd).trim();
+  const common = path.resolve(cwd, traceGit(['rev-parse', '--git-common-dir'], cwd).trim());
   const top = traceGit(['rev-parse', '--show-toplevel'], cwd).trim();
   const roots = [top, path.basename(common) === '.git' ? path.dirname(common) : null, common].filter(Boolean).map((r) => fs.realpathSync(r));
   const fold = process.platform === 'darwin' || process.platform === 'win32' ? (s) => s.toLowerCase() : (s) => s;

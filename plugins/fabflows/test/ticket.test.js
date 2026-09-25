@@ -1023,7 +1023,7 @@ test('trace --out writes the report and raises each flag in its own case', () =>
     assert.ok(plain.rows.slice(1).every((r) => r[17].split('; ').includes('not-enriched')), 'no --enrich');
     assert.ok(plain.md.includes('feat: z (#66) (#67)'), 'a subject is in trace.md');
     assert.match(plain.row('fix: w')[2], /^Copilot <copilot@example.com>$/);
-    assert.match(plain.row(MERGE5)[2], /^Dev <dev@example.com>$/, 'the merge author; its branch co-author sets AI');
+    assert.equal(plain.row(MERGE5)[2], 'Dev <dev@example.com>; Claude <noreply@anthropic.com>', 'the merge author and its branch authors, once each');
     assert.equal(plain.row(MERGE5)[3], 'yes');
 
     const base = report(h, clean(), FILES);
@@ -1050,6 +1050,8 @@ test('trace --out writes the report and raises each flag in its own case', () =>
     const self = clean();
     self.prs[5].approvers = ['bob', 'alice'];
     assert.deepEqual(report(h, self, FILES).flags(MERGE5), ['self-approved']);
+    self.prs[5].approvers = ['bob', 'Alice'];
+    assert.deepEqual(report(h, self, FILES).flags(MERGE5), ['self-approved'], 'GitHub logins ignore case');
     const urgent = { ...FILES, 'abc7.md': '## Compliance\n- Controls: none\n- Change: emergency\n- Class: C' };
     const em = clean();
     em.tickets['ABC-7'].labels = ['change-emergency', 'class-c'];
@@ -1077,6 +1079,33 @@ test('trace flags a row whose PR merged as another commit', () => {
     assert.match(out.stdout, /no-pr [0-9]+, pr-mismatch 1, spec-changed/, 'the summary lists it after no-pr');
   } finally {
     h.r.done();
+  }
+});
+
+test("the trace skill's filter prints only each flagged row's SHA, PR, key and flags", () => {
+  const skill = fs.readFileSync(path.join(__dirname, '..', 'skills', 'trace', 'SKILL.md'), 'utf8');
+  const script = /^node -e '([^']+)' "\$HOME\/audit\/<repo>-<date>\/trace\.md"$/m.exec(skill)[1];
+  const h = history();
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-filter-')), 'trace.md');
+  try {
+    h.g('commit', '-q', '--allow-empty', '-m', 'feat: a | b `c`\nsecond line (#12)\n\nbody | `d`\n\nRefs: ABC-9');
+    const { md } = report(h);
+    assert.ok(md.includes('feat: a \\| b \\`c\\` second line (#12)'), 'the subject is in trace.md');
+    fs.writeFileSync(file, md);
+    const rows = JSON.parse(cli(h.r.dir, ['trace', h.from, '--json']).stdout);
+    const lines = execFileSync(process.execPath, ['-e', script, file], { encoding: 'utf8' }).trimEnd().split('\n');
+    assert.equal(lines.length, rows.length, 'every row is flagged not-enriched');
+    const flag = '(no-ticket|no-spec|no-pr|pr-mismatch|spec-changed|no-compliance|label-missing|emergency|no-approval|self-approved|not-enriched)';
+    rows.forEach((r, i) => {
+      const head = `${r.sha.slice(0, 12)} ${r.pr ?? '-'} ${r.keys.join('; ') || '-'} `;
+      assert.ok(lines[i].startsWith(head), `${lines[i]} starts with ${head}`);
+      assert.match(lines[i].slice(head.length), new RegExp(`^${flag}(; ${flag})*$`), lines[i]);
+    });
+    assert.ok(lines[0].startsWith(`${rows[0].sha.slice(0, 12)} 12 ABC-9 `), lines[0]);
+    assert.doesNotMatch(lines.join('\n'), /feat|fix|chore|Merge|second|body|`|\|/, 'no subject or body text');
+  } finally {
+    h.r.done();
+    fs.rmSync(path.dirname(file), { recursive: true, force: true });
   }
 });
 

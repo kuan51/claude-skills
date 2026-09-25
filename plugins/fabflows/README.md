@@ -193,6 +193,7 @@ do reach Claude through the GitHub tools, the same accepted path as ticket bodie
   each commit's `Spec:` with the ticket as it is now.
 - The report is no proof of review quality. It shows that an approval happened, not that
   the review was careful.
+- `trace` needs git 2.24 or later, for `--end-of-options`.
 
 ## The build loop
 
