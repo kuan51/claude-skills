@@ -1152,11 +1152,44 @@ test('trace --out writes only outside the repo, never over a file', () => {
       assert.equal(res[name === 'trace.md' ? 'md' : 'csv'], 'old', `${name} is untouched`);
       assert.equal(res[name === 'trace.md' ? 'csv' : 'md'], null, 'and the other is not written');
     }
+    for (const rel of ['out', '~/x']) {
+      const res = cli(h.r.dir, ['trace', h.from, '--out', rel]);
+      assert.equal(res.status, 1, rel);
+      assert.match(res.stderr, /--out must be an absolute path/, rel);
+      assert.ok(!fs.existsSync(path.join(h.r.dir, rel.split('/')[0])), `${rel}: nothing written`);
+    }
+
     const nested = report(h, null, {}, (tmp) => path.join(tmp, 'a', 'b', 'c'));
     assert.equal(nested.status, 0, nested.stderr);
     assert.ok(nested.md && nested.csv, 'a missing --out directory is created');
   } finally {
     h.r.done();
+  }
+});
+
+test('trace --out stays out of the main checkout and the git dir', () => {
+  const h = history();
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-wt-'));
+  const refused = (cwd, out, what) => {
+    const res = cli(cwd, ['trace', 'HEAD~1', '--out', out]);
+    assert.equal(res.status, 1, what);
+    assert.match(res.stderr, /--out must be outside the repository/, what);
+    assert.ok(!fs.existsSync(out), `${what}: nothing written`);
+  };
+  try {
+    const wt = path.join(tmp, 'wt');
+    h.g('worktree', 'add', '-q', wt, 'f1');
+    refused(wt, path.join(h.r.dir, 'out'), 'the main checkout, from a linked worktree');
+    refused(wt, path.join(h.r.dir, '.git', 'out'), 'the common git dir, from a linked worktree');
+    // A git dir that is not named .git has no main checkout above it.
+    const work = path.join(tmp, 'work');
+    const store = path.join(tmp, 'store.git');
+    h.g('init', '-q', '--separate-git-dir', store, work);
+    for (const m of ['a', 'b']) execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', m], { cwd: work });
+    refused(work, path.join(store, 'out'), 'a separate git dir');
+  } finally {
+    h.r.done();
+    fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
 

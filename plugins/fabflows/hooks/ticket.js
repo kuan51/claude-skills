@@ -501,6 +501,7 @@ function realOut(p) {
     try {
       return path.join(fs.realpathSync(p), ...rest);
     } catch {
+      if (path.dirname(p) === p) throw new Error('--out has no existing parent directory');
       rest.unshift(path.basename(p));
       p = path.dirname(p);
     }
@@ -508,12 +509,19 @@ function realOut(p) {
 }
 
 // Writes <out>/trace.md and <out>/trace.csv, outside the repo and never over a file, and
-// returns the summary line.
+// returns the summary line. The repo is this checkout, the main checkout when this is a
+// linked worktree, and the common git dir.
 function writeReport(out, from, to, cells, cwd) {
-  const top = fs.realpathSync(traceGit(['rev-parse', '--show-toplevel'], cwd).trim());
+  const common = traceGit(['rev-parse', '--path-format=absolute', '--git-common-dir'], cwd).trim();
+  const top = traceGit(['rev-parse', '--show-toplevel'], cwd).trim();
+  const roots = [top, path.basename(common) === '.git' ? path.dirname(common) : null, common].filter(Boolean).map((r) => fs.realpathSync(r));
+  const fold = process.platform === 'darwin' || process.platform === 'win32' ? (s) => s.toLowerCase() : (s) => s;
   const dir = realOut(out);
-  const rel = path.relative(top, dir);
-  if (!(rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel))) throw new Error('--out must be outside the repository');
+  const inside = (root) => {
+    const rel = path.relative(fold(root), fold(dir));
+    return !(rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel));
+  };
+  if (roots.some(inside)) throw new Error('--out must be outside the repository');
   fs.mkdirSync(dir, { recursive: true });
   const [mdFile, csvFile] = ['trace.md', 'trace.csv'].map((n) => path.join(dir, n));
   for (const f of [mdFile, csvFile]) {
@@ -623,6 +631,7 @@ function cli(cmd, args) {
     }
     const usage = 'usage: trace <from> [<to>] --json, or trace <from> [<to>] [--enrich <file>] --out <dir>';
     if (refs.length < 1 || refs.length > 2 || !(o.json || o.out) || ('enrich' in o && !(o.enrich && o.out)) || ('out' in o && !o.out)) fail(usage);
+    if (o.out && !path.isAbsolute(o.out)) fail('--out must be an absolute path; a quoted ~ is not expanded');
     // Before the refs, so a ref past the shallow cut fails after the warning that explains it.
     if (traceGit(['rev-parse', '--is-shallow-repository'], cwd).trim() === 'true') {
       process.stderr.write('ticket.js: warning: this is a shallow clone, so history may be missing\n');
