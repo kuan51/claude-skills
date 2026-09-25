@@ -832,6 +832,18 @@ test('trace reads Refs, Spec and Co-Authored-By on any line of the message', () 
   }
 });
 
+test('trace marks AI by exact name or address, not a substring', () => {
+  const h = history();
+  try {
+    assert.equal(traced(h, 'chore: paint', '--author', 'Claude Monet <claude.monet@example.fr>').ai, false, 'a painter named Claude');
+    assert.equal(traced(h, 'chore: m\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>').ai, true, 'the Anthropic address');
+    assert.equal(traced(h, 'chore: n\n\nCo-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>').ai, true, 'the Copilot address');
+    assert.equal(traced(h, 'chore: o', '--author', 'copilot[bot] <bot@example.com>').ai, true, 'copilot[bot]');
+  } finally {
+    h.r.done();
+  }
+});
+
 test('keys are bounded like Jira keys and GitHub names', () => {
   const { valid } = require(TICKET);
   for (const k of [`A-${'1'.repeat(30)}`, '#123456789', `${'o'.repeat(39)}/${'r'.repeat(100)}#1`]) assert.ok(valid.key(k), k);

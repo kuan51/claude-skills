@@ -335,7 +335,13 @@ const LOG_FORMAT = ['%H', '%P', '%cI', '%an <%ae>', '%s', '%B'].join('%x1f');
 const SUBJECT_KEY = /(?<![A-Za-z0-9_./#-])(?:[A-Z][A-Z0-9]*-[0-9]+|(?:[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_.-]{1,100})?#[0-9]{1,9})(?![A-Za-z0-9-])/g;
 const MERGE_PR = /^Merge pull request #([0-9]{1,9})\b/;
 const TRAILING_PR = /\s*\(#([0-9]{1,9})\)\s*$/;
-const AI = /noreply@anthropic\.com|claude|copilot/i;
+// An AI author or co-author: Claude's or Copilot's address, or exactly their name.
+function isAI(v) {
+  const s = v.trim();
+  const lt = s.lastIndexOf('<');
+  const [name, email] = lt >= 0 && s.endsWith('>') ? [s.slice(0, lt).trim(), s.slice(lt + 1, -1).trim().toLowerCase()] : [s, ''];
+  return email === 'noreply@anthropic.com' || email.endsWith('+copilot@users.noreply.github.com') || /^(claude|copilot|copilot\[bot\])$/i.test(name);
+}
 const uniq = (a) => [...new Set(a)];
 const HEX = /^[0-9a-f]{40,64}$/;
 
@@ -378,7 +384,7 @@ function traceRows(from, to, cwd) {
       keys: uniq([...own, ...brought, ...subject]),
       keySource: own.length ? 'commit' : brought.length ? 'merged' : subject.length ? 'subject' : 'none',
       specs: uniq([c, ...merged].flatMap((m) => m.specs).filter(valid.specHash)),
-      ai: [c, ...merged].some((m) => [m.author, ...m.co].some((v) => AI.test(v))),
+      ai: [c, ...merged].some((m) => [m.author, ...m.co].some(isAI)),
       // Free text, for the report files only.
       subject: c.subject,
       authors: [c.author, ...c.co],
