@@ -13,7 +13,8 @@ per-plugin history until entries are recorded here going forward.
   (`get_me` for GitHub, `atlassianUserInfo` for Jira through Atlassian Rovo, untested for
   mcp-atlassian and Linear). It reads the current assignee first and adds the user rather
   than replacing the list. A ticket held by someone else changes only after the user says
-  yes, and a failed assignment never blocks the PR.
+  yes, and a failed assignment never blocks the PR. The PR-created reminder from `ticket.js`
+  now names assignees.
 - **fabflows 0.10.0** -- a PR opened on a Jira-linked branch also goes in the ticket's Web
   links panel (#82). That panel is a remote issue link, a separate API from the description.
   Once per PR, right after it is created, `fabflows:ticket` reads the ticket's remote links
