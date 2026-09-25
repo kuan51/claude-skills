@@ -618,9 +618,9 @@ function cli(cmd, args) {
       const en = o.enrich ? enrichment(path.resolve(o.enrich)) : null;
       if (o.enrich && !en) process.stderr.write('ticket.js: warning: the enrichment file is unreadable, over 1 MB or not a JSON object, so no row is enriched\n');
       process.stdout.write(writeReport(path.resolve(o.out), from, to, reportRows(rows, en, complianceMode(cwd) === 'on'), cwd) + '\n');
-      process.exit(0);
+    } else {
+      process.stdout.write(JSON.stringify(rows.map(({ sha, date, pr, keys, keySource, specs, ai }) => ({ sha, date, pr, keys, keySource, specs, ai }))) + '\n');
     }
-    process.stdout.write(JSON.stringify(rows.map(({ sha, date, pr, keys, keySource, specs, ai }) => ({ sha, date, pr, keys, keySource, specs, ai }))) + '\n');
   } else {
     fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status, clear or trace`);
   }
