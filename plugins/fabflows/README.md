@@ -166,28 +166,22 @@ approve` refuses a spec without a valid one.
 `change-normal`, `class-b` (`n/a` becomes `na`). Claude sets them with the tracker's MCP
 tools. The section is the record, and the labels are a copy for filtering.
 
-**The trace report.** `/fabflows:trace` asks for a range (the newest tag to `HEAD` by
-default) and an output directory outside the repo. It runs `ticket.js trace`, adds each
-PR's author and approvers from GitHub and each ticket's body and labels from the tracker,
-and writes `trace.md` and `trace.csv`. It is never committed. The columns are commit,
-date, author, AI, PR, PR author, approvers, tickets, key source, spec hashes, ticket
-fingerprints, controls, change, class, traces, expected labels, actual labels and flags.
+**The trace report.** `/fabflows:trace` asks for a range (the newest tag on the default
+branch to its tip by default) and an output directory. `ticket.js trace` defaults `<to>` to
+`origin/HEAD`, else `main`, `master`, `origin/main` or `origin/master`. `--out` must be an
+absolute path outside the checkout, the main worktree and the git dir. The skill runs
+`ticket.js trace`, adds each PR's author, approvers and merge commit (`mergeCommit`) from
+GitHub and each ticket's body and labels from the tracker, and writes `trace.md` and
+`trace.csv`. It is never committed. The columns are commit, date, author, AI, PR, PR
+author, approvers, tickets, key source, spec hashes, ticket fingerprints, controls, change,
+class, traces, expected labels, actual labels and flags. A PR whose `mergeCommit` is not the
+row's commit is flagged `pr-mismatch`. Each flag is defined once, in the
+[trace skill's flag table](skills/trace/SKILL.md#flags).
 
-| Flag | Meaning |
-| --- | --- |
-| `no-ticket` | the commit names no ticket key |
-| `no-spec` | the commit has no `Spec:` trailer |
-| `no-pr` | no pull request was found for the commit |
-| `spec-changed` | the ticket's current fingerprint differs from the commit's `Spec:` |
-| `no-compliance` | compliance is on and the ticket has no valid Compliance section |
-| `label-missing` | a label the Compliance section implies is missing from the ticket |
-| `emergency` | the change is an emergency change |
-| `no-approval` | the PR has no approving review |
-| `self-approved` | the PR author approved their own PR |
-| `not-enriched` | the PR or a ticket could not be read |
-
-Claude sees only the summary and each flagged row's SHA, PR, key and flags: commit messages
-can carry instructions, so they go into the files and never back into the session.
+Commit messages can carry instructions, so they go into the files and never back into the
+session. `trace --json` carries no git free text, and Claude reads only the summary and each
+flagged row's SHA, PR, key and flags from the report. PR titles, PR bodies and review bodies
+do reach Claude through the GitHub tools, the same accepted path as ticket bodies.
 
 **Limits.**
 

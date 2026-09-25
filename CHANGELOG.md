@@ -16,9 +16,12 @@ per-plugin history until entries are recorded here going forward.
   `ticket.js labels` gives the tracker labels Claude sets on a best-effort basis. The new
   `trace` skill writes an audit trace report outside the repo, `trace.md` and `trace.csv`,
   listing every merged change with its PR author and approvers, tickets, spec hashes,
-  Compliance values and flags such as `no-ticket`, `spec-changed` and `self-approved`. It
-  shows Claude only the summary and each flagged row's SHA, PR, key and flags, and never
-  commits the report.
+  Compliance values and flags such as `no-ticket`, `spec-changed` and `self-approved`, plus
+  `pr-mismatch` when a PR's merge commit is not the row's commit. `trace` defaults `<to>` to
+  the default branch and needs an absolute `--out` outside the repository. `trace --json`
+  carries no git free text, and Claude sees only the summary and each flagged row's SHA, PR,
+  key and flags from the report. PR titles, PR bodies and review bodies still reach Claude
+  through the GitHub tools, like ticket bodies. The report is never committed.
 - **fabflows 0.8.0** -- a repository can file every ticket fabflows creates under one parent.
   `fabflows-setup` asks for an optional parent epic, story or issue, reads it once to check
   it can hold child tickets, and stores it as `parent` in `.claude/fabflows.json`. The
