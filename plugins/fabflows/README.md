@@ -292,8 +292,8 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   a path (`config/.env`, `.env.development`). Otherwise its last one or two path parts
   are tried against a fixed list of sample secret names: `.env`, `.env.local`,
   `.env.production`, `x.pem`, `x.key`, `id_rsa`, `id_ed25519`, `.ssh/id_rsa`,
-  `.aws/credentials`, `.npmrc`, `.pypirc`. So `.en*`, `.*`, `apps/*/.env` and
-  `**/.ssh/**` are blocked. A glob is blocked as too complex to check in time when it
+  `.aws/credentials`, `.npmrc`, `.pypirc`. This blocks `.en*`, `.*`, `apps/*/.env` and
+  `**/.ssh/**`. A glob is blocked as too complex to check in time when it
   expands to more than 64 names once its `{a,b}` groups are expanded.
   Committed examples (`.env.example`, `.env.sample`,
   `.env.template`) are exempt, but only the example itself: `cat .env.example .env` is
@@ -372,7 +372,7 @@ be walked around:
   `/{*,.*}`).
 - `chmod --reference` passes, and so does a chmod run by its full path (`/bin/chmod`).
 - Removing every quote to read an `rm` target as bash would can join words that bash
-  keeps apart, so a quoted target holding a lone `*` word (`rm -rf "old *"`) is blocked.
+  keeps apart, so a quoted target with a `*` word of its own (`rm -rf "old *"`) is blocked.
 - A `Grep` glob is tested against a fixed list of sample secret names, so a glob that
   matches only a secret name missing from the list (`prod.env`) passes. A glob of only
   `*`, `?` and `/` (`*`, `**/*`) is not checked. Rare broad globs such as `*.local`, `*rc`
