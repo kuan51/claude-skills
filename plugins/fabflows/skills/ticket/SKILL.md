@@ -244,7 +244,7 @@ PR). For each PR:
 5. Closed without merging, with a closing phrase for the key: if `ticket.js prs` shows another
    link with the same key, leave the ticket and ask the user. Otherwise cancel it:
    - GitHub Issues: `issue_write` with `state: closed` and `state_reason: not_planned` (in
-     the tool schema; untested live).
+     the tool schema, but untested live).
    - Jira: `getTransitionsForJiraIssue`, then the transition whose `to` status is the
      closest cancelled match, per [Status](#status), never matched on the transition name.
    - Linear (untested): the Canceled state.

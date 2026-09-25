@@ -108,10 +108,10 @@ link with a recorded PR (key, URL, tracker and PR, never a branch name), and
   (unconfirmed, so Claude asks first), or a reminder that the branch has none. At startup
   only (not resume, clear or compact), on any checkout, it adds a line naming the other
   confirmed links with a recorded PR, so a PR merged or closed in the GitHub UI still gets
-  its ticket handled: Claude runs `ticket.js prs`, reads each PR's state, and follows
-  `fabflows:ticket` "After a PR closes". A PR closed without merging whose body has a
+  its ticket handled. Claude runs `ticket.js prs`, reads each PR's state, and follows the
+  "After a PR closes" steps in `fabflows:ticket`. A PR closed without merging whose body has a
   closing phrase cancels the ticket (Won't Do, not planned, Canceled) with one comment,
-  never Done; a Refs-only PR leaves it open; a PR whose state can't be read keeps its link.
+  never Done. A Refs-only PR leaves it open. A PR whose state can't be read keeps its link.
   Both lines together stay within 600 characters.
 - PreToolUse denies a `git commit` with an inline message that lacks `Refs: <key>` (and
   `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key. It
