@@ -33,7 +33,7 @@ Other tracker: find the equivalent tools with ToolSearch and tell the user they 
 Standing permission covers only a **confirmed** link: the one `ticket.js link` recorded for
 this branch after the user said yes to that key. On it, without asking, you may edit the
 description, transition the status, add the PR link (in Links and, on Jira, as a web link),
-assign it to yourself per
+assign the PR, and an unassigned ticket, to the signed-in user per
 [The pull request](#the-pull-request), and set the labels `ticket.js labels` prints, since
 they are computed from text the user approved.
 
@@ -171,22 +171,27 @@ Always pass an explicit title that contains the key: the hook checks `--title` a
 `title`, and denies `gh pr create --fill` or `--web`, whose title it can't see. Then run
 `ticket.js pr '<url>'`, and on Jira add the web link (see Web link below).
 
-Once the PR is open, assign it and the linked ticket to the developer the MCP servers
-are signed in as, so the tracker shows who is working on it:
+Once the PR is open, assign it and the linked ticket to the signed-in user: the developer
+each MCP server (or `gh`) is signed in as, so the tracker shows who is working on it.
+Add that user and keep everyone already assigned:
+`issue_write`'s `assignees` replaces every assignee, so pass the current ones too.
 
-- The PR: with the gh CLI, pass `--assignee @me` to `gh pr create`. With MCP, read your
-  login with `get_me`, then call `issue_write` with `method: update`, `issue_number` set to
-  the PR number and `assignees: [<login>]`. The PR tools take no assignee, and a PR is an
-  issue to GitHub.
-- The ticket, on a confirmed link only: for GitHub Issues, `issue_write` with
-  `assignees: [<login>]` from `get_me`. For Jira, read your `account_id` with
-  `atlassianUserInfo`, then call `editJiraIssue` with
-  `fields: { assignee: { accountId: <account_id> } }`. For Linear (untested), set the
-  assignee on `save_issue`.
+- The PR: `gh pr edit <number> --add-assignee @me` (or `--assignee @me` on `gh pr create`).
+  With MCP, read your login with `get_me` and the PR's assignees with `issue_read`, then call
+  `issue_write` with `method: update`, `issue_number` set to the PR number and `assignees` set
+  to those plus your login. The PR tools take no assignee, and a PR is an issue to GitHub.
+- The ticket, on a confirmed link only. Read its current assignee first:
+  - GitHub Issues: `issue_read`, then `gh issue edit <number> --add-assignee @me`, or
+    `issue_write` with the current `assignees` plus your `get_me` login.
+  - Jira (Atlassian Rovo): `getJiraIssue`, then your `account_id` from `atlassianUserInfo`,
+    then `editJiraIssue` with `fields: { assignee: { accountId: <account_id> } }`.
+  - Jira (mcp-atlassian, untested) and Linear (untested): find a tool that names the
+    signed-in user with ToolSearch, then set the assignee with `jira_update_issue` or
+    `save_issue`.
 
-Assign only an unassigned ticket or one already yours. If it is assigned to someone else,
-ask the user before changing it. Assignment is best-effort and never blocks the PR: if a
-server has no tool that names the signed-in user, or the tracker refuses the assignee, tell
+Assign a ticket only when it is unassigned or already yours. One held by someone else is
+changed only after the user says yes. Assignment is best-effort and never blocks the PR: if
+a server has no tool that names the signed-in user, or the tracker refuses the assignee, tell
 the user and carry on.
 
 A PR that finishes the ticket carries the tracker's closing phrase in its body (`Closes #N`,
