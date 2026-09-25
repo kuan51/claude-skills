@@ -1050,6 +1050,8 @@ test('trace --out writes the report and raises each flag in its own case', () =>
     const self = clean();
     self.prs[5].approvers = ['bob', 'alice'];
     assert.deepEqual(report(h, self, FILES).flags(MERGE5), ['self-approved']);
+    self.prs[5].approvers = ['bob', 'Alice'];
+    assert.deepEqual(report(h, self, FILES).flags(MERGE5), ['self-approved'], 'GitHub logins ignore case');
     const urgent = { ...FILES, 'abc7.md': '## Compliance\n- Controls: none\n- Change: emergency\n- Class: C' };
     const em = clean();
     em.tickets['ABC-7'].labels = ['change-emergency', 'class-c'];

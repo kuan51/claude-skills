@@ -467,7 +467,7 @@ function reportRows(rows, en, on) {
     if (known.some((t) => t.expected.some((l) => !t.labels.some((have) => have.toLowerCase() === l)))) flags.add('label-missing');
     if (known.some((t) => t.c.change === 'emergency')) flags.add('emergency');
     if (pr && !pr.approvers.length) flags.add('no-approval');
-    if (pr && pr.approvers.includes(pr.author)) flags.add('self-approved');
+    if (pr && pr.approvers.some((a) => a.toLowerCase() === pr.author.toLowerCase())) flags.add('self-approved');
     if (!en || (row.pr !== null && !pr) || known.length < found.length) flags.add('not-enriched');
     return [
       `${row.sha} ${row.subject}`,
