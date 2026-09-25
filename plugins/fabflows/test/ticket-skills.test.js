@@ -30,6 +30,23 @@ test('ticket names every tool, every template label and each standing rule', () 
   has(read(PLUGIN, 'skills', 'ticket', 'SKILL.md'), [...tools, ...labels, ...rules], 'ticket/SKILL.md');
 });
 
+test('ticket assigns the PR and the linked ticket to the MCP user', () => {
+  const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
+  const section = (h) => {
+    const start = ticket.indexOf(h);
+    assert.ok(start >= 0, `ticket/SKILL.md must have ${h}`);
+    const end = ticket.indexOf('\n## ', start + h.length);
+    return ticket.slice(start, end < 0 ? undefined : end);
+  };
+  has(section('## Permission'), ['assign the PR, and an unassigned ticket, to the signed-in user'], 'ticket/SKILL.md Permission');
+  has(section('## The pull request'), [
+    'get_me', 'atlassianUserInfo', 'getJiraIssue', 'issue_read', 'issue_number',
+    'gh pr edit <number> --add-assignee @me', 'gh issue edit <number> --add-assignee @me',
+    'assignee: { accountId', 'replaces every assignee', 'current assignee first',
+    'held by someone else', 'mcp-atlassian', 'never blocks',
+  ], 'ticket/SKILL.md The pull request');
+});
+
 test('brainstorming approves and checks the ticket through Write-tool files', () => {
   has(read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md'), ['ticket.js approve', 'ticket.js check', 'written with the Write tool'], 'brainstorming/SKILL.md');
 });

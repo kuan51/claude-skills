@@ -983,7 +983,10 @@ function postToolUse(tool, ti, cwd) {
   if (!l || !l.key) return;
   // Only the first PR on a Jira ticket gets the web link: `ticket.js pr` records it, so a
   // later push or a retried create doesn't ask again.
-  const what = created && l.tracker === 'jira' && !l.pr ? 'Links, web link and status' : 'Links and status';
+  const parts = ['Links'];
+  if (created && l.tracker === 'jira' && !l.pr) parts.push('web link');
+  if (created) parts.push('assignees'); // every new PR, and adding yourself twice is harmless
+  const what = `${parts.join(', ')} and status`;
   let text = `fabflows: update ticket ${l.key}: ${what}, per fabflows:ticket.`;
   if (!l.confirmed) text += unconfirmed(l.key);
   context('PostToolUse', text);
