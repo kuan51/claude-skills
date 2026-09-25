@@ -44,7 +44,7 @@ test('brainstorming and ticket show the user raw ticket text', () => {
 });
 
 test('fabflows-setup asks for compliance frameworks', () => {
-  const needles = ['compliance.frameworks', '`soc2`', '`iso27001`', '`iec62304`', 'lowercased', 'leaves compliance off'];
+  const needles = ['compliance.frameworks', '`soc2`', '`iso27001`', '`iec62304`', 'lowercased', 'leaves compliance off', '**None** leaves compliance off', 'typed `none`'];
   has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), needles, 'fabflows-setup/SKILL.md');
 });
 
@@ -53,6 +53,7 @@ test('ticket and brainstorming carry the Compliance section and its labels', () 
   has(ticket, [
     '## Compliance', '- Controls:', '- Change:', '- Class:', '- Traces:', 'ticket.js labels',
     'never guesses', 'never blocks', 'before `Links`', 'Decisions or Compliance;\n  then re-approve',
+    '`editJiraIssue` with `fields: { labels: [...] }`',
   ], 'ticket/SKILL.md');
   has(read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md'), ['Compliance section', 'show the user the refusal'], 'brainstorming/SKILL.md');
 });

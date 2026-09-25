@@ -31,7 +31,8 @@ Other tracker: find the equivalent tools with ToolSearch and tell the user they 
 
 Standing permission covers only a **confirmed** link: the one `ticket.js link` recorded for
 this branch after the user said yes to that key. On it, without asking, you may edit the
-description, transition the status and add the PR link.
+description, transition the status, add the PR link, and set the labels `ticket.js labels`
+prints, since they are computed from text the user approved.
 
 Everything else needs the user's yes first: creating a ticket, touching any other ticket, and
 touching a ticket known only from a `Refs:` trailer (the SessionStart line says "not
@@ -105,12 +106,15 @@ auditor's record of what the change touches and how risky it is. With compliance
 `ticket.js approve` refuses a ticket without a valid Compliance section.
 
 After writing the section, write the ticket text to a scratch file with the Write tool and
-run `ticket.js labels < <file>`. Set the labels it prints with the tracker's label tools:
-GitHub `issue_write` with `labels`, Jira `editJiraIssue` with `labels`, Linear untested. Both
-calls replace the whole list, so pass the ticket's other labels too and drop any old `ctl-`,
-`change-` and `class-` labels. Labels are a best-effort copy of the section: a label Claude
-cannot set (the tracker rejects it, or it does not exist) is reported to the user and
-never blocks work.
+run `ticket.js labels < <file>`. Set the labels it prints with the tracker's label tools,
+Jira `editJiraIssue` with `fields: { labels: [...] }` (confirmed from the tool schema),
+GitHub `issue_write` with `labels`, which replaces the whole list (inferred from the REST
+API), Linear untested. Pass the ticket's other labels too. When replacing labels, remove
+only fabflows' own: any `ctl-` label, `change-normal`, `change-standard`,
+`change-emergency`, `class-a`, `class-b`, `class-c` and `class-na`. Keep every other label.
+Labels are a best-effort copy of the section: a label Claude cannot set (the tracker rejects
+it, or it does not exist) is reported to the user and never blocks work.
+
 Links stays last: the approval fingerprint ignores everything from it down, so adding the PR
 does not count as a spec change.
 
