@@ -10,10 +10,12 @@ per-plugin history until entries are recorded here going forward.
 
 - **fabflows 0.10.0** -- a PR opened on a Jira-linked branch also goes in the ticket's Web
   links panel (#82). That panel is a remote issue link, a separate API from the description.
-  After the PR opens, `fabflows:ticket` reads the ticket's remote links and creates one with
-  the MCP server's create tool when it has one, such as `jira_create_remote_issue_link` on
-  the community mcp-atlassian server. The Atlassian Rovo server has no such tool, so there
-  Claude gives the user the PR URL to add by hand and never asks for an API token.
+  Once, right after the PR is created, `fabflows:ticket` reads the ticket's remote links and
+  creates one with the MCP server's create tool when it has one, such as
+  `jira_create_remote_issue_link` in mcp-atlassian's `jira_links` toolset, which is off by
+  default. The Atlassian Rovo server has no such tool, so there Claude gives the user the PR
+  URL to add by hand and never asks for an API token. `ticket.js` names the web link in the
+  reminder after a PR creation on a Jira ticket, never after a push.
 - **fabflows 0.9.0** -- compliance tracing for audits (#68). `fabflows-setup` asks which
   frameworks apply (SOC 2, ISO 27001, IEC 62304 or your own) and writes
   `compliance.frameworks`. With compliance on, each ticket spec carries a Compliance section

@@ -86,8 +86,9 @@ secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carri
 rules after that: the tool table, the ticket body template, what a confirmed link lets
 Claude do without asking, and how status moves from in progress to in review to done.
 On Jira it also adds the PR to the ticket's Web links panel, when the MCP server has a tool
-that creates a remote issue link. The Atlassian Rovo server has none, so there Claude gives
-you the PR URL to add by hand.
+that creates a remote issue link. mcp-atlassian has one in its `jira_links` toolset, which
+is off by default. The Atlassian Rovo server has none, so there Claude gives you the PR URL
+to add by hand.
 
 **Hooks.** `hooks/ticket.js` keeps a per-branch link: one state file per branch under
 `fabflows/tickets` in the common git dir (`git rev-parse --git-common-dir`), named by a hash
@@ -104,7 +105,8 @@ forgets a link after its branch is gone.
   heredocs and comments, and also reads the commands inside `$(...)` and backticks, up to
   eight levels deep. Each commit needs the lines in its own message: a trailer in an `echo`
   or in another commit does not count.
-- PostToolUse reminds Claude to update the ticket after a push and a PR creation. After a
+- PostToolUse reminds Claude to update the ticket after a push and a PR creation, and after a
+  PR creation on a Jira ticket to add the web link, which a push never repeats. After a
   merge (not `gh pr merge --auto` or `--disable-auto`) it finds the ticket by the PR the merge
   named, or, for a bare `gh pr merge`, by the branch it started on. It asks Claude to check
   the merge happened, and closes the ticket only for a PR with a closing phrase: a Refs-only
