@@ -363,8 +363,12 @@ function traceRows(from, to, cwd) {
         : [];
     const own = c.refs.filter(valid.key);
     const brought = merged.flatMap((m) => m.refs).filter(valid.key);
-    const subject = c.parents.length < 2 ? (c.subject.replace(TRAILING_PR, '').match(SUBJECT_KEY) || []).filter(valid.key) : [];
-    const pr = MERGE_PR.exec(c.subject) || TRAILING_PR.exec(c.subject);
+    // Cut before any regex runs, so a huge subject can't make one slow. Subject keys come only
+    // from a squash merge's subject, `title (#N)`, and never from a reverted subject's quote.
+    const cut = c.subject.slice(0, 1024);
+    const squash = c.parents.length === 1 && TRAILING_PR.test(cut);
+    const subject = squash ? (cut.replace(TRAILING_PR, '').replace(/^Revert ".*"/, '').match(SUBJECT_KEY) || []).filter(valid.key) : [];
+    const pr = MERGE_PR.exec(cut) || TRAILING_PR.exec(cut);
     return {
       sha: HEX.test(c.sha) ? c.sha : null,
       date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}(Z|[+-][0-9]{2}:[0-9]{2})$/.test(c.date) ? c.date : null,

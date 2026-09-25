@@ -832,6 +832,26 @@ test('trace reads Refs, Spec and Co-Authored-By on any line of the message', () 
   }
 });
 
+test('trace takes subject keys only from a squash subject, and fast', () => {
+  const h = history();
+  try {
+    const iso = traced(h, 'fix: parse ISO-8601 dates');
+    assert.deepEqual([iso.pr, iso.keys, iso.keySource], [null, [], 'none'], 'no (#N), so no subject key');
+    const revert = traced(h, 'Revert "feat: paint (#3)" (#4)');
+    assert.deepEqual([revert.pr, revert.keys, revert.keySource], [4, [], 'none'], 'the quoted subject is not read');
+    const file = path.join(h.r.dir, '.git', 'long-subject');
+    fs.writeFileSync(file, '_a'.repeat(40000));
+    h.g('commit', '-q', '--allow-empty', '-F', file);
+    const t0 = Date.now();
+    const out = cli(h.r.dir, ['trace', 'HEAD~1', '--json']);
+    const ms = Date.now() - t0;
+    assert.equal(out.status, 0, out.stderr);
+    assert.ok(ms < 1500, `an 80 KB subject took ${ms} ms`);
+  } finally {
+    h.r.done();
+  }
+});
+
 test('trace refuses option-like refs and warns on shallow or unrelated ranges', () => {
   const { r, g, from } = history();
   const clone = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-shallow-'));
