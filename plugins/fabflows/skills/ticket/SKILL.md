@@ -31,7 +31,8 @@ Other tracker: find the equivalent tools with ToolSearch and tell the user they 
 
 Standing permission covers only a **confirmed** link: the one `ticket.js link` recorded for
 this branch after the user said yes to that key. On it, without asking, you may edit the
-description, transition the status and add the PR link.
+description, transition the status, add the PR link, and set the labels `ticket.js labels`
+prints, since they are computed from text the user approved.
 
 Everything else needs the user's yes first: creating a ticket, touching any other ticket, and
 touching a ticket known only from a `Refs:` trailer (the SessionStart line says "not
@@ -88,6 +89,32 @@ Plain bullets only: no task lists and no tables, because Jira drops both.
 ```
 
 Out of scope replaces a spec's Deferred: each cut item names the ticket that will carry it.
+
+When compliance is on (`.claude/fabflows.json` has a non-empty `compliance.frameworks`), add
+a `## Compliance` section before `Links`:
+
+```markdown
+## Compliance
+- Controls: <control IDs such as soc2-cc8.1, comma-separated, or none>
+- Change: <normal, standard or emergency>
+- Class: <A, B, C or n/a>
+- Traces: <requirement IDs such as REQ-AUTH-1, comma-separated; drop the line if none>
+```
+
+Ask the user for Controls, Change and Class. Claude never guesses them: they are the
+auditor's record of what the change touches and how risky it is. With compliance on,
+`ticket.js approve` refuses a ticket without a valid Compliance section.
+
+After writing the section, write the ticket text to a scratch file with the Write tool and
+run `ticket.js labels < <file>`. Set the labels it prints with the tracker's label tools,
+Jira `editJiraIssue` with `fields: { labels: [...] }` (confirmed from the tool schema),
+GitHub `issue_write` with `labels`, which replaces the whole list (inferred from the REST
+API), Linear untested. Pass the ticket's other labels too. When replacing labels, remove
+only fabflows' own: any `ctl-` label, `change-normal`, `change-standard`,
+`change-emergency`, `class-a`, `class-b`, `class-c` and `class-na`. Keep every other label.
+Labels are a best-effort copy of the section: a label Claude cannot set (the tracker rejects
+it, or it does not exist) is reported to the user and never blocks work.
+
 Links stays last: the approval fingerprint ignores everything from it down, so adding the PR
 does not count as a spec change.
 
@@ -98,8 +125,9 @@ comment: the only comment is one at close, and only when the outcome differs fro
 
 Edit the description only:
 
-- when the user agrees to change Behaviour, Check, Out of scope or Decisions; then re-approve
-  per `fabflows:brainstorming` section 6, or the next `ticket.js check` fails;
+- when the user agrees to change Behaviour, Check, Out of scope, Decisions or Compliance;
+  then re-approve per `fabflows:brainstorming` section 6, or the next `ticket.js check` fails,
+  and after a Compliance change set the labels again;
 - when the PR opens, to fill Links;
 - at merge, to finish Links.
 

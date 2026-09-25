@@ -8,6 +8,20 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.9.0** -- compliance tracing for audits (#68). `fabflows-setup` asks which
+  frameworks apply (SOC 2, ISO 27001, IEC 62304 or your own) and writes
+  `compliance.frameworks`. With compliance on, each ticket spec carries a Compliance section
+  with Controls, Change, Class and optional Traces lines, which Claude asks the user for and
+  never guesses. `ticket.js approve` refuses a spec without a valid one, and
+  `ticket.js labels` gives the tracker labels Claude sets on a best-effort basis. The new
+  `trace` skill writes an audit trace report outside the repo, `trace.md` and `trace.csv`,
+  listing every merged change with its PR author and approvers, tickets, spec hashes,
+  Compliance values and flags such as `no-ticket`, `spec-changed` and `self-approved`, plus
+  `pr-mismatch` when a PR's merge commit is not the row's commit. `trace` defaults `<to>` to
+  the default branch and needs an absolute `--out` outside the repository. `trace --json`
+  carries no git free text, and Claude sees only the summary and each flagged row's SHA, PR,
+  key and flags from the report. PR titles, PR bodies and review bodies still reach Claude
+  through the GitHub tools, like ticket bodies. The report is never committed.
 - **fabflows 0.8.0** -- a repository can file every ticket fabflows creates under one parent.
   `fabflows-setup` asks for an optional parent epic, story or issue, reads it once to check
   it can hold child tickets, and stores it as `parent` in `.claude/fabflows.json`. The

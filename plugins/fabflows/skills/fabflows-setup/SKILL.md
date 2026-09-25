@@ -1,7 +1,7 @@
 ---
 name: fabflows-setup
 compatibility: Claude Code with the fabflows plugin enabled. Needs the AskUserQuestion and ToolSearch tools and, for a tracker, that tracker's MCP server. Not portable to Claude.ai or the API.
-description: 'Choose where this repository keeps its specs: a GitHub Issues, Jira or Linear ticket, or docs/specs/ as before. Asks where specs live, checks that the tracker''s MCP tools are connected, asks for the project and an optional parent epic or story, and writes .claude/fabflows.json for fabflows:ticket and fabflows:brainstorming to read. Never connects a server and never handles a secret. Triggers on "/fabflows-setup", "set up fabflows", "connect fabflows to Jira", "use GitHub issues for specs", "configure the tracker", "where should specs live".'
+description: 'Choose where this repository keeps its specs: a GitHub Issues, Jira or Linear ticket, or docs/specs/ as before. Asks where specs live, checks that the tracker''s MCP tools are connected, asks for the project, an optional parent epic or story and optional compliance frameworks, and writes .claude/fabflows.json for fabflows:ticket and fabflows:brainstorming to read. Never connects a server and never handles a secret. Triggers on "/fabflows-setup", "set up fabflows", "connect fabflows to Jira", "use GitHub issues for specs", "configure the tracker", "where should specs live".'
 ---
 
 # fabflows setup
@@ -52,12 +52,25 @@ share its project. For GitHub, also check that `issue_write` takes `parent_issue
 older server without it cannot attach a parent. On any refusal, say why, then ask again or
 go on without one.
 
-## 4. Write and commit
+## 4. Ask for compliance frameworks
+
+Ask one multi-select AskUserQuestion question, "Which compliance frameworks apply to this
+repository?" It has four options: **SOC 2** (`soc2`), **ISO 27001** (`iso27001`),
+**IEC 62304** (`iec62304`) and **None**. The built-in "Other" answer takes free text:
+lowercased, with spaces turned into `-`, and it must match `^[a-z0-9-]{1,30}$`. Ask again
+for a value that does not. A typed `none` under Other, in any case, is refused and never
+written as a framework: ask again, and point at the **None** option.
+
+The chosen values go into `compliance.frameworks`. **None** leaves compliance off: write no
+`compliance` key. With compliance on, every ticket spec
+needs a Compliance section, per `fabflows:ticket`.
+
+## 5. Write and commit
 
 Write `.claude/fabflows.json` with the Write tool:
 
 ```json
-{"tracker": "jira", "project": "ABC", "site": "example.atlassian.net", "parent": "ABC-7"}
+{"tracker": "jira", "project": "ABC", "site": "example.atlassian.net", "parent": "ABC-7", "compliance": {"frameworks": ["soc2", "iso27001"]}}
 ```
 
 `tracker` is `github`, `jira`, `linear`, or the Other name in lowercase with dashes.

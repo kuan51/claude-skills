@@ -43,6 +43,30 @@ test('brainstorming and ticket show the user raw ticket text', () => {
   has(afterMerge, ['Refs-only', 'clear --pr'], 'ticket/SKILL.md after-merge paragraph');
 });
 
+test('fabflows-setup asks for compliance frameworks', () => {
+  const needles = ['compliance.frameworks', '`soc2`', '`iso27001`', '`iec62304`', 'lowercased', 'leaves compliance off', '**None** leaves compliance off', 'typed `none`'];
+  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), needles, 'fabflows-setup/SKILL.md');
+});
+
+test('ticket and brainstorming carry the Compliance section and its labels', () => {
+  const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
+  has(ticket, [
+    '## Compliance', '- Controls:', '- Change:', '- Class:', '- Traces:', 'ticket.js labels',
+    'never guesses', 'never blocks', 'before `Links`', 'Decisions or Compliance;\n  then re-approve',
+    '`editJiraIssue` with `fields: { labels: [...] }`',
+  ], 'ticket/SKILL.md');
+  has(read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md'), ['Compliance section', 'show the user the refusal'], 'brainstorming/SKILL.md');
+});
+
+test('trace enriches through MCP, reports flags only and keeps the report out of the repo', () => {
+  const needles = [
+    'ticket.js trace', '--enrich', 'get_reviews', 'never commits', 'Write tool', 'newest tag',
+    '--unshallow', 'Delete the scratch directory', 'outside the repo', 'SHA, PR, key and flags',
+    'merge_commit_sha', '$HOME', 'whether or not',
+  ];
+  has(read(PLUGIN, 'skills', 'trace', 'SKILL.md'), needles, 'trace/SKILL.md');
+});
+
 test('no skill or README names the old single state file', () => {
   const files = [
     ['README.md'],
@@ -62,6 +86,26 @@ test('the README names the ticket hook, the ticket skills and raw review', () =>
   has(included, ['`fabflows-setup`', '`ticket`'], "README What's included");
   const tickets = readme.slice(readme.indexOf('## Tickets'), readme.indexOf('\n## ', readme.indexOf('## Tickets') + 1));
   has(tickets, ['raw diff', 'per-branch', 'unclosed `<!--`', 'refuses', 'worktree'], 'README Tickets');
+});
+
+test('0.9.0 documents the trace report and the compliance limits', () => {
+  const plugin = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
+  assert.equal(plugin.version, '0.9.0');
+  const market = JSON.parse(read(ROOT, '.claude-plugin', 'marketplace.json')).plugins.find((p) => p.name === 'fabflows');
+  const bullet = read(ROOT, 'README.md').split('\n- **').find((b) => b.startsWith('[fabflows]'));
+  for (const [text, file] of [[plugin.description, 'plugin.json'], [market.description, 'marketplace.json'], [bullet, 'root README bullet']]) {
+    has(text.replace(/\s+/g, ' '), ['trace report'], file);
+  }
+  const readme = read(PLUGIN, 'README.md');
+  assert.match(readme, /^## Compliance$/m);
+  const start = readme.indexOf('\n## Compliance');
+  const section = readme.slice(start, readme.indexOf('\n## The build loop', start)).replace(/\s+/g, ' ');
+  const limits = [
+    'Labels are best-effort', 'AI authorship is detected by trailer and author name only',
+    'A re-approved ticket marks earlier commits `spec-changed`', 'no proof of review quality',
+  ];
+  has(section, limits, 'README Compliance');
+  has(read(ROOT, 'CHANGELOG.md'), ['fabflows 0.9.0'], 'CHANGELOG.md');
 });
 
 test('the current version is documented', () => {

@@ -8,9 +8,16 @@
 //   approve < spec               store the fingerprint and the normalized approved spec
 //   check < spec                 exit 0 when the spec still matches that fingerprint
 //   normalize < spec             print the text the fingerprint is taken over
+//   fingerprint < spec           print the fingerprint approve would store
+//   labels < spec                print the labels for the spec's Compliance section
 //   pr <url>                     record the pull request
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
+//   trace <from> [<to>] --json   print each first-parent commit's PR, keys and specs; <to>
+//                                defaults to origin/HEAD, else main, master, origin/main or
+//                                origin/master
+//   trace <from> [<to>] [--enrich <file>] --out <dir>
+//                                write trace.md and trace.csv with PR, ticket and flag columns
 //
 // State is one file per branch, fabflows/tickets/<h>.json in the common git dir, where <h> is
 // the first 16 hex characters of sha256(branch); approve adds <h>.approved.md beside it.
@@ -24,7 +31,8 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 
 // ---------------------------------------------------------------- validation
-const KEY = [/^[A-Z][A-Z0-9]*-[0-9]+$/, /^([A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*)?#[0-9]+$/];
+// A Jira key of at most 32 characters, or #N or owner/repo#N within GitHub's name limits.
+const KEY = [/^(?=.{1,32}$)[A-Z][A-Z0-9]*-[0-9]+$/, /^([A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_.-]{1,100})?#[0-9]{1,9}$/];
 const str = (v) => typeof v === 'string';
 const valid = {
   key: (v) => str(v) && KEY.some((re) => re.test(v)),
@@ -65,9 +73,9 @@ function backtickRuns(t, from, to) {
   return runs;
 }
 
-// { text, unclosedAt }: unclosedAt is the line of a `<!--` that never closes, which removes
-// everything after it, as a renderer hides it; approve refuses such text.
-function normalizeInfo(text) {
+// { text, unclosedAt, lines }: unclosedAt is the line of a `<!--` that never closes, which
+// removes everything after it, as a renderer hides it; approve refuses such text.
+function scan(text) {
   const t = String(text).replace(/\r\n/g, '\n');
   const strip = (s) => s.replace(INVISIBLE, '');
   let out = '';
@@ -129,24 +137,112 @@ function normalizeInfo(text) {
     i = shut < 0 ? t.length : shut + 3; // an unclosed comment removes the rest
     lineStart = false;
   }
-  // Drop the Links section: from the last Links heading outside a fence to the end.
+  // Drop the Links section: from the last Links heading outside a fence to the end. lines
+  // keeps each line with whether it starts in a fence, so compliance reads fences the same way.
   const inCode = (o) => code.some(([s, e]) => o >= s && o < e);
-  let cut = -1;
+  const lines = [];
+  let cut = -1, cutLine = -1;
   for (let o = 0; o <= out.length; ) {
     const nl = out.indexOf('\n', o);
     const line = out.slice(o, nl < 0 ? out.length : nl);
-    if (LINKS.test(line) && !inCode(o)) cut = o;
+    const inside = inCode(o);
+    if (LINKS.test(line) && !inside) [cut, cutLine] = [o, lines.length];
+    lines.push({ line: line.trimEnd(), code: inside });
     if (nl < 0) break;
     o = nl + 1;
   }
-  if (cut >= 0) out = out.slice(0, cut);
-  return { text: out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd(), unclosedAt };
+  if (cut >= 0) {
+    out = out.slice(0, cut);
+    lines.length = cutLine;
+  }
+  return { text: out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd(), unclosedAt, lines };
 }
+const normalizeInfo = (text) => {
+  const { text: t, unclosedAt } = scan(text);
+  return { text: t, unclosedAt };
+};
 const normalize = (text) => normalizeInfo(text).text;
 const unclosed = (line) => `line ${line}: a <!-- is never closed, so it removes everything after it; close it with --> or put it in code`;
 
 const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 const fingerprint = (text) => 'sha256:' + sha(normalize(text));
+
+// ---------------------------------------------------------------- compliance
+// The Compliance section of the spec as written, read from its normalized lines so it sits
+// inside the fingerprint: the last Compliance heading outside a fence, to the next heading,
+// holding four labelled bullets.
+const COMPLIANCE = /^ {0,3}(?:#{1,6}[ \t]+Compliance|\*\*Compliance(?::\*\*|\*\*:?))[ \t]*$/;
+const HEADING = /^ {0,3}(?:#{1,6}(?:[ \t]|$)|\*\*[^*]+\*\*:?[ \t]*$)/;
+const CONTROL = /^[a-z][a-z0-9]*(-[a-z0-9.]+)+$/;
+const TRACE = /^REQ-[A-Z][A-Z0-9]*-[0-9]+$/;
+const items = (v) => v.split(',').map((s) => s.trim());
+const FIELDS = {
+  Controls: [(v) => v === 'none' || items(v).every((x) => CONTROL.test(x)), 'a comma list of control IDs like soc2-cc8.1, or none'],
+  Change: [(v) => /^(normal|standard|emergency)$/.test(v), 'normal, standard or emergency'],
+  Class: [(v) => /^(A|B|C|n\/a)$/.test(v), 'A, B, C or n/a'],
+  Traces: [(v) => items(v).every((x) => TRACE.test(x)), 'a comma list of IDs like REQ-AUTH-1'],
+};
+
+// { controls, change, cls, traces }, or { errors } naming each missing or bad field. Values
+// are never echoed: they are ticket text.
+function compliance(text) {
+  const { lines } = scan(text);
+  let at = -1;
+  lines.forEach((l, i) => {
+    if (!l.code && COMPLIANCE.test(l.line)) at = i;
+  });
+  if (at < 0) return { errors: ['no Compliance section'] };
+  const got = {};
+  const errors = [];
+  for (const { line, code } of lines.slice(at + 1)) {
+    if (code) continue;
+    if (HEADING.test(line)) break;
+    const m = /^[ \t]*[-*+][ \t]+(Controls|Change|Class|Traces):[ \t]*(.*)$/.exec(line);
+    if (!m) continue;
+    if (m[1] in got) errors.push(`${m[1]} is given twice`);
+    got[m[1]] = m[2];
+  }
+  for (const [k, [ok, want]] of Object.entries(FIELDS)) {
+    if (got[k] === undefined) {
+      if (k !== 'Traces') errors.push(`${k} is missing`);
+    } else if (!ok(got[k])) errors.push(`${k} must be ${want}`);
+  }
+  if (errors.length) return { errors };
+  return {
+    controls: got.Controls === 'none' ? [] : items(got.Controls),
+    change: got.Change,
+    cls: got.Class,
+    traces: got.Traces === undefined ? [] : items(got.Traces),
+  };
+}
+
+// The tracker labels for a valid section, each once: lowercase and hyphen-only, so never
+// parsed back, and soc2-cc8.1 and soc2-cc8-1 give the same label.
+const labels = (c) => [
+  ...new Set([...c.controls.map((id) => 'ctl-' + id.replace(/\./g, '-')), 'change-' + c.change, 'class-' + c.cls.replace('n/a', 'na')].map((l) => l.toLowerCase())),
+];
+
+// 'on', 'off' or 'invalid', from .claude/fabflows.json at the top level as SessionStart reads it:
+// a missing file is off, a file that is not JSON is invalid.
+function complianceMode(cwd) {
+  const top = tryGit(['rev-parse', '--show-toplevel'], cwd);
+  if (!top) return 'off';
+  let raw, cfg;
+  try {
+    raw = fs.readFileSync(path.join(top, '.claude', 'fabflows.json'), 'utf8');
+  } catch {
+    return 'off';
+  }
+  try {
+    cfg = JSON.parse(raw);
+  } catch {
+    return 'invalid';
+  }
+  if (!cfg || cfg.compliance == null) return 'off';
+  const f = cfg.compliance.frameworks;
+  if (!Array.isArray(f) || !f.every((x) => str(x) && /^[a-z0-9-]{1,30}$/.test(x))) return 'invalid';
+  return f.length ? 'on' : 'off';
+}
 
 // ---------------------------------------------------------------- git and state
 function git(args, cwd) {
@@ -228,6 +324,221 @@ function linked(cwd) {
   return key ? { key, confirmed: false } : null;
 }
 
+// ---------------------------------------------------------------- trace
+// The first-parent commits from..to, one row each, as an auditor samples merged changes.
+// Subjects and names stay in the row's free-text fields, which --json never prints: commit
+// text can hold instructions, and that output reaches Claude.
+const traceGit = (args, cwd) =>
+  execFileSync('git', args, { cwd, encoding: 'utf8', timeout: 30000, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
+const LOG_FORMAT = ['%H', '%P', '%cI', '%an <%ae>', '%s', '%B'].join('%x1f');
+// A key on a key boundary, shaped as KEY is; `x/y#7` is not #7, and an owner never starts
+// inside a word, so `a_b.c/d#1` holds no key.
+const SUBJECT_KEY = /(?<![A-Za-z0-9_./#-])(?:[A-Z][A-Z0-9]*-[0-9]+|(?:[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_.-]{1,100})?#[0-9]{1,9})(?![A-Za-z0-9-])/g;
+const MERGE_PR = /^Merge pull request #([0-9]{1,9})\b/;
+const TRAILING_PR = /\s*\(#([0-9]{1,9})\)\s*$/;
+// An AI author or co-author: Claude's or Copilot's address, or exactly their name.
+function isAI(v) {
+  const s = v.trim();
+  const lt = s.lastIndexOf('<');
+  const [name, email] = lt >= 0 && s.endsWith('>') ? [s.slice(0, lt).trim(), s.slice(lt + 1, -1).trim().toLowerCase()] : [s, ''];
+  return email === 'noreply@anthropic.com' || email.endsWith('+copilot@users.noreply.github.com') || /^(claude|copilot|copilot\[bot\])$/i.test(name);
+}
+const uniq = (a) => [...new Set(a)];
+const HEX = /^[0-9a-f]{40,64}$/;
+
+// One commit of LOG_FORMAT output. Every field is validated where it is used, so a unit
+// separator inside commit text can shift fields but never put free text in a row. Refs, Spec
+// and Co-Authored-By count at the start of any line of the message, in any case: a squash
+// merge leaves them in the body, outside git's trailer block.
+function parseCommit(rec) {
+  const [sha, parents = '', date, author = '', subject = '', ...body] = rec.replace(/^\n/, '').split('\x1f');
+  const found = { refs: [], spec: [], 'co-authored-by': [] };
+  for (const line of body.join('\x1f').split('\n')) {
+    const m = /^(Refs|Spec|Co-Authored-By):(.*)$/i.exec(line);
+    if (m && m[2].trim()) found[m[1].toLowerCase()].push(m[2].trim());
+  }
+  return { sha, parents: parents.split(' ').filter(Boolean), date, author, subject, refs: found.refs, specs: found.spec, co: found['co-authored-by'] };
+}
+
+function traceRows(from, to, cwd) {
+  const records = (out) => out.split('\0').filter((r) => r.trim()).map(parseCommit);
+  // --no-show-signature: with log.showSignature set, git prints signature checks, a signer's
+  // name among them, into stdout ahead of each record.
+  return records(traceGit(['log', '--first-parent', '--no-show-signature', '-z', `--format=${LOG_FORMAT}`, `${from}..${to}`], cwd)).map((c) => {
+    // Every commit a merge brought in, from each parent after the first.
+    const merged =
+      c.parents.length > 1 && HEX.test(c.sha)
+        ? records(traceGit(['rev-list', '--no-commit-header', `--format=${LOG_FORMAT}%x00`, `${c.sha}^1..${c.sha}`], cwd)).filter((m) => m.sha !== c.sha)
+        : [];
+    const own = c.refs.filter(valid.key);
+    const brought = merged.flatMap((m) => m.refs).filter(valid.key);
+    // Cut before any regex runs, so a huge subject can't make one slow. Subject keys come only
+    // from a squash merge's subject, `title (#N)`, and never from a reverted subject's quote.
+    const cut = c.subject.slice(0, 1024);
+    const squash = c.parents.length === 1 && TRAILING_PR.test(cut);
+    const subject = squash ? (cut.replace(TRAILING_PR, '').replace(/^Revert ".*"/, '').match(SUBJECT_KEY) || []).filter(valid.key) : [];
+    const pr = MERGE_PR.exec(cut) || TRAILING_PR.exec(cut);
+    return {
+      sha: HEX.test(c.sha) ? c.sha : null,
+      date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}(Z|[+-][0-9]{2}:[0-9]{2})$/.test(c.date) ? c.date : null,
+      pr: pr ? Number(pr[1]) : null,
+      keys: uniq([...own, ...brought, ...subject]),
+      keySource: own.length ? 'commit' : brought.length ? 'merged' : subject.length ? 'subject' : 'none',
+      specs: uniq([c, ...merged].flatMap((m) => m.specs).filter(valid.specHash)),
+      ai: [c, ...merged].some((m) => [m.author, ...m.co].some(isAI)),
+      // Free text, for the report files only.
+      subject: c.subject,
+      authors: [c.author, ...c.co],
+    };
+  });
+}
+
+// ---------------------------------------------------------------- trace report
+const COLUMNS = ['commit', 'date', 'author', 'AI', 'PR', 'PR author', 'approvers', 'tickets', 'key source', 'spec hashes', 'ticket fingerprints', 'controls', 'change', 'class', 'traces', 'expected labels', 'actual labels', 'flags'];
+const FLAGS = ['no-ticket', 'no-spec', 'no-pr', 'pr-mismatch', 'spec-changed', 'no-compliance', 'label-missing', 'emergency', 'no-approval', 'self-approved', 'not-enriched'];
+const short = (v) => str(v) && v.length <= 200;
+const shortList = (v) => Array.isArray(v) && v.every(short);
+
+// The text of a regular file of at most max bytes, else null.
+function readSmall(file, max, flags = 0) {
+  let fd;
+  try {
+    // O_NONBLOCK, so a FIFO fails the isFile check instead of blocking the open forever.
+    fd = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NONBLOCK || 0) | flags);
+    const st = fs.fstatSync(fd);
+    return st.isFile() && st.size <= max ? fs.readFileSync(fd, 'utf8') : null;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
+
+// The enrichment file Claude wrote from its MCP tools, re-validated entry by entry: an entry
+// of the wrong shape is dropped, so its row reads as not enriched. Null when the file is unusable.
+function enrichment(file) {
+  let e;
+  try {
+    e = JSON.parse(readSmall(file, 1024 * 1024));
+  } catch {
+    return null;
+  }
+  if (!e || typeof e !== 'object') return null;
+  const entries = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? Object.entries(o) : []);
+  const prs = new Map();
+  for (const [n, v] of entries(e.prs)) {
+    if (!(/^[0-9]+$/.test(n) && v && short(v.author) && shortList(v.approvers))) continue;
+    if (v.mergeCommit !== undefined && !(str(v.mergeCommit) && HEX.test(v.mergeCommit))) continue;
+    prs.set(Number(n), { author: v.author, approvers: v.approvers, mergeCommit: v.mergeCommit });
+  }
+  const tickets = new Map();
+  for (const [key, v] of entries(e.tickets)) {
+    if (!(valid.key(key) && v && shortList(v.labels) && short(v.bodyFile) && /^[^/\\]+$/.test(v.bodyFile) && !/^\.\.?$/.test(v.bodyFile))) continue;
+    const bodyPath = path.join(path.dirname(file), v.bodyFile);
+    // lstat as well as O_NOFOLLOW, which Windows lacks. A path lstat rejects is dropped too.
+    try {
+      if (fs.lstatSync(bodyPath, { throwIfNoEntry: false })?.isSymbolicLink()) continue;
+    } catch {
+      continue;
+    }
+    const body = readSmall(bodyPath, 256 * 1024, fs.constants.O_NOFOLLOW || 0);
+    if (body === null) continue;
+    const text = normalize(body);
+    const c = compliance(body);
+    tickets.set(key, { fingerprint: 'sha256:' + sha(text), c, expected: c.errors ? [] : labels(c), labels: v.labels });
+  }
+  return { prs, tickets };
+}
+
+// The report's cells for each row: git data, the enrichment for its PR and tickets, and flags.
+function reportRows(rows, en, on) {
+  return rows.map((row) => {
+    const pr = en && row.pr !== null ? en.prs.get(row.pr) : undefined;
+    const found = row.keys.map((k) => en && en.tickets.get(k));
+    const known = found.filter(Boolean);
+    const all = (f) => uniq(known.flatMap(f)).join('; ');
+    const flags = new Set();
+    if (!row.keys.length) flags.add('no-ticket');
+    if (!row.specs.length) flags.add('no-spec');
+    if (row.pr === null) flags.add('no-pr');
+    if (pr && pr.mergeCommit !== undefined && pr.mergeCommit !== row.sha) flags.add('pr-mismatch');
+    if (row.specs.length && known.some((t) => !row.specs.includes(t.fingerprint))) flags.add('spec-changed');
+    if (on && known.some((t) => t.c.errors)) flags.add('no-compliance');
+    if (known.some((t) => t.expected.some((l) => !t.labels.some((have) => have.toLowerCase() === l)))) flags.add('label-missing');
+    if (known.some((t) => t.c.change === 'emergency')) flags.add('emergency');
+    if (pr && !pr.approvers.length) flags.add('no-approval');
+    if (pr && pr.approvers.includes(pr.author)) flags.add('self-approved');
+    if (!en || (row.pr !== null && !pr) || known.length < found.length) flags.add('not-enriched');
+    return [
+      `${row.sha} ${row.subject}`,
+      row.date || '',
+      row.authors.join('; '),
+      row.ai ? 'yes' : 'no',
+      row.pr === null ? '' : String(row.pr),
+      pr ? pr.author : '',
+      pr ? pr.approvers.join('; ') : '',
+      row.keys.join('; '),
+      row.keySource,
+      row.specs.join('; '),
+      known.map((t) => t.fingerprint).join('; '),
+      all((t) => t.c.controls || []),
+      all((t) => (t.c.change ? [t.c.change] : [])),
+      all((t) => (t.c.cls ? [t.c.cls] : [])),
+      all((t) => t.c.traces || []),
+      all((t) => t.expected),
+      all((t) => t.labels),
+      FLAGS.filter((f) => flags.has(f)).join('; '),
+    ];
+  });
+}
+
+// RFC 4180, with a leading ' on a cell a spreadsheet would run as a formula.
+const csvCell = (v) => {
+  const s = /^[\s\p{Cf}]*[=+\-@＝＋－＠]/u.test(v) ? "'" + v : v;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+const mdCell = (v) => v.replace(/[\\`*_[\]<>|]/g, '\\$&').replace(/[\r\n]/g, ' ');
+
+// p with symlinks resolved through its nearest existing parent.
+function realOut(p) {
+  const rest = [];
+  for (;;) {
+    try {
+      return path.join(fs.realpathSync(p), ...rest);
+    } catch {
+      if (path.dirname(p) === p) throw new Error('--out has no existing parent directory');
+      rest.unshift(path.basename(p));
+      p = path.dirname(p);
+    }
+  }
+}
+
+// Writes <out>/trace.md and <out>/trace.csv, outside the repo and never over a file, and
+// returns the summary line. The repo is this checkout, the main checkout when this is a
+// linked worktree, and the common git dir.
+function writeReport(out, from, to, cells, cwd) {
+  const common = traceGit(['rev-parse', '--path-format=absolute', '--git-common-dir'], cwd).trim();
+  const top = traceGit(['rev-parse', '--show-toplevel'], cwd).trim();
+  const roots = [top, path.basename(common) === '.git' ? path.dirname(common) : null, common].filter(Boolean).map((r) => fs.realpathSync(r));
+  const fold = process.platform === 'darwin' || process.platform === 'win32' ? (s) => s.toLowerCase() : (s) => s;
+  const dir = realOut(out);
+  const inside = (root) => {
+    const rel = path.relative(fold(root), fold(dir));
+    return !(rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel));
+  };
+  if (roots.some(inside)) throw new Error('--out must be outside the repository');
+  fs.mkdirSync(dir, { recursive: true });
+  const [mdFile, csvFile] = ['trace.md', 'trace.csv'].map((n) => path.join(dir, n));
+  for (const f of [mdFile, csvFile]) {
+    if (fs.lstatSync(f, { throwIfNoEntry: false })) throw new Error(`--out already holds ${path.basename(f)}; choose an empty directory`);
+  }
+  const md = [`# Trace ${from}..${to}`, '', `| ${COLUMNS.join(' | ')} |`, `|${' --- |'.repeat(COLUMNS.length)}`, ...cells.map((r) => `| ${r.map(mdCell).join(' | ')} |`)];
+  fs.writeFileSync(mdFile, md.join('\n') + '\n', { flag: 'wx' });
+  fs.writeFileSync(csvFile, [COLUMNS, ...cells].map((r) => r.map(csvCell).join(',') + '\r\n').join(''), { flag: 'wx' });
+  const count = (f) => cells.filter((r) => r[r.length - 1].split('; ').includes(f)).length;
+  return `trace: ${cells.length} commits; ${FLAGS.map((f) => `${f} ${count(f)}`).join(', ')}`;
+}
+
 // ---------------------------------------------------------------- CLI
 function cli(cmd, args) {
   const cwd = process.cwd();
@@ -242,6 +553,14 @@ function cli(cmd, args) {
     return l;
   };
   const state = ({ key, url, tracker, branch, specHash, pr }) => ({ key, url, tracker, branch, specHash, pr });
+  // With compliance on, refuse a spec (as written) without a valid Compliance section.
+  const gate = (raw) => {
+    const mode = complianceMode(cwd);
+    if (mode === 'invalid') process.stderr.write('ticket.js: warning: compliance.frameworks in .claude/fabflows.json is invalid, so compliance is off\n');
+    if (mode !== 'on') return;
+    const { errors } = compliance(raw);
+    if (errors) fail(`compliance is on, so the spec needs a valid Compliance section: ${errors.join('; ')}`);
+  };
 
   if (cmd === 'normalize') {
     const { text, unclosedAt } = normalizeInfo(stdin());
@@ -255,10 +574,23 @@ function cli(cmd, args) {
     writeState(cwd, s);
   } else if (cmd === 'approve') {
     const l = confirmed();
-    const { text, unclosedAt } = normalizeInfo(stdin());
+    const raw = stdin();
+    const { text, unclosedAt } = normalizeInfo(raw);
     if (unclosedAt) fail(`${unclosed(unclosedAt)}, then ask the user to approve again`);
+    gate(raw);
     fs.writeFileSync(approvedPath(statePath(cwd, l.branch)), text + '\n');
     writeState(cwd, { ...state(l), specHash: 'sha256:' + sha(text) });
+  } else if (cmd === 'fingerprint') {
+    const raw = stdin();
+    const { text } = normalizeInfo(raw);
+    gate(raw);
+    process.stdout.write('sha256:' + sha(text) + '\n');
+  } else if (cmd === 'labels') {
+    const c = compliance(stdin());
+    if (c.errors) fail(`no valid Compliance section: ${c.errors.join('; ')}`);
+    const out = labels(c);
+    if (out.some((l) => l.length > 50)) fail("a control ID makes a label longer than GitHub's 50 characters");
+    process.stdout.write(out.join('\n') + '\n');
   } else if (cmd === 'check') {
     const l = confirmed();
     const got = fingerprint(stdin());
@@ -294,8 +626,48 @@ function cli(cmd, args) {
       if (!branch) fail('not on a branch; use clear --pr <url>');
       removeState(statePath(cwd, branch));
     }
+  } else if (cmd === 'trace') {
+    const refs = [];
+    const o = {};
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--json') o.json = true;
+      else if (args[i] === '--enrich' || args[i] === '--out') o[args[i].slice(2)] = args[++i];
+      else refs.push(args[i]);
+    }
+    const usage = 'usage: trace <from> [<to>] --json, or trace <from> [<to>] [--enrich <file>] --out <dir>';
+    if (refs.length < 1 || refs.length > 2 || !(o.json || o.out) || ('enrich' in o && !(o.enrich && o.out)) || ('out' in o && !o.out)) fail(usage);
+    if (o.out && !path.isAbsolute(o.out)) fail('--out must be an absolute path; a quoted ~ is not expanded');
+    // Before the refs, so a ref past the shallow cut fails after the warning that explains it.
+    if (traceGit(['rev-parse', '--is-shallow-repository'], cwd).trim() === 'true') {
+      process.stderr.write('ticket.js: warning: this is a shallow clone, so history may be missing\n');
+    }
+    // <to> defaults to the default branch, as SessionStart finds it.
+    const def = refs[1] || ['refs/remotes/origin/HEAD', 'main', 'master', 'refs/remotes/origin/main', 'refs/remotes/origin/master'].find((b) => tryGit(['rev-parse', '--verify', '-q', b + '^{commit}'], cwd));
+    if (!def) fail('no <to> given and no origin/HEAD, main, master, origin/main or origin/master to default to; pass <to>');
+    const [from, to] = [refs[0], def].map((ref, n) => {
+      const which = n ? 'to' : 'from';
+      if (ref.startsWith('-')) fail(`the ${which} ref may not start with -`);
+      try {
+        return traceGit(['rev-parse', '--verify', '--end-of-options', ref + '^{commit}'], cwd).trim();
+      } catch {
+        return fail(`the ${which} ref is not a commit`);
+      }
+    });
+    try {
+      traceGit(['merge-base', '--is-ancestor', from, to], cwd);
+    } catch {
+      process.stderr.write('ticket.js: warning: from is not an ancestor of to, so the range may not be what you meant\n');
+    }
+    const rows = traceRows(from, to, cwd);
+    if (o.out) {
+      const en = o.enrich ? enrichment(path.resolve(o.enrich)) : null;
+      if (o.enrich && !en) process.stderr.write('ticket.js: warning: the enrichment file is unreadable, over 1 MB or not a JSON object, so no row is enriched\n');
+      process.stdout.write(writeReport(path.resolve(o.out), from, to, reportRows(rows, en, complianceMode(cwd) === 'on'), cwd) + '\n');
+    } else {
+      process.stdout.write(JSON.stringify(rows.map(({ sha, date, pr, keys, keySource, specs, ai }) => ({ sha, date, pr, keys, keySource, specs, ai }))) + '\n');
+    }
   } else {
-    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, pr, status or clear`);
+    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status, clear or trace`);
   }
   process.exit(0);
 }
@@ -668,7 +1040,7 @@ function hook() {
   else if (input.hook_event_name === 'PostToolUse') postToolUse(input.tool_name, ti, cwd);
 }
 
-module.exports = { normalize, normalizeInfo, fingerprint, valid };
+module.exports = { normalize, normalizeInfo, fingerprint, valid, compliance };
 
 if (require.main === module) {
   if (process.argv[2]) {

@@ -53,7 +53,8 @@ Invoking it authorizes the lead to launch the build loop, which commits to your 
 branch, without asking again per task. The `brainstorming` skill sits in front of the loop
 for a request that arrives without a spec; see [Brainstorming](#brainstorming). The
 `fabflows-setup` skill points the repository at a tracker, and the `ticket` skill keeps the
-linked ticket current; see [Tickets](#tickets).
+linked ticket current; see [Tickets](#tickets). The `trace` skill writes an audit report
+of merged changes with their tickets, specs and approvals; see [Compliance](#compliance).
 
 Agent names are namespaced. Address them as `fabflows:explorer`, not `explorer`.
 
@@ -134,6 +135,64 @@ A command whose quotes don't balance is read whole, as one command. A `gh pr cre
 `--title`/`-t` (`--fill`, `--web`) is denied on a linked branch, because its title can't be
 checked. The merge reminder also fires after a failed merge command, so it asks Claude to
 check first.
+
+## Compliance
+
+Auditors (SOC 2 CC8.1, ISO 27001 A.8.32, IEC 62304) sample merged changes and trace each
+one to a ticket, an approved spec and an approval. fabflows keeps that record in the ticket
+and writes the trace as a report.
+
+**Setup.** After the tracker, `/fabflows-setup` asks which frameworks apply: SOC 2, ISO
+27001, IEC 62304, or your own. It writes them to `compliance.frameworks` in
+`.claude/fabflows.json`. Choosing none leaves compliance off.
+
+**The Compliance section.** With compliance on, each ticket spec carries a `## Compliance`
+section before Links:
+
+```markdown
+## Compliance
+- Controls: soc2-cc8.1
+- Change: normal
+- Class: B
+- Traces: REQ-AUTH-1
+```
+
+Controls is a list of control IDs or `none`, Change is `normal`, `standard` or `emergency`,
+Class is `A`, `B`, `C` or `n/a`, and Traces is optional. Claude asks you for the values and
+never guesses them. The section sits inside the approval fingerprint, and `ticket.js
+approve` refuses a spec without a valid one.
+
+**Labels.** `ticket.js labels` turns the section into tracker labels: `ctl-soc2-cc8-1`,
+`change-normal`, `class-b` (`n/a` becomes `na`). Claude sets them with the tracker's MCP
+tools. The section is the record, and the labels are a copy for filtering.
+
+**The trace report.** `/fabflows:trace` asks for a range (the newest tag on the default
+branch to its tip by default) and an output directory. `ticket.js trace` defaults `<to>` to
+`origin/HEAD`, else `main`, `master`, `origin/main` or `origin/master`. `--out` must be an
+absolute path outside the checkout, the main worktree and the git dir. The skill runs
+`ticket.js trace`, adds each PR's author, approvers and merge commit (`mergeCommit`) from
+GitHub and each ticket's body and labels from the tracker, and writes `trace.md` and
+`trace.csv`. It is never committed. The columns are commit, date, author, AI, PR, PR
+author, approvers, tickets, key source, spec hashes, ticket fingerprints, controls, change,
+class, traces, expected labels, actual labels and flags. A PR whose `mergeCommit` is not the
+row's commit is flagged `pr-mismatch`. Each flag is defined once, in the
+[trace skill's flag table](skills/trace/SKILL.md#flags).
+
+Commit messages can carry instructions, so they go into the files and never back into the
+session. `trace --json` carries no git free text, and Claude reads only the summary and each
+flagged row's SHA, PR, key and flags from the report. PR titles, PR bodies and review bodies
+do reach Claude through the GitHub tools, the same accepted path as ticket bodies.
+
+**Limits.**
+
+- Labels are best-effort. A tracker may reject a label or lack it, and GitHub's MCP server
+  cannot create one. Claude reports a label it could not set and carries on.
+- AI authorship is detected by trailer and author name only (`Co-Authored-By` and the
+  commit author). The trailer is opt-out, so a `no` proves nothing.
+- A re-approved ticket marks earlier commits `spec-changed`, because the report compares
+  each commit's `Spec:` with the ticket as it is now.
+- The report is no proof of review quality. It shows that an approval happened, not that
+  the review was careful.
 
 ## The build loop
 

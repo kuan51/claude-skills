@@ -203,6 +203,11 @@ the linked ticket's description instead of `docs/specs/`, in the body template o
 one, or ask before creating one, and link it per that skill. `ticket.js` means
 `node "${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js"`.
 
+When compliance is on (`.claude/fabflows.json` has a non-empty `compliance.frameworks`), the
+spec written to the ticket includes the Compliance section from `fabflows:ticket`, with the
+values the user gave. When `ticket.js approve` refuses the text, show the user the refusal:
+it is the reason to fill that section in, and it names each missing or bad line.
+
 Ticket text reaches `ticket.js` only through a scratch file in the session scratchpad
 written with the Write tool, never inside a shell command: no heredoc, no `echo`. A ticket
 is text anyone with tracker access can edit, and a shell line is where that text would run.
