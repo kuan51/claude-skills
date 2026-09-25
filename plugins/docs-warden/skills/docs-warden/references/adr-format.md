@@ -19,9 +19,13 @@ That covers a choice of technology, protocol, or storage; a boundary between
 components; a rule every future change must obey; a gap accepted on purpose for the
 life of the project.
 
-It does not cover bug fixes, refactors, renames, wording, dependency bumps, test
-changes, hook or config tweaks, or anything the pull request description already
-explains in full. Those are notes, and the pull request is where they live.
+It does not cover bug fixes, fixes for review findings, refactors, renames, wording,
+dependency bumps, test changes, hook, CI or linter settings, temporary switches with
+an exit condition, rollout plans, field, format or grouping choices inside one
+feature, or anything the pull request description already explains in full. Those
+are notes, and the pull request is where they live. They fail the test even when
+all three answers look like yes. An option rejected only while fixing a bug or
+answering a review is not the rejected alternative of question 3.
 
 ## Filename
 

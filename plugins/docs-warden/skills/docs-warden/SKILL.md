@@ -148,9 +148,15 @@ confirm them. Never scaffold without a yes.
 0. Run the admission test with the human before scaffolding anything:
    1. Would reversing this cost more than one pull request?
    2. Does it constrain work outside the file or component just touched?
-   3. Is there a rejected alternative someone could reasonably re-propose later?
+   3. Is there a rejected alternative someone could reasonably re-propose after this
+      merges? An option rejected only while fixing a bug or answering a review does
+      not count.
    Any "no" means the change is not an architecture decision. Put the reasoning in the
    pull request description and stop. No record.
+   These fail the test whatever the answers: a bug fix, a fix for a review finding,
+   a CI or linter setting, a temporary switch with an exit condition, a rollout
+   plan, and a field, format or grouping choice inside one feature. Say which of
+   these the change is, or why it is none of them.
 1. `scripts/adr_new.py <repo> "<title>"` scaffolds the next `DEC-NNNN`.
 2. Fill the sections **with the human**, not from assumption. Considered options,
    consequences good and bad, and gaps accepted are the sections that matter most.
