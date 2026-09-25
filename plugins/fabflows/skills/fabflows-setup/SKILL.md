@@ -1,7 +1,7 @@
 ---
 name: fabflows-setup
 compatibility: Claude Code with the fabflows plugin enabled. Needs the AskUserQuestion and ToolSearch tools and, for a tracker, that tracker's MCP server. Not portable to Claude.ai or the API.
-description: 'Choose where this repository keeps its specs: a GitHub Issues, Jira or Linear ticket, or docs/specs/ as before. Asks one question, checks that the tracker''s MCP tools are connected, asks for the project and an optional parent epic or story, and writes .claude/fabflows.json for fabflows:ticket and fabflows:brainstorming to read. Never connects a server and never handles a secret. Triggers on "/fabflows-setup", "set up fabflows", "connect fabflows to Jira", "use GitHub issues for specs", "configure the tracker", "where should specs live", "file tickets under an epic".'
+description: 'Choose where this repository keeps its specs: a GitHub Issues, Jira or Linear ticket, or docs/specs/ as before. Asks where specs live, checks that the tracker''s MCP tools are connected, asks for the project and an optional parent epic or story, and writes .claude/fabflows.json for fabflows:ticket and fabflows:brainstorming to read. Never connects a server and never handles a secret. Triggers on "/fabflows-setup", "set up fabflows", "connect fabflows to Jira", "use GitHub issues for specs", "configure the tracker", "where should specs live".'
 ---
 
 # fabflows setup
@@ -40,10 +40,17 @@ reads or stores a token, key or password: a secret typed into chat stays in the 
 | Linear | team key | none |
 | Other | whatever names the project in that tracker | none |
 
-Then ask whether new tickets should be filed under a parent: an epic or story (`ABC-7`) for
-Jira and Linear, an issue (`#7`) for GitHub. It is optional, so offer "none" first. When
-given, read it once with the tracker's read tool from `fabflows:ticket`'s tool table. Not
-found: say so, then ask again or go on without one.
+For GitHub, Jira or Linear, then ask whether new tickets should be filed under a parent: an
+epic or story (`ABC-7`) for Jira, an issue (`#7`, or `owner/repo#7` in another repository)
+for GitHub, a parent issue (`ABC-7`) for Linear. It is optional, so offer "none" first. An
+Other tracker gets no parent.
+
+When given, read it once with the tracker's read tool from `fabflows:ticket`'s tool table
+and check it can hold child tickets. Refuse one not found, a GitHub pull request or closed
+issue, a Jira sub-task, and a Jira story or task outside `project`, since its sub-tasks must
+share its project. For GitHub, also check that `issue_write` takes `parent_issue_number`. An
+older server without it cannot attach a parent. On any refusal, say why, then ask again or
+go on without one.
 
 ## 4. Write and commit
 

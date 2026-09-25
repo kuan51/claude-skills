@@ -13,7 +13,7 @@ const has = (text, needles, file) => {
 };
 
 test('fabflows-setup asks once, writes the config, and never connects a server', () => {
-  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), ['AskUserQuestion', '.claude/fabflows.json', 'never runs `claude mcp add`', '"parent"'], 'fabflows-setup/SKILL.md');
+  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), ['AskUserQuestion', '.claude/fabflows.json', 'never runs `claude mcp add`', '"parent"', 'filed under a parent', 'hold child tickets'], 'fabflows-setup/SKILL.md');
 });
 
 test('ticket names every tool, every template label and each standing rule', () => {
