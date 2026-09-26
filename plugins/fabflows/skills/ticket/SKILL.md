@@ -24,7 +24,7 @@ MCP tool names carry a server prefix (`mcp__<server>__issue_read`), so match on 
 | GitHub Issues | `issue_read` | `issue_write` | `issue_write` (open, closed) | `add_issue_comment` | none needed: the PR's closing phrase or `Refs` line links it |
 | Jira (Atlassian Rovo) | `getJiraIssue` | `createJiraIssue`, `editJiraIssue` | `getTransitionsForJiraIssue`, then `transitionJiraIssue` | `addCommentToJiraIssue` (v2 servers: `addOrEditJiraIssueComment`) | read: `getJiraIssueRemoteIssueLinks`. Create: none |
 | Jira (mcp-atlassian, untested) | `jira_get_issue` | `jira_create_issue`, `jira_update_issue` | `jira_get_transitions`, then `jira_transition_issue` | `jira_add_comment` | read: `jira_get_issue` with `include: "remote_links"`. Create: `jira_create_remote_issue_link` |
-| Linear (untested) | `get_issue` | `save_issue` | `save_issue` | `save_comment` | not covered |
+| Linear | `get_issue` | `save_issue` | `list_issue_statuses`, then `save_issue` | `save_comment` (untested) | read: `get_issue` (its `attachments`). Create: `save_issue` with `links` |
 
 Other tracker: find the equivalent tools with ToolSearch and tell the user they are untested.
 
@@ -66,7 +66,10 @@ create call itself, so a refused parent leaves no ticket behind:
   project's sub-task type, the only type Jira nests there.
 - GitHub: pass the parent's number as `parent_issue_number` to `issue_write` create. For a
   parent in another repository (`owner/repo#7`), also pass `parent_owner` and `parent_repo`.
-- Linear (untested): set the parent issue on `save_issue`.
+- Linear: pass `team`, `project` and `parentId` to `save_issue`. A child does not inherit
+  its parent's project, so always pass `project`. Linear refuses a missing parent and a
+  loop. A config with no `team` predates Linear projects: its `project` is the team key, so
+  pass it as `team`, file no project, and tell the user to run `/fabflows-setup` again.
 
 This applies only to tickets you create: linking an existing ticket never re-parents it.
 Attaching the new ticket is the only change the parent gets, and the user's yes to create
@@ -75,7 +78,10 @@ refuses the parent, say so and ask before creating the ticket without it.
 
 ## Body template
 
-Plain bullets only: no task lists and no tables, because Jira drops both.
+Plain bullets only: no task lists and no tables. Through the Atlassian Rovo server, Jira
+keeps a table but shows a task list as plain bullets without its checkboxes. Linear keeps
+both, but rewrites `-` bullets as `*` and an issue key such as `FAB-4` as an `<issue>` tag,
+which the user sees in the raw text. Other servers are untested.
 
 ```markdown
 ## Why
@@ -118,7 +124,10 @@ After writing the section, write the ticket text to a scratch file with the Writ
 run `ticket.js labels < <file>`. Set the labels it prints with the tracker's label tools,
 Jira `editJiraIssue` with `fields: { labels: [...] }` (confirmed from the tool schema),
 GitHub `issue_write` with `labels`, which replaces the whole list (confirmed by a live
-test), Linear untested. Pass the ticket's other labels too. When replacing labels, remove
+test). Pass the ticket's other labels too. On Linear, one unknown label name refuses the
+whole call and changes nothing, so list the team's labels with `list_issue_labels` first,
+then call `save_issue` with `addLabels` (the printed labels that exist) and `removeLabels`
+(fabflows' own labels no longer printed) in one call, and report the rest. When replacing labels, remove
 only fabflows' own: any `ctl-` label, `change-normal`, `change-standard`,
 `change-emergency`, `class-a`, `class-b`, `class-c` and `class-na`. Keep every other label.
 Labels are a best-effort copy of the section: a label Claude cannot set (the tracker rejects
@@ -175,7 +184,11 @@ unmerged (then it is closed as not planned).
 On Jira and Linear, list where the ticket can move before choosing. On Jira, call
 `getTransitionsForJiraIssue` and match on each transition's target, its `to` status,
 never on the transition name: a transition named Reviewed can lead to Working as Designed.
-On Linear (untested), find the tool that lists the team's statuses with ToolSearch.
+On Linear, call `list_issue_statuses` for the team and pass the chosen name as `state` to
+`save_issue`. Each status has a type: done is the `completed` type and cancelled the
+`canceled` type, never `duplicate`. In progress and in review are both `started`, so match
+those on the name. Linear lets a ticket move anywhere, even backwards, so keeping it
+forward is up to you.
 
 Workflows name statuses differently, so pick the closest match:
 
@@ -202,7 +215,9 @@ Always pass an explicit title that contains the key: the hook checks `--title` a
 Once the PR is open, assign it and the linked ticket to the signed-in user: the developer
 each MCP server (or `gh`) is signed in as, so the tracker shows who is working on it.
 Add that user and keep everyone already assigned:
-`issue_write`'s `assignees` replaces every assignee, so pass the current ones too.
+`issue_write`'s `assignees` replaces every assignee, so pass the current ones too. One
+login that cannot be assigned makes GitHub refuse the whole call and change nothing
+(confirmed by a live test). If that happens, tell the user rather than dropping anyone.
 
 - The PR: `gh pr edit <number> --add-assignee @me` (or `--assignee @me` on `gh pr create`).
   With MCP, read your login with `get_me` and the PR's assignees with `issue_read`, then call
@@ -213,9 +228,10 @@ Add that user and keep everyone already assigned:
     `issue_write` with the current `assignees` plus your `get_me` login.
   - Jira (Atlassian Rovo): `getJiraIssue`, then your `account_id` from `atlassianUserInfo`,
     then `editJiraIssue` with `fields: { assignee: { accountId: <account_id> } }`.
-  - Jira (mcp-atlassian, untested) and Linear (untested): find a tool that names the
-    signed-in user with ToolSearch, then set the assignee with `jira_update_issue` or
-    `save_issue`.
+  - Linear: `get_issue`, then `save_issue` with `assignee: "me"`. A Linear ticket has one
+    assignee, so there is no list to keep.
+  - Jira (mcp-atlassian, untested): find a tool that names the signed-in user with
+    ToolSearch, then set the assignee with `jira_update_issue`.
 
 Assign a ticket only when it is unassigned or already yours. One held by someone else is
 changed only after the user says yes. Assignment is best-effort and never blocks the PR: if
@@ -252,11 +268,12 @@ with a recorded PR. For each PR:
    the ticket to a holding status on purpose. Show them the ticket's current status, any
    other link with the same key from `ticket.js prs`, and the cancel-type status you would
    pick. On a no, leave the status as it is. On a yes, cancel it:
-   - GitHub Issues: `issue_write` with `state: closed` and `state_reason: not_planned` (in
-     the tool schema, but untested live).
+   - GitHub Issues: `issue_write` with `state: closed` and `state_reason: not_planned`
+     (confirmed by a live test). Send both together: GitHub ignores a `state_reason`
+     without a state change.
    - Jira: `getTransitionsForJiraIssue`, then the transition whose `to` status is the
      closest cancelled match, per [Status](#status), never matched on the transition name.
-   - Linear (untested): the Canceled state.
+   - Linear: `save_issue` with `state` set to the status of type `canceled`.
    - Another tracker: find the tools with ToolSearch and say they are untested.
    - No cancel-type status: leave the status as it is and tell the user. **Never fall back
      to Done** for work that didn't land.
@@ -269,7 +286,9 @@ with a recorded PR. For each PR:
 ## Web link
 
 On Jira, the PR also goes in the ticket's Web links panel. That panel is a remote issue link,
-a different API from the description. Do this only on a confirmed link (see Permission), and
+a different API from the description. On Linear, it goes in the issue's attachments: pass
+`links: [{url, title}]` to `save_issue`. Linear keeps one attachment per URL, so a second
+save with the same URL adds nothing. Do this only on a confirmed link (see Permission), and
 only when the reminder after a PR creation names the web link.
 First check the PR was really created: a failed create, `--dry-run` or `--help` makes none.
 The hook names the web link only until `ticket.js pr` records the PR, so it asks once per

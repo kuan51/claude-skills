@@ -759,6 +759,8 @@ test('PostToolUse asks for a ticket update after push and PR creation', () => {
     ]) {
       assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket #7: Links, assignees and status, per fabflows:ticket.', `github has no web link: ${tool}`);
     }
+    cli(r.dir, ['link', 'FAB-1', 'https://linear.app/acme/issue/FAB-1/x', 'linear']);
+    assert.equal(after(r.dir, 'mcp__github__create_pull_request', { title: 'FAB-1 x' }).context, 'fabflows: update ticket FAB-1: Links, web link, assignees and status, per fabflows:ticket.', 'linear gets the web link');
     cli(r.dir, ['link', 'ABC-1', URL, 'jira']);
     assert.equal(after(r.dir, 'Bash', { command: 'git status' }).context, undefined, 'unrelated command');
     cli(r.dir, ['clear']);

@@ -79,7 +79,8 @@ A repository can keep its specs in a tracker ticket instead of `docs/specs/`, so
 carries no spec file and the spec sits where managers track the work.
 
 **Setup.** Run `/fabflows-setup` once. It asks for GitHub Issues, Jira, Linear or none,
-checks that the tracker's MCP tools are loaded, asks for the project and an optional parent
+checks that the tracker's MCP tools are loaded, asks for the project (for Linear, the team
+and then the project, usually named after the repository) and an optional parent
 epic, story or issue that every new ticket is filed under, and writes
 `.claude/fabflows.json`, which is committed. It never connects a server and never handles a
 secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carries the
@@ -92,6 +93,7 @@ On Jira it also adds the PR to the ticket's Web links panel, when the MCP server
 that creates a remote issue link. mcp-atlassian has one in its `jira_links` toolset, which
 `TOOLSETS=default` leaves out. The Atlassian Rovo server has none, so there Claude gives you
 the PR URL to add by hand.
+On Linear it attaches the PR to the issue with `save_issue`.
 When the PR opens, Claude also assigns the PR, and an unassigned ticket, to the developer
 the MCP server or `gh` is signed in as. It adds that user rather than replacing anyone, and
 asks you before taking a ticket someone else holds.
@@ -502,3 +504,16 @@ effort, and the skill's frontmatter. `build.test.js` runs the build workflow's l
 against stub agents. `guard.test.js` drives `guard.js` over a table of allow and deny
 cases, including real git fixtures for the branch rules and the path traps that a naive
 substring match would get wrong.
+
+### PM suite
+
+```bash
+bats plugins/fabflows/test/pm
+```
+
+An offline Bash suite for the ticket and PR flows. It replays the steps the `ticket` skill
+prescribes against in-memory fakes of GitHub Issues, Jira and Linear, and runs the real
+`ticket.js` hooks and CLI in a temporary git repository. Each test checks the final tracker
+state and the hook output. It makes no model or network calls, so it checks the steps, not
+whether Claude follows them. It needs bats-core 1.13 or later (for example
+`npm install -g bats`) and jq.
