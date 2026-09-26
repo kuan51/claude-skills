@@ -161,7 +161,21 @@ test('prints a decision-affected line under an EDA finding carrying business_imp
   const out = buildReport(TEMPLATE, {
     eda: [{ key: 'domain_alignment', findings: [{ severity: 'medium', claim: 'c', evidence: 'e', required_execution: false, verified: false, business_impact: 'Staffing decision.' }] }],
   });
-  assert.ok(out.includes('  - Decision affected / materiality: Staffing decision.'));
+  assert.ok(out.includes('  - **Decision affected / materiality:** Staffing decision.'));
+});
+
+test('a cross-compare entry without a verdict renders as (no verdict), never as Not Addressed', () => {
+  const entry = CC(undefined, { topic: 'Gap topic', independent_finding: 'Gap finding' });
+  delete entry.verdict;
+  const out = buildReport(REAL_TEMPLATE, { crossCompare: [entry] });
+  assert.ok(section(out, 'Cross-Comparison').includes('### Gap topic — (no verdict)'));
+  assert.ok(!section(out, "Independent findings the project's report does not address").includes('Gap'));
+  assert.ok(!out.includes('undefined'));
+});
+
+test('an executive summary given as one string renders as a one-item list', () => {
+  const out = buildReport(REAL_TEMPLATE, { executiveSummary: 'One line.' });
+  assert.ok(section(out, 'Executive summary').includes('- One line.'));
 });
 
 test('prints each new section placeholder when empty', () => {
