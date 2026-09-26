@@ -258,7 +258,7 @@ it, the reviewer ran inside the loop and returned ACCEPT, and the lead ran the g
 subscription the meter tracks the lead's model, so the Fable row is the one that binds.
 
 **What the earlier iterations showed.** On short tasks (a one-file edit, a version bump, a small
-test file) the skill is overhead: about +21% list price for identical results, because the lead
+test file) the skill is overhead: +33% to +42% list price for identical results, because the lead
 loads the skill and deliberates instead of just doing it. On a large read (13 records, ~60k
 characters) the Haiku explorer came in 12% cheaper with a lead context 12k tokens smaller. On
 the same build task under Opus 5, with shell denials knocking the review out of the loop, the
