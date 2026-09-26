@@ -75,7 +75,9 @@ refuses the parent, say so and ask before creating the ticket without it.
 
 ## Body template
 
-Plain bullets only: no task lists and no tables, because Jira drops both.
+Plain bullets only: no task lists and no tables. Through the Atlassian Rovo server, Jira
+keeps a table but shows a task list as plain bullets without its checkboxes; other servers
+are untested.
 
 ```markdown
 ## Why

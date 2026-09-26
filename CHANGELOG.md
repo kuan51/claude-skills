@@ -217,6 +217,10 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.12.1** -- the `ticket` skill no longer says Jira drops tables. Tested against
+  real Jira through the Atlassian Rovo server, Jira keeps a table and shows a task list as
+  plain bullets without its checkboxes. The plain-bullets rule for the ticket body is
+  unchanged.
 - **fabflows 0.11.1** -- the `ticket` skill no longer stalls when a workflow's status names
   differ from in progress, in review and done. It lists where the ticket can move and matches
   on the target status, not the Jira transition name, since a transition named Reviewed can
