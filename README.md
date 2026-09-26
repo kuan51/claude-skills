@@ -50,32 +50,35 @@ first session.
 
 ## What each plugin does
 
-### data-analysis-review
-
-Empirical, objective review of a data science project: independently re-derives findings from
-raw data and code, then checks whether the project's own stated conclusions hold up.
-
-### ciso
-
-Organizes work toward security certifications (HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022
-and CMMC) alongside the development work that satisfies them. Action-oriented verbs (register a
-control set, run the assessment interview, review a PR for control impact, attach a merged PR or
-CI run as evidence, audit how ready you actually are) tracked via persistent local HTML
-dashboards: an index across every supported certification, plus a page for each.
-
-### docs-warden
-
-Repository documentation governance: scaffolds a document set scaled to what the repo actually
-is, audits it for what is missing, stale, or off-standard, keeps architecture decision records
-append-only and indexed, offers to archive the oldest into a digest once fifty are decided, and
-reports where the docs have drifted from the code instead of silently rewriting them. Includes a
-domain-model skill that maps a repo's concepts, their relationships, and which document
-describes each, in Python, JS/TS, PowerShell and Terraform. It also includes a plain-English Vale
-style and compliance overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and
-NIST SSDF.
-
-### fabflows
-
+- **[data-analysis-review](plugins/data-analysis-review/)**: an independent check of whether a
+  data science project's stated conclusions hold up.
+  - **Blind review.** Specialist reviewers for data quality, statistics, domain alignment and
+    reproducibility, plus optional extras, re-derive findings from the raw data and code before
+    they see what the project claims.
+  - **Claim check.** Their findings are then compared with the project's own conclusions, one
+    topic at a time.
+  - **Read-only.** All analysis, including code execution, runs on a disposable copy, so the
+    reviewed project is never modified.
+- **[ciso](plugins/ciso/)**: tracks work toward security certifications alongside the
+  development work that satisfies them.
+  - **Certifications.** HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC.
+  - **Verbs.** Register a control set, run the assessment interview, review a PR for control
+    impact, attach a merged PR or CI run as evidence, and audit how ready you actually are.
+  - **Dashboards.** Local HTML pages: an index across every certification, plus one page for
+    each.
+  - **Licensing.** Licensed requirement wording is imported by your organization at runtime and
+    never stored in this repo.
+- **[docs-warden](plugins/docs-warden/)**: keeps repository documentation consistent and honest.
+  - **Scaffold and audit.** A document set scaled to what the repo actually is, and a scorecard
+    of what is missing, stale or off-standard.
+  - **Decision records.** Append-only and indexed, with the oldest archived into a digest once
+    fifty are decided.
+  - **Drift.** Reports where the docs have drifted from the code instead of silently rewriting
+    them.
+  - **Domain model.** Maps a repo's concepts, their relationships and which document describes
+    each, in Python, JS/TS, PowerShell and Terraform.
+  - **Style and compliance.** A plain-English Vale style, and overlays for IEC 62304, the OSPS
+    Baseline, the EU Cyber Resilience Act and NIST SSDF.
 - **[fabflows](plugins/fabflows/)**: orchestration for a session whose lead runs on an expensive
   model. The lead writes a proper brief for each worker and re-verifies what comes back instead
   of trusting it.
@@ -87,17 +90,17 @@ NIST SSDF.
   - **Brainstorming.** `brainstorming` turns a rough idea into a spec the build loop can take,
     with the refuter attacking the draft before it is written.
   - **Tickets.** `fabflows-setup` and `ticket` keep specs in a GitHub Issues, Jira or Linear
-    ticket, and a hook puts the ticket key on every commit and PR.
+    ticket, and a hook requires the ticket's trailers on every commit and its key in every PR
+    title.
   - **Trace.** `trace` writes an audit trace report tracing every merged change to its ticket,
     approved spec and approvers.
   - **Guard hook.** An active hook asks before package installs and runners such as `npx`,
-    denies them in workers, and blocks default-branch commits, destructive commands, and
-    credential reads and writes. Read the plugin's README, including its "Known gaps"
-    section, before installing.
-
-On a spec'd build with Opus 5.5 workers, fabflows matched a plain Fable session on 41 hidden
-tests at 18% lower list price and 83% fewer lead output tokens (see that README's "Measured
-performance").
+    denies them in workers, and blocks commits and pushes to a default branch, destructive
+    commands, and credential reads and writes. Read the plugin's README, including its "Known
+    gaps" section, before installing.
+  - **Measured.** On a spec'd build with Opus 5.5 workers, fabflows matched a plain Fable
+    session on 41 hidden tests at 18% lower list price and 83% fewer lead output tokens. See
+    [docs/EVALS.md](docs/EVALS.md).
 
 ## Adding a new plugin
 
