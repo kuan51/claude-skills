@@ -111,4 +111,4 @@ Rules that bite here:
 - **CI runs markdownlint, Vale and `audit.py` on every pull request and push to master**
   (`.github/workflows/docs.yml`), from the checkout's own copy of the scripts, so a PR is
   checked by its own version of docs-warden. Vale lints only the Markdown files the PR changes, as pre-commit does.
-  lychee and `freshness.py` still run only by hand.
+  lychee runs only in the pre-commit hook, not in CI, and `freshness.py` only by hand.
