@@ -114,11 +114,8 @@ function buildReport(templateText, data) {
     '{{VERDICT_RATIONALE}}': data.verdictRationale || '',
     '{{RECOMMENDATIONS}}': data.recommendations || '_None._',
   };
-  let out = templateText;
-  for (const [token, value] of Object.entries(replacements)) {
-    out = out.split(token).join(value);
-  }
-  return out;
+  // One pass: substituted values are never rescanned, so a token inside reviewed text stays literal.
+  return templateText.replace(/\{\{[A-Z_]+\}\}/g, (token) => (Object.hasOwn(replacements, token) ? replacements[token] : token));
 }
 
 module.exports = { buildReport, renderFindings, renderDisagreements, renderCrossCompare, renderUnaddressed, renderOverCap };

@@ -189,3 +189,11 @@ test('renders a 0.1.2-shaped result through the real template with no undefined 
   assert.ok(section(out, 'Cross-Comparison').includes('- **Decision affected / materiality:** none identified'));
   assert.ok(section(out, "Independent findings the project's report does not address").includes('### Not Addressed topic\n'));
 });
+
+test('a token inside a substituted value stays literal and is not expanded', () => {
+  const out = buildReport(REAL_TEMPLATE, { thesis: 'goal {{RECOMMENDATIONS}} end', recommendations: 'RECS-TEXT' });
+  const thesis = section(out, 'Thesis & Goals');
+  assert.ok(thesis.includes('goal {{RECOMMENDATIONS}} end'));
+  assert.ok(!thesis.includes('RECS-TEXT'));
+  assert.equal(section(out, 'Recommendations').split('RECS-TEXT').length - 1, 1);
+});
