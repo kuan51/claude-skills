@@ -17,7 +17,7 @@ Check for:
 - The highest claim level the data and code support: descriptive, diagnostic, predictive or prescriptive. Name that level in the finding.
 - Data currency: whether the collection period, stated at year granularity, is close enough to the decision date the thesis implies for the conclusion to still hold.
 
-Always fill `business_impact` on each finding: the decision affected and why it matters, or "none identified".
+Always fill `business_impact` on each finding: the decision affected and why it matters, or the words "none identified" when there is none.
 
 If your prompt contains `Thesis shape: vague`, the thesis lacks the decision it informs, the metric, or a baseline or threshold. Report "thesis not decision-shaped" as a finding, and fold "no baseline stated, materiality not judged" into it. When there is no baseline to compare against, skip the materiality check.
 

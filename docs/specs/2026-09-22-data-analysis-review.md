@@ -4,7 +4,7 @@ review_by: 2027-03-22
 generated: false
 ---
 
-# data-analysis-review: blind empirical review of a data science project
+# data-analysis-review: Blind empirical review of a data science project
 
 > **Note:** from version 0.2.0, [#104](https://github.com/kuan51/claude-skills/issues/104)
 > supersedes this record's Behaviour and Deferred sections. The rest of the record is unchanged.

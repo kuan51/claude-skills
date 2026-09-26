@@ -43,8 +43,8 @@ and install the plugin.
    seeing what the project itself concluded. Their findings are reconciled for cross-role
    contradictions, then checked against the project's own stated conclusions, one topic at a time.
 5. You get a report with:
-   - A three-line executive summary: is the conclusion supported, which decision it affects and
-     how much, and the one thing to fix.
+   - An executive summary of three lines that says whether the conclusion is supported, which
+     decision it affects and how much, and the one thing to fix.
    - Independent findings per reviewer, with evidence.
    - Cross-role disagreements (if any) found before anyone looked at the project's conclusions.
      At most 12 topics go on to the comparison below (you can pick another cap); any past the cap
