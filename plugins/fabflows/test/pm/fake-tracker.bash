@@ -256,7 +256,7 @@ save_issue() { # {id} to update, else {team, title}; plus project, description, 
        # One assignee; "me" is the signed-in user (FAB-5).
        | if $a | has("assignee") then .assignee = (if $a.assignee == "me" then $s.linear.me else $a.assignee end) else . end
        # links attach once per URL: a second save with the same URL keeps the first (FAB-5).
-       | reduce ($a.links // [])[] as $l (.; if $l.url | IN(.attachments[].url) then . else .attachments += [$l] end)) as $new
+       | reduce ($a.links // [])[] as $l (.; .attachments as $at | if $l.url | IN($at[].url) then . else .attachments += [$l] end)) as $new
     | {s: ($s | .linear.issues[$new.id] = $new), out: $new}' "$1"
 }
 

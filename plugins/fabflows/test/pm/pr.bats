@@ -185,3 +185,12 @@ web_link() {
   run -0 cli prs
   [ -z "$output" ]
 }
+
+@test "linear web link: the PR is attached once, however often it is saved" {
+  save_issue '{"team": "FAB", "title": "t"}'
+  # Read first, then save_issue links (SKILL.md Web link); Linear keeps one per URL (FAB-5).
+  for n in 1 2; do
+    save_issue '{"id": "FAB-1", "links": [{"url": "https://github.com/acme/app/pull/1", "title": "PR"}]}' >/dev/null
+  done
+  [ "$(get_issue '{"id": "FAB-1"}' | jq -c '[.attachments[].url]')" = '["https://github.com/acme/app/pull/1"]' ]
+}

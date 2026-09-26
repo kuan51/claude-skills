@@ -16,6 +16,8 @@ per-plugin history until entries are recorded here going forward.
   inherit it. It finds done and cancelled by status type, never Duplicate. It adds only
   labels that exist, because one unknown label makes Linear refuse the whole change, and
   assigns with `"me"`. A config written before this reads its `project` as the team key.
+  When a PR opens, `ticket.js` now names the web link for Linear too, and the skill attaches
+  the PR to the issue with `save_issue` `links`.
 - **fabflows 0.12.0** -- a linked ticket is handled when its PR merges or closes outside the
   session (#86). At startup only, `ticket.js` names every other confirmed link with a
   recorded PR, on any checkout, and the new `ticket.js prs` lists them as JSON without branch

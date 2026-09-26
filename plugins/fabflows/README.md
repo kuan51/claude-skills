@@ -93,6 +93,7 @@ On Jira it also adds the PR to the ticket's Web links panel, when the MCP server
 that creates a remote issue link. mcp-atlassian has one in its `jira_links` toolset, which
 `TOOLSETS=default` leaves out. The Atlassian Rovo server has none, so there Claude gives you
 the PR URL to add by hand.
+On Linear it attaches the PR to the issue with `save_issue`.
 When the PR opens, Claude also assigns the PR, and an unassigned ticket, to the developer
 the MCP server or `gh` is signed in as. It adds that user rather than replacing anyone, and
 asks you before taking a ticket someone else holds.

@@ -24,7 +24,7 @@ MCP tool names carry a server prefix (`mcp__<server>__issue_read`), so match on 
 | GitHub Issues | `issue_read` | `issue_write` | `issue_write` (open, closed) | `add_issue_comment` | none needed: the PR's closing phrase or `Refs` line links it |
 | Jira (Atlassian Rovo) | `getJiraIssue` | `createJiraIssue`, `editJiraIssue` | `getTransitionsForJiraIssue`, then `transitionJiraIssue` | `addCommentToJiraIssue` (v2 servers: `addOrEditJiraIssueComment`) | read: `getJiraIssueRemoteIssueLinks`. Create: none |
 | Jira (mcp-atlassian, untested) | `jira_get_issue` | `jira_create_issue`, `jira_update_issue` | `jira_get_transitions`, then `jira_transition_issue` | `jira_add_comment` | read: `jira_get_issue` with `include: "remote_links"`. Create: `jira_create_remote_issue_link` |
-| Linear | `get_issue` | `save_issue` | `list_issue_statuses`, then `save_issue` | `save_comment` (untested) | not covered |
+| Linear | `get_issue` | `save_issue` | `list_issue_statuses`, then `save_issue` | `save_comment` (untested) | read: `get_issue` (its `attachments`). Create: `save_issue` with `links` |
 
 Other tracker: find the equivalent tools with ToolSearch and tell the user they are untested.
 
@@ -283,7 +283,9 @@ with a recorded PR. For each PR:
 ## Web link
 
 On Jira, the PR also goes in the ticket's Web links panel. That panel is a remote issue link,
-a different API from the description. Do this only on a confirmed link (see Permission), and
+a different API from the description. On Linear, it goes in the issue's attachments: pass
+`links: [{url, title}]` to `save_issue`. Linear keeps one attachment per URL, so a second
+save with the same URL adds nothing. Do this only on a confirmed link (see Permission), and
 only when the reminder after a PR creation names the web link.
 First check the PR was really created: a failed create, `--dry-run` or `--help` makes none.
 The hook names the web link only until `ticket.js pr` records the PR, so it asks once per
