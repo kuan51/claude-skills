@@ -96,7 +96,7 @@ first session.
   - **Trace.** `trace` writes an audit trace report tracing every merged change to its ticket,
     approved spec and approvers.
   - **Guard hook.** An active hook asks before package installs and runners such as `npx` and
-    denies them in workers. It lets through only `pypdf` into a scratchpad, for reading a PDF.
+    denies them in workers. It lets a `pypdf` install into a scratchpad through, for reading a PDF.
     It also blocks commits and pushes to a default branch, destructive commands, and credential
     reads and writes. Read the plugin's README, including its "Known gaps" section, before
     installing.
