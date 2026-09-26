@@ -29,12 +29,14 @@ Users lose drafts.
 status() { getJiraIssue "{\"issueIdOrKey\": \"$1\"}" | jq -r '.fields.status.name'; }
 task() { createJiraIssue "{\"projectKey\": \"$1\", \"issueTypeName\": \"Task\", \"summary\": \"s\"}" >/dev/null; }
 
-@test "the body template survives Jira: no tables or task lists" {
+@test "the body template survives Jira, and so do tables and task-list text" {
   run -0 createJiraIssue "$(jq -nc --arg d "$TEMPLATE" '{projectKey: "ABC", issueTypeName: "Task", summary: "s", description: $d}')"
   [ "$(getJiraIssue '{"issueIdOrKey": "ABC-1"}' | jq -r '.fields.description')" = "$TEMPLATE" ]
-  # The replica drops both, as Jira does (SKILL.md:78).
-  editJiraIssue "$(jq -nc --arg d "$TEMPLATE"$'\n| a | b |\n- [ ] todo' '{issueIdOrKey: "ABC-1", fields: {description: $d}}')"
-  [ "$(getJiraIssue '{"issueIdOrKey": "ABC-1"}' | jq -r '.fields.description')" = "$TEMPLATE" ]
+  # Real Jira kept a table and returned task-list text as sent; it only renders the task
+  # list as plain bullets (TEST-210, 2026-09-26; SKILL.md:78).
+  body="$TEMPLATE"$'\n| a | b |\n- [ ] todo'
+  editJiraIssue "$(jq -nc --arg d "$body" '{issueIdOrKey: "ABC-1", fields: {description: $d}}')"
+  [ "$(getJiraIssue '{"issueIdOrKey": "ABC-1"}' | jq -r '.fields.description')" = "$body" ]
 }
 
 @test "ticket.js labels are applied and non-fabflows labels kept" {

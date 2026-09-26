@@ -9,7 +9,6 @@ def gh_next($o; $r): ([.github.issues[] | select(.owner == $o and .repo == $r) |
 def gh_put($i): .github.issues |= map(if .owner == $i.owner and .repo == $i.repo and .number == $i.number then $i else . end);
 def pr_url: "https://github.com/\(.owner)/\(.repo)/pull/\(.number)";
 # Jira drops tables and task lists (skills/ticket/SKILL.md:78).
-def jira_drop: split("\n") | map(select(test("^\\s*\\|") or test("^\\s*[-*+]\\s+\\[[ xX]\\]") | not)) | join("\n");
 def jira_view: {key, fields: {summary, description, project: {key: .project}, issuetype: {name: .issuetype},
   status: {name: .status}, parent: (if .parent then {key: .parent} else null end), labels,
   assignee: (if .assignee then {accountId: .assignee} else null end)}};
@@ -140,13 +139,15 @@ createJiraIssue() { # {projectKey, issueTypeName, summary, description, parent}
        else ($s | jira_get($a.parent)) as $p
          | if ($p.issuetype | IN("Story", "Task")) and $p.project != $a.projectKey then error("the parent is in another project")
            elif $p.issuetype == "Sub-task" then error("a sub-task cannot be a parent")
-           elif $p.issuetype == "Epic" and ($a.issueTypeName | IN("Task", "Story") | not) then error("under an epic only Task or Story")
+           # Jira also nests a Sub-task under an epic (TEST-220, 2026-09-26): only the skill rule
+           # "use Task or Story" (skills/ticket/SKILL.md:65) keeps sub-tasks off epics.
+           elif $p.issuetype == "Epic" and ($a.issueTypeName | IN("Task", "Story", "Sub-task") | not) then error("an epic cannot sit under an epic")
            elif ($p.issuetype | IN("Story", "Task")) and $a.issueTypeName != "Sub-task" then error("under a story or task only Sub-task")
            else $a.parent end
        end) as $parent
     | "\($a.projectKey)-\([$s.jira.issues[] | select(.project == $a.projectKey)] | length + 1)" as $key
     | {key: $key, project: $a.projectKey, issuetype: $a.issueTypeName, summary: $a.summary,
-       description: ($a.description // "" | jira_drop), status: "To Do", parent: $parent, labels: [], assignee: null} as $i
+       description: ($a.description // ""), status: "To Do", parent: $parent, labels: [], assignee: null} as $i
     | {s: ($s | .jira.issues[$key] = $i), out: {key: $key}}' "$1"
 }
 
@@ -161,7 +162,7 @@ editJiraIssue() { # {issueIdOrKey, fields: {summary, description, labels, assign
     | $a.fields as $f
     | ($i
        | if $f | has("summary") then .summary = $f.summary else . end
-       | if $f | has("description") then .description = ($f.description | jira_drop) else . end
+       | if $f | has("description") then .description = $f.description else . end
        | if $f | has("labels") then .labels = $f.labels else . end
        | if $f | has("assignee") then .assignee = $f.assignee.accountId else . end) as $new
     | {s: ($s | .jira.issues[$i.key] = $new), out: {}}' "$1"

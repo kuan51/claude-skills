@@ -20,12 +20,13 @@ jira_new() { createJiraIssue "$(jq -nc --argjson x "$1" '{projectKey: "ABC", sum
   [ "$(state '.github.issues[0].parent')" = null ]
 }
 
-@test "jira epic parent: Task accepted, Sub-task rejected" {
+@test "jira epic parent: Task accepted, and Jira takes a Sub-task too" {
   jira_new '{"issueTypeName": "Epic"}'
   run -0 getJiraIssue '{"issueIdOrKey": "ABC-1"}'
   run -0 jira_new '{"issueTypeName": "Task", "parent": "ABC-1"}'
-  run -1 jira_new '{"issueTypeName": "Sub-task", "parent": "ABC-1"}'
-  [ "$(state '[.jira.issues[] | [.key, .parent]]')" = '[["ABC-1",null],["ABC-2","ABC-1"]]' ]
+  # Real Jira accepted this (TEST-220), so the type choice rests on the skill alone.
+  run -0 jira_new '{"issueTypeName": "Sub-task", "parent": "ABC-1"}'
+  [ "$(state '[.jira.issues[] | [.key, .issuetype, .parent]]')" = '[["ABC-1","Epic",null],["ABC-2","Task","ABC-1"],["ABC-3","Sub-task","ABC-1"]]' ]
 }
 
 @test "jira story parent: only Sub-task accepted" {
