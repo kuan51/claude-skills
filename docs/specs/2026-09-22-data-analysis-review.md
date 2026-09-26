@@ -6,6 +6,9 @@ generated: false
 
 # data-analysis-review: blind empirical review of a data science project
 
+> **Note:** from version 0.2.0, [#104](https://github.com/kuan51/claude-skills/issues/104)
+> supersedes this record's Behaviour and Deferred sections. The rest of the record is unchanged.
+
 Design record for the `data-analysis-review` plugin as it stands at version 0.1.2. It replaces
 four retired superpowers documents (the 2026-07-17 skill design, the 2026-07-20 prompt refactor,
 gating mode-awareness and reviewer grounding designs, and their plans), all of whose work shipped.
