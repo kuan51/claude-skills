@@ -124,10 +124,9 @@ web_link() {
   issue_write '{"method": "update", "owner": "acme", "repo": "app", "issue_number": 2, "state": "closed", "state_reason": "not_planned"}'
   [ "$(state '.github.issues[1] | [.state, .state_reason]')" = '["closed","not_planned"]' ]
   # Linear: the Canceled state.
-  save_issue '{"team": "ENG", "title": "t", "state": "In Review"}'
-  cancel=$(list_issue_statuses '{"team": "ENG"}' | jq -r "$_MATCH"'[.[] | select(.name | norm | IN(names("cancelled")[]))][0].name')
-  save_issue "{\"id\": \"ENG-1\", \"state\": \"$cancel\"}"
-  [ "$(state '.linear.issues["ENG-1"].state')" = '"Canceled"' ]
+  save_issue '{"team": "FAB", "title": "t", "state": "In Review"}'
+  linear_move FAB-1 cancelled
+  [ "$(state '.linear.issues["FAB-1"] | [.status, .statusType]')" = '["Canceled","canceled"]' ]
 }
 
 @test "closed unmerged, no cancel-type status: the status stays, never Done" {

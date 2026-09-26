@@ -62,8 +62,26 @@ tracker_init() {
       },
       issues: {}, links: {}
     },
-    # Team states include Canceled (skills/ticket/SKILL.md:259).
-    linear: {me: "lin-dev", teams: {ENG: {states: ["Backlog", "Todo", "In Progress", "In Review", "Done", "Canceled"]}}, issues: {}}
+    # FAB has the statuses and labels of the live Fabflows team (2026-09-26). OPS names its done
+    # and cancel statuses so that only their type finds them.
+    linear: {
+      me: "lin-dev",
+      teams: {
+        FAB: {
+          states: [
+            {name: "Backlog", type: "backlog"}, {name: "Todo", type: "unstarted"},
+            {name: "In Progress", type: "started"}, {name: "In Review", type: "started"},
+            {name: "Duplicate", type: "duplicate"}, {name: "Done", type: "completed"},
+            {name: "Canceled", type: "canceled"}],
+          labels: ["Bug", "Feature", "Improvement", "change-normal", "class-a", "class-b"]},
+        OPS: {
+          states: [
+            {name: "Backlog", type: "backlog"}, {name: "Doing", type: "started"},
+            {name: "Duplicate", type: "duplicate"}, {name: "Shipped", type: "completed"},
+            {name: "Dropped", type: "canceled"}],
+          labels: []}},
+      projects: {Test: {teams: ["FAB"]}, Ops: {teams: ["OPS"]}},
+      issues: {}}
   }' >"$BATS_TEST_TMPDIR/tracker.json"
 }
 
@@ -196,27 +214,60 @@ jira_create_remote_issue_link() { # {issue_key, url, title}
 }
 
 # ------------------------------------------------------------------ Linear
-# The parent is set on save_issue and must exist (skills/ticket/SKILL.md:69).
-save_issue() { # {id} to update, else {team, title}; plus description, parentId, state, labels, assignee
-  _call '.s as $s
-    | (if $a.parentId then ($s.linear.issues[$a.parentId] // error("parent issue not found")) else null end)
-    | (if $a.id then
-         ($s.linear.issues[$a.id] // error("issue not found"))
-         + ($a | with_entries(select(.key | IN("title", "description", "parentId", "state", "labels", "assignee"))))
-       else
-         ($s.linear.teams[$a.team] // error("team not found"))
+# As the live Fabflows team behaved (FAB-1 to FAB-12, 2026-09-26).
+_LIN='
+def lin_get($id): .linear.issues[$id] // error("Could not find issue \"\($id)\"");
+def lin_chain($id): if $id == null then empty else $id, lin_chain(.linear.issues[$id].parentId) end;
+# By name, else by type: "canceled" finds Canceled, never Duplicate (FAB-6).
+def lin_state($t; $v): ([.linear.teams[$t].states[] | select(.name == $v)] + [.linear.teams[$t].states[] | select(.type == $v)])[0]
+  // error("no state \($v) in team \($t)");
+# One unknown label refuses the whole call, and no label changes (FAB-4, labels, addLabels and removeLabels).
+def lin_labels($t; $l): .linear.teams[$t].labels as $have
+  | ($l // []) | map(. as $n | if $n | IN($have[]) then $n else error("Could not find label \"\($n)\"") end);
+'
+
+save_issue() { # {id} to update, else {team, title}; plus project, description, parentId, state, labels or addLabels/removeLabels, assignee, links
+  _call "$_LIN"'.s as $s
+    | (if $a.id then ($s | lin_get($a.id)) else
+         ($s.linear.teams[$a.team] // error("team not found")) as $t
          | {id: "\($a.team)-\([$s.linear.issues[] | select(.team == $a.team)] | length + 1)", team: $a.team,
-            title: $a.title, description: ($a.description // ""), parentId: ($a.parentId // null),
-            state: ($a.state // "Backlog"), labels: ($a.labels // []), assignee: ($a.assignee // null)}
-       end) as $new
-    | if ($new.state | IN($s.linear.teams[$new.team].states[])) | not then error("no state \($new.state) in team \($new.team)") else . end
+            title: ($a.title // error("title is required")), description: null, project: null, parentId: null,
+            status: "Backlog", statusType: "backlog", labels: [], assignee: null, attachments: []}
+       end) as $i
+    # The parent must exist and must not be a descendant (FAB-999 and FAB-1 under FAB-7 refused).
+    # A closed parent is accepted (FAB-12 under Canceled FAB-6): only setup refuses one.
+    | (if $a.parentId then ($s | lin_get($a.parentId)) | if $i.id | IN($s | lin_chain($a.parentId)) then
+         error("Cannot set parent because it would create a circular issue hierarchy.") else . end else . end)
+    # The project is not inherited from the parent (FAB-11): only a passed one is set.
+    | (if $a.project then ($s.linear.projects[$a.project] // error("project not found"))
+         | .teams as $ts | if ($i.team | IN($ts[])) | not then error("project is not in team \($i.team)") else . end else . end)
+    | if ($a | has("labels")) and (($a | has("addLabels")) or ($a | has("removeLabels"))) then error("labels cannot be combined with addLabels or removeLabels") else . end
+    | ($s | lin_labels($i.team; $a.labels)) as $set
+    | ($s | lin_labels($i.team; $a.addLabels)) as $add
+    | ($s | lin_labels($i.team; $a.removeLabels)) as $rm
+    | ($i
+       | if $a.title then .title = $a.title else . end
+       | if $a | has("description") then .description = $a.description else . end
+       | if $a | has("parentId") then .parentId = $a.parentId else . end
+       | if $a | has("project") then .project = $a.project else . end
+       | if $a.state then ($s | lin_state($i.team; $a.state)) as $st | .status = $st.name | .statusType = $st.type else . end
+       # labels replaces the set; addLabels and removeLabels go in one call (FAB-4).
+       | if $a | has("labels") then .labels = $set else .labels = ((.labels - $rm) + ($add - .labels)) end
+       # One assignee; "me" is the signed-in user (FAB-5).
+       | if $a | has("assignee") then .assignee = (if $a.assignee == "me" then $s.linear.me else $a.assignee end) else . end
+       # links attach once per URL: a second save with the same URL keeps the first (FAB-5).
+       | reduce ($a.links // [])[] as $l (.; if $l.url | IN(.attachments[].url) then . else .attachments += [$l] end)) as $new
     | {s: ($s | .linear.issues[$new.id] = $new), out: $new}' "$1"
 }
 
 get_issue() { # {id}
-  _call '.s as $s | {s: $s, out: ($s.linear.issues[$a.id] // error("issue not found"))}' "$1"
+  _call "$_LIN"'.s as $s | {s: $s, out: ($s | lin_get($a.id))}' "$1"
 }
 
 list_issue_statuses() { # {team}
-  _call '.s as $s | {s: $s, out: [($s.linear.teams[$a.team] // error("team not found")).states[] | {name: .}]}' "$1"
+  _call '.s as $s | {s: $s, out: ($s.linear.teams[$a.team] // error("team not found")).states}' "$1"
+}
+
+list_issue_labels() { # {team}
+  _call '.s as $s | {s: $s, out: {labels: [($s.linear.teams[$a.team] // error("team not found")).labels[] | {name: .}]}}' "$1"
 }

@@ -70,12 +70,31 @@ jira_new() { createJiraIssue "$(jq -nc --argjson x "$1" '{projectKey: "ABC", sum
   [ "$(state '.github.issues[] | select(.repo == "app") | [.number, .parent]')" = '[1,"other/lib#7"]' ]
 }
 
-@test "linear parent set" {
-  save_issue '{"team": "ENG", "title": "parent"}'
-  run -0 save_issue '{"team": "ENG", "title": "t", "parentId": "ENG-1"}'
-  [ "$(state '.linear.issues["ENG-2"].parentId')" = '"ENG-1"' ]
-  run -1 save_issue '{"team": "ENG", "title": "t", "parentId": "ENG-9"}'
-  [ "$(state '.linear.issues | length')" = 2 ]
+@test "linear: created in the project under the parent; the project is not inherited" {
+  save_issue '{"team": "FAB", "project": "Test", "title": "parent"}'
+  # Pass the project with the parent (FAB-2): a child without one gets none (FAB-11).
+  run -0 save_issue '{"team": "FAB", "project": "Test", "title": "t", "parentId": "FAB-1"}'
+  run -0 save_issue '{"team": "FAB", "title": "t", "parentId": "FAB-1"}'
+  [ "$(state '[.linear.issues[] | [.id, .project, .parentId]]')" = '[["FAB-1","Test",null],["FAB-2","Test","FAB-1"],["FAB-3",null,"FAB-1"]]' ]
+  run -1 save_issue '{"team": "FAB", "project": "Ops", "title": "t"}'
+  [[ $output == *"not in team"* ]]
+}
+
+@test "linear: a missing or circular parent is refused and leaves no issue" {
+  save_issue '{"team": "FAB", "project": "Test", "title": "parent"}'
+  save_issue '{"team": "FAB", "project": "Test", "title": "child", "parentId": "FAB-1"}'
+  before=$(state '.')
+  run -1 save_issue '{"team": "FAB", "project": "Test", "title": "t", "parentId": "FAB-9"}'
+  run -1 save_issue '{"id": "FAB-1", "parentId": "FAB-2"}'
+  [[ $output == *"circular"* ]]
+  [ "$(state '.')" = "$before" ]
+}
+
+@test "linear takes a canceled parent: only setup's check keeps it out" {
+  save_issue '{"team": "FAB", "title": "parent", "state": "canceled"}'
+  # Accepted live (FAB-12 under FAB-6), so fabflows-setup must refuse a closed parent itself.
+  run -0 save_issue '{"team": "FAB", "title": "t", "parentId": "FAB-1"}'
+  [ "$(state '.linear.issues["FAB-2"].parentId')" = '"FAB-1"' ]
 }
 
 @test "linking an existing ticket never re-parents it" {

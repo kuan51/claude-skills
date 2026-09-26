@@ -82,3 +82,24 @@ closes() {
   local re='(^|[^A-Za-z])(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+'
   grep -qiE "$re$2([^A-Za-z0-9-]|\$)" <<<"$1"
 }
+
+# Move a Linear issue toward <target>, forward only. Linear has no transitions: any status is
+# reachable, even backwards (FAB-7 Done to Backlog), so the order is kept here. done and
+# cancelled match on the status type, in progress and in review on the name (both are type
+# started). Prints "no fit" when nothing matches.
+linear_move() {
+  local id=$1 target=$2 cur name
+  cur=$(get_issue "{\"id\": \"$id\"}") || return 1
+  name=$(list_issue_statuses "$(jq -c '{team}' <<<"$cur")" | jq -r --argjson cur "$cur" --arg t "$target" "$_MATCH"'
+    def pick($t): if $t == "done" then [.[] | select(.type == "completed")][0].name
+      elif $t == "cancelled" then [.[] | select(.type == "canceled")][0].name
+      else [.[] | select(.name | norm | IN(names($t)[]))][0].name end;
+    (if $cur.statusType | IN("completed", "canceled", "duplicate") then 3 else $cur.status | rank end) as $r
+    | if $r >= {"in progress": 1, "in review": 2, "done": 3, "cancelled": 3}[$t] then empty
+      else pick($t) // (if $t == "in review" and $r < 1 then pick("in progress") else null end) // "no fit" end') || return 1
+  case "$name" in
+    "") ;;
+    "no fit") echo "no fit" ;;
+    *) save_issue "$(jq -nc --arg id "$id" --arg s "$name" '{id: $id, state: $s}')" >/dev/null ;;
+  esac
+}

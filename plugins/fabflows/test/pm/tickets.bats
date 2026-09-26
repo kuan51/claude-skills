@@ -126,3 +126,55 @@ task() { createJiraIssue "{\"projectKey\": \"$1\", \"issueTypeName\": \"Task\", 
   [ "$output" = "no fit" ]
   [ "$(status NDN-1)" = "In Review" ]
 }
+
+lin() { get_issue "{\"id\": \"$1\"}" | jq -c "$2"; }
+
+@test "linear status: forward only, done and cancelled found by type" {
+  save_issue '{"team": "FAB", "title": "t"}'
+  linear_move FAB-1 "in progress"
+  linear_move FAB-1 "in review"
+  linear_move FAB-1 "in progress"
+  [ "$(lin FAB-1 .status)" = '"In Review"' ]
+  linear_move FAB-1 done
+  linear_move FAB-1 "in review"
+  [ "$(lin FAB-1 .status)" = '"Done"' ]
+  # OPS names them Shipped and Dropped, which no name list has; Duplicate is never picked.
+  save_issue '{"team": "OPS", "title": "t"}'
+  save_issue '{"team": "OPS", "title": "t"}'
+  linear_move OPS-1 done
+  linear_move OPS-2 cancelled
+  [ "$(state '[.linear.issues["OPS-1", "OPS-2"].status]')" = '["Shipped","Dropped"]' ]
+}
+
+@test "linear labels: only labels that exist are added, the rest are reported" {
+  save_issue '{"team": "FAB", "title": "t", "labels": ["Bug", "class-a"]}'
+  printf '%s\n' '## Why' 'x' '## Compliance' '- Controls: soc2-cc8.1' '- Change: normal' '- Class: B' >"$BATS_TEST_TMPDIR/spec.md"
+  run -0 cli labels <"$BATS_TEST_TMPDIR/spec.md"
+  want=$(jq -c -R -s 'split("\n") | map(select(. != ""))' <<<"$output")
+  # One unknown label refuses the whole call (FAB-4): ctl-soc2-cc8-1 does not exist here.
+  run -1 save_issue "{\"id\": \"FAB-1\", \"addLabels\": $want}"
+  [ "$(lin FAB-1 .labels)" = '["Bug","class-a"]' ]
+  have=$(list_issue_labels '{"team": "FAB"}' | jq -c '[.labels[].name]')
+  cur=$(lin FAB-1 .labels)
+  fab='^(ctl-.*|change-(normal|standard|emergency)|class-(a|b|c|na))$'
+  add=$(jq -nc --argjson w "$want" --argjson h "$have" '$w - ($w - $h)')
+  rm=$(jq -nc --argjson c "$cur" --argjson w "$want" --arg re "$fab" '[$c[] | select(test($re))] - $w')
+  missing=$(jq -nc --argjson w "$want" --argjson h "$have" '$w - $h')
+  save_issue "{\"id\": \"FAB-1\", \"addLabels\": $add, \"removeLabels\": $rm}"
+  [ "$(lin FAB-1 '.labels | sort')" = '["Bug","change-normal","class-b"]' ]
+  [ "$missing" = '["ctl-soc2-cc8-1"]' ]
+}
+
+@test "linear assignee: me when unassigned or mine, never over someone else" {
+  assign() {
+    local cur
+    cur=$(lin "$1" '.assignee // ""' | jq -r .)
+    [ -z "$cur" ] || [ "$cur" = lin-dev ] || return 0
+    save_issue "{\"id\": \"$1\", \"assignee\": \"me\"}" >/dev/null
+  }
+  save_issue '{"team": "FAB", "title": "t"}'
+  save_issue '{"team": "FAB", "title": "t", "assignee": "bob"}'
+  assign FAB-1
+  assign FAB-2
+  [ "$(state '[.linear.issues[] | .assignee]')" = '["lin-dev","bob"]' ]
+}
