@@ -33,20 +33,21 @@ These are readings of the table, not measurements.
 - fabflows pays for itself on work big enough to hand off, such as a spec'd build or a read
   across many files. On a small edit it costs 33% to 42% more for the same result, so do small
   things without it.
-- In the fabflows benchmark, every run with and without the plugin hit the ceiling of the graded
-  tests. Those runs show a cost difference and say nothing about quality either way
-  (`RESULTS.md:673`).
+- In every fabflows comparison with no plugin (iterations 1, 2, 5 and 6), both arms hit the
+  ceiling of the graded tests. Those runs show a cost difference and say nothing about quality
+  either way (`RESULTS.md:673`).
 - `brainstorming` is the one skill measured to improve output against no skill, and only on its
   first reply (`brainstorming/iteration-1.md:25`).
 - An earlier run of the same build, iteration 5, cost 53% more (`RESULTS.md:687`). The
   iteration 6 section of `RESULTS.md` explains what changed between the two (`:605`).
-- At two runs per arm, these figures give a direction, not statistical significance. The
-  fabflows README says the same of its runs (`plugins/fabflows/README.md:277`).
+- The fabflows rows rest on two runs per arm and the brainstorming row on one run of each
+  eval, so these figures give a direction, not statistical significance. The fabflows README
+  says the same of its runs (`plugins/fabflows/README.md:277`).
 
 ## Not yet measured against no skill
 
 - **docs-warden.** Its recorded runs measured triggering only: whether the skill starts on the
-  prompts meant for it. Its Tier 2 matrix does compare with and without the plugin
+  prompts meant for it and stays quiet on near-misses. Its Tier 2 matrix does compare with and without the plugin
   (`plugins/docs-warden/evals/README.md:87`), but has never run (`:156`). Full results:
   [plugins/docs-warden/evals/README.md](../plugins/docs-warden/evals/README.md).
 - **ciso.** A trigger list run by hand,
