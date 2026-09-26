@@ -91,14 +91,15 @@ first session.
     with the refuter attacking the draft before it is written.
   - **Tickets.** `fabflows-setup` and `ticket` keep specs in a GitHub Issues, Jira or Linear
     ticket. On a linked branch a hook requires the ticket's trailers on commits and its key in
-    the PR title, and at session start it reminds Claude to close tickets whose PR merged or
+    the PR title. At session start it also reminds Claude to close tickets whose PR merged or
     closed outside the session.
   - **Trace.** `trace` writes an audit trace report tracing every merged change to its ticket,
     approved spec and approvers.
-  - **Guard hook.** An active hook asks before package installs and runners such as `npx`,
-    denies them in workers (except `pypdf` into a scratchpad, for reading a PDF), and blocks
-    commits and pushes to a default branch, destructive commands, and credential reads and
-    writes. Read the plugin's README, including its "Known gaps" section, before installing.
+  - **Guard hook.** An active hook asks before package installs and runners such as `npx` and
+    denies them in workers. It lets through only `pypdf` into a scratchpad, for reading a PDF.
+    It also blocks commits and pushes to a default branch, destructive commands, and credential
+    reads and writes. Read the plugin's README, including its "Known gaps" section, before
+    installing.
   - **Measured.** On a spec'd build with Opus 5.5 workers, fabflows matched a plain Fable
     session on 41 hidden tests at 18% lower list price and 83% fewer lead output tokens. See
     [docs/EVALS.md](docs/EVALS.md).
