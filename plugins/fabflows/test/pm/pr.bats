@@ -89,7 +89,8 @@ web_link() {
   run -0 cli clear --pr "$url"
   [ "$(jira_status)" = Done ]
   run -1 cli status
-  [ -z "$(cli prs)" ]
+  run -0 cli prs
+  [ -z "$output" ]
 }
 
 @test "gh pr close and an MCP close give no reminder (documented gap)" {
@@ -141,7 +142,8 @@ web_link() {
   run -1 closes "$(pr_get 2 | jq -r .body)" '#1'
   cli clear --pr "$url"
   [ "$(state '.github.issues[0].state')" = '"open"' ]
-  [ -z "$(cli prs)" ]
+  run -0 cli prs
+  [ -z "$output" ]
 }
 
 @test "a PR closed outside the session: SessionStart names it and prs lists it" {
@@ -172,5 +174,6 @@ web_link() {
   run -0 steps
   [ "$(state '.')" = "$before" ]
   [ "$(state '.github.issues[0] | [.state, .state_reason]')" = '["closed","completed"]' ]
-  [ -z "$(cli prs)" ]
+  run -0 cli prs
+  [ -z "$output" ]
 }

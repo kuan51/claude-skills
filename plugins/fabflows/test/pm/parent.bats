@@ -39,11 +39,11 @@ jira_new() { createJiraIssue "$(jq -nc --argjson x "$1" '{projectKey: "ABC", sum
 @test "jira sub-task or cross-project parent: refused, no ticket left" {
   jira_new '{"issueTypeName": "Story"}'
   jira_new '{"issueTypeName": "Sub-task", "parent": "ABC-1"}'
-  createJiraIssue '{"projectKey": "XYZ", "summary": "s", "issueTypeName": "Epic"}'
+  createJiraIssue '{"projectKey": "XYZ", "summary": "s", "issueTypeName": "Story"}'
   before=$(state '.')
   run -1 jira_new '{"issueTypeName": "Sub-task", "parent": "ABC-2"}'
   [[ $output == *"cannot be a parent"* ]]
-  run -1 jira_new '{"issueTypeName": "Task", "parent": "XYZ-1"}'
+  run -1 jira_new '{"issueTypeName": "Sub-task", "parent": "XYZ-1"}'
   [[ $output == *"another project"* ]]
   [ "$(state '.')" = "$before" ]
 }

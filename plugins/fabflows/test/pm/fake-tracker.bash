@@ -133,11 +133,12 @@ createJiraIssue() { # {projectKey, issueTypeName, summary, description, parent}
   _call '.s as $s
     | ($s.jira.projects[$a.projectKey] // error("no project \($a.projectKey)")) as $proj
     | if ($a.issueTypeName | IN("Epic", "Story", "Task", "Sub-task")) | not then error("unknown issue type") else . end
-    # Epic > Story/Task > Sub-task, in one project (skills/ticket/SKILL.md:64-66, skills/fabflows-setup/SKILL.md:49-51).
+    # Epic > Story/Task > Sub-task (skills/ticket/SKILL.md:64-66). A story or task parent must share
+    # the project, since its sub-tasks must (skills/fabflows-setup/SKILL.md:49-51); an epic may not.
     | (if $a.parent == null then
          (if $a.issueTypeName == "Sub-task" then error("a sub-task needs a parent") else null end)
        else ($s | jira_get($a.parent)) as $p
-         | if $p.project != $a.projectKey then error("the parent is in another project")
+         | if ($p.issuetype | IN("Story", "Task")) and $p.project != $a.projectKey then error("the parent is in another project")
            elif $p.issuetype == "Sub-task" then error("a sub-task cannot be a parent")
            elif $p.issuetype == "Epic" and ($a.issueTypeName | IN("Task", "Story") | not) then error("under an epic only Task or Story")
            elif ($p.issuetype | IN("Story", "Task")) and $a.issueTypeName != "Sub-task" then error("under a story or task only Sub-task")
