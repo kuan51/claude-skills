@@ -235,8 +235,8 @@ the old default.
 
 fabflows includes a benchmark (`evals/`) that runs a headless Fable lead on the same task
 with and without the plugin and grades the result programmatically, never from what the lead
-said it did. The benchmark has run six iterations. Every number below is a mean of two runs per arm from
-`evals/RESULTS.md`, which also carries the caveats.
+said it did. The benchmark has run 13 iterations. Every number below comes from
+`evals/RESULTS.md`, which also carries the caveats, and the table is a mean of two runs per arm.
 
 **The build loop, on the task fabflows is for** (iteration 6, 2026-09-22: a library and CLI
 built from a spec in an empty repository, graded by 41 hidden acceptance tests, Opus 5.5
@@ -262,8 +262,9 @@ loads the skill and deliberates instead of just doing it. On a large read (13 re
 characters) the Haiku explorer came in 12% cheaper with a lead context 12k tokens smaller. On
 the same build task under Opus 5, with shell denials knocking the review out of the loop, the
 loop cost +53% (iteration 5). The fixes that followed (DEC-0016) and Opus 5.5 turned that into
-the table above. The `brainstorming` skill's own evals score 100% with the skill against 87.5%
-without on spec quality.
+the table above. The `brainstorming` skill's own evals score 100% against 87.5% for the older
+version of the skill, and 94% against 50% with no skill on the first reply
+([`evals/brainstorming/`](evals/brainstorming/)).
 
 **What the review does and does not catch** (iterations 7 and 8, a brownfield fixture with one
 planted bug). When the spec states the rule the bug breaks, every lead and builder fixes it before
