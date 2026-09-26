@@ -79,7 +79,8 @@ A repository can keep its specs in a tracker ticket instead of `docs/specs/`, so
 carries no spec file and the spec sits where managers track the work.
 
 **Setup.** Run `/fabflows-setup` once. It asks for GitHub Issues, Jira, Linear or none,
-checks that the tracker's MCP tools are loaded, asks for the project and an optional parent
+checks that the tracker's MCP tools are loaded, asks for the project (for Linear, the team
+and then the project, usually named after the repository) and an optional parent
 epic, story or issue that every new ticket is filed under, and writes
 `.claude/fabflows.json`, which is committed. It never connects a server and never handles a
 secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carries the

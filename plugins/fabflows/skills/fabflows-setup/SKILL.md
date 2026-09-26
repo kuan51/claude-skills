@@ -37,8 +37,12 @@ reads or stores a token, key or password: a secret typed into chat stays in the 
 | --- | --- | --- |
 | GitHub | `owner/repo` | from `git remote get-url origin` |
 | Jira | project key, and optionally the site (`example.atlassian.net`) | none |
-| Linear | team key | none |
+| Linear | team key, then a project in that team | the project named after the repository |
 | Other | whatever names the project in that tracker | none |
+
+For Linear, list the team's projects with `list_projects` (`team`) and offer the one named
+after the repository first. Refuse a project that is not in the team. If none fits, offer to
+create one with `save_project` (`name`, `addTeams: [<team>]`), and create it only on a yes.
 
 For GitHub, Jira or Linear, then ask whether new tickets should be filed under a parent: an
 epic or story (`ABC-7`) for Jira, an issue (`#7`, or `owner/repo#7` in another repository)
@@ -47,8 +51,9 @@ Other tracker gets no parent.
 
 When given, read it once with the tracker's read tool from `fabflows:ticket`'s tool table
 and check it can hold child tickets. Refuse one not found, a GitHub pull request or closed
-issue, a Jira sub-task, and a Jira story or task outside `project`, since its sub-tasks must
-share its project. For GitHub, also check that `issue_write` takes `parent_issue_number`. An
+issue, a Jira sub-task, a Jira story or task outside `project`, since its sub-tasks must
+share its project, and a Linear issue whose status type is `completed`, `canceled` or
+`duplicate`: Linear accepts a closed parent, so this check is the only guard. For GitHub, also check that `issue_write` takes `parent_issue_number`. An
 older server without it cannot attach a parent. On any refusal, say why, then ask again or
 go on without one.
 
@@ -72,6 +77,12 @@ Write `.claude/fabflows.json` with the Write tool:
 
 ```json
 {"tracker": "jira", "project": "ABC", "site": "example.atlassian.net", "parent": "ABC-7", "compliance": {"frameworks": ["soc2", "iso27001"]}}
+```
+
+For Linear, `team` holds the team key and `project` the project name:
+
+```json
+{"tracker": "linear", "team": "FAB", "project": "claude-skills", "site": "", "parent": "FAB-7"}
 ```
 
 `tracker` is `github`, `jira`, `linear`, or the Other name in lowercase with dashes.

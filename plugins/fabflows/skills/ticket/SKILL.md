@@ -24,7 +24,7 @@ MCP tool names carry a server prefix (`mcp__<server>__issue_read`), so match on 
 | GitHub Issues | `issue_read` | `issue_write` | `issue_write` (open, closed) | `add_issue_comment` | none needed: the PR's closing phrase or `Refs` line links it |
 | Jira (Atlassian Rovo) | `getJiraIssue` | `createJiraIssue`, `editJiraIssue` | `getTransitionsForJiraIssue`, then `transitionJiraIssue` | `addCommentToJiraIssue` (v2 servers: `addOrEditJiraIssueComment`) | read: `getJiraIssueRemoteIssueLinks`. Create: none |
 | Jira (mcp-atlassian, untested) | `jira_get_issue` | `jira_create_issue`, `jira_update_issue` | `jira_get_transitions`, then `jira_transition_issue` | `jira_add_comment` | read: `jira_get_issue` with `include: "remote_links"`. Create: `jira_create_remote_issue_link` |
-| Linear (untested) | `get_issue` | `save_issue` | `save_issue` | `save_comment` | not covered |
+| Linear | `get_issue` | `save_issue` | `list_issue_statuses`, then `save_issue` | `save_comment` (untested) | not covered |
 
 Other tracker: find the equivalent tools with ToolSearch and tell the user they are untested.
 
@@ -66,7 +66,10 @@ create call itself, so a refused parent leaves no ticket behind:
   project's sub-task type, the only type Jira nests there.
 - GitHub: pass the parent's number as `parent_issue_number` to `issue_write` create. For a
   parent in another repository (`owner/repo#7`), also pass `parent_owner` and `parent_repo`.
-- Linear (untested): set the parent issue on `save_issue`.
+- Linear: pass `team`, `project` and `parentId` to `save_issue`. A child does not inherit
+  its parent's project, so always pass `project`. Linear refuses a missing parent and a
+  loop. A config with no `team` predates Linear projects: its `project` is the team key, so
+  pass it as `team`, file no project, and tell the user to run `/fabflows-setup` again.
 
 This applies only to tickets you create: linking an existing ticket never re-parents it.
 Attaching the new ticket is the only change the parent gets, and the user's yes to create
@@ -76,8 +79,9 @@ refuses the parent, say so and ask before creating the ticket without it.
 ## Body template
 
 Plain bullets only: no task lists and no tables. Through the Atlassian Rovo server, Jira
-keeps a table but shows a task list as plain bullets without its checkboxes; other servers
-are untested.
+keeps a table but shows a task list as plain bullets without its checkboxes. Linear keeps
+both, but rewrites `-` bullets as `*` and an issue key such as `FAB-4` as an `<issue>` tag,
+which the user sees in the raw text. Other servers are untested.
 
 ```markdown
 ## Why
@@ -120,7 +124,10 @@ After writing the section, write the ticket text to a scratch file with the Writ
 run `ticket.js labels < <file>`. Set the labels it prints with the tracker's label tools,
 Jira `editJiraIssue` with `fields: { labels: [...] }` (confirmed from the tool schema),
 GitHub `issue_write` with `labels`, which replaces the whole list (confirmed by a live
-test), Linear untested. Pass the ticket's other labels too. When replacing labels, remove
+test). Pass the ticket's other labels too. On Linear, one unknown label name refuses the
+whole call and changes nothing, so list the team's labels with `list_issue_labels` first,
+then call `save_issue` with `addLabels` (the printed labels that exist) and `removeLabels`
+(fabflows' own labels no longer printed) in one call, and report the rest. When replacing labels, remove
 only fabflows' own: any `ctl-` label, `change-normal`, `change-standard`,
 `change-emergency`, `class-a`, `class-b`, `class-c` and `class-na`. Keep every other label.
 Labels are a best-effort copy of the section: a label Claude cannot set (the tracker rejects
@@ -177,7 +184,11 @@ unmerged (then it is closed as not planned).
 On Jira and Linear, list where the ticket can move before choosing. On Jira, call
 `getTransitionsForJiraIssue` and match on each transition's target, its `to` status,
 never on the transition name: a transition named Reviewed can lead to Working as Designed.
-On Linear (untested), find the tool that lists the team's statuses with ToolSearch.
+On Linear, call `list_issue_statuses` for the team and pass the chosen name as `state` to
+`save_issue`. Each status has a type: done is the `completed` type and cancelled the
+`canceled` type, never `duplicate`. In progress and in review are both `started`, so match
+those on the name. Linear lets a ticket move anywhere, even backwards, so keeping it
+forward is up to you.
 
 Workflows name statuses differently, so pick the closest match:
 
@@ -215,9 +226,10 @@ Add that user and keep everyone already assigned:
     `issue_write` with the current `assignees` plus your `get_me` login.
   - Jira (Atlassian Rovo): `getJiraIssue`, then your `account_id` from `atlassianUserInfo`,
     then `editJiraIssue` with `fields: { assignee: { accountId: <account_id> } }`.
-  - Jira (mcp-atlassian, untested) and Linear (untested): find a tool that names the
-    signed-in user with ToolSearch, then set the assignee with `jira_update_issue` or
-    `save_issue`.
+  - Linear: `get_issue`, then `save_issue` with `assignee: "me"`. A Linear ticket has one
+    assignee, so there is no list to keep.
+  - Jira (mcp-atlassian, untested): find a tool that names the signed-in user with
+    ToolSearch, then set the assignee with `jira_update_issue`.
 
 Assign a ticket only when it is unassigned or already yours. One held by someone else is
 changed only after the user says yes. Assignment is best-effort and never blocks the PR: if
@@ -258,7 +270,7 @@ with a recorded PR. For each PR:
      the tool schema, but untested live).
    - Jira: `getTransitionsForJiraIssue`, then the transition whose `to` status is the
      closest cancelled match, per [Status](#status), never matched on the transition name.
-   - Linear (untested): the Canceled state.
+   - Linear: `save_issue` with `state` set to the status of type `canceled`.
    - Another tracker: find the tools with ToolSearch and say they are untested.
    - No cancel-type status: leave the status as it is and tell the user. **Never fall back
      to Done** for work that didn't land.

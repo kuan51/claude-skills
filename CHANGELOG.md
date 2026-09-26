@@ -8,6 +8,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.13.0** -- Linear tickets are filed in the repository's Linear project. For
+  Linear, `/fabflows-setup` now asks for the team key (a new `team` field) and then a project
+  in that team, offering the one named after the repository and creating one only on a yes.
+  It refuses a closed parent issue, which Linear itself accepts. Tested live in a Linear
+  team, the `ticket` skill passes the project on every create, since a child does not
+  inherit it. It finds done and cancelled by status type, never Duplicate. It adds only
+  labels that exist, because one unknown label makes Linear refuse the whole change, and
+  assigns with `"me"`. A config written before this reads its `project` as the team key.
 - **fabflows 0.12.0** -- a linked ticket is handled when its PR merges or closes outside the
   session (#86). At startup only, `ticket.js` names every other confirmed link with a
   recorded PR, on any checkout, and the new `ticket.js prs` lists them as JSON without branch
@@ -217,7 +225,7 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
-- **fabflows 0.12.1** -- the `ticket` skill no longer says Jira drops tables. Tested against
+- **fabflows 0.13.0** -- the `ticket` skill no longer says Jira drops tables. Tested against
   real Jira through the Atlassian Rovo server, Jira keeps a table and shows a task list as
   plain bullets without its checkboxes. The plain-bullets rule for the ticket body is
   unchanged.
