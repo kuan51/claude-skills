@@ -71,7 +71,11 @@ Behavioral evals for a plugin's skills live in `plugins/<name>/evals/` in
 `graders/*.md` and, when the case needs a seeded repository, `case.yaml` plus
 `fixture.sh`. They spend tokens and never run under the unit tests; each plugin's
 `evals/README.md` gives the command and its prerequisites. `docs-warden` has the
-first suite (DEC-0022).
+one suite in that format (DEC-0022). `fabflows`'s benchmark predates it and keeps its
+own harness under `evals/harness/`. `ciso` and `data-analysis-review` have
+trigger-accuracy lists run by hand, in `evals/RUNBOOK.md` and
+`skills/data-analysis-review/references/evals.md`. Every recorded result is
+collected in [EVALS.md](EVALS.md).
 
 ## Documentation
 
