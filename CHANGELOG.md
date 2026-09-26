@@ -164,7 +164,7 @@ per-plugin history until entries are recorded here going forward.
 ### Changed
 
 - **fabflows 0.13.1** -- wording only (#101). The description in `plugin.json`, in
-  `marketplace.json` and in the root README is cut to a few sentences with the same facts.
+  `marketplace.json` and in the root README is shorter and keeps the same facts.
   The plugin README now says the benchmark has run 13 iterations, not six. It says the 87.5%
   that `brainstorming` beat was the older version of that skill, and adds the 94% against 50%
   with no skill. Short tasks cost +33% to +42% with the skill, not +21%, which was iteration
