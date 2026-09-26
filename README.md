@@ -37,23 +37,25 @@ so it picks up the newly installed plugin.
   and indexed, offers to archive the oldest into a digest once fifty are decided, and reports
   where the docs have drifted from the code instead of silently rewriting them.
   Includes a domain-model skill that maps a repo's concepts, their relationships,
-  and which document describes each, in Python, JS/TS, PowerShell and Terraform;
-  a plain-English Vale style; and compliance
+  and which document describes each, in Python, JS/TS, PowerShell and Terraform. It
+  also includes a plain-English Vale style and compliance
   overlays for IEC 62304, the OSPS Baseline, the EU Cyber Resilience Act and
   NIST SSDF.
 - **[fabflows](plugins/fabflows/)**: orchestration for a session whose lead runs on an
-  expensive model: six worker agents, each pinned to a tier (`explorer` and
+  expensive model. It has six worker agents, each pinned to a tier (`explorer` and
   `researcher` on Haiku, `editor` and `test-runner` on Sonnet, `refuter` and
-  `investigator` on Opus) and scoped to the smallest tool list that does its job; a
-  skill that makes the lead write a proper delegation brief and re-verify what comes
-  back instead of trusting it; `fabflows:build`, a deterministic build-and-review
-  loop for a spec'd change; and `using-fabflows`, the entrypoint skill you invoke at the
-  start of a conversation to put the whole session on that discipline; and `brainstorming`,
-  which turns a rough idea into a spec the build loop can take, with the refuter attacking
-  the draft before it is written; and `fabflows-setup` plus `ticket`, which keep specs in a
+  `investigator` on Opus) and scoped to the smallest tool list that does its job. A
+  skill makes the lead write a proper delegation brief and re-verify what comes
+  back instead of trusting it. `fabflows:build` is a deterministic build-and-review
+  loop for a spec'd change, and `using-fabflows` is the entrypoint skill you invoke at the
+  start of a conversation to put the whole session on that discipline. `brainstorming`
+  turns a rough idea into a spec the build loop can take, with the refuter attacking
+  the draft before it is written. `fabflows-setup` plus `ticket` keep specs in a
   GitHub Issues, Jira or Linear ticket instead of `docs/specs/`, with a hook that puts the
-  ticket key on every commit and PR; and `trace`, which writes an audit trace report
-  tracing every merged change to its ticket, approved spec and approvers. Includes an
+  ticket key on every commit and PR. At the start of a new session, that hook also reminds
+  Claude to close tickets whose PR merged or closed outside the session. `trace` writes an
+  audit trace report tracing every merged change to its ticket, approved spec and
+  approvers. Includes an
   **active guard hook** that asks you before package installs and package runners such
   as `npx`, and denies them in workers (one exception: `pypdf` into a literal scratchpad
   `--target` with `--isolated`), and blocks default-branch commits,
