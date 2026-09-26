@@ -173,9 +173,12 @@ test('a cross-compare entry without a verdict renders as (no verdict), never as 
   assert.ok(!out.includes('undefined'));
 });
 
-test('an executive summary given as one string renders as a one-item list', () => {
+test('an executive summary given as one string renders one bullet per non-blank line', () => {
   const out = buildReport(REAL_TEMPLATE, { executiveSummary: 'One line.' });
   assert.ok(section(out, 'Executive summary').includes('- One line.'));
+  const multi = buildReport(REAL_TEMPLATE, { executiveSummary: 'Supported.\n\nAffects rollout.\nAdd a baseline.\n' });
+  assert.ok(section(multi, 'Executive summary').includes('- Supported.\n- Affects rollout.\n- Add a baseline.'));
+  assert.ok(section(buildReport(REAL_TEMPLATE, { executiveSummary: '  \n ' }), 'Executive summary').includes('_No executive summary provided._'));
 });
 
 test('prints each new section placeholder when empty', () => {

@@ -38,7 +38,7 @@ and install the plugin.
      domain/business alignment, reproducibility) plus optional extra reviewers if the project
      touches a specialized domain (clinical, financial, fairness-sensitive, time-series, causal).
    - Asks whether you want the final report saved to a file, or just shown in the conversation.
-4. Once you approve the plan, Claude runs the analysis: each reviewer independently examines the
+4. After the questions (or, in plan mode, once you approve the plan), Claude runs the analysis: each reviewer independently examines the
    raw data and code (executing code to verify claims empirically where it can) without ever
    seeing what the project itself concluded. Their findings are reconciled for cross-role
    contradictions, then checked against the project's own stated conclusions, one topic at a time.

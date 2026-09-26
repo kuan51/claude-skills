@@ -29,7 +29,7 @@ function bullets(value) {
 }
 
 function renderExecutiveSummary(value) {
-  const summary = typeof value === 'string' && value ? [value] : value;
+  const summary = typeof value === 'string' ? value.split('\n').map((s) => s.trim()).filter(Boolean) : value;
   if (!Array.isArray(summary) || !summary.length) return '_No executive summary provided._';
   return summary.map((s) => `- ${s}`).join('\n');
 }
