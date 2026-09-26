@@ -189,3 +189,22 @@ test('renders a 0.1.2-shaped result through the real template with no undefined 
   assert.ok(section(out, 'Cross-Comparison').includes('- **Decision affected / materiality:** none identified'));
   assert.ok(section(out, "Independent findings the project's report does not address").includes('### Not Addressed topic\n'));
 });
+
+test('a token inside a substituted value stays literal and is not expanded', () => {
+  const out = buildReport(REAL_TEMPLATE, { thesis: 'goal {{RECOMMENDATIONS}} end', recommendations: 'RECS-TEXT' });
+  const thesis = section(out, 'Thesis & Goals');
+  assert.ok(thesis.includes('goal {{RECOMMENDATIONS}} end'));
+  assert.ok(!thesis.includes('RECS-TEXT'));
+  assert.equal(section(out, 'Recommendations').split('RECS-TEXT').length - 1, 1);
+});
+
+test('a template token with no map entry stays literal', () => {
+  assert.equal(buildReport('{{NOPE}} {{PROJECT_NAME}}', { projectName: 'P' }), '{{NOPE}} P');
+});
+
+test('recommendations and scope given as arrays render as bullet lists', () => {
+  const out = buildReport(REAL_TEMPLATE, { scope: ['Four roles.', 'No skills.'], recommendations: ['Add a holdout.', 'Pin pandas.'] });
+  assert.ok(section(out, 'Scope & Method').includes('- Four roles.\n- No skills.'));
+  assert.ok(section(out, 'Recommendations').includes('- Add a holdout.\n- Pin pandas.'));
+  assert.ok(!out.includes('Add a holdout.,Pin'));
+});

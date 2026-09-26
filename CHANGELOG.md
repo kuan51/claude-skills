@@ -8,6 +8,10 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **data-analysis-review 0.2.1** -- the report builder fills every template token in one
+  pass, so a token inside reviewed text (thesis, evidence, a finding) is never expanded under
+  another heading (#113). Any braced token in the template is looked up, so the map is the one
+  source of truth; an array given for scope or recommendations renders as bullets.
 - **fabflows 0.13.0** -- Linear tickets are filed in the repository's Linear project. For
   Linear, `/fabflows-setup` now asks for the team key (a new `team` field) and then a project
   in that team, offering the one named after the repository and creating one only on a yes.

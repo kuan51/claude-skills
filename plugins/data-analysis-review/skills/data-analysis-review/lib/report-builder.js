@@ -23,6 +23,11 @@ function impactLine(value) {
   return `- **Decision affected / materiality:** ${value || 'none identified'}`;
 }
 
+// An array field renders as bullets instead of a comma-joined line.
+function bullets(value) {
+  return Array.isArray(value) ? value.map((v) => `- ${v}`).join('\n') : value;
+}
+
 function renderExecutiveSummary(summary) {
   if (!Array.isArray(summary) || !summary.length) return '_No executive summary provided._';
   return summary.map((s) => `- ${s}`).join('\n');
@@ -104,7 +109,7 @@ function buildReport(templateText, data) {
     '{{PLUGIN_VERSION}}': pluginVersion(),
     '{{EXECUTIVE_SUMMARY}}': renderExecutiveSummary(data.executiveSummary),
     '{{THESIS}}': data.thesis || '',
-    '{{SCOPE}}': data.scope || '',
+    '{{SCOPE}}': bullets(data.scope) || '',
     '{{FINDINGS}}': renderFindings(data.eda),
     '{{DISAGREEMENTS}}': renderDisagreements(data.disagreements) + renderOverCap(data.overCap),
     '{{CROSS_COMPARE}}': renderCrossCompare(data.crossCompare),
@@ -112,13 +117,10 @@ function buildReport(templateText, data) {
     '{{VERDICT_ACCURACY}}': data.verdictAccuracy || '',
     '{{VERDICT_COHESIVENESS}}': data.verdictCohesiveness || '',
     '{{VERDICT_RATIONALE}}': data.verdictRationale || '',
-    '{{RECOMMENDATIONS}}': data.recommendations || '_None._',
+    '{{RECOMMENDATIONS}}': bullets(data.recommendations) || '_None._',
   };
-  let out = templateText;
-  for (const [token, value] of Object.entries(replacements)) {
-    out = out.split(token).join(value);
-  }
-  return out;
+  // One pass: substituted values are never rescanned, so a token inside reviewed text stays literal.
+  return templateText.replace(/\{\{[^{}]+\}\}/g, (token) => replacements[token] ?? token);
 }
 
 module.exports = { buildReport, renderFindings, renderDisagreements, renderCrossCompare, renderUnaddressed, renderOverCap };
