@@ -30,7 +30,7 @@ Sources, abbreviated in the tables below:
 | docs-warden | Tier 1 | trigger accuracy | yes | 2026-09-21 | Negatives quiet 15/15, positives invoked 10/18 | `docs-warden evals/README.md:155`, `:164`, `:165` |
 | docs-warden | Tier 2 | behavioural cases | no | never | Never run. | `docs-warden evals/README.md:156` |
 | fabflows | benchmark | lead with and without the plugin, programmatic grading | yes, 13 iterations | 2026-09-24 (iteration 13) | Three of three runs passed 21/21 hidden tests | `RESULTS.md:71`, `:74` |
-| fabflows | `brainstorming` | skill with and without, or against its older version | yes, 4 iterations | 2026-09-22 (iteration 4) | 100% against 92% for the older skill | `brainstorming/iteration-4.md:4`, `:11` |
+| fabflows | `brainstorming` | skill with and without, or against its older version | yes, 4 iterations | 2026-09-22 (iteration 4) | 100% against 92% for the older skill. Against no skill, 94% against 50% (iteration 1) | `brainstorming/iteration-4.md:4`, `:11`, `brainstorming/iteration-1.md:11` |
 | fabflows | `trigger-corpus.json` | trigger accuracy, run by hand | no | never recorded | No result recorded. | `fabflows evals/README.md:219`-`226` |
 
 ## fabflows benchmark
@@ -52,7 +52,7 @@ the per-run tables and the caveats for each row.
 | 5 | 2026-09-21 | 7, the build loop's first run | 4 | 41/41 hidden in every run | $4.01 against $2.62 (+53%), 2.1x wall clock | `RESULTS.md:641`, `:646`, `:659`, `:687`, `:688` |
 | 4 | 2026-09-20 | 1, 5 and 6, the narrowed trim | 6 | quality 1.00, deep-read delegated 2/2 | deep-read $0.96 against $0.94 for the full skill | `RESULTS.md:1037`, `:1050`, `:1060`, `:1062` |
 | 3 | 2026-09-20 | 1, 5 and 6, the trimmed skill | 6 | quality 1.00, deep-read delegated 1/2 | wide-search $0.65 against $1.20 for the full skill | `RESULTS.md:1094`, `:1109`, `:1121`, `:1122`, `:1125` |
-| 2 | 2026-09-19 | 2 to 6, fewer shell denials (mean 0.4 with, 0.1 without) | 20 | every assertion passed in all 20 runs | $0.76 against $0.63 per run (about +21%) | `RESULTS.md:1161`, `:1164`, `:1174`, `:1175`, `:1200`, `:1201`, `:1219` |
+| 2 | 2026-09-19 | 2 to 6, fewer shell denials (mean 0.4 with, 0.1 without) | 20 | every assertion passed in all 20 runs | $0.76 against $0.63 per run (about +21%), short tasks alone +33% to +42% | `RESULTS.md:1161`, `:1164`, `:1170`, `:1174`, `:1175`, `:1200`, `:1201`, `:1219` |
 | 1 | 2026-09-19 | 1 to 4, fabflows 0.3.6 | 16 | quality 1.00 in both arms | $0.92 against $0.56 per run (+64%) | `RESULTS.md:1256`, `:1268`, `:1294`, `:1295`, `:1302`, `:1303`, `fabflows evals/README.md:109` |
 
 ## fabflows brainstorming evals
@@ -72,7 +72,7 @@ skill with no skill. Iterations 2 to 4 compare it with the older version of itse
 Run on 2026-09-21 with Sonnet 5, 3 runs per case, 33 runs, $5.04 and 9 minutes, with no run
 errors (`docs-warden evals/README.md:155`, `:156`).
 
-| Case | Invoked | Source |
+| Case | Result | Source |
 | --- | --- | --- |
 | negatives, skill stayed quiet | 15/15 | `docs-warden evals/README.md:164` |
 | positives, skill invoked | 10/18 | `docs-warden evals/README.md:165` |
