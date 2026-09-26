@@ -197,3 +197,14 @@ test('a token inside a substituted value stays literal and is not expanded', () 
   assert.ok(!thesis.includes('RECS-TEXT'));
   assert.equal(section(out, 'Recommendations').split('RECS-TEXT').length - 1, 1);
 });
+
+test('a template token with no map entry stays literal', () => {
+  assert.equal(buildReport('{{NOPE}} {{PROJECT_NAME}}', { projectName: 'P' }), '{{NOPE}} P');
+});
+
+test('recommendations and scope given as arrays render as bullet lists', () => {
+  const out = buildReport(REAL_TEMPLATE, { scope: ['Four roles.', 'No skills.'], recommendations: ['Add a holdout.', 'Pin pandas.'] });
+  assert.ok(section(out, 'Scope & Method').includes('- Four roles.\n- No skills.'));
+  assert.ok(section(out, 'Recommendations').includes('- Add a holdout.\n- Pin pandas.'));
+  assert.ok(!out.includes('Add a holdout.,Pin'));
+});
