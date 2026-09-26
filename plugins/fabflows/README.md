@@ -502,3 +502,16 @@ effort, and the skill's frontmatter. `build.test.js` runs the build workflow's l
 against stub agents. `guard.test.js` drives `guard.js` over a table of allow and deny
 cases, including real git fixtures for the branch rules and the path traps that a naive
 substring match would get wrong.
+
+### PM suite
+
+```bash
+bats plugins/fabflows/test/pm
+```
+
+An offline Bash suite for the ticket and PR flows. It replays the steps the `ticket` skill
+prescribes against in-memory fakes of GitHub Issues, Jira and Linear, and runs the real
+`ticket.js` hooks and CLI in a temporary git repository. Each test checks the final tracker
+state and the hook output. It makes no model or network calls, so it checks the steps, not
+whether Claude follows them. It needs bats-core 1.13 or later (for example
+`npm install -g bats`) and jq.

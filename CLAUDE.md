@@ -27,6 +27,8 @@ Run this before finishing any change that touches a plugin's manifest:
 node --test "test/*.test.js"
 ```
 
+The fabflows ticket and PR flows also have an offline bats suite: `bats plugins/fabflows/test/pm`.
+
 `test/marketplace-consistency.test.js` fails if the two manifests disagree on version or name, if a
 registered plugin's `source` path doesn't exist, or if a plugin under `plugins/` isn't registered.
 
