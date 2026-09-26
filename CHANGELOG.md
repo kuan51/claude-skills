@@ -231,6 +231,11 @@ per-plugin history until entries are recorded here going forward.
   real Jira through the Atlassian Rovo server, Jira keeps a table and shows a task list as
   plain bullets without its checkboxes. The plain-bullets rule for the ticket body is
   unchanged.
+- **fabflows 0.13.0** -- the `ticket` skill's GitHub steps now match live GitHub. Closing as
+  not planned is confirmed, and the skill says to send the reason with the state, since
+  GitHub ignores it otherwise. It warns that one login that cannot be assigned makes GitHub
+  refuse the whole assignee change. `/fabflows-setup` notes that GitHub, like Linear,
+  accepts a closed parent, so its own check is the only guard.
 - **fabflows 0.11.1** -- the `ticket` skill no longer stalls when a workflow's status names
   differ from in progress, in review and done. It lists where the ticket can move and matches
   on the target status, not the Jira transition name, since a transition named Reviewed can

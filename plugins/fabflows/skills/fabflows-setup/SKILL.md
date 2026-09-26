@@ -53,7 +53,7 @@ When given, read it once with the tracker's read tool from `fabflows:ticket`'s t
 and check it can hold child tickets. Refuse one not found, a GitHub pull request or closed
 issue, a Jira sub-task, a Jira story or task outside `project`, since its sub-tasks must
 share its project, and a Linear issue whose status type is `completed`, `canceled` or
-`duplicate`: Linear accepts a closed parent, so this check is the only guard. For GitHub, also check that `issue_write` takes `parent_issue_number`. An
+`duplicate`: GitHub and Linear both accept a closed parent, so this check is the only guard. For GitHub, also check that `issue_write` takes `parent_issue_number`. An
 older server without it cannot attach a parent. On any refusal, say why, then ask again or
 go on without one.
 

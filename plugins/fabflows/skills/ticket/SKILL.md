@@ -215,7 +215,9 @@ Always pass an explicit title that contains the key: the hook checks `--title` a
 Once the PR is open, assign it and the linked ticket to the signed-in user: the developer
 each MCP server (or `gh`) is signed in as, so the tracker shows who is working on it.
 Add that user and keep everyone already assigned:
-`issue_write`'s `assignees` replaces every assignee, so pass the current ones too.
+`issue_write`'s `assignees` replaces every assignee, so pass the current ones too. One
+login that cannot be assigned makes GitHub refuse the whole call and change nothing
+(confirmed by a live test). If that happens, tell the user rather than dropping anyone.
 
 - The PR: `gh pr edit <number> --add-assignee @me` (or `--assignee @me` on `gh pr create`).
   With MCP, read your login with `get_me` and the PR's assignees with `issue_read`, then call
@@ -266,8 +268,9 @@ with a recorded PR. For each PR:
    the ticket to a holding status on purpose. Show them the ticket's current status, any
    other link with the same key from `ticket.js prs`, and the cancel-type status you would
    pick. On a no, leave the status as it is. On a yes, cancel it:
-   - GitHub Issues: `issue_write` with `state: closed` and `state_reason: not_planned` (in
-     the tool schema, but untested live).
+   - GitHub Issues: `issue_write` with `state: closed` and `state_reason: not_planned`
+     (confirmed by a live test). Send both together: GitHub ignores a `state_reason`
+     without a state change.
    - Jira: `getTransitionsForJiraIssue`, then the transition whose `to` status is the
      closest cancelled match, per [Status](#status), never matched on the transition name.
    - Linear: `save_issue` with `state` set to the status of type `canceled`.
