@@ -239,6 +239,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **data-analysis-review 0.2.2** -- closes the open 0.2.0 review findings (#115). A null
+  reconciler result now yields zero topics and still returns the EDA findings, rather than
+  throwing. A cross-compare entry with no verdict renders as "(no verdict)" under
+  Cross-Comparison, never as "undefined" or Not Addressed. An executive summary written as one
+  string renders as a one-item list. The README no longer says Claude enters plan mode, and
+  SKILL.md points at `EVIDENCE_HYGIENE` in `workflow.js` rather than repeating it.
 - **fabflows 0.13.0** -- the `ticket` skill no longer says Jira drops tables. Tested against
   real Jira through the Atlassian Rovo server, Jira keeps a table and shows a task list as
   plain bullets without its checkboxes. The plain-bullets rule for the ticket body is
