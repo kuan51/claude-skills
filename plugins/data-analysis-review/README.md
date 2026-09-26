@@ -28,8 +28,8 @@ and install the plugin.
    directory).
 2. Ask Claude to review it, e.g.: *"Review this project. Is the conclusion actually supported
    by the data?"*
-3. Claude enters plan mode and walks the project's layout, then asks you a few questions before
-   doing any analysis:
+3. Claude walks the project's layout, then asks you a few questions before doing any analysis.
+   It does this in plan mode only if your session is already in plan mode:
    - Always confirms the project's business thesis and goals, even when they are documented, and
      offers one rewrite if the thesis doesn't name the decision it informs, the metric, and a
      baseline or threshold. You can keep your own wording.
@@ -38,7 +38,7 @@ and install the plugin.
      domain/business alignment, reproducibility) plus optional extra reviewers if the project
      touches a specialized domain (clinical, financial, fairness-sensitive, time-series, causal).
    - Asks whether you want the final report saved to a file, or just shown in the conversation.
-4. Once you approve the plan, Claude runs the analysis: each reviewer independently examines the
+4. After the questions (or, in plan mode, once you approve the plan), Claude runs the analysis: each reviewer independently examines the
    raw data and code (executing code to verify claims empirically where it can) without ever
    seeing what the project itself concluded. Their findings are reconciled for cross-role
    contradictions, then checked against the project's own stated conclusions, one topic at a time.

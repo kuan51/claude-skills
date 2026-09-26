@@ -28,7 +28,8 @@ function bullets(value) {
   return Array.isArray(value) ? value.map((v) => `- ${v}`).join('\n') : value;
 }
 
-function renderExecutiveSummary(summary) {
+function renderExecutiveSummary(value) {
+  const summary = typeof value === 'string' ? value.split('\n').map((s) => s.trim()).filter(Boolean) : value;
   if (!Array.isArray(summary) || !summary.length) return '_No executive summary provided._';
   return summary.map((s) => `- ${s}`).join('\n');
 }
@@ -44,7 +45,7 @@ function renderFindings(eda) {
             : f.required_execution
               ? ' ⚠ unverified — inferred, not executed'
               : ' (static review)';
-          const impact = f.business_impact ? `\n  - Decision affected / materiality: ${f.business_impact}` : '';
+          const impact = f.business_impact ? `\n  ${impactLine(f.business_impact)}` : '';
           return `- **[${f.severity}]** ${f.claim}\n  - Evidence: ${f.evidence}${tag}${impact}`;
         })
         .join('\n');
@@ -84,7 +85,7 @@ function renderCrossCompare(crossCompare) {
         impactLine(c.business_impact),
       ];
       if (c.to_settle) lines.push(`- **To settle:** ${c.to_settle}`);
-      return `### ${c.reconciled_topic || c.topic} — ${c.verdict}\n\n${lines.join('\n')}`;
+      return `### ${c.reconciled_topic || c.topic} — ${c.verdict || '(no verdict)'}\n\n${lines.join('\n')}`;
     })
     .join('\n\n');
 }

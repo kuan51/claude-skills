@@ -48,7 +48,7 @@ test("every registered plugin's source directory exists and ships a plugin.json"
 });
 
 // The check that actually earns its keep.
-test('marketplace.json and each plugin.json agree on name and version', () => {
+test('marketplace.json and each plugin.json agree on name, version and description', () => {
   for (const entry of marketplace.plugins) {
     const pluginJson = JSON.parse(fs.readFileSync(pluginJsonPathFor(entry), 'utf8'));
 

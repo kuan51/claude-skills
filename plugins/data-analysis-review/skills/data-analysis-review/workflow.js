@@ -168,9 +168,9 @@ phase('Independent EDA')
 
 // Namespaced as 'data-analysis-review:<agent-name>' to match this plugin's own plugin.json
 // "name" field, mirroring the pattern observed in 4 independently-installed plugins in this
-// environment (each plugin's agents resolve as '<that plugin's own name>:<agent-name>'). Not
-// yet confirmed against a real install of THIS plugin -- still listed under Deferred in
-// docs/specs/2026-09-22-data-analysis-review.md. If this plugin's agents turn out to resolve bare instead, a
+// environment (each plugin's agents resolve as '<that plugin's own name>:<agent-name>').
+// Confirmed by an installed copy of this plugin (0.1.2): its agents resolve as
+// 'data-analysis-review:<agent-name>'. If this plugin's agents ever resolve bare instead, a
 // wrong guess here fails loudly (every agent() call throws "agent type not found", zero agents
 // dispatched) rather than silently misrouting -- this was evaluated and accepted as the better
 // failure mode versus a bare reference risking a same-named agent from an unrelated plugin.
@@ -182,6 +182,16 @@ const roster = [
   ...((A.extras || []).map((e) => ({ key: e.key, agentType: 'data-analysis-review:extra-reviewer', paths: e.paths, persona: e.persona, label: e.label }))),
 ].map((role) => ({ ...role, label: role.label || ROLE_LABELS[role.key] || role.key }))
 
+// An agent that returns nothing (skipped, or dead after retries) is logged and named in
+// `dropped` rather than thrown on or silently left out, so an empty report cannot read as a
+// clean project.
+const dropped = []
+function drop(label) {
+  dropped.push(label)
+  log(`${label} returned nothing; dropped`)
+  return null
+}
+
 const edaResults = await parallel(
   roster.map((role) => () =>
     agent(buildEdaPrompt(role, A.thesis, A.thesisShape), {
@@ -190,7 +200,7 @@ const edaResults = await parallel(
       agentType: role.agentType,
       model: 'opus',
       schema: role.key === 'domain_alignment' ? DOMAIN_FINDINGS_SCHEMA : FINDINGS_SCHEMA,
-    }).then((result) => ({ key: role.key, label: role.label, findings: result.findings }))
+    }).then((result) => (result ? { key: role.key, label: role.label, findings: result.findings } : drop(`eda:${role.key}`)))
   )
 )
 
@@ -208,13 +218,14 @@ const reconcilePrompt = [
   ...validEdaResults.map((r) => `### ${r.label}\n${wrap('evidence', JSON.stringify(r.findings))}`),
 ].join('\n\n')
 
-const reconciled = await agent(reconcilePrompt, {
+// A null or shapeless result degrades to zero topics and is named in `dropped`.
+const reconciled = (await agent(reconcilePrompt, {
   label: 'reconcile',
   phase: 'Reconcile',
   agentType: 'data-analysis-review:findings-reconciler',
   model: 'opus',
   schema: RECONCILE_SCHEMA,
-})
+})) || drop('reconcile') || {}
 
 phase('Cross-Compare')
 
@@ -222,7 +233,9 @@ phase('Cross-Compare')
 // high goes first (stable sort keeps the reconciler's order within a tier), and the overflow is
 // returned as overCap rather than dispatched or dropped.
 const SEVERITY_RANK = { high: 0, medium: 1, low: 2 }
-const topics = (reconciled.reconciled || []).map((t) => (['high', 'medium', 'low'].includes(t.severity) ? t : { ...t, severity: 'medium' }))
+const topics = (Array.isArray(reconciled.reconciled) ? reconciled.reconciled : [])
+  .filter((t) => t && typeof t === 'object')
+  .map((t) => (['high', 'medium', 'low'].includes(t.severity) ? t : { ...t, severity: 'medium' }))
 const ranked = [...topics].sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
 const dispatched = ranked.slice(0, MAX_TOPICS)
 const overCap = ranked.slice(MAX_TOPICS).map((t) => ({ topic: t.topic, severity: t.severity, finding: t.finding, evidence: t.evidence, verified: t.verified }))
@@ -249,14 +262,15 @@ const crossCompareResults = await parallel(
       agentType: 'data-analysis-review:thesis-auditor',
       model: 'opus',
       schema: CROSS_COMPARE_SCHEMA,
-    }).then((result) => (result ? { ...result, reconciled_topic: topic.topic, evidence: topic.evidence, verified: topic.verified } : result))
+    }).then((result) => (result ? { ...result, reconciled_topic: topic.topic, evidence: topic.evidence, verified: topic.verified } : drop(`cross-compare:${topic.topic}`)))
   })
 )
 
 return {
   eda: validEdaResults,
   reconciled: topics,
-  disagreements: reconciled.disagreements || [],
+  disagreements: Array.isArray(reconciled.disagreements) ? reconciled.disagreements : [],
   crossCompare: crossCompareResults.filter(Boolean),
   overCap,
+  dropped,
 }
