@@ -235,8 +235,9 @@ the old default.
 
 fabflows includes a benchmark (`evals/`) that runs a headless Fable lead on the same task
 with and without the plugin and grades the result programmatically, never from what the lead
-said it did. The benchmark has run 13 iterations. Every number below comes from
+said it did. The benchmark has run 13 iterations. Every benchmark number below comes from
 `evals/RESULTS.md`, which also carries the caveats, and the table is a mean of two runs per arm.
+The `brainstorming` numbers come from that skill's own evals in `evals/brainstorming/`.
 
 **The build loop, on the task fabflows is for** (iteration 6, 2026-09-22: a library and CLI
 built from a spec in an empty repository, graded by 41 hidden acceptance tests, Opus 5.5

@@ -45,7 +45,7 @@ the per-run tables and the caveats for each row.
 | 12 | 2026-09-24 | 9, builder high, reviewer xhigh, 30-minute cap | 3 | 21/21 hidden in every run (two uncommitted), loops finished 1/3 | mean $3.30 list, mean 1,696 s | `RESULTS.md:151`, `:122`, `:188`-`190` |
 | 11 | 2026-09-24 | 9, all pins medium, 30-minute cap | 3 | hidden 20/21, 21/21, 21/21, loops finished 2/3 | mean $3.15 list, mean 1,318 s | `RESULTS.md:151`, `:121`, `:185`-`187` |
 | 10 | 2026-09-23 | 7 `build-component`, builder high, reviewer xhigh | 2 | 41/41 hidden in both, one review killed at 600 s | worker output +66%, wall clock +58% against iteration 6 | `RESULTS.md:244`, `:246`, `:251`, `:268`-`269`, `:276`-`279` |
-| 9 | 2026-09-23 | 8 `review-catch`, builder high, reviewer xhigh | 3 | 7/9 hidden in every run, review named the defect 0/3 | mean $1.94 list against $1.11 at medium (+75%) | `RESULTS.md:318`, `:320`, `:321`, `:353`, `:359` |
+| 9 | 2026-09-23 | 8 `review-catch`, builder high, reviewer xhigh | 3 | 7/9 hidden in every run, review named the defect 0/3 | mean $1.94 list against $1.11 at medium (+75%) | `RESULTS.md:318`, `:320`, `:321`, `:344`-`346`, `:353`, `:359` |
 | 8 | 2026-09-22 | 8, rule removed from the spec | 10 | 7/9 hidden in every run, planted defect survived 10/10 | loop $1.11 against inline $0.85 (+31%), 1.65x wall clock | `RESULTS.md:394`, `:397`, `:409`, `:425`-`434`, `:438` |
 | 7 | 2026-09-22 | 8, rule stated in the spec | 9 | 8/8 hidden in every run | inline $1.32, delegate $2.06 (+56%), loop $1.32 | `RESULTS.md:480`, `:482`, `:494`, `:510`-`518`, `:520` |
 | 6 | 2026-09-22 | 7, Opus 5.5 workers | 4 | 41/41 hidden in every run | $2.92 against $3.55 (-18%), 414 s against 480 s (-14%) | `RESULTS.md:564`, `:568`, `:577`, `:598` |
