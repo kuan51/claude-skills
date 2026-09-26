@@ -257,14 +257,14 @@ Both fabflows runs launched `fabflows:build` from the routing table without the 
 it, the reviewer ran inside the loop and returned ACCEPT, and the lead ran the gate itself. On a
 subscription the meter tracks the lead's model, so the Fable row is the one that binds.
 
-**What the earlier iterations showed.** On short tasks (a one-file edit, a version bump, a small
+**What the earlier iterations showed.** On short tasks (a scoped edit, a version bump, a small
 test file) the skill is overhead: +33% to +42% list price for identical results, because the lead
 loads the skill and deliberates instead of just doing it. On a large read (13 records, ~60k
 characters) the Haiku explorer came in 12% cheaper with a lead context 12k tokens smaller. On
 the same build task under Opus 5, with shell denials knocking the review out of the loop, the
 loop cost +53% (iteration 5). The fixes that followed (DEC-0016) and Opus 5.5 turned that into
 the table above. The `brainstorming` skill's own evals score 100% against 87.5% for the older
-version of the skill, and 94% against 50% with no skill on the first reply
+version of the skill in iteration 3, and 94% against 50% with no skill on the first reply
 ([`evals/brainstorming/`](evals/brainstorming/)).
 
 **What the review does and does not catch** (iterations 7 and 8, a brownfield fixture with one
