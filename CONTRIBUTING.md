@@ -8,8 +8,8 @@ documentation correction.
 - Open an issue first for anything larger than a fix, so the approach can be
   agreed before you write the code.
 - Run `node --test "test/*.test.js"` (root-level marketplace/manifest
-  consistency), plus the test suite under whichever `plugins/<name>/test/`
-  your change touches.
+  consistency), plus the tests of whichever plugin your change touches. Each
+  plugin's command is under Testing in [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 - Update the docs in the same pull request. The template's checklist line leaves a blank for the reason if you did not.
 
 ## What gets a change merged

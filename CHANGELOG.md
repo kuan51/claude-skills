@@ -163,6 +163,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.1** -- wording only (#101). The description in `plugin.json` and in
+  `marketplace.json` is shorter and keeps the same facts. The root README's fabflows entry is
+  split into short labelled points, and leaves the fine print to the plugin README.
+  The plugin README now says the benchmark has run 13 iterations, not six. It says the 87.5%
+  that `brainstorming` beat was the older version of that skill, and adds the 94% against 50%
+  with no skill. Short tasks cost +33% to +42% with the skill, not +21%, which was iteration
+  2's mean across every task. The root README is rewritten as the project's front page, and the new
+  `docs/EVALS.md` collects every plugin's recorded eval results in one place.
 - **docs-warden 0.7.2** -- decide mode checks the kind of change before its three
   admission questions (#81). A bug fix, a review fix, a refactor, a rename, a wording
   change, a dependency or test change, a hook, CI, linter or config value, a temporary
