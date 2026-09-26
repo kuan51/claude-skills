@@ -65,8 +65,9 @@ plugin.
 - `docs-warden`'s Python scripts are checked with
   `python3 plugins/docs-warden/test/test_scripts.py` (assert-based, no framework).
 - `fabflows`'s suite covers its hook as well as its manifests:
-  `node --test "plugins/fabflows/test/*.test.js"`. Keep to `test/`: the tests
-  under `evals/fixtures/` are hidden acceptance tests for benchmark runs.
+  `node --test "plugins/fabflows/test/*.test.js"`, plus the offline bats suite
+  for the ticket and PR flows: `bats plugins/fabflows/test/pm`. Keep to `test/`:
+  the tests under `evals/fixtures/` belong to the benchmark's fixture projects.
 
 A plugin that includes a hook keeps that hook's allow and deny cases in a table its
 test suite drives directly. Nothing in this repository runs these suites
@@ -79,8 +80,8 @@ Behavioral evals for a plugin's skills live in `plugins/<name>/evals/` in
 `fixture.sh`. They spend tokens and never run under the unit tests; each plugin's
 `evals/README.md` gives the command and its prerequisites. `docs-warden` has the
 one suite in that format (DEC-0022). `fabflows`'s benchmark predates it and keeps its
-own harness under `evals/harness/`, with its `brainstorming` evals in
-`evals/brainstorming/`. `ciso` and `data-analysis-review` have trigger-accuracy
+own harness under `evals/harness/`. Its `brainstorming` evals are in
+`skills/brainstorming/evals/evals.json`, with their results in `evals/brainstorming/`. `ciso` and `data-analysis-review` have trigger-accuracy
 lists run by hand: `evals/trigger-corpus.json` (procedure in `evals/RUNBOOK.md`)
 and `skills/data-analysis-review/references/evals.md`. Every recorded result is
 collected in [EVALS.md](EVALS.md).
