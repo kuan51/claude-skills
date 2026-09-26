@@ -32,7 +32,7 @@ tracker_init() {
     github: {me: "dev", issues: []},
     jira: {
       me: "acc-dev",
-      projects: {ABC: {workflow: "review"}, XYZ: {workflow: "review"}, BAS: {workflow: "basic"}, NDN: {workflow: "nodone"}},
+      projects: {ABC: {workflow: "review"}, XYZ: {workflow: "review"}, BAS: {workflow: "basic"}, NDN: {workflow: "nodone"}, TST: {workflow: "nocancel"}},
       # Transition names differ from their `to` status (skills/ticket/SKILL.md:176-177).
       workflows: {
         review: [
@@ -52,7 +52,13 @@ tracker_init() {
           {id: "11", name: "Start", to: "In Progress"},
           {id: "31", name: "Submit", to: "In Review"},
           {id: "41", name: "Done", to: "Won\($ap)t Fix"},
-          {id: "42", name: "Dupe", to: "Duplicate"}]
+          {id: "42", name: "Dupe", to: "Duplicate"}],
+        # No cancel-type status, names equal to their to; as the real TEST project (2026-09-26).
+        nocancel: [
+          {id: "11", name: "To Do", to: "To Do"},
+          {id: "21", name: "In Progress", to: "In Progress"},
+          {id: "31", name: "In Review", to: "In Review"},
+          {id: "41", name: "Done", to: "Done"}]
       },
       issues: {}, links: {}
     },

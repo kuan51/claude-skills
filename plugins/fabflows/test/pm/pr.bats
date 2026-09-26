@@ -130,6 +130,15 @@ web_link() {
   [ "$(state '.linear.issues["ENG-1"].state')" = '"Canceled"' ]
 }
 
+@test "closed unmerged, no cancel-type status: the status stays, never Done" {
+  createJiraIssue '{"projectKey": "TST", "issueTypeName": "Task", "summary": "s"}' >/dev/null
+  jira_move TST-1 "in review"
+  # The user said yes, but the workflow has no cancel status (SKILL.md:261-262).
+  run -0 jira_move TST-1 cancelled
+  [ "$output" = "no fit" ]
+  [ "$(getJiraIssue '{"issueIdOrKey": "TST-1"}' | jq -r '.fields.status.name')" = "In Review" ]
+}
+
 @test "Refs-only: the ticket stays open" {
   issue_write '{"method": "create", "owner": "acme", "repo": "app", "title": "ticket"}'
   cli link '#1' 'https://github.com/acme/app/issues/1' 'github'
