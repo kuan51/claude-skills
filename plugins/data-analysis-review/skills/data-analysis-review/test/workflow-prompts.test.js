@@ -36,12 +36,12 @@ function topic(i, extra = {}) {
   return { topic: `topic-${i}`, finding: `finding ${i}`, evidence: `evidence ${i}`, verified: i % 2 === 0, severity: 'low', ...extra };
 }
 
-async function run({ args = baseArgs(), reconciled = [topic(1, { business_impact: 'rollout decision' })], crossCompare } = {}) {
+async function run({ args = baseArgs(), reconciled = [topic(1, { business_impact: 'rollout decision' })], reconcileResult, edaFindings = [], crossCompare } = {}) {
   const calls = [];
   const agent = async (prompt, opts) => {
     calls.push({ prompt, opts });
-    if (opts.label.startsWith('eda:')) return { findings: [] };
-    if (opts.label === 'reconcile') return { reconciled, disagreements: [] };
+    if (opts.label.startsWith('eda:')) return { findings: edaFindings };
+    if (opts.label === 'reconcile') return reconcileResult !== undefined ? reconcileResult : { reconciled, disagreements: [] };
     const name = opts.label.slice('cross-compare:'.length);
     if (crossCompare) return crossCompare(name);
     return { topic: name, project_claim: 'c', independent_finding: 'f', discrepancy: 'd', verdict: 'Supported', business_impact: 'none identified' };
@@ -140,6 +140,16 @@ test('a null cross-compare result is left out, and results are joined to their r
   assert.equal(c.reconciled_topic, 'topic-2');
   assert.equal(c.evidence, 'evidence 2');
   assert.equal(c.verified, true);
+});
+
+test('a null reconcile result yields zero topics instead of throwing', async () => {
+  const r = await run({ reconcileResult: null });
+  assert.deepEqual(r.result.reconciled, []);
+  assert.deepEqual(r.result.disagreements, []);
+  assert.deepEqual(r.result.crossCompare, []);
+  assert.deepEqual(r.result.overCap, []);
+  assert.equal(r.result.eda.length, 5);
+  assert.equal(r.cross.length, 0);
 });
 
 test('schemas declare severity, business_impact and to_settle as the spec requires', async () => {

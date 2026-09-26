@@ -208,13 +208,14 @@ const reconcilePrompt = [
   ...validEdaResults.map((r) => `### ${r.label}\n${wrap('evidence', JSON.stringify(r.findings))}`),
 ].join('\n\n')
 
-const reconciled = await agent(reconcilePrompt, {
+// A null or shapeless result degrades to zero topics, as a null cross-compare result is dropped.
+const reconciled = (await agent(reconcilePrompt, {
   label: 'reconcile',
   phase: 'Reconcile',
   agentType: 'data-analysis-review:findings-reconciler',
   model: 'opus',
   schema: RECONCILE_SCHEMA,
-})
+})) || {}
 
 phase('Cross-Compare')
 
@@ -222,7 +223,7 @@ phase('Cross-Compare')
 // high goes first (stable sort keeps the reconciler's order within a tier), and the overflow is
 // returned as overCap rather than dispatched or dropped.
 const SEVERITY_RANK = { high: 0, medium: 1, low: 2 }
-const topics = (reconciled.reconciled || []).map((t) => (['high', 'medium', 'low'].includes(t.severity) ? t : { ...t, severity: 'medium' }))
+const topics = (Array.isArray(reconciled.reconciled) ? reconciled.reconciled : []).map((t) => (['high', 'medium', 'low'].includes(t.severity) ? t : { ...t, severity: 'medium' }))
 const ranked = [...topics].sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
 const dispatched = ranked.slice(0, MAX_TOPICS)
 const overCap = ranked.slice(MAX_TOPICS).map((t) => ({ topic: t.topic, severity: t.severity, finding: t.finding, evidence: t.evidence, verified: t.verified }))
@@ -256,7 +257,7 @@ const crossCompareResults = await parallel(
 return {
   eda: validEdaResults,
   reconciled: topics,
-  disagreements: reconciled.disagreements || [],
+  disagreements: Array.isArray(reconciled.disagreements) ? reconciled.disagreements : [],
   crossCompare: crossCompareResults.filter(Boolean),
   overCap,
 }
