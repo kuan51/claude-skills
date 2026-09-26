@@ -30,7 +30,9 @@ and install the plugin.
    by the data?"*
 3. Claude enters plan mode and walks the project's layout, then asks you a few questions before
    doing any analysis:
-   - Confirms the project's business thesis and goals (if they aren't already clearly documented).
+   - Always confirms the project's business thesis and goals, even when they are documented, and
+     offers one rewrite if the thesis doesn't name the decision it informs, the metric, and a
+     baseline or threshold. You can keep your own wording.
    - Offers to load any installed skills relevant to the project's domain/stack.
    - Proposes the reviewer roster: 4 fixed specialists (data quality, statistical methodology,
      domain/business alignment, reproducibility) plus optional extra reviewers if the project
@@ -41,9 +43,14 @@ and install the plugin.
    seeing what the project itself concluded. Their findings are reconciled for cross-role
    contradictions, then checked against the project's own stated conclusions, one topic at a time.
 5. You get a report with:
+   - An executive summary of three lines that says whether the conclusion is supported, which
+     decision it affects and how much, and the one thing to fix.
    - Independent findings per reviewer, with evidence.
    - Cross-role disagreements (if any) found before anyone looked at the project's conclusions.
+     At most 12 topics go on to the comparison below (you can pick another cap); any past the cap
+     are listed here as not compared, never dropped silently.
    - A topic-by-topic comparison of what the project claims vs. what the independent review found.
+   - Independent findings the project's report does not address at all.
    - Headline verdicts for **Accuracy**, **Cohesiveness**, and **Rationale**, each qualitative,
      with the evidence behind it (no numeric scores).
 

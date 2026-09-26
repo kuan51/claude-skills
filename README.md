@@ -51,7 +51,8 @@ first session.
 ## What each plugin does
 
 - **[data-analysis-review](plugins/data-analysis-review/)**: an independent check of whether a
-  data science project's stated conclusions hold up.
+  data science project's stated conclusions hold up, and a list of what the data supports that
+  the project never claimed.
   - **Blind review.** Specialist reviewers for data quality, statistics, domain alignment and
     reproducibility, plus optional extras, re-derive findings from the raw data and code before
     they see what the project claims.

@@ -62,6 +62,10 @@ test('marketplace.json and each plugin.json agree on name and version', () => {
       `${entry.name}: version drift -- plugin.json says ${pluginJson.version}, marketplace.json says ` +
       `${entry.version}. plugin.json is the source of truth; update the marketplace entry in the same commit.`
     );
+    assert.equal(
+      pluginJson.description, entry.description,
+      `${entry.name}: description drift -- plugin.json and marketplace.json descriptions differ; update both in the same commit.`
+    );
   }
 });
 

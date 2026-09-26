@@ -2,6 +2,12 @@
 
 **Reviewed:** {{REVIEW_DATE}}
 
+**Plugin version:** {{PLUGIN_VERSION}}
+
+## Executive summary
+
+{{EXECUTIVE_SUMMARY}}
+
 ## Thesis & Goals
 
 {{THESIS}}
@@ -21,6 +27,10 @@
 ## Cross-Comparison
 
 {{CROSS_COMPARE}}
+
+## Independent findings the project's report does not address
+
+{{UNADDRESSED}}
 
 ## Overall Verdicts
 

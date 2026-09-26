@@ -1,7 +1,7 @@
 {
   "name": "data-analysis-review",
-  "version": "0.1.2",
-  "description": "Empirical, objective review of a data science project: independently re-derives findings from raw data and code, then checks whether the project's own stated conclusions hold up. All analysis -- including code execution -- runs against a disposable copy of the project, so the original is never modified.",
+  "version": "0.2.0",
+  "description": "Empirical, objective review of a data science project: independently re-derives findings from raw data and code, then checks whether the project's own stated conclusions hold up, and lists what the data supports that the project never claimed. All analysis -- including code execution -- runs against a disposable copy of the project, so the original is never modified.",
   "author": {
     "name": "claude-skills"
   }
