@@ -57,8 +57,8 @@ first session.
     they see what the project claims.
   - **Claim check.** Their findings are then compared with the project's own conclusions, one
     topic at a time.
-  - **Read-only.** All analysis, including code execution, runs on a disposable copy, so the
-    reviewed project is never modified.
+  - **Works on a copy.** All analysis, including code execution, runs on a disposable copy. The
+    only write to the reviewed project is an optional report file, and only if you opt in.
 - **[ciso](plugins/ciso/)**: tracks work toward security certifications alongside the
   development work that satisfies them.
   - **Certifications.** HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC.
@@ -90,14 +90,15 @@ first session.
   - **Brainstorming.** `brainstorming` turns a rough idea into a spec the build loop can take,
     with the refuter attacking the draft before it is written.
   - **Tickets.** `fabflows-setup` and `ticket` keep specs in a GitHub Issues, Jira or Linear
-    ticket, and a hook requires the ticket's trailers on every commit and its key in every PR
-    title.
+    ticket. On a linked branch a hook requires the ticket's trailers on commits and its key in
+    the PR title, and at session start it reminds Claude to close tickets whose PR merged or
+    closed outside the session.
   - **Trace.** `trace` writes an audit trace report tracing every merged change to its ticket,
     approved spec and approvers.
   - **Guard hook.** An active hook asks before package installs and runners such as `npx`,
-    denies them in workers, and blocks commits and pushes to a default branch, destructive
-    commands, and credential reads and writes. Read the plugin's README, including its "Known
-    gaps" section, before installing.
+    denies them in workers (except `pypdf` into a scratchpad, for reading a PDF), and blocks
+    commits and pushes to a default branch, destructive commands, and credential reads and
+    writes. Read the plugin's README, including its "Known gaps" section, before installing.
   - **Measured.** On a spec'd build with Opus 5.5 workers, fabflows matched a plain Fable
     session on 41 hidden tests at 18% lower list price and 83% fewer lead output tokens. See
     [docs/EVALS.md](docs/EVALS.md).
