@@ -12,6 +12,7 @@
 //   labels < spec                print the labels for the spec's Compliance section
 //   pr <url>                     record the pull request
 //   status                       print this branch's confirmed link as JSON, or exit 1
+//   prs                          print each link with a recorded PR, one JSON object a line
 //   clear [--pr <url>]           forget this branch's link, or the link with that PR
 //   trace <from> [<to>] --json   print each first-parent commit's PR, keys and specs; <to>
 //                                defaults to origin/HEAD, else main, master, origin/main or
@@ -617,6 +618,9 @@ function cli(cmd, args) {
     const l = linked(cwd);
     if (!l || !l.confirmed) process.exit(1);
     process.stdout.write(JSON.stringify({ key: l.key, specHash: l.specHash, pr: l.pr }) + '\n');
+  } else if (cmd === 'prs') {
+    // No branch: file names are hashed so no branch name reaches output.
+    for (const { s } of allStates(cwd)) if (s.pr) process.stdout.write(JSON.stringify({ key: s.key, url: s.url, tracker: s.tracker, pr: s.pr }) + '\n');
   } else if (cmd === 'clear') {
     if (args[0] === '--pr') {
       if (!valid.pr(args[1])) fail('invalid pr url');
@@ -667,7 +671,7 @@ function cli(cmd, args) {
       process.stdout.write(JSON.stringify(rows.map(({ sha, date, pr, keys, keySource, specs, ai }) => ({ sha, date, pr, keys, keySource, specs, ai }))) + '\n');
     }
   } else {
-    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status, clear or trace`);
+    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status, prs, clear or trace`);
   }
   process.exit(0);
 }
@@ -867,41 +871,73 @@ function prTitles(args) {
 }
 const isMcp = (tool, verb) => new RegExp(`^mcp__.*${verb}_pull_request$`).test(tool);
 
-// What to do once a PR merged. Without a PR URL, `clear` works on the current branch only.
+// What to do once a PR merged or closed. Without a PR URL, `clear` works on the current branch only.
 function afterMerge(key, pr, note = '') {
   const [what, clear] = pr ? [`PR ${pr}`, `ticket.js clear --pr '${pr}'`] : [`the PR for ${key}`, 'ticket.js clear'];
-  return `If ${what} merged${note}: if it carried a closing phrase for ${key}, confirm ${key} is closed and transition it if not, then run \`${clear}\`. If it was Refs-only, leave ${key} open.`;
+  return `If ${what} merged${note}: if it carried a closing phrase for ${key}, confirm ${key} is closed and transition it if not, then run \`${clear}\`. If it was Refs-only, leave ${key} open. If it was closed without merging, follow fabflows:ticket "After a PR closes".`;
 }
 
-function sessionStart(cwd) {
+// At startup only: the other confirmed links' keys with a recorded PR, in at most `room` characters.
+function sweepLine(keys, room) {
+  const n = keys.length;
+  if (!n) return null;
+  for (let k = n; k > 0; k--) {
+    const list = keys.slice(0, k).join(', ') + (k < n ? ` and ${n - k} more` : '');
+    const line = `fabflows: ${n} other linked ticket(s) have a recorded PR (${list}): run \`ticket.js prs\`, check each PR's state, and follow fabflows:ticket "After a PR closes" for each one merged or closed.`;
+    if (line.length <= room) return line;
+  }
+  const line = `fabflows: ${n} other linked ticket(s) have a recorded PR: run \`ticket.js prs\` and follow fabflows:ticket "After a PR closes" for each.`;
+  return line.length <= room ? line : null;
+}
+
+// The branch line, shortened only as far as it must be for the sweep line to fit after it.
+function sessionStart(cwd, source) {
+  const branch = currentBranch(cwd);
+  const lines = branchLines(cwd, branch);
+  let text = lines[0];
+  if (source === 'startup') {
+    const keys = uniq(allStates(cwd).map((e) => e.s).filter((s) => s.pr && s.branch !== branch).map((s) => s.key));
+    for (const line of lines.length ? lines : [null]) {
+      const sweep = sweepLine(keys, line ? 600 - line.length - 1 : 600);
+      if (sweep) {
+        text = line ? `${line}\n${sweep}` : sweep;
+        break;
+      }
+    }
+  }
+  if (text) context('SessionStart', text);
+}
+
+// This branch's line, longest first: its link, a trailer link, or a reminder that it has none.
+function branchLines(cwd, branch) {
   const l = linked(cwd);
   if (l && l.confirmed) {
     // 600: the after-merge text names the PR URL twice.
-    let line = `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`;
-    if (line.length > 600) line = `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`;
-    if (line.length > 600) line = `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, null)}`;
-    return context('SessionStart', line.slice(0, 600));
+    const all = [
+      `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`,
+      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`,
+      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, null)}`,
+    ];
+    const fit = all.filter((line) => line.length <= 600);
+    return fit.length ? fit : [all[2].slice(0, 600)];
   }
   if (l && l.key) {
-    return context('SessionStart', `fabflows: ticket ${l.key} found in commit trailers, not confirmed: ask the user before editing it.`);
+    return [`fabflows: ticket ${l.key} found in commit trailers, not confirmed: ask the user before editing it.`];
   }
-  const branch = currentBranch(cwd);
   const top = branch && tryGit(['rev-parse', '--show-toplevel'], cwd);
-  if (!top) return;
+  if (!top) return [];
   let cfg = null;
   try {
     cfg = JSON.parse(fs.readFileSync(path.join(top, '.claude', 'fabflows.json'), 'utf8'));
   } catch {
-    return;
+    return [];
   }
   const def = tryGit(['symbolic-ref', '-q', '--short', 'refs/remotes/origin/HEAD'], cwd);
   const defaults = def ? [def.replace(/^origin\//, '')] : ['main', 'master'];
   if (cfg && typeof cfg.tracker === 'string' && cfg.tracker && cfg.tracker !== 'none' && !defaults.includes(branch)) {
-    context(
-      'SessionStart',
-      'fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows:ticket to link one before building.'
-    );
+    return ['fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows:ticket to link one before building.'];
   }
+  return [];
 }
 
 function preToolUse(tool, ti, cwd) {
@@ -1042,7 +1078,7 @@ function hook() {
   const input = JSON.parse(fs.readFileSync(0, 'utf8'));
   const cwd = input.cwd || process.cwd();
   const ti = input.tool_input || {};
-  if (input.hook_event_name === 'SessionStart') sessionStart(cwd);
+  if (input.hook_event_name === 'SessionStart') sessionStart(cwd, input.source);
   else if (input.hook_event_name === 'PreToolUse') preToolUse(input.tool_name, ti, cwd);
   else if (input.hook_event_name === 'PostToolUse') postToolUse(input.tool_name, ti, cwd);
 }

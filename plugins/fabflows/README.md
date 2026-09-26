@@ -84,7 +84,8 @@ epic, story or issue that every new ticket is filed under, and writes
 `.claude/fabflows.json`, which is committed. It never connects a server and never handles a
 secret: connect the tracker's MCP server yourself first. `fabflows:ticket` carries the
 rules after that: the tool table, the ticket body template, what a confirmed link lets
-Claude do without asking, and how status moves from in progress to in review to done.
+Claude do without asking, and how status moves from in progress to in review to done, or to cancelled when that PR
+closes unmerged.
 When a workflow names its statuses differently, Claude picks the closest match and only
 moves a ticket forward; if nothing fits, it leaves the status alone and tells you.
 On Jira it also adds the PR to the ticket's Web links panel, when the MCP server has a tool
@@ -99,11 +100,21 @@ asks you before taking a ticket someone else holds.
 `fabflows/tickets` in the common git dir (`git rev-parse --git-common-dir`), named by a hash
 of the branch, never in the working tree. Every worktree of the repository sees the same
 links. It reads only that local state; every tracker write is Claude's own MCP
-call. `ticket.js status` prints the current branch's link, and `ticket.js clear --pr '<url>'`
-forgets a link after its branch is gone.
+call. `ticket.js status` prints the current branch's link, `ticket.js prs` prints every
+link with a recorded PR (key, URL, tracker and PR, never a branch name), and
+`ticket.js clear --pr '<url>'` forgets a link after its branch is gone.
 
-- SessionStart prints one line: the linked ticket, a link found only in a `Refs:` trailer
-  (unconfirmed, so Claude asks first), or a reminder that the branch has none.
+- SessionStart prints this branch's line: the linked ticket, a link found only in a `Refs:` trailer
+  (unconfirmed, so Claude asks first), or a reminder that the branch has none. At startup
+  only (not resume, clear or compact), on any checkout, it adds a line naming the other
+  confirmed links with a recorded PR, so a PR merged or closed in the GitHub UI still gets
+  its ticket handled. Claude runs `ticket.js prs`, reads each PR's state, and follows the
+  "After a PR closes" steps in `fabflows:ticket`. For a PR closed without merging whose body
+  has a closing phrase, Claude asks you before it cancels the ticket (Won't Do, not planned,
+  Canceled) with one comment, and it never marks that ticket Done. A Refs-only PR leaves
+  the ticket open. For a PR whose state can't be read, Claude asks you what happened and
+  keeps the link until you answer.
+  Both lines together stay within 600 characters.
 - PreToolUse denies a `git commit` with an inline message that lacks `Refs: <key>` (and
   `Spec: <hash>` once the spec is approved), and a PR creation whose title lacks the key. It
   splits a command at `&&`, `||`, `;`, `|`, `&`, parentheses and newlines, minding quotes,

@@ -8,6 +8,16 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.12.0** -- a linked ticket is handled when its PR merges or closes outside the
+  session (#86). At startup only, `ticket.js` names every other confirmed link with a
+  recorded PR, on any checkout, and the new `ticket.js prs` lists them as JSON without branch
+  names. The `ticket` skill's "After a PR closes" steps read the PR's state first and its body
+  only once it is closed, and ask the user when the state can't be read. For a PR closed
+  unmerged with a closing phrase, they ask the user, then cancel the ticket (GitHub
+  `not_planned`, a Jira Won't Do, Cancel or Declined status, Linear Canceled), never falling
+  back to Done. Standing permission covers the other steps on every confirmed link. A branch
+  line that is too long now gives up its URLs before the startup reminder is dropped. The
+  hooks still make no tracker or GitHub calls.
 - **fabflows 0.11.0** -- when a PR opens on a linked branch, the `ticket` skill assigns the
   PR and the confirmed ticket to the developer the MCP server or `gh` is signed in as
   (`get_me` for GitHub, `atlassianUserInfo` for Jira through Atlassian Rovo, untested for
