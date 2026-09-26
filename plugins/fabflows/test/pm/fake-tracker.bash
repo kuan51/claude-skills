@@ -118,7 +118,7 @@ update_pull_request() { # {owner, repo, pullNumber, state}
     | (\$p | .state = \$a.state) as \$n | {s: (\$s | gh_put(\$n)), out: {state: \$n.state}}" "$1"
 }
 
-# Merging closes the same-repository issues its body names with a closing phrase.
+# Merging closes the same-repository issues its body names with a closing phrase (skills/ticket/SKILL.md:225-227).
 merge_pull_request() { # {owner, repo, pullNumber}
   _call ".s as \$s | $(_pr) | if \$p.state != \"open\" then error(\"pull request is not open\") else . end
     | [\$p.body | match(\"(?i)\\\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\\\\s+#([0-9]+)\\\\b\"; \"g\") | .captures[0].string | tonumber] as \$closes
@@ -153,6 +153,7 @@ getJiraIssue() { # {issueIdOrKey}
   _call '.s as $s | {s: $s, out: ($s | jira_get($a.issueIdOrKey) | jira_view)}' "$1"
 }
 
+# Fields edit labels and assignee; status moves only by transition (skills/ticket/SKILL.md:25, 119, 175-177, 215).
 editJiraIssue() { # {issueIdOrKey, fields: {summary, description, labels, assignee: {accountId}}}
   _call '.s as $s | ($s | jira_get($a.issueIdOrKey)) as $i
     | if ($a.fields | keys - ["summary", "description", "labels", "assignee"]) != [] then error("only summary, description, labels and assignee are editable; status moves by transition") else . end
@@ -187,6 +188,7 @@ jira_create_remote_issue_link() { # {issue_key, url, title}
 }
 
 # ------------------------------------------------------------------ Linear
+# The parent is set on save_issue and must exist (skills/ticket/SKILL.md:69).
 save_issue() { # {id} to update, else {team, title}; plus description, parentId, state, labels, assignee
   _call '.s as $s
     | (if $a.parentId then ($s.linear.issues[$a.parentId] // error("parent issue not found")) else null end)
