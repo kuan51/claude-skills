@@ -523,7 +523,7 @@ test('SessionStart puts the branch line and the sweep line in one output of at m
     assert.ok(text.startsWith(own + '\n'), 'the branch line first, unchanged');
     // Here the branch line leaves too little room for the list, so the sweep line is the short one.
     const sweep = text.slice(own.length + 1);
-    assert.equal(sweep, 'fabflows: 1 other linked tickets have a recorded PR: run `ticket.js prs` and follow fabflows:ticket "After a PR closes" for each.');
+    assert.equal(sweep, 'fabflows: 1 other linked ticket(s) have a recorded PR: run `ticket.js prs` and follow fabflows:ticket "After a PR closes" for each.');
     assert.ok(!sweep.includes('ABC-1'), 'the current key is not swept');
     assert.ok(!text.includes('feature') && !text.includes('feat-other'), 'no branch name');
 
@@ -535,6 +535,24 @@ test('SessionStart puts the branch line and the sweep line in one output of at m
     const many = start(r.dir);
     assert.ok(many.length <= 600, many.length);
     assert.match(many, / and \d+ more\): run `ticket\.js prs`/);
+  } finally {
+    r.done();
+  }
+});
+
+test('SessionStart shortens a long branch line to keep the sweep, and lists a shared key once', () => {
+  const r = repo();
+  try {
+    const url = 'https://acme-engineering.atlassian.net/browse/PLATFORM-12345';
+    assert.equal(cli(r.dir, ['link', 'PLATFORM-12345', url, 'jira']).status, 0);
+    assert.equal(cli(r.dir, ['pr', 'https://github.com/acme-engineering/platform-services/pull/12345']).status, 0);
+    putState(r, 'feat-a', 'ABC-11', 'https://github.com/o/r/pull/11');
+    putState(r, 'feat-b', 'ABC-11', 'https://github.com/o/r/pull/12');
+    const text = start(r.dir);
+    assert.ok(text.length <= 600, text.length);
+    assert.ok(text.startsWith('fabflows: this branch is linked to ticket PLATFORM-12345'), text);
+    assert.match(text, /\nfabflows: 1 other linked ticket\(s\) have a recorded PR/);
+    assert.equal(text.split('ABC-11').length - 1, 1, 'a key shared by two links is listed once');
   } finally {
     r.done();
   }

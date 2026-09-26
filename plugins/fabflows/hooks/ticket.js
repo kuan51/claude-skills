@@ -877,10 +877,8 @@ function afterMerge(key, pr, note = '') {
   return `If ${what} merged${note}: if it carried a closing phrase for ${key}, confirm ${key} is closed and transition it if not, then run \`${clear}\`. If it was Refs-only, leave ${key} open. If it was closed without merging, follow fabflows:ticket "After a PR closes".`;
 }
 
-// At startup only: every other confirmed link with a recorded PR, in at most `room` characters.
-function sweepLine(cwd, room) {
-  const branch = currentBranch(cwd);
-  const keys = allStates(cwd).map((e) => e.s).filter((s) => s.pr && s.branch !== branch).map((s) => s.key);
+// At startup only: the other confirmed links' keys with a recorded PR, in at most `room` characters.
+function sweepLine(keys, room) {
   const n = keys.length;
   if (!n) return null;
   for (let k = n; k > 0; k--) {
@@ -888,44 +886,58 @@ function sweepLine(cwd, room) {
     const line = `fabflows: ${n} other linked ticket(s) have a recorded PR (${list}): run \`ticket.js prs\`, check each PR's state, and follow fabflows:ticket "After a PR closes" for each one merged or closed.`;
     if (line.length <= room) return line;
   }
-  const line = `fabflows: ${n} other linked tickets have a recorded PR: run \`ticket.js prs\` and follow fabflows:ticket "After a PR closes" for each.`;
+  const line = `fabflows: ${n} other linked ticket(s) have a recorded PR: run \`ticket.js prs\` and follow fabflows:ticket "After a PR closes" for each.`;
   return line.length <= room ? line : null;
 }
 
+// The branch line, shortened only as far as it must be for the sweep line to fit after it.
 function sessionStart(cwd, source) {
-  const line = branchLine(cwd);
-  const sweep = source === 'startup' ? sweepLine(cwd, line ? 600 - line.length - 1 : 600) : null;
-  const text = [line, sweep].filter(Boolean).join('\n');
+  const branch = currentBranch(cwd);
+  const lines = branchLines(cwd, branch);
+  let text = lines[0];
+  if (source === 'startup') {
+    const keys = uniq(allStates(cwd).map((e) => e.s).filter((s) => s.pr && s.branch !== branch).map((s) => s.key));
+    for (const line of lines.length ? lines : [null]) {
+      const sweep = sweepLine(keys, line ? 600 - line.length - 1 : 600);
+      if (sweep) {
+        text = line ? `${line}\n${sweep}` : sweep;
+        break;
+      }
+    }
+  }
   if (text) context('SessionStart', text);
 }
 
-// This branch's line: its link, a trailer link, or a reminder that it has none.
-function branchLine(cwd) {
+// This branch's line, longest first: its link, a trailer link, or a reminder that it has none.
+function branchLines(cwd, branch) {
   const l = linked(cwd);
   if (l && l.confirmed) {
     // 600: the after-merge text names the PR URL twice.
-    let line = `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`;
-    if (line.length > 600) line = `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`;
-    if (line.length > 600) line = `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, null)}`;
-    return line.slice(0, 600);
+    const all = [
+      `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`,
+      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`,
+      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, null)}`,
+    ];
+    const fit = all.filter((line) => line.length <= 600);
+    return fit.length ? fit : [all[2].slice(0, 600)];
   }
   if (l && l.key) {
-    return `fabflows: ticket ${l.key} found in commit trailers, not confirmed: ask the user before editing it.`;
+    return [`fabflows: ticket ${l.key} found in commit trailers, not confirmed: ask the user before editing it.`];
   }
-  const branch = currentBranch(cwd);
   const top = branch && tryGit(['rev-parse', '--show-toplevel'], cwd);
-  if (!top) return;
+  if (!top) return [];
   let cfg = null;
   try {
     cfg = JSON.parse(fs.readFileSync(path.join(top, '.claude', 'fabflows.json'), 'utf8'));
   } catch {
-    return;
+    return [];
   }
   const def = tryGit(['symbolic-ref', '-q', '--short', 'refs/remotes/origin/HEAD'], cwd);
   const defaults = def ? [def.replace(/^origin\//, '')] : ['main', 'master'];
   if (cfg && typeof cfg.tracker === 'string' && cfg.tracker && cfg.tracker !== 'none' && !defaults.includes(branch)) {
-    return 'fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows:ticket to link one before building.';
+    return ['fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows:ticket to link one before building.'];
   }
+  return [];
 }
 
 function preToolUse(tool, ti, cwd) {
