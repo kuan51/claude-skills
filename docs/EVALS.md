@@ -64,8 +64,8 @@ skill with no skill. Iterations 2 to 4 compare it with the older version of itse
 | Iteration | Date | Evals and runs | Compared with | Pass rate, skill | Pass rate, comparison | Source |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 2026-09-22 | evals 1 to 3, one run of each per arm | no skill | 94% | 50% | `brainstorming/iteration-1.md:4`, `:11`, `:19`-`21` |
-| 2 | 2026-09-22 | eval 3, one run per arm | older skill | 83% | 83% | `brainstorming/iteration-2.md:4`, `:11`, `:37` |
-| 3 | 2026-09-22 | eval 3, one run per arm | older skill | 100% (8/8) | 88% (7/8) | `brainstorming/iteration-3.md:4`, `:11`, `:27`, `:28`, `:32` |
+| 2 | 2026-09-22 | eval 3, one run per arm | older skill | 83% | 83% | `brainstorming/iteration-2.md:4`, `:5`, `:11`, `:37` |
+| 3 | 2026-09-22 | eval 3, one run per arm | older skill | 100% (8/8) | 88% (7/8) | `brainstorming/iteration-3.md:4`, `:5`, `:11`, `:27`, `:28`, `:32` |
 | 4 | 2026-09-22 | eval 4, one run per arm | older skill | 100% (12/12) | 92% (11/12) | `brainstorming/iteration-4.md:4`, `:5`, `:11`, `:29`, `:30` |
 
 The headers of iterations 1 to 3 say 3 runs per configuration. The aggregator that wrote them
