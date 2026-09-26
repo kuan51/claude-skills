@@ -16,8 +16,8 @@ components, had a real alternative), in a record under [DECISIONS.md](DECISIONS.
 
 Node.js (built-in `node --test` runner, no test framework dependency) for
 JavaScript checks. Python 3 for the `docs-warden` plugin's scripts, using only
-the standard library except `_common.py`'s `import yaml` (PyYAML, not
-currently declared in a `requirements.txt` anywhere in the repo; install it
+the standard library except PyYAML, which `_common.py` and `adr_new.py`
+import (not currently declared in a `requirements.txt` anywhere in the repo; install it
 yourself before running docs-warden's scripts locally).
 
 ## Repository layout
@@ -55,11 +55,18 @@ plugin entries all use the same lowercase-hyphenated name.
 
 Root-level manifest consistency: `node --test "test/*.test.js"`.
 
-Each plugin has its own test suite under `plugins/<name>/test/`: run before
-merging any change to that plugin. `docs-warden`'s Python scripts are checked
-with `python3 plugins/docs-warden/test/test_scripts.py` (assert-based, no
-framework). `fabflows`'s suite covers its hook as well as its manifests:
-`node --test "plugins/fabflows/test/*.test.js"`.
+Each plugin has its own tests: run them before merging any change to that
+plugin.
+
+- `ciso` and `data-analysis-review` keep tests beside their skill code as well
+  as under `test/`, so run each with a recursive glob:
+  `node --test "plugins/ciso/**/*.test.js"` and
+  `node --test "plugins/data-analysis-review/**/*.test.js"`.
+- `docs-warden`'s Python scripts are checked with
+  `python3 plugins/docs-warden/test/test_scripts.py` (assert-based, no framework).
+- `fabflows`'s suite covers its hook as well as its manifests:
+  `node --test "plugins/fabflows/test/*.test.js"`. Keep to `test/`: the tests
+  under `evals/fixtures/` are hidden acceptance tests for benchmark runs.
 
 A plugin that includes a hook keeps that hook's allow and deny cases in a table its
 test suite drives directly. Nothing in this repository runs these suites
@@ -72,9 +79,10 @@ Behavioral evals for a plugin's skills live in `plugins/<name>/evals/` in
 `fixture.sh`. They spend tokens and never run under the unit tests; each plugin's
 `evals/README.md` gives the command and its prerequisites. `docs-warden` has the
 one suite in that format (DEC-0022). `fabflows`'s benchmark predates it and keeps its
-own harness under `evals/harness/`. `ciso` and `data-analysis-review` have
-trigger-accuracy lists run by hand, in `evals/RUNBOOK.md` and
-`skills/data-analysis-review/references/evals.md`. Every recorded result is
+own harness under `evals/harness/`, with its `brainstorming` evals in
+`evals/brainstorming/`. `ciso` and `data-analysis-review` have trigger-accuracy
+lists run by hand: `evals/trigger-corpus.json` (procedure in `evals/RUNBOOK.md`)
+and `skills/data-analysis-review/references/evals.md`. Every recorded result is
 collected in [EVALS.md](EVALS.md).
 
 ## Documentation
