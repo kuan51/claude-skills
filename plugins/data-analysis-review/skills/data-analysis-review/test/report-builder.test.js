@@ -143,6 +143,20 @@ test('cross-comparison renders the decision-affected and to-settle lines, and ke
   assert.equal(out.split('Not Addressed finding').length - 1, 1, 'the unaddressed topic appears once');
 });
 
+test('headings use the reconciled topic when the workflow attached one, else the auditor topic', () => {
+  const out = buildReport(REAL_TEMPLATE, {
+    crossCompare: [
+      CC('Supported', { reconciled_topic: 'topic-1: retention vs baseline' }),
+      CC('Not Addressed', { reconciled_topic: 'topic-2: duplicate rows', verified: true }),
+      CC('Unsupported'),
+    ],
+  });
+  assert.ok(section(out, 'Cross-Comparison').includes('### topic-1: retention vs baseline — Supported'));
+  assert.ok(!section(out, 'Cross-Comparison').includes('### Supported topic'));
+  assert.ok(section(out, "Independent findings the project's report does not address").includes('### topic-2: duplicate rows (verified)'));
+  assert.ok(section(out, 'Cross-Comparison').includes('### Unsupported topic — Unsupported'), 'falls back to the auditor topic');
+});
+
 test('prints a decision-affected line under an EDA finding carrying business_impact', () => {
   const out = buildReport(TEMPLATE, {
     eda: [{ key: 'domain_alignment', findings: [{ severity: 'medium', claim: 'c', evidence: 'e', required_execution: false, verified: false, business_impact: 'Staffing decision.' }] }],

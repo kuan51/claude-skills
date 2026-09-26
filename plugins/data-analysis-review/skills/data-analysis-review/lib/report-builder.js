@@ -79,7 +79,7 @@ function renderCrossCompare(crossCompare) {
         impactLine(c.business_impact),
       ];
       if (c.to_settle) lines.push(`- **To settle:** ${c.to_settle}`);
-      return `### ${c.topic} — ${c.verdict}\n\n${lines.join('\n')}`;
+      return `### ${c.reconciled_topic || c.topic} — ${c.verdict}\n\n${lines.join('\n')}`;
     })
     .join('\n\n');
 }
@@ -92,7 +92,7 @@ function renderUnaddressed(crossCompare) {
       const lines = [`- **Independent finding:** ${c.independent_finding}`];
       if (c.evidence) lines.push(`- **Evidence:** ${c.evidence}`);
       lines.push(impactLine(c.business_impact));
-      return `### ${c.topic}${verifiedTag(c.verified)}\n\n${lines.join('\n')}`;
+      return `### ${c.reconciled_topic || c.topic}${verifiedTag(c.verified)}\n\n${lines.join('\n')}`;
     })
     .join('\n\n');
 }

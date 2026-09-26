@@ -50,14 +50,15 @@ const DOMAIN_FINDINGS_SCHEMA = {
   required: ['findings'],
 }
 
-// Reviewed content is untrusted: strip every closing wrapper tag, repeatedly, so a nested or
-// space-padded tag (e.g. "</the</thesis>sis>") cannot close the wrapper early.
+// Reviewed content is untrusted: strip every opening and closing wrapper tag, repeatedly, so a
+// nested or space-padded tag (e.g. "</the</thesis>sis>") cannot close the wrapper early and an
+// unclosed "<thesis>" inside evidence cannot read as a second goal statement.
 function wrap(tag, text) {
   let s = text == null ? '' : String(text)
   let prev
   do {
     prev = s
-    s = s.replace(/<\s*\/\s*(thesis|evidence)\s*>/gi, '')
+    s = s.replace(/<\s*\/?\s*(thesis|evidence)\s*>/gi, '')
   } while (s !== prev)
   return `<${tag}>\n${s}\n</${tag}>`
 }
