@@ -79,3 +79,99 @@ test('builds from the real template file without a leading BOM', () => {
   assert.ok(out.includes('## Thesis & Goals'));
   assert.ok(out.includes('## Overall Verdicts'));
 });
+
+const REAL_TEMPLATE = fs.readFileSync(path.join(__dirname, '..', 'references', 'report-template.md'), 'utf8');
+const PLUGIN_VERSION = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', '..', '..', '.claude-plugin', 'plugin.json'), 'utf8')
+).version;
+
+function section(out, heading) {
+  const start = out.indexOf(`## ${heading}`);
+  assert.ok(start >= 0, `missing section ${heading}`);
+  const next = out.indexOf('\n## ', start + 1);
+  return out.slice(start, next < 0 ? undefined : next);
+}
+
+const CC = (verdict, extra = {}) => ({
+  topic: `${verdict} topic`,
+  project_claim: 'claim',
+  independent_finding: `${verdict} finding`,
+  discrepancy: 'none',
+  verdict,
+  ...extra,
+});
+
+test('renders the executive summary as a three-item list, or a placeholder when absent', () => {
+  const out = buildReport(REAL_TEMPLATE, { executiveSummary: ['Supported.', 'Affects rollout, material.', 'Add a baseline.'] });
+  assert.ok(section(out, 'Executive summary').includes('- Supported.\n- Affects rollout, material.\n- Add a baseline.'));
+  assert.ok(section(buildReport(REAL_TEMPLATE, {}), 'Executive summary').includes('_No executive summary provided._'));
+});
+
+test('fills the plugin version from plugin.json', () => {
+  assert.ok(buildReport(REAL_TEMPLATE, {}).includes(`**Plugin version:** ${PLUGIN_VERSION}`));
+});
+
+test('renders overCap under Reconciliation Notes, including an entry without severity', () => {
+  const out = buildReport(REAL_TEMPLATE, {
+    overCap: [
+      { topic: 'Late topic', severity: 'low', finding: 'Minor drift.', evidence: 'col x', verified: true },
+      { topic: 'Unlabelled topic', finding: 'Something.', evidence: 'col y', verified: false },
+    ],
+  });
+  const notes = section(out, 'Reconciliation Notes');
+  assert.ok(notes.includes('Not cross-compared, over the topic cap'));
+  assert.ok(notes.includes('- **[low]** **Late topic**: Minor drift. (verified)'));
+  assert.ok(notes.includes('- **Unlabelled topic**: Something. (unverified)'));
+  assert.ok(!notes.includes('undefined'));
+});
+
+test('cross-comparison renders the decision-affected and to-settle lines, and keeps Not Addressed out', () => {
+  const out = buildReport(REAL_TEMPLATE, {
+    crossCompare: [
+      CC('Partially Supported', { business_impact: 'Rollout decision; lift is material.', to_settle: 'Re-run with a holdout.' }),
+      CC('Not Addressed', { business_impact: 'Pricing decision.', evidence: 'rows 1-500', verified: false }),
+    ],
+  });
+  const cc = section(out, 'Cross-Comparison');
+  assert.ok(cc.includes('- **Decision affected / materiality:** Rollout decision; lift is material.'));
+  assert.ok(cc.includes('- **To settle:** Re-run with a holdout.'));
+  assert.ok(!cc.includes('Not Addressed'));
+  const un = section(out, "Independent findings the project's report does not address");
+  assert.ok(un.includes('### Not Addressed topic (unverified)'));
+  assert.ok(un.includes('- **Evidence:** rows 1-500'));
+  assert.ok(un.includes('- **Decision affected / materiality:** Pricing decision.'));
+  assert.equal(out.split('Not Addressed finding').length - 1, 1, 'the unaddressed topic appears once');
+});
+
+test('prints a decision-affected line under an EDA finding carrying business_impact', () => {
+  const out = buildReport(TEMPLATE, {
+    eda: [{ key: 'domain_alignment', findings: [{ severity: 'medium', claim: 'c', evidence: 'e', required_execution: false, verified: false, business_impact: 'Staffing decision.' }] }],
+  });
+  assert.ok(out.includes('  - Decision affected / materiality: Staffing decision.'));
+});
+
+test('prints each new section placeholder when empty', () => {
+  const out = buildReport(REAL_TEMPLATE, { crossCompare: [] });
+  assert.ok(section(out, 'Cross-Comparison').includes('_No topic the project addresses was cross-compared._'));
+  assert.ok(section(out, "Independent findings the project's report does not address").includes('_No independent finding went unaddressed by the project._'));
+  assert.ok(!section(out, 'Reconciliation Notes').includes('over the topic cap'));
+});
+
+test('renders a 0.1.2-shaped result through the real template with no undefined or null', () => {
+  const out = buildReport(REAL_TEMPLATE, {
+    projectName: 'Old Result',
+    reviewDate: '2026-09-01',
+    thesis: 'Old thesis.',
+    scope: 'Four roles.',
+    eda: [{ key: 'statistical', label: 'Statistical Methodologist', findings: [{ severity: 'low', claim: 'c', evidence: 'e', required_execution: true, verified: true }] }],
+    reconciled: [{ topic: 't', finding: 'f', evidence: 'e', verified: true }],
+    disagreements: [{ topic: 't', description: 'd', roles_involved: ['statistical'] }],
+    crossCompare: ['Supported', 'Partially Supported', 'Unsupported', 'Not Addressed'].map((v) => CC(v)),
+    verdictAccuracy: 'a',
+    verdictCohesiveness: 'b',
+    verdictRationale: 'r',
+  });
+  assert.ok(!/undefined|null/.test(out), 'output must not contain undefined or null');
+  assert.ok(section(out, 'Cross-Comparison').includes('- **Decision affected / materiality:** none identified'));
+  assert.ok(section(out, "Independent findings the project's report does not address").includes('### Not Addressed topic\n'));
+});

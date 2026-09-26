@@ -30,6 +30,10 @@ README or report stating a conclusion)
 11. "Is this cohesive? Does the approach actually match the stated goal?"
 12. "Grade this analysis for me."
 
+**Business lens** (asked while `cwd` is a project with a stated conclusion)
+13. "Did this analysis miss anything the data supports?"
+14. "Is the reported lift big enough to matter?"
+
 ## Should-not-trigger
 
 Negative controls that share keywords but want something this skill explicitly isn't
@@ -46,6 +50,8 @@ for (see `SKILL.md`'s "When NOT to use" section):
    `data:validate-data`, not a conclusions-vs-evidence review)
 7. "Plot the distribution of this column." (visualization, one-off)
 8. "Explain what this analysis script does." (code explanation, not review)
+9. "What's driving churn in this data?" (a discovery ask with no conclusion to check)
+10. "What should we build next quarter?" (a planning question, not a review)
 
 ## How to use this
 
