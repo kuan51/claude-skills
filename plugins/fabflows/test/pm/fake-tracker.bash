@@ -29,7 +29,7 @@ _call() { # <jq filter from {s: state} to {s: new state, out: result}> <args JSO
 
 tracker_init() {
   jq -n --arg ap "'" '{
-    github: {me: "dev", issues: []},
+    github: {me: "dev", assignable: ["dev", "alice"], issues: []},
     jira: {
       me: "acc-dev",
       projects: {ABC: {workflow: "review"}, XYZ: {workflow: "review"}, BAS: {workflow: "basic"}, NDN: {workflow: "nodone"}, TST: {workflow: "nocancel"}},
@@ -94,16 +94,17 @@ issue_read() { # {method: "get", owner, repo, issue_number}
 
 issue_write() { # {method: "create" | "update", owner, repo, issue_number, title, body, labels, assignees, state, state_reason, parent_issue_number, parent_owner, parent_repo}
   _call '.s as $s |
-    if $a.method == "create" then
+    # A login that cannot be assigned refuses the whole call, changing nothing (#90).
+    if (($a.assignees // []) - $s.github.assignable) != [] then error("Validation Failed: Issue.assignees (invalid)")
+    elif $a.method == "create" then
       (if $a.parent_issue_number == null then null
        # A parent in another repository needs parent_owner and parent_repo (skills/ticket/SKILL.md:67-68).
        elif ($a.parent_owner == null) != ($a.parent_repo == null) then error("parent_owner and parent_repo go together")
        else ($a.parent_owner // $a.owner) as $po | ($a.parent_repo // $a.repo) as $pr
          | ($s | gh_find($po; $pr; $a.parent_issue_number)) as $p
-         # Not a PR, not closed (skills/fabflows-setup/SKILL.md:49-50).
-         | if $p == null then error("parent issue not found")
-           elif $p.pull_request then error("parent is a pull request")
-           elif $p.state != "open" then error("parent is closed")
+         # A PR is refused like a missing issue (PR #87). A closed issue is accepted (#99 under
+         # #93), so only fabflows-setup keeps it out.
+         | if $p == null or $p.pull_request then error("Could not resolve to an Issue with the number of \($a.parent_issue_number).")
            else "\($po)/\($pr)#\($p.number)" end
        end) as $parent
       | {owner: $a.owner, repo: $a.repo, number: ($s | gh_next($a.owner; $a.repo)), title: $a.title, body: ($a.body // ""),
@@ -116,8 +117,11 @@ issue_write() { # {method: "create" | "update", owner, repo, issue_number, title
       | ($i + ($a | with_entries(select(.key | IN("title", "body", "labels", "assignees", "state", "state_reason"))))) as $new
       # Only open and closed (skills/ticket/SKILL.md:172).
       | if ($new.state | IN("open", "closed")) | not then error("state must be open or closed") else . end
-      | ($new | if .state == "open" then .state_reason = null else .state_reason //= "completed" end) as $new
-      | if ($new.state_reason | IN(null, "completed", "not_planned", "duplicate")) | not then error("bad state_reason") else . end
+      | if ($a.state_reason | IN(null, "completed", "not_planned", "duplicate")) | not then error("bad state_reason") else . end
+      # state_reason counts only when the state changes (#91). Closing defaults to completed (#93),
+      # reopening sets reopened (#93).
+      | ($new | .state_reason = (if $i.state == .state then $i.state_reason
+          elif .state == "open" then "reopened" else $a.state_reason // "completed" end)) as $new
       | {s: ($s | gh_put($new)), out: $new}
     else error("unknown method") end' "$1"
 }

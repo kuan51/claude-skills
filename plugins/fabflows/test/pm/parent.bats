@@ -49,16 +49,22 @@ jira_new() { createJiraIssue "$(jq -nc --argjson x "$1" '{projectKey: "ABC", sum
   [ "$(state '.')" = "$before" ]
 }
 
-@test "github parent that is a PR or a closed issue: refused, no ticket left" {
-  gh_new '{"title": "old"}'
-  issue_write '{"method": "update", "owner": "acme", "repo": "app", "issue_number": 1, "state": "closed"}'
+@test "github parent that is a PR or missing: refused, no ticket left" {
   create_pull_request '{"owner": "acme", "repo": "app", "title": "pr", "head": "x", "base": "main"}'
   before=$(state '.')
-  run -1 gh_new '{"title": "t", "parent_issue_number": 2}'
-  [[ $output == *"pull request"* ]]
+  # Live, both gave the same error and used no issue number (PR #87, then #99 was next).
   run -1 gh_new '{"title": "t", "parent_issue_number": 1}'
-  [[ $output == *"closed"* ]]
+  [ "$output" = "Could not resolve to an Issue with the number of 1." ]
+  run -1 gh_new '{"title": "t", "parent_issue_number": 9}'
   [ "$(state '.')" = "$before" ]
+}
+
+@test "github takes a closed parent: only setup's check keeps it out" {
+  gh_new '{"title": "old"}'
+  issue_write '{"method": "update", "owner": "acme", "repo": "app", "issue_number": 1, "state": "closed"}'
+  # Accepted live (#99 under closed #93), as Linear does.
+  run -0 gh_new '{"title": "t", "parent_issue_number": 1}'
+  [ "$(state '.github.issues[1].parent')" = '"acme/app#1"' ]
 }
 
 @test "cross-repo parent owner/repo#7 works only with parent_owner and parent_repo" {

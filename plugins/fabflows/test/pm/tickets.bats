@@ -63,6 +63,29 @@ task() { createJiraIssue "{\"projectKey\": \"$1\", \"issueTypeName\": \"Task\", 
   [ "$(state '.github.issues[0].assignees')" = '["alice","dev"]' ]
 }
 
+@test "github: one login that cannot be assigned refuses the whole call" {
+  issue_write '{"method": "create", "owner": "acme", "repo": "app", "title": "t", "assignees": ["dev"]}'
+  # Live: octocat on #90 gave Validation Failed and kept kuan51; [] then cleared the list.
+  run -1 issue_write '{"method": "update", "owner": "acme", "repo": "app", "issue_number": 1, "assignees": ["alice", "octocat"]}'
+  [ "$(state '.github.issues[0].assignees')" = '["dev"]' ]
+  issue_write '{"method": "update", "owner": "acme", "repo": "app", "issue_number": 1, "assignees": []}'
+  [ "$(state '.github.issues[0].assignees')" = '[]' ]
+}
+
+@test "github state_reason: completed by default, reopened on reopen, ignored without a state change" {
+  issue_write '{"method": "create", "owner": "acme", "repo": "app", "title": "t"}'
+  issue_write '{"method": "create", "owner": "acme", "repo": "app", "title": "t"}'
+  up() { issue_write "{\"method\": \"update\", \"owner\": \"acme\", \"repo\": \"app\", $1}" >/dev/null; }
+  why() { state ".github.issues[$1] | [.state, .state_reason]"; }
+  # #93 closed with no reason, then reopened; #91 got a reason while open.
+  up '"issue_number": 1, "state": "closed"'
+  [ "$(why 0)" = '["closed","completed"]' ]
+  up '"issue_number": 1, "state": "open"'
+  [ "$(why 0)" = '["open","reopened"]' ]
+  up '"issue_number": 2, "state_reason": "not_planned"'
+  [ "$(why 1)" = '["open",null]' ]
+}
+
 @test "a ticket held by someone else is not reassigned" {
   # Only when unassigned or already mine (SKILL.md:220-221).
   assign() {
