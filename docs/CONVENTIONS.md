@@ -83,8 +83,9 @@ one suite in that format (DEC-0022). `fabflows`'s benchmark predates it and keep
 own harness under `evals/harness/`. Its `brainstorming` evals are in
 `skills/brainstorming/evals/evals.json`, with their results in `evals/brainstorming/`. `ciso` and `data-analysis-review` have trigger-accuracy
 lists run by hand: `evals/trigger-corpus.json` (procedure in `evals/RUNBOOK.md`)
-and `skills/data-analysis-review/references/evals.md`. Every recorded result is
-collected in [EVALS.md](EVALS.md).
+and `skills/data-analysis-review/references/evals.md`. [EVALS.md](EVALS.md)
+compares each plugin with no skill wherever that has been measured, and points
+to the full results.
 
 ## Documentation
 
