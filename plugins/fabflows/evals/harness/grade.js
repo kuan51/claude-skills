@@ -5,6 +5,7 @@
 // metrics, never against what the lead said it did.
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -544,6 +545,18 @@ function gradeAgent(exp, spec, fixture, text, events) {
   if (spec.readOnly) gradeReadOnly(exp, fixture);
 }
 
+// Evidence can quote an agent's report, which may name the fixture by its absolute path, and
+// benchmark.json copies evidence into a tracked file. The fixture path, then the home
+// directory, become placeholders, in either slash direction and any case.
+function scrubPaths(s, fixture) {
+  let out = s;
+  for (const [p, to] of [[fixture, '<fixture>'], [os.homedir(), '~']]) {
+    if (!p || !path.isAbsolute(p)) continue;
+    for (const v of new Set([p, p.replace(/\\/g, '/')])) out = out.replace(new RegExp(v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), to);
+  }
+  return out;
+}
+
 function grade({ task, fixture, metrics, timing, maxTurns, workflowDir, events = [], shimLog = null }) {
   const exp = [];
   const r = metrics.result || {};
@@ -584,6 +597,7 @@ function grade({ task, fixture, metrics, timing, maxTurns, workflowDir, events =
   }
 
   // Informational expectations are reported but never scored.
+  for (const e of exp) if (typeof e.evidence === 'string') e.evidence = scrubPaths(e.evidence, fixture);
   const scored = exp.filter((e) => !e.informational);
   const passed = scored.filter((e) => e.passed).length;
   const workerSpawns = Object.entries(metrics.workers || {}).map(([k, v]) => `${k} x${v.spawns} (${v.model})`);

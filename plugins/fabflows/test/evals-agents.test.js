@@ -75,6 +75,16 @@ test('agent-report accepts a return item in the words its list gives it, or a li
   assert.equal(order(12, ['**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none (confirmed)']), false, 'no answer line');
 });
 
+test('evidence names the fixture and the home directory only by placeholder, in either slash direction', () => {
+  const fixture = path.join(os.homedir(), 'AppData', 'Local', 'Temp', 'fabflows-bench', 'i1', 't13-x');
+  const text = `Answer: 30 days [docs/retention.md](${fixture}${path.sep}docs${path.sep}retention.md), file:///${fixture.replace(/\\/g, '/')}/docs/usage.md, ${os.homedir()}${path.sep}.claude`;
+  const metrics = { result: { is_error: false, num_turns: 3, permission_denials: [], result_text: text }, hooks: {}, lead: { output: 0, toolCalls: {} }, totals: { output: 0 }, workers: {}, workflows: [] };
+  const g = grade({ task: task(13), fixture, metrics, timing: {}, maxTurns: 25, events: [], shimLog: null });
+  const ev = g.expectations.find((e) => e.text.startsWith('Names the missing brief part')).evidence;
+  assert.match(ev, /<fixture>/);
+  assert.ok(!ev.includes(os.homedir()) && !ev.includes(os.homedir().replace(/\\/g, '/')), ev);
+});
+
 function benchRepo() {
   const d = tmp('ro-');
   const g = (...a) => spawnSync('git', ['-C', d, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { encoding: 'utf8' });
