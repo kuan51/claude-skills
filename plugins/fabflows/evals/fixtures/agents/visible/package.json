@@ -1,0 +1,14 @@
+{
+  "name": "slugkit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Turns titles into URL slugs.",
+  "type": "commonjs",
+  "main": "src/slug.js",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

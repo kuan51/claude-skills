@@ -29,7 +29,7 @@ test('tasks.json is well formed: unique ids, both arms or per-task arms, a promp
   assert.equal(new Set(ids).size, ids.length, 'task ids must be unique');
   for (const t of cfg.tasks) {
     assert.ok(t.name && t.prompt && t.routing, `task ${t.id} needs name, prompt and routing`);
-    assert.ok(['agent-inventory', 'edit', 'new-tests', 'test-triage', 'decision-digest', 'hidden-tests'].includes(t.grade.kind), `task ${t.id} has unknown grade kind ${t.grade.kind}`);
+    assert.ok(['agent-inventory', 'edit', 'new-tests', 'test-triage', 'decision-digest', 'hidden-tests', 'agent-report', 'agent-missing-part'].includes(t.grade.kind), `task ${t.id} has unknown grade kind ${t.grade.kind}`);
     if (['edit', 'new-tests', 'test-triage', 'hidden-tests'].includes(t.grade.kind)) assert.ok(t.grade.testCommand, `task ${t.id} must name the test command that proves it`);
     if (t.grade.kind === 'hidden-tests') assert.ok(t.grade.hidden && t.grade.rootEnv, `task ${t.id} must name the hidden suite and the env var that points it at the fixture`);
     for (const s of t.setup || []) assert.ok(s.file && s.find && typeof s.replace === 'string', `task ${t.id} setup entries need file, find and replace`);
@@ -38,7 +38,7 @@ test('tasks.json is well formed: unique ids, both arms or per-task arms, a promp
       if (t.fixture.kind === 'repo') assert.equal(typeof t.fixture.ref, 'string', `task ${t.id} repo fixture must pin a ref`);
       if (t.fixture.kind === 'dir') {
         assert.equal(typeof t.fixture.from, 'string', `task ${t.id} dir fixture must say where it is copied from`);
-        assert.ok(fs.existsSync(path.join(EVALS, t.fixture.from, 'SPEC.md')), `task ${t.id} dir fixture must exist and carry a SPEC.md`);
+        assert.ok(fs.existsSync(path.join(EVALS, t.fixture.from, t.agent ? 'package.json' : 'SPEC.md')), `task ${t.id} dir fixture must exist${t.agent ? '' : ' and carry a SPEC.md'}`);
       }
     }
     for (const [k, v] of Object.entries(t.caps || {})) assert.ok(typeof v === 'number' && v > 0, `task ${t.id} cap ${k} must be a positive number`);
@@ -46,6 +46,14 @@ test('tasks.json is well formed: unique ids, both arms or per-task arms, a promp
     for (const [name, arm] of Object.entries(t.arms || {})) {
       assert.equal(typeof arm.promptPrefix, 'string', `task ${t.id} arm ${name} needs a promptPrefix`);
       if (arm.disallowedTools) assert.ok(Array.isArray(arm.disallowedTools) && arm.disallowedTools.every((x) => typeof x === 'string'), `task ${t.id} arm ${name} disallowedTools must be a list of tool names`);
+    }
+    // An agent task names an agent the plugin ships, its own tools, and caps of its own.
+    if (t.agent) {
+      assert.ok(fs.existsSync(path.join(EVALS, '..', 'agents', `${t.agent}.md`)), `task ${t.id} names no fabflows agent: ${t.agent}`);
+      assert.ok(Array.isArray(t.allowedTools) && t.allowedTools.length > 0, `task ${t.id} must list its allowed tools`);
+      assert.ok(t.caps && t.caps.maxTurns > 0 && t.caps.maxBudgetUsd > 0, `task ${t.id} must set its own turn cap and budget`);
+      assert.ok(['agent-report', 'agent-missing-part'].includes(t.grade.kind), `agent task ${t.id} needs an agent grade kind`);
+      for (const o of t.grade.order || []) assert.doesNotThrow(() => new RegExp(o.pattern), `task ${t.id} order pattern ${o.pattern}`);
     }
     if (t.repeats !== undefined) assert.ok(Number.isInteger(t.repeats) && t.repeats > 0, `task ${t.id} repeats must be a positive integer`);
   }

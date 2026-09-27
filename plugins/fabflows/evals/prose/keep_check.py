@@ -1,12 +1,16 @@
 """Prose-tightening guard, v3: literals survive, frozen text is kept, and every changed sentence
 is laid out beside its base text for the reviewer.
 
-usage: python keep_check.py <baseRef> <pathspec>... [--frozen-list F] [--table OUT] [--vale-audit]
+usage: python keep_check.py <baseRef> <pathspec>... [--frozen-list F] [--table OUT]
        python keep_check.py --pair <old.md> <new.md> [--name REPO_PATH] [--frozen-list F] [--table OUT]
+
+Paths are relative to the repository the command runs in (git's top level), so it runs from any
+checkout. Self-test: python test_keep_check.py.
 
 Per changed Markdown file it FAILS when:
   - the frontmatter block differs at all;
-  - the set of inline code spans, fenced blocks, link targets or digit numbers differs (lost or new);
+  - an inline code span, fenced block, link target or digit number is lost from, or new to, any
+    section delimited by the base headings (so a literal moved to another section fails too);
   - the base headings are not all present, with the same text and level, in the same order
     (new headings may be added);
   - the order of code spans inside a paragraph changes;
@@ -15,8 +19,8 @@ Per changed Markdown file it FAILS when:
     pair for a nonword or sequence rule (vocabulary entries cannot reach those),
     or sits between two table lines, or a line inside a pair is
     not unchanged base text;
-  - with --vale-audit: a pair covers no finding of its rule, or a finding of a paired rule lies
-    outside every pair for it (Vale is re-run on a copy with the directives blanked);
+  - a pair covers no finding of its rule, or a finding of a paired rule lies outside every pair
+    for it (Vale is re-run on a copy with the directives blanked; only when a pair exists);
   - it had sentences over 30 words outside frozen text and their number did not fall, or its mean
     sentence length rose.
 Across the run it FAILS when total characters (comments included) do not fall, or when a file
@@ -29,7 +33,14 @@ highlights only point at the rows most likely to change behaviour.
 import difflib, json, os, re, subprocess, sys, tempfile
 from collections import Counter
 
-ROOT = "F:/Github/claude-skills/.claude/worktrees/doc-warden-archive-hook-dcc1d7"
+def repo_root():
+    """The top level of the repository the command runs in; outside one, this script's own."""
+    r = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, encoding="utf-8")
+    here = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".."))
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else here
+
+
+ROOT = repo_root()
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 VALE_ANY = re.compile(r"<!--\s*vale\b[^>]*-->")
 VALE_LINE = re.compile(r"^\s*<!--\s*vale\s+([\w-]+)\.([\w-]+)\s*=\s*(NO|YES)\s*-->\s*$")
@@ -52,21 +63,21 @@ def norm(s):
 
 
 def split(text):
-    """(frontmatter, prose lines with their 1-based line numbers, fenced blocks)"""
+    """(frontmatter, prose lines with their 1-based line numbers, fenced blocks with the line they open on)"""
     fm, offset = "", 0
     m = re.match(r"\A---\r?\n.*?\r?\n---\r?\n", text, flags=re.S)
     if m:
         fm, offset = m.group(0), m.group(0).count("\n")
         text = text[m.end():]
-    prose, blocks, cur, opener = [], [], None, None
+    prose, blocks, cur, opener, start = [], [], None, None, 0
     for i, line in enumerate(text.splitlines(), start=offset + 1):
         f = FENCE.match(line)
         if cur is None and f:
-            cur, opener = [], f.group(1)
+            cur, opener, start = [], f.group(1), i
         elif cur is not None and f and f.group(1)[0] == opener[0] and len(f.group(1)) >= len(opener):
             lines = [l.rstrip() for l in cur]
             ind = min((len(l) - len(l.lstrip()) for l in lines if l.strip()), default=0)
-            blocks.append("\n".join(l[ind:] for l in lines).strip("\n"))
+            blocks.append((start, "\n".join(l[ind:] for l in lines).strip("\n")))
             cur = None
         elif cur is not None:
             cur.append(line)
@@ -102,20 +113,54 @@ def family_counts(s):
     return out
 
 
+def prose_body(lines):
+    body = "\n".join(l for _, l in lines if not VALE_ANY.fullmatch(l.strip()))
+    return VALE_ANY.sub("", body)
+
+
+LITERALS = ("code span", "fenced block", "link target", "number")
+
+
+def literals(lines, blocks):
+    flat = norm(prose_body(lines))
+    return {
+        "code span": {norm(m.group(2)) for m in re.finditer(r"(`+)(.+?)\1", flat)},
+        "fenced block": {b for _, b in blocks},
+        "link target": set(re.findall(r"\]\(([^)\s]+)\)", flat)),
+        "number": set(re.findall(r"\d+(?:[.,]\d+)*", strip_code(flat))),
+    }
+
+
+def is_heading(line):
+    return re.match(r"^#{1,6}\s", line.strip()) is not None
+
+
+def section_literals(f, heads):
+    """Literals per section, the sections cut at the base headings `heads` matched in order.
+    A heading the base lacks does not cut, so its text stays in the enclosing base section."""
+    bounds, k = [], 0
+    for i, l in f["lines"]:
+        if k < len(heads) and is_heading(l) and norm(l) == heads[k]:
+            bounds.append((i, heads[k]))
+            k += 1
+    # Numbered, so two sections under the same heading text stay apart.
+    names = ["(before the first heading)"] + [f"{n}: {h}" for n, (_, h) in enumerate(bounds, 1)]
+    sec = lambda i: sum(1 for b, _ in bounds if b <= i)
+    out = {}
+    for n, name in enumerate(names):
+        out[name] = literals([x for x in f["lines"] if sec(x[0]) == n], [x for x in f["blocks"] if sec(x[0]) == n])
+    return out
+
+
 def facts(text):
     fm, lines, blocks = split(text)
     raw = "\n".join(l for _, l in lines)
-    body = "\n".join(l for _, l in lines if not VALE_ANY.fullmatch(l.strip()))
-    body = VALE_ANY.sub("", body)
+    body = prose_body(lines)
     flat = norm(body)
     paras = re.split(r"\n\s*\n|\n(?=\s*(?:[-*]|\d+\.)\s)", body)
     return {
-        "frontmatter": fm, "lines": lines, "raw": raw, "flat": flat, "units": units(body),
-        "code span": {norm(m.group(2)) for m in re.finditer(r"(`+)(.+?)\1", flat)},
-        "fenced block": set(blocks),
-        "link target": set(re.findall(r"\]\(([^)\s]+)\)", flat)),
-        "number": set(re.findall(r"\d+(?:[.,]\d+)*", strip_code(flat))),
-        "headings": [norm(l) for _, l in lines if re.match(r"^#{1,6}\s", l.strip())],
+        "frontmatter": fm, "lines": lines, "blocks": blocks, "raw": raw, "flat": flat, "units": units(body),
+        "headings": [norm(l) for _, l in lines if is_heading(l)],
         "span order": [tuple(dict.fromkeys(norm(m.group(2)) for m in re.finditer(r"(`+)(.+?)\1", norm(p)))) for p in paras],
         "chars": len(text),
         "words": len(VALE_ANY.sub("", text).split()),
@@ -176,9 +221,13 @@ def compare(name, old, new, frozen, table):
     a, b, bad = facts(old), facts(new), []
     if a["frontmatter"] != b["frontmatter"]:
         bad.append("frontmatter changed")
-    for kind in ("code span", "fenced block", "link target", "number"):
-        bad += [f"{kind} lost: {x[:140]!r}" for x in sorted(a[kind] - b[kind])]
-        bad += [f"{kind} new: {x[:140]!r}" for x in sorted(b[kind] - a[kind])]
+    sa, sb = section_literals(a, a["headings"]), section_literals(b, a["headings"])
+    empty = {kind: set() for kind in LITERALS}
+    for sec in list(sa) + [s for s in sb if s not in sa]:
+        la_, lb_ = sa.get(sec, empty), sb.get(sec, empty)
+        for kind in LITERALS:
+            bad += [f"{kind} lost from section {sec[:60]!r}: {x[:140]!r}" for x in sorted(la_[kind] - lb_[kind])]
+            bad += [f"{kind} new to section {sec[:60]!r}: {x[:140]!r}" for x in sorted(lb_[kind] - la_[kind])]
     if not subseq(a["headings"], b["headings"]):
         bad.append(f"base headings not kept in order: {[h for h in a['headings'] if h not in b['headings']] or 'order changed'}")
     for o in a["span order"]:
@@ -272,13 +321,19 @@ def main(argv):
         argv = argv[:i] + argv[i + (2 if has_value else 1):]
         return val
     frozen_path, table_path = opt("--frozen-list"), opt("--table")
-    audit, name = opt("--vale-audit", False, has_value=False), opt("--name")
+    name = opt("--name")
     frozen = json.load(open(frozen_path, encoding="utf-8")) if frozen_path else []
     table, ok, ca, cb = [], True, 0, 0
     if argv[:1] == ["--pair"]:
         old, new = (open(p, encoding="utf-8").read() for p in argv[1:3])
         good, ca, cb, found = compare(name or argv[2], old, new, frozen, table)
-        ok = good
+        errs = vale_audit(argv[2], new, found)
+        for e in errs:
+            print(f"         {e}")
+        ok = good and not errs
+        if ca and cb >= ca:
+            print(f"  FAIL  total characters did not fall: {ca} -> {cb}")
+            ok = False
     else:
         base, spec = argv[0], argv[1:] or ["plugins"]
         for row in git("diff", "--name-status", "-M", base, "--", *spec).splitlines():
@@ -291,11 +346,10 @@ def main(argv):
                 continue
             new = open(os.path.join(ROOT, path), encoding="utf-8").read()
             good, a_, b_, found = compare(path, git("show", f"{base}:{path}"), new, frozen, table)
-            if audit:
-                errs = vale_audit(path, new, found)
-                for e in errs:
-                    print(f"         {e}")
-                good &= not errs
+            errs = vale_audit(path, new, found)
+            for e in errs:
+                print(f"         {e}")
+            good &= not errs
             ok &= good; ca += a_; cb += b_
         if ca and cb >= ca:
             print(f"  FAIL  total characters did not fall: {ca} -> {cb}")

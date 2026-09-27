@@ -10,6 +10,7 @@
 //
 // Options: --tasks 1,2  --arms with_skill  --repeats 2  --parallel 1  --plugin-dir <path>
 //          --model fable --effort medium  --regrade (re-grade existing runs, no new sessions)
+//          --config-name <name> (the configuration directory, in place of the arm's name)
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -18,6 +19,7 @@ const { spawn, spawnSync } = require('node:child_process');
 const { parseArgs: parseArgv } = require('node:util');
 const { metricsFromFiles, parseTranscript, textOf } = require('./metrics.js');
 const { grade } = require('./grade.js');
+const { parseFrontmatter } = require('../../test/helpers/frontmatter.js');
 
 const HARNESS = __dirname;
 const EVALS = path.resolve(HARNESS, '..');
@@ -29,13 +31,14 @@ function parseArgs(argv) {
   const { values: v } = parseArgv({ args: argv, strict: true, options: {
     confirm: { type: 'boolean', default: false }, regrade: { type: 'boolean', default: false },
     iteration: { ...s, default: '1' }, repeats: s, parallel: { ...s, default: '1' },
-    tasks: s, arms: s, 'plugin-dir': s, model: { ...s, default: CONFIG.lead.model }, effort: { ...s, default: CONFIG.lead.effort },
+    tasks: s, arms: s, 'plugin-dir': s, 'config-name': s, model: { ...s, default: CONFIG.lead.model }, effort: { ...s, default: CONFIG.lead.effort },
   } });
   return {
     confirm: v.confirm, regrade: v.regrade, model: v.model, effort: v.effort,
     iteration: Number(v.iteration), repeats: v.repeats ? Number(v.repeats) : null, parallel: Number(v.parallel),
     tasks: v.tasks ? v.tasks.split(',').map(Number) : null, arms: v.arms ? v.arms.split(',') : null,
     pluginDir: v['plugin-dir'] ? path.resolve(v['plugin-dir']) : null,
+    configName: v['config-name'] || null,
   };
 }
 
@@ -64,6 +67,58 @@ function capsFor(task) {
 // A task's own `arms` replace the global set for that task.
 const armsFor = (task) => task.arms || CONFIG.arms;
 
+// The model and effort an agent pins, read from the plugin copy the run loads.
+function agentFrontmatter(pluginDir, name) {
+  return parseFrontmatter(fs.readFileSync(path.join(pluginDir, 'agents', `${name}.md`), 'utf8'));
+}
+
+// Environment keys are case-insensitive on Windows, and a copy of process.env keeps whatever
+// case the system used (`Path`), so every lookup and delete matches the name in any case.
+const keysOf = (env, name) => Object.keys(env).filter((k) => k.toUpperCase() === name);
+
+function resolveOnPath(name, env) {
+  const dirs = keysOf(env, 'PATH').flatMap((k) => env[k].split(path.delimiter)).filter(Boolean);
+  const pathext = keysOf(env, 'PATHEXT').map((k) => env[k])[0] || '.EXE;.CMD;.BAT';
+  const exts = process.platform === 'win32' ? pathext.split(';').filter(Boolean) : [''];
+  for (const d of dirs) {
+    for (const e of exts) {
+      const p = path.join(d, name + e);
+      if (fs.existsSync(p) && fs.statSync(p).isFile()) return p;
+    }
+  }
+  return null;
+}
+
+// `.invalid` is reserved (RFC 6761) and never resolves, so a push or fetch fails at once.
+const FIXTURE_REMOTE = 'https://fixture.invalid/bench/fixture.git';
+
+// Every agent task runs isolated, because a prompt with a rule planted out of it may reach for
+// `gh` or a nested `claude` with this machine's credentials. `claude` is resolved to its full
+// path first, since the PATH the session gets has a shim of that name in front. Both shims log
+// the call to `shimLog` and exit non-zero; a run whose log is not empty fails its grade.
+function isolatedLaunch({ baseEnv, dir, shimLog }) {
+  const command = resolveOnPath('claude', baseEnv);
+  if (!command) throw new Error('claude not found on PATH');
+  fs.rmSync(dir, { recursive: true, force: true });
+  const shimDir = path.join(dir, 'shims');
+  const ghConfigDir = path.join(dir, 'gh-config');
+  fs.mkdirSync(shimDir, { recursive: true });
+  fs.mkdirSync(ghConfigDir, { recursive: true });
+  fs.mkdirSync(path.dirname(shimLog), { recursive: true });
+  fs.writeFileSync(shimLog, '');
+  const log = shimLog.replace(/\\/g, '/');
+  for (const name of ['gh', 'claude']) {
+    fs.writeFileSync(path.join(shimDir, name), `#!/bin/sh\nprintf '%s\\n' "${name} $*" >> '${log}'\necho "${name} is not available in this session" >&2\nexit 97\n`, { mode: 0o755 });
+    fs.writeFileSync(path.join(shimDir, `${name}.cmd`), `@>>"${shimLog}" echo ${name} %*\r\n@echo ${name} is not available in this session 1>&2\r\n@exit /b 97\r\n`);
+  }
+  const env = { ...baseEnv };
+  const oldPath = keysOf(env, 'PATH').map((k) => env[k])[0] || '';
+  for (const k of [...keysOf(env, 'PATH'), ...keysOf(env, 'GH_TOKEN'), ...keysOf(env, 'GITHUB_TOKEN'), ...keysOf(env, 'GH_CONFIG_DIR')]) delete env[k];
+  env.PATH = [shimDir, oldPath].filter(Boolean).join(path.delimiter);
+  env.GH_CONFIG_DIR = ghConfigDir;
+  return { command, env, remote: FIXTURE_REMOTE, shimLog, shimDir, ghConfigDir };
+}
+
 // Interleaved by repeat, then arm (inline-1 delegate-1 loop-1 inline-2 ...), so drift over a
 // long run (rate limits, model load) falls on every arm alike. --repeats overrides the task's
 // own `repeats`; 2 is the fallback.
@@ -73,13 +128,16 @@ function buildCells(a) {
   for (const task of tasks) {
     const arms = Object.keys(armsFor(task)).filter((x) => !a.arms || a.arms.includes(x));
     const repeats = a.repeats || task.repeats || 2;
-    for (let run = 1; run <= repeats; run++) for (const arm of arms) cells.push({ task, arm, run });
+    // `config` names the run's directory: the arm, unless --config-name gives another, so an
+    // old, new, rerun and planted-regression run of one iteration sit side by side.
+    for (let run = 1; run <= repeats; run++) for (const arm of arms) cells.push({ task, arm, run, config: a.configName || arm });
   }
+  if (a.configName && new Set(cells.map((c) => c.arm)).size > 1) throw new Error('--config-name names one configuration: pick a single arm with --arms');
   return cells;
 }
 
 function runDirFor(a, cell) {
-  return path.join(EVALS, 'runs', `iteration-${a.iteration}`, `eval-${cell.task.id}-${cell.task.name}`, cell.arm, `run-${cell.run}`);
+  return path.join(EVALS, 'runs', `iteration-${a.iteration}`, `eval-${cell.task.id}-${cell.task.name}`, cell.config, `run-${cell.run}`);
 }
 
 // Fixtures live in a short temp path on purpose: a clone inside the repo's own deep path
@@ -89,24 +147,30 @@ function runDirFor(a, cell) {
 // don't-ask mode denies it.
 const TMP = fs.realpathSync.native(os.tmpdir());
 function fixtureDirFor(a, cell) {
-  return path.join(TMP, 'fabflows-bench', `i${a.iteration}`, `t${cell.task.id}-${cell.arm}-r${cell.run}`);
+  return path.join(TMP, 'fabflows-bench', `i${a.iteration}`, `t${cell.task.id}-${cell.config}-r${cell.run}`);
 }
 
 function claudeArgs(a, cell, runDir, settingsPath) {
   const armCfg = armsFor(cell.task)[cell.arm];
   const caps = capsFor(cell.task);
   const prompt = `${armCfg.promptPrefix || ''}${cell.task.prompt}`;
+  // An agent task runs the agent as the session itself, on its own frontmatter tier, so the
+  // brief reaches it unchanged and its report is the run's result. No lead sits in between.
+  let session = ['--model', a.model, '--effort', a.effort];
+  if (cell.task.agent) {
+    const fm = agentFrontmatter(a.stagedPluginDir || a.pluginDir || path.join(REPO, armCfg.pluginDir), cell.task.agent);
+    session = ['--agent', `fabflows:${cell.task.agent}`, '--model', fm.model, ...(fm.effort ? ['--effort', fm.effort] : [])];
+  }
   const args = [
     '-p', prompt,
-    '--model', a.model,
-    '--effort', a.effort,
+    ...session,
     '--output-format', 'stream-json',
     '--verbose',
     '--permission-mode', 'dontAsk',
     '--permission-prompts', 'none',
     // Workflow is offered to both arms so the tool surface is equal; a bare lead has no reason
     // to use it, the fabflows arm is expected to launch fabflows:build on the spec'd task.
-    '--allowedTools', 'Read,Edit,Write,Grep,Glob,Bash,Agent,Skill,Workflow,TaskCreate,TaskGet,TaskList,TaskUpdate,TaskOutput,TaskStop,NotebookEdit',
+    '--allowedTools', (cell.task.allowedTools || CONFIG.allowedTools).join(','),
     // An arm's disallowedTools remove the tool from the session, so it is absent, not denied.
     '--disallowedTools', ['PowerShell', ...(armCfg.disallowedTools || [])].join(','),
     // 'project' is needed for the fixture's CLAUDE.md (the environment note) to load at all;
@@ -158,9 +222,9 @@ const ENV_NOTE = [
   '',
 ].join('\n');
 
-function git(fixture, args, what) {
+function git(fixture, args, what, mayFail = false) {
   const r = spawnSync('git', ['-C', fixture, ...args], { encoding: 'utf8' });
-  if (r.status !== 0) throw new Error(`${what} failed: ${r.stderr}`);
+  if (r.status !== 0 && !mayFail) throw new Error(`${what} failed: ${r.stderr}`);
 }
 
 // spec.kind "repo" clones this repo at spec.ref, a commit pinned before the benchmark existed
@@ -168,7 +232,8 @@ function git(fixture, args, what) {
 // fresh repository (a greenfield task). setup: [{ file, find, replace }] edits applied and
 // committed before the session starts, so a task can plant a failure and still begin from a
 // clean `git status`. The branch matters: fabflows:build refuses to run on main or master.
-function prepareFixture(fixture, branch, spec, setup = []) {
+// remote, when given, becomes the fixture's origin (an agent task's unresolvable host).
+function prepareFixture(fixture, branch, spec, setup = [], remote = null) {
   fs.rmSync(fixture, { recursive: true, force: true });
   fs.mkdirSync(path.dirname(fixture), { recursive: true });
   if (spec.kind === 'repo') {
@@ -189,6 +254,10 @@ function prepareFixture(fixture, branch, spec, setup = []) {
   // without a global one would otherwise fail here or leave the lead unable to commit.
   git(fixture, ['config', 'user.name', 'bench'], 'config');
   git(fixture, ['config', 'user.email', 'bench@localhost'], 'config');
+  if (remote) {
+    git(fixture, ['remote', 'remove', 'origin'], 'remote remove', true);
+    git(fixture, ['remote', 'add', 'origin', remote], 'remote add');
+  }
   for (const s of setup) {
     const p = path.join(fixture, s.file);
     const before = fs.readFileSync(p, 'utf8');
@@ -298,7 +367,8 @@ function measureAndGrade(a, cell, runDir, fixture) {
 
   // An arm may add grade options (task 8's loop arm sets requireReview).
   const task = { ...cell.task, grade: { ...cell.task.grade, ...(armsFor(cell.task)[cell.arm].grade || {}) } };
-  const grading = grade({ task, fixture, metrics, timing, maxTurns: capsFor(cell.task).maxTurns, workflowDir });
+  const shimLog = cell.task.agent ? path.join(runDir, 'shim.log') : null;
+  const grading = grade({ task, fixture, metrics, timing, maxTurns: capsFor(cell.task).maxTurns, workflowDir, events, shimLog });
   writeJson(path.join(runDir, 'grading.json'), grading);
   const slim = { ...metrics, result: { ...metrics.result } };
   delete slim.result.result_text;
@@ -319,23 +389,26 @@ function runCell(a, cell, settingsPath) {
     return Promise.resolve({ cell, ...measureAndGrade(a, cell, runDir, fixture) });
   }
 
-  prepareFixture(fixture, `bench/t${cell.task.id}-${cell.arm}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || []);
   const args = claudeArgs(a, cell, runDir, settingsPath);
   // The guard appends, so a relaunch into the same run directory would carry the abandoned
   // launch's payloads into this run's hook counts (observed in iteration 5, two stale rows).
   const probePath = path.join(runDir, 'hook-probe.jsonl');
   fs.rmSync(probePath, { force: true });
   // A ceiling of '0' lifts the 600 s cap on waiting for background work in print mode.
-  const env = { ...process.env, FABFLOWS_PROBE: probePath, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0' };
+  let env = { ...process.env, FABFLOWS_PROBE: probePath, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0' };
   delete env.CLAUDECODE; // the nested-session guard is for interactive terminals
-  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: ['claude', ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS }, startedAt: new Date().toISOString() });
+  let command = 'claude';
+  let remote = null;
+  if (cell.task.agent) ({ command, env, remote } = isolatedLaunch({ baseEnv: env, dir: `${fixture}-iso`, shimLog: path.join(runDir, 'shim.log') }));
+  prepareFixture(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || [], remote);
+  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, startedAt: new Date().toISOString() });
 
   const caps = capsFor(cell.task);
   return new Promise((resolve) => {
     const started = Date.now();
     const out = fs.createWriteStream(path.join(runDir, 'transcript.jsonl'));
     const err = fs.createWriteStream(path.join(runDir, 'stderr.txt'));
-    const child = spawn('claude', args, { cwd: fixture, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(command, args, { cwd: fixture, env, stdio: ['ignore', 'pipe', 'pipe'] });
     const killer = setTimeout(() => {
       err.write(`\nharness: killed after ${caps.runTimeoutMinutes} minutes\n`);
       child.kill();
@@ -380,7 +453,12 @@ async function main() {
   console.log(`  lead ${a.model} @ ${a.effort}; arms: ${[...new Set(cells.map((c) => c.arm))].join(', ')}; repeats: ${a.repeats || 'per task'}`);
   for (const task of new Set(cells.map((c) => c.task))) {
     const caps = capsFor(task);
-    console.log(`  task ${task.id} ${task.name}: caps ${caps.maxTurns} turns, $${caps.maxBudgetUsd} list-price per run, ${caps.runTimeoutMinutes} min`);
+    let who = '';
+    if (task.agent) {
+      const fm = agentFrontmatter(a.pluginDir || path.join(REPO, Object.values(armsFor(task))[0].pluginDir), task.agent);
+      who = ` fabflows:${task.agent} as the session agent on ${fm.model}${fm.effort ? ` @ ${fm.effort}` : ''}, isolated;`;
+    }
+    console.log(`  task ${task.id} ${task.name}:${who} caps ${caps.maxTurns} turns, $${caps.maxBudgetUsd} list-price per run, ${caps.runTimeoutMinutes} min`);
   }
   console.log(`  results -> ${iterDir}\n  fixtures -> ${path.join(TMP, 'fabflows-bench', `i${a.iteration}`)}`);
   if (!a.confirm && !a.regrade) {
@@ -392,10 +470,12 @@ async function main() {
   writeJson(settingsPath, cleanRoomSettings());
   // Staged once per invocation, and not on --regrade: that copy records what the runs loaded.
   const pluginArm = cells.map((c) => armsFor(c.task)[c.arm]).find((x) => x.pluginDir);
-  if (pluginArm && !a.regrade) a.stagedPluginDir = stagePlugin(a.pluginDir || path.join(REPO, pluginArm.pluginDir), path.join(iterDir, 'plugin'));
+  // Each configuration stages its own copy, so side-by-side configurations never share one.
+  const stageDir = path.join(iterDir, a.configName ? `plugin-${a.configName}` : 'plugin');
+  if (pluginArm && !a.regrade) a.stagedPluginDir = stagePlugin(a.pluginDir || path.join(REPO, pluginArm.pluginDir), stageDir);
 
   await pool(cells, a.parallel, async (cell) => {
-    const label = `${cell.task.name}/${cell.arm}/run-${cell.run}`;
+    const label = `${cell.task.name}/${cell.config}/run-${cell.run}`;
     console.log(`[${new Date().toISOString()}] start ${label}`);
     const r = await runCell(a, cell, settingsPath);
     const verdict = r.grading ? `${r.grading.summary.passed}/${r.grading.summary.total}` : r.skipped || r.error;
@@ -406,7 +486,7 @@ async function main() {
   spawnSync(process.execPath, [path.join(HARNESS, 'summarize.js'), iterDir], { stdio: 'inherit' });
 }
 
-module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, buildCells, claudeArgs };
+module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, buildCells, claudeArgs, isolatedLaunch, resolveOnPath, runDirFor, parseArgs, FIXTURE_REMOTE };
 
 if (require.main === module) {
   main().catch((e) => {
