@@ -30,7 +30,7 @@ under plugins/*/agents or plugins/*/skills is added, deleted or renamed.
 change adds or removes, so the reviewer can compare all of them. The table is the review; the
 highlights only point at the rows most likely to change behaviour.
 """
-import difflib, json, os, re, subprocess, sys, tempfile
+import difflib, json, os, re, shutil, subprocess, sys, tempfile
 from collections import Counter
 
 def repo_root():
@@ -174,12 +174,12 @@ def subseq(o, n):
 
 def vocab_proof(style, rule):
     """True for rules a vocabulary entry cannot reach: `nonword: true` or `extends: sequence`.
-    Reads the synced styles, so it needs `vale sync` first; a missing style file counts as False."""
+    Reads the synced styles, so it needs `vale sync` first; a missing style file gives None."""
     p = os.path.join(ROOT, "styles", style, rule + ".yml")
     try:
         y = open(p, encoding="utf-8").read()
     except OSError:
-        return False
+        return None
     return re.search(r"^nonword:\s*true", y, re.M) is not None or re.search(r"^extends:\s*sequence", y, re.M) is not None
 
 
@@ -197,7 +197,10 @@ def pairs(lines):
             bad.append(f"line {i}: Vale comment is not an own-line Style.Rule = NO/YES directive: {l.strip()[:90]!r}")
             continue
         rule, state = f"{m.group(1)}.{m.group(2)}", m.group(3)
-        if not vocab_proof(m.group(1), m.group(2)):
+        proof = vocab_proof(m.group(1), m.group(2))
+        if proof is None:
+            bad.append(f"line {i}: styles/{m.group(1)}/{m.group(2)}.yml not found; run `vale sync` from the repository root first")
+        elif not proof:
             bad.append(f"line {i}: {rule} is neither nonword nor sequence; use a vocabulary entry instead of a pair")
         if state == "NO":
             if rule in open_:
@@ -275,19 +278,36 @@ def compare(name, old, new, frozen, table):
 
 
 def vale_audit(path, text, found):
-    """Blank the Vale directives in a copy, re-run Vale, and match findings of paired rules to pairs."""
+    """Blank the Vale directives in a copy, re-run Vale, and match findings of paired rules to pairs.
+    The copy keeps the file's repo-relative path under a temp root and Vale runs from that root,
+    because .vale.ini sections match relative paths: a copy elsewhere gets only [*.md]."""
     bad = []
     lines = text.splitlines(keepends=True)
     blank = [re.sub(r"<!--\s*vale\b[^>]*-->", "<!-- -->", l) if VALE_LINE.match(l.rstrip("\r\n")) else l for l in lines]
     rules = {r for r, _, _ in found}
     if not rules:
         return bad
+    rel = os.path.basename(path) if os.path.isabs(path) else path
     d = tempfile.mkdtemp()
-    cp = os.path.join(d, os.path.basename(path))
-    open(cp, "w", encoding="utf-8").write("".join(blank))
-    r = subprocess.run(["vale", "--config", os.path.join(ROOT, ".vale.ini"), "--minAlertLevel=warning", "--output=JSON", cp],
-                       capture_output=True, text=True, encoding="utf-8")
-    alerts = [x for v in json.loads(r.stdout or "{}").values() for x in v]
+    try:
+        cp = os.path.join(d, rel)
+        os.makedirs(os.path.dirname(cp), exist_ok=True)
+        open(cp, "w", encoding="utf-8").write("".join(blank))
+        r = subprocess.run(["vale", "--config", os.path.join(ROOT, ".vale.ini"), "--minAlertLevel=warning", "--output=JSON", rel],
+                           cwd=d, capture_output=True, text=True, encoding="utf-8")
+    except FileNotFoundError:
+        return ["vale is not on PATH, so the Vale pairs could not be checked"]
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    # Findings come as {file: [alert, ...]}; a runtime error (E100 and the like) is one flat object.
+    try:
+        data = json.loads(r.stdout or "{}")
+    except ValueError:
+        data = None
+    if not isinstance(data, dict) or not all(isinstance(v, list) for v in data.values()):
+        return [f"Vale did not run (exit {r.returncode}); if its packages are missing, run `vale sync` from the "
+                f"repository root first: {((r.stdout or '') + (r.stderr or '')).strip()[:200]}"]
+    alerts = [x for v in data.values() for x in v]
     for rule, s, e in found:
         if not any(x["Check"] == rule and s < x["Line"] < e for x in alerts):
             bad.append(f"{rule} pair at lines {s}-{e} covers no finding of that rule")
@@ -327,7 +347,7 @@ def main(argv):
     if argv[:1] == ["--pair"]:
         old, new = (open(p, encoding="utf-8").read() for p in argv[1:3])
         good, ca, cb, found = compare(name or argv[2], old, new, frozen, table)
-        errs = vale_audit(argv[2], new, found)
+        errs = vale_audit(name or argv[2], new, found)
         for e in errs:
             print(f"         {e}")
         ok = good and not errs

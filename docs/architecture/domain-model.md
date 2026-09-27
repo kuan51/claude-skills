@@ -98,7 +98,7 @@ never by editing this file.
 | check_readme_shape | function | `plugins/docs-warden/skills/docs-warden/scripts/audit.py:1133` |
 | check_required_files | function | `plugins/docs-warden/skills/docs-warden/scripts/audit.py:211` |
 | check_standards | function | `plugins/docs-warden/skills/docs-warden/scripts/audit.py:1059` |
-| compare | function | `plugins/fabflows/evals/prose/keep_check.py:220` |
+| compare | function | `plugins/fabflows/evals/prose/keep_check.py:223` |
 | documented_in | function | `plugins/docs-warden/skills/ontological-documentation/scripts/domain_model.py:48` |
 | edit | function | `plugins/fabflows/evals/prose/test_keep_check.py:54` |
 | extract | function | `plugins/docs-warden/skills/ontological-documentation/scripts/extract_concepts.py:325` |
@@ -127,7 +127,7 @@ never by editing this file.
 | prose_body | function | `plugins/fabflows/evals/prose/keep_check.py:116` |
 | read_doc | function | `plugins/docs-warden/skills/docs-warden/scripts/_common.py:78` |
 | read_front_matter | function | `plugins/docs-warden/skills/docs-warden/scripts/_common.py:116` |
-| readability | function | `plugins/fabflows/evals/prose/keep_check.py:214` |
+| readability | function | `plugins/fabflows/evals/prose/keep_check.py:217` |
 | render | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_compact.py:56` |
 | render_aggregate | function | `plugins/docs-warden/skills/docs-warden/scripts/audit.py:1286` |
 | render_graph | function | `plugins/docs-warden/skills/ontological-documentation/scripts/domain_model.py:96` |
@@ -255,10 +255,10 @@ never by editing this file.
 | test_waiting_line_names_undecided_records_not_proposed_ones | function | `plugins/docs-warden/test/test_scripts.py:2143` |
 | test_waiving_the_standards_family_covers_each_declared_standard | function | `plugins/docs-warden/test/test_scripts.py:614` |
 | units | function | `plugins/fabflows/evals/prose/keep_check.py:93` |
-| vale_audit | function | `plugins/fabflows/evals/prose/keep_check.py:277` |
+| vale_audit | function | `plugins/fabflows/evals/prose/keep_check.py:280` |
 | vocab_proof | function | `plugins/fabflows/evals/prose/keep_check.py:175` |
 | write | function | `plugins/fabflows/evals/prose/test_keep_check.py:34` |
-| write_table | function | `plugins/fabflows/evals/prose/keep_check.py:304` |
+| write_table | function | `plugins/fabflows/evals/prose/keep_check.py:324` |
 | yaml_flow_list | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_new.py:37` |
 | yaml_line | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_new.py:28` |
 

@@ -44,7 +44,9 @@ step "Vale warnings and errors in the files"
 if [ "${#MD[@]}" -gt 0 ]; then bash "$HERE/vale-warn-gate.sh" "${MD[@]}" || bad "vale-warn-gate"; else echo "  no Markdown file given"; fi
 
 step "Vale at error level and markdownlint-cli2 on every Markdown file changed since $BASE"
-mapfile -t CHANGED < <(git diff --name-only --diff-filter=ACMR "$BASE" -- '*.md')
+# A read loop, not mapfile: macOS still ships bash 3.2, which has no mapfile.
+CHANGED=()
+while IFS= read -r f; do CHANGED+=("$f"); done < <(git diff --name-only --diff-filter=ACMR "$BASE" -- '*.md')
 if [ "${#CHANGED[@]}" -gt 0 ]; then
   vale --minAlertLevel=error --output=line "${CHANGED[@]}" || bad "vale errors"
   markdownlint-cli2 "${CHANGED[@]}" > "$T/mdl.txt" 2>&1 || { tail -10 "$T/mdl.txt"; bad "markdownlint"; }
@@ -63,7 +65,8 @@ if [ -f "$ACCEPT" ]; then
     [ -z "$line" ] && continue
     case "$line" in '#'*) continue ;; esac
     if printf '%s' "$line" | grep -q '[][\\^$.|?*+(){}]'; then bad "not a literal phrase: $line"; continue; fi
-    mapfile -t HITS < <(grep -rlF -- "$line" plugins/fabflows/agents plugins/fabflows/skills --include='*.md')
+    HITS=()
+    while IFS= read -r f; do HITS+=("$f"); done < <(grep -rlF -- "$line" plugins/fabflows/agents plugins/fabflows/skills --include='*.md')
     if [ "${#HITS[@]}" -eq 0 ]; then bad "not in any fabflows prompt file: $line"; continue; fi
     with=$(vale --output=line "${HITS[@]}" 2>/dev/null | wc -l)
     grep -vxF -- "$line" "$T/accept.txt" > "$ACCEPT"
@@ -84,9 +87,16 @@ grep -E '^ℹ (pass|fail|skipped)' "$T/fab.txt"
 node --test "test/*.test.js" > "$T/mkt.txt" 2>&1 || bad "marketplace tests"
 grep -E '^ℹ (pass|fail)' "$T/mkt.txt"
 
-step "audit.py"
-python plugins/docs-warden/skills/docs-warden/scripts/audit.py . > "$T/audit.txt" 2>&1 || bad "audit.py"
-grep -m1 -E '[0-9]+ pass, [0-9]+ warn, [0-9]+ fail' "$T/audit.txt"
+# CLAUDE.md runs docs-warden's scripts from the installed plugin, never from this repo's copy
+# (CI is the only exception), so the path comes from installed_plugins.json.
+step "audit.py (the installed docs-warden)"
+AUDIT=$(node -e "try { const p = require('path'), e = (require(p.join(require('os').homedir(), '.claude', 'plugins', 'installed_plugins.json')).plugins || {})['docs-warden@claude-skills']; if (e && e[0]) process.stdout.write(p.join(e[0].installPath, 'skills', 'docs-warden', 'scripts', 'audit.py')); } catch (_) {}")
+if [ -n "$AUDIT" ] && [ -f "$AUDIT" ]; then
+  python "$AUDIT" . > "$T/audit.txt" 2>&1 || bad "audit.py"
+  grep -m1 -E '[0-9]+ pass, [0-9]+ warn, [0-9]+ fail' "$T/audit.txt"
+else
+  bad "audit.py: docs-warden is not installed, and CLAUDE.md runs it only from the installed plugin"
+fi
 
 echo
 [ "$fail" -eq 0 ] && echo "gate: PASS" || echo "gate: FAIL"
