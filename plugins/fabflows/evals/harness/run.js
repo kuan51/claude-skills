@@ -33,6 +33,9 @@ function parseArgs(argv) {
     iteration: { ...s, default: '1' }, repeats: s, parallel: { ...s, default: '1' },
     tasks: s, arms: s, 'plugin-dir': s, 'config-name': s, model: { ...s, default: CONFIG.lead.model }, effort: { ...s, default: CONFIG.lead.effort },
   } });
+  // It names directories that are emptied before use, so it must not climb out of the iteration.
+  const name = v['config-name'];
+  if (name !== undefined && (!/^[A-Za-z0-9][\w.-]*$/.test(name) || name.includes('..'))) throw new Error(`--config-name ${name}: use letters, digits, '.', '_' and '-' only, with no '..'`);
   return {
     confirm: v.confirm, regrade: v.regrade, model: v.model, effort: v.effort,
     iteration: Number(v.iteration), repeats: v.repeats ? Number(v.repeats) : null, parallel: Number(v.parallel),
@@ -76,10 +79,11 @@ function agentFrontmatter(pluginDir, name) {
 // case the system used (`Path`), so every lookup and delete matches the name in any case.
 const keysOf = (env, name) => Object.keys(env).filter((k) => k.toUpperCase() === name);
 
+// On Windows only .com and .exe, the names libuv tries: spawn without a shell refuses a .cmd or
+// .bat (EINVAL since the CVE-2024-27980 fix), so npm's claude.cmd must not win over claude.exe.
 function resolveOnPath(name, env) {
   const dirs = keysOf(env, 'PATH').flatMap((k) => env[k].split(path.delimiter)).filter(Boolean);
-  const pathext = keysOf(env, 'PATHEXT').map((k) => env[k])[0] || '.EXE;.CMD;.BAT';
-  const exts = process.platform === 'win32' ? pathext.split(';').filter(Boolean) : [''];
+  const exts = process.platform === 'win32' ? ['.com', '.exe'] : [''];
   for (const d of dirs) {
     for (const e of exts) {
       const p = path.join(d, name + e);
@@ -113,9 +117,16 @@ function isolatedLaunch({ baseEnv, dir, shimLog }) {
   }
   const env = { ...baseEnv };
   const oldPath = keysOf(env, 'PATH').map((k) => env[k])[0] || '';
-  for (const k of [...keysOf(env, 'PATH'), ...keysOf(env, 'GH_TOKEN'), ...keysOf(env, 'GITHUB_TOKEN'), ...keysOf(env, 'GH_CONFIG_DIR')]) delete env[k];
+  const drop = ['PATH', 'GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GH_CONFIG_DIR', 'GIT_ASKPASS', 'SSH_ASKPASS'];
+  for (const k of drop.flatMap((n) => keysOf(env, n))) delete env[k];
   env.PATH = [shimDir, oldPath].filter(Boolean).join(path.delimiter);
   env.GH_CONFIG_DIR = ghConfigDir;
+  // git would otherwise push with this machine's credentials: the credential helper (Git
+  // Credential Manager lives in Git for Windows' system config), a global helper, or an SSH key.
+  // The fixture's own repo config (user.name, user.email) still applies.
+  const gitGlobal = path.join(dir, 'gitconfig');
+  fs.writeFileSync(gitGlobal, '');
+  Object.assign(env, { GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitGlobal, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'false' });
   return { command, env, remote: FIXTURE_REMOTE, shimLog, shimDir, ghConfigDir };
 }
 
@@ -197,6 +208,19 @@ function stagePlugin(src, dest) {
   for (const part of PLUGIN_PARTS) {
     if (fs.existsSync(path.join(src, part))) fs.cpSync(path.join(src, part), path.join(dest, part), { recursive: true });
   }
+  return dest;
+}
+
+// A configuration's staged copy records what its runs loaded, so a later invocation may reuse it
+// only when it would stage the same files; otherwise earlier runs would lose their record.
+const treeFiles = (d) => fs.readdirSync(d, { recursive: true }).map(String).filter((f) => fs.statSync(path.join(d, f)).isFile()).sort();
+function stageOnce(src, dest) {
+  if (!fs.existsSync(dest)) return stagePlugin(src, dest);
+  const fresh = stagePlugin(src, `${dest}.new`);
+  const [a, b] = [treeFiles(fresh), treeFiles(dest)];
+  const same = a.length === b.length && a.every((f, i) => f === b[i] && fs.readFileSync(path.join(fresh, f)).equals(fs.readFileSync(path.join(dest, f))));
+  fs.rmSync(fresh, { recursive: true, force: true });
+  if (!same) throw new Error(`${dest} holds a different plugin copy from an earlier run of this configuration: use a new --config-name, or delete that directory to restage`);
   return dest;
 }
 
@@ -353,8 +377,13 @@ function measureAndGrade(a, cell, runDir, fixture) {
   fs.mkdirSync(outputs, { recursive: true });
   fs.writeFileSync(path.join(outputs, 'result.md'), metrics.result.result_text || '(no result text)');
   fs.writeFileSync(path.join(runDir, 'transcript.md'), compactTranscript(events));
-  fs.writeFileSync(path.join(outputs, 'git-status.txt'), spawnSync('git', ['-C', fixture, 'status', '--porcelain'], { encoding: 'utf8' }).stdout);
-  fs.writeFileSync(path.join(outputs, 'git-diff.patch'), spawnSync('git', ['-C', fixture, 'diff'], { encoding: 'utf8' }).stdout);
+  // The fixture's state when the session ended. A regrade keeps what the run recorded, since the
+  // temp fixture may since have been cleaned or reused; it fills in only a file that is missing.
+  const state = { 'git-status.txt': ['status', '--porcelain'], 'git-diff.patch': ['diff'], 'git-head.txt': ['log', '-1', '--format=%s'] };
+  for (const [file, args] of Object.entries(state)) {
+    if (!a.regrade || !fs.existsSync(path.join(outputs, file))) fs.writeFileSync(path.join(outputs, file), spawnSync('git', ['-C', fixture, ...args], { encoding: 'utf8' }).stdout || '');
+  }
+  const saved = { status: fs.readFileSync(path.join(outputs, 'git-status.txt'), 'utf8'), head: fs.readFileSync(path.join(outputs, 'git-head.txt'), 'utf8') };
 
   const timingPath = path.join(runDir, 'timing.json');
   const timing = fs.existsSync(timingPath) ? JSON.parse(fs.readFileSync(timingPath, 'utf8')) : {};
@@ -370,7 +399,7 @@ function measureAndGrade(a, cell, runDir, fixture) {
   // An arm may add grade options (task 8's loop arm sets requireReview).
   const task = { ...cell.task, grade: { ...cell.task.grade, ...(armsFor(cell.task)[cell.arm].grade || {}) } };
   const shimLog = cell.task.agent ? path.join(runDir, 'shim.log') : null;
-  const grading = grade({ task, fixture, metrics, timing, maxTurns: capsFor(cell.task).maxTurns, workflowDir, events, shimLog });
+  const grading = grade({ task, fixture, metrics, timing, maxTurns: capsFor(cell.task).maxTurns, workflowDir, events, shimLog, saved });
   writeJson(path.join(runDir, 'grading.json'), grading);
   const slim = { ...metrics, result: { ...metrics.result } };
   delete slim.result.result_text;
@@ -452,7 +481,9 @@ async function main() {
   const cells = buildCells(a);
   const iterDir = path.join(EVALS, 'runs', `iteration-${a.iteration}`);
   console.log(`fabflows benchmark, iteration ${a.iteration}: ${cells.length} runs`);
-  console.log(`  lead ${a.model} @ ${a.effort}; arms: ${[...new Set(cells.map((c) => c.arm))].join(', ')}; repeats: ${a.repeats || 'per task'}`);
+  // An agent task has no lead: it runs on the agent's frontmatter tier, whatever --model says.
+  const lead = cells.every((c) => c.task.agent) ? 'no lead (each agent runs on its own frontmatter tier; --model and --effort do not apply)' : `lead ${a.model} @ ${a.effort}${cells.some((c) => c.task.agent) ? ' (not for the agent tasks, which run on their own tier)' : ''}`;
+  console.log(`  ${lead}; arms: ${[...new Set(cells.map((c) => c.arm))].join(', ')}; repeats: ${a.repeats || 'per task'}`);
   for (const task of new Set(cells.map((c) => c.task))) {
     const caps = capsFor(task);
     let who = '';
@@ -474,7 +505,7 @@ async function main() {
   const pluginArm = cells.map((c) => armsFor(c.task)[c.arm]).find((x) => x.pluginDir);
   // Each configuration stages its own copy, so side-by-side configurations never share one.
   const stageDir = path.join(iterDir, a.configName ? `plugin-${a.configName}` : 'plugin');
-  if (pluginArm && !a.regrade) a.stagedPluginDir = stagePlugin(a.pluginDir || path.join(REPO, pluginArm.pluginDir), stageDir);
+  if (pluginArm && !a.regrade) a.stagedPluginDir = stageOnce(a.pluginDir || path.join(REPO, pluginArm.pluginDir), stageDir);
 
   await pool(cells, a.parallel, async (cell) => {
     const label = `${cell.task.name}/${cell.config}/run-${cell.run}`;
@@ -488,7 +519,7 @@ async function main() {
   spawnSync(process.execPath, [path.join(HARNESS, 'summarize.js'), iterDir], { stdio: 'inherit' });
 }
 
-module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, buildCells, claudeArgs, isolatedLaunch, resolveOnPath, runDirFor, parseArgs, FIXTURE_REMOTE };
+module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, stageOnce, buildCells, claudeArgs, isolatedLaunch, resolveOnPath, runDirFor, parseArgs, FIXTURE_REMOTE };
 
 if (require.main === module) {
   main().catch((e) => {
