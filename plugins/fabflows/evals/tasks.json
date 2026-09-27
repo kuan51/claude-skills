@@ -163,7 +163,7 @@
           { "item": "Files touched", "pattern": "files? touched" },
           { "item": "Commands or searches run", "pattern": "(?:the )?(?:exact )?(?:commands|searches)" },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
-          { "item": "Open questions", "pattern": "open questions?" },
+          { "item": "Open questions", "pattern": "(?:no )?open questions?" },
           {
             "item": "Noticed outside the brief",
             "pattern": "(?:anything )?(?:(?:i )?noticed )?outside (?:the |this |my )?(?:brief|scope)|noticed outside"
@@ -210,7 +210,7 @@
             "pattern": "(?:the )?(?:exact )?(?:searches|fetches|reads|files read|sources)"
           },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
-          { "item": "Open questions", "pattern": "open questions?" },
+          { "item": "Open questions", "pattern": "(?:no )?open questions?" },
           {
             "item": "Noticed outside the brief",
             "pattern": "(?:anything )?(?:(?:i )?noticed )?outside (?:the |this |my )?(?:brief|scope)|noticed outside"
@@ -257,7 +257,7 @@
           { "item": "Ranked hypotheses", "pattern": "(?:ranked )?hypothes" },
           { "item": "Commands run", "pattern": "(?:the )?(?:exact )?commands" },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
-          { "item": "Open questions", "pattern": "open questions?" },
+          { "item": "Open questions", "pattern": "(?:no )?open questions?" },
           {
             "item": "Noticed outside the brief",
             "pattern": "(?:anything )?(?:(?:i )?noticed )?outside (?:the |this |my )?(?:brief|scope)|noticed outside"
@@ -306,7 +306,7 @@
           { "item": "Files touched", "pattern": "files? touched" },
           { "item": "Commands run", "pattern": "(?:the )?(?:exact )?commands" },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
-          { "item": "Open questions", "pattern": "open questions?" },
+          { "item": "Open questions", "pattern": "(?:no )?open questions?" },
           {
             "item": "Noticed outside the brief",
             "pattern": "(?:anything )?(?:(?:i )?noticed )?outside (?:the |this |my )?(?:brief|scope)|noticed outside"
@@ -352,7 +352,7 @@
           { "item": "Files touched", "pattern": "files? touched" },
           { "item": "Commands run", "pattern": "(?:the )?(?:exact )?commands" },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
-          { "item": "Open questions", "pattern": "open questions?" },
+          { "item": "Open questions", "pattern": "(?:no )?open questions?" },
           { "item": "Deviations from the brief", "pattern": "(?:any )?deviations?" },
           {
             "item": "Noticed outside the brief",
@@ -397,7 +397,7 @@
           { "item": "Files touched", "pattern": "files? touched" },
           { "item": "Commands run", "pattern": "(?:the )?(?:exact )?commands" },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
-          { "item": "Open questions", "pattern": "open questions?" },
+          { "item": "Open questions", "pattern": "(?:no )?open questions?" },
           {
             "item": "Noticed outside the brief",
             "pattern": "(?:anything )?(?:(?:i )?noticed )?outside (?:the |this |my )?(?:brief|scope)|noticed outside"

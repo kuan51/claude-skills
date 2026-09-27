@@ -175,7 +175,9 @@ function claudeArgs(a, cell, runDir, settingsPath) {
     '--disallowedTools', ['PowerShell', ...(armCfg.disallowedTools || [])].join(','),
     // 'project' is needed for the fixture's CLAUDE.md (the environment note) to load at all;
     // 'user' alone drops it. The repo tracks no .claude/ settings, so nothing else comes in.
-    '--setting-sources', 'user,project',
+    // An agent task drops 'user': the maintainer's own CLAUDE.md could supply rules a planted
+    // regression deletes from the agent's prompt, and would make results depend on the machine.
+    '--setting-sources', cell.task.agent ? 'project' : 'user,project',
     '--settings', settingsPath,
     '--strict-mcp-config',
     '--max-turns', String(caps.maxTurns),

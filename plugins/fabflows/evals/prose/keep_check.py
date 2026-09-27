@@ -252,7 +252,7 @@ def compare(name, old, new, frozen, table):
     mb, lb = readability(b["units"], quotes)
     if la > 0 and lb >= la:
         bad.append(f"sentences over {LONG} words outside frozen text did not fall: {la} -> {lb}")
-    if mb > ma + 0.05:
+    if mb > ma:
         bad.append(f"mean sentence length rose: {ma:.1f} -> {mb:.1f} words")
 
     rows = []
