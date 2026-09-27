@@ -338,7 +338,7 @@ def main(argv):
         base, spec = argv[0], argv[1:] or ["plugins"]
         for row in git("diff", "--name-status", "-M", base, "--", *spec).splitlines():
             status, path = row.split("\t")[0], row.split("\t")[-1]
-            if status[0] in "ADR" and re.match(r"plugins/[^/]+/(agents|skills)/", path):
+            if status[0] in "ADR" and any(re.match(r"plugins/[^/]+/(agents|skills)/", p) for p in row.split("\t")[1:]):
                 print(f"  FAIL  {status} {path}: prompt files may only be modified, not added, deleted or renamed")
                 ok = False
                 continue

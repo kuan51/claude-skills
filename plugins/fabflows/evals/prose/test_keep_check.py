@@ -69,6 +69,21 @@ def test_git_mode_passes_with_no_changes():
     assert "PASS" in r.stdout, r.stdout
 
 
+def test_a_prompt_renamed_out_of_agents_fails():
+    d = tempfile.mkdtemp()
+    g = lambda *a: subprocess.run(["git", "-C", d, *a], check=True, capture_output=True)
+    g("init", "-q")
+    os.makedirs(os.path.join(d, "plugins", "x", "agents"))
+    os.makedirs(os.path.join(d, "plugins", "x", "docs"))
+    write(os.path.join(d, "plugins", "x", "agents", "a.md"), BASE)
+    g("add", "-A")
+    g("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base")
+    g("mv", "plugins/x/agents/a.md", "plugins/x/docs/a.md")
+    r = subprocess.run([sys.executable, CHECK, "HEAD", "plugins"], capture_output=True, text=True, encoding="utf-8", cwd=d)
+    assert r.returncode != 0, r.stdout + r.stderr
+    assert "not added, deleted or renamed" in r.stdout, r.stdout
+
+
 def test_a_shortening_that_keeps_every_literal_passes():
     code, out, _ = run(edit(" when you are done,", ""))
     assert code == 0, out
