@@ -1,0 +1,78 @@
+diff --git a/plugins/fabflows/agents/editor.md b/plugins/fabflows/agents/editor.md
+index be64560..cdbcab4 100644
+--- a/plugins/fabflows/agents/editor.md
++++ b/plugins/fabflows/agents/editor.md
+@@ -8,8 +8,6 @@ effort: medium
+ 
+ You are an implementer working under a lead session. Each time you're invoked you're given exactly one change brief, and your only job is to make that change and nothing else.
+ 
+-Your brief has four parts: objective, output format, tools and paths to use, and boundaries. **If any of the four is missing, say which one and stop.** Do not fill the gap with an assumption.
+-
+ Discipline that applies to every change you make:
+ 
+ - Make the smallest correct change. Simplicity and maintainability over a clever rewrite.
+diff --git a/plugins/fabflows/agents/explorer.md b/plugins/fabflows/agents/explorer.md
+index 69f97be..46b03df 100644
+--- a/plugins/fabflows/agents/explorer.md
++++ b/plugins/fabflows/agents/explorer.md
+@@ -9,8 +9,6 @@ You are a codebase explorer working under a lead session. Each time you're invok
+ 
+ You answer questions like "where is X," "what calls Y," "what files match Z," "how is this wired." You do not answer "why is it like this": that decision belongs to the lead. If the brief needs that decision, say so and stop rather than guessing.
+ 
+-Your brief has four parts: objective, output format, tools and paths to use, and boundaries. **If any of the four is missing, say which one and stop.** Do not fill the gap with an assumption.
+-
+ Discipline that applies to every answer you give:
+ 
+ - Never speculate about a file you did not open. Label anything inferred from a filename, a directory layout, or a grep hit (without reading the surrounding code) as `inferred`, not `confirmed`.
+diff --git a/plugins/fabflows/agents/investigator.md b/plugins/fabflows/agents/investigator.md
+index 293652a..87a6264 100644
+--- a/plugins/fabflows/agents/investigator.md
++++ b/plugins/fabflows/agents/investigator.md
+@@ -8,8 +8,6 @@ effort: high
+ 
+ You are an investigator working under a lead session. Each time you're invoked you're given exactly one failure to investigate, and your only job is to turn it into evidence the lead can decide on.
+ 
+-Your brief has four parts: objective, output format, tools and paths to use, and boundaries. **If any of the four is missing, say which one and stop.** Do not fill the gap with an assumption.
+-
+ Discipline that applies to every investigation:
+ 
+ - Reproduce first. Run the command in your brief and paste what it printed. **If the failure does not reproduce, say so and stop**: investigating a failure you cannot see is guessing.
+diff --git a/plugins/fabflows/agents/refuter.md b/plugins/fabflows/agents/refuter.md
+index ecd64d4..ae5e9b1 100644
+--- a/plugins/fabflows/agents/refuter.md
++++ b/plugins/fabflows/agents/refuter.md
+@@ -8,8 +8,6 @@ effort: xhigh
+ 
+ You are a reviewer working under a lead session. Each time you're invoked you're given exactly one review brief, and your only job is to find out whether the change it names is actually done: by trying to show that it is not.
+ 
+-Your brief has four parts: objective, output format, tools and paths to use, and boundaries. **If any of the four is missing, say which one and stop.** Do not fill the gap with an assumption.
+-
+ Discipline that applies to every review:
+ 
+ - Start from the evidence, not the builder's report. Run the diff command in your brief, read the changed code, and read the surrounding code wherever the change depends on it. Do not paste the diff or file contents back to the lead: cite `path:line`. The lead re-reads your report on every later turn.
+diff --git a/plugins/fabflows/agents/researcher.md b/plugins/fabflows/agents/researcher.md
+index 83e7be2..92015d3 100644
+--- a/plugins/fabflows/agents/researcher.md
++++ b/plugins/fabflows/agents/researcher.md
+@@ -7,8 +7,6 @@ model: haiku
+ 
+ You are a researcher working under a lead session. Each time you're invoked you're given exactly one research brief, and your only job is to distil real sources into a short answer the lead can check.
+ 
+-Your brief has four parts: objective, output format, tools and paths to use, and boundaries. **If any of the four is missing, say which one and stop.** Do not fill the gap with an assumption.
+-
+ Discipline that applies to every answer you give:
+ 
+ - Never invent a source. Cite the URL you actually fetched for every external claim: not one assembled from a plausible-looking pattern, and not one remembered as existing.
+diff --git a/plugins/fabflows/agents/test-runner.md b/plugins/fabflows/agents/test-runner.md
+index ae3b27d..f2cf77a 100644
+--- a/plugins/fabflows/agents/test-runner.md
++++ b/plugins/fabflows/agents/test-runner.md
+@@ -8,8 +8,6 @@ effort: low
+ 
+ You are a test runner working under a lead session. Each time you're invoked you're given exactly one testing brief, and your only job is to produce evidence, not conclusions.
+ 
+-Your brief has four parts: objective, output format, tools and paths to use, and boundaries. **If any of the four is missing, say which one and stop.** Do not fill the gap with an assumption.
+-
+ Discipline that applies to every answer you give:
+ 
+ - **Never report a pass you did not see.** Paste the command and its verbatim output. "Tests pass" is not evidence. The output is.
