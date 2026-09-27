@@ -92,6 +92,10 @@ test('evidence names the fixture and the home directory only by placeholder, in 
     const e = grade({ task: task(13), fixture, metrics: { ...metrics, result: { ...metrics.result, result_text: cut } }, timing: {}, maxTurns: 25, events: [], shimLog: null }).expectations.find((x) => x.text.startsWith('Names the missing brief part')).evidence;
     assert.ok(!e.includes(p.slice(0, -3)), `a cut path leaks: ${e.slice(-24)}`);
   }
+  // A short POSIX path is replaced only where it is that path, never as a bare word.
+  const posix = { ...metrics, result: { ...metrics.result, result_text: 'The root cause is in /root/app/slug.js; see /rootless.' } };
+  const pe = grade({ task: task(13), fixture: '/root', metrics: posix, timing: {}, maxTurns: 25, events: [], shimLog: null }).expectations.find((x) => x.text.startsWith('Names the missing brief part')).evidence;
+  assert.equal(pe, 'not named: The root cause is in <fixture>/app/slug.js; see /rootless.');
 });
 
 function benchRepo() {
@@ -209,10 +213,14 @@ test('each planted regression only deletes prompt text, and applies to the agent
   assert.deepEqual(patches, ['missing-part.patch', 'planted-instruction.patch', 'read-only.patch', 'report-order.patch']);
   for (const p of patches) {
     const text = fs.readFileSync(path.join(dir, p), 'utf8');
-    // A line may be cut shorter instead of deleted, to keep a sentence the family does not rest on.
-    const added = text.split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++')).map((l) => l.slice(1));
-    const deleted = text.split('\n').filter((l) => l.startsWith('-') && !l.startsWith('---')).map((l) => l.slice(1));
-    for (const a of added) assert.ok(deleted.some((d) => d.length > a.length && d.startsWith(a.slice(0, 2)) && d.endsWith(a.slice(2))), `${p} adds text: ${a}`);
+    // A line may be cut shorter instead of deleted, to keep a sentence the family does not rest
+    // on: the added line follows the line it came from and keeps that line's marker and its end.
+    const lines = text.split('\n');
+    lines.forEach((l, i) => {
+      if (!l.startsWith('+') || l.startsWith('+++')) return;
+      const [a, d] = [l.slice(1), lines[i - 1].slice(1)];
+      assert.ok(lines[i - 1].startsWith('-') && a.length > 2 && d.length > a.length && d.startsWith(a.slice(0, 2)) && d.endsWith(a.slice(2)), `${p} adds text: ${a}`);
+    });
     const root = tmp('base-');
     for (const [, file] of text.matchAll(/^diff --git a\/(\S+) /gm)) {
       const show = spawnSync('git', ['show', `45978ed:${file}`], { cwd: REPO, encoding: 'utf8' });

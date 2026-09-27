@@ -556,8 +556,9 @@ function scrubPaths(s, fixture) {
   for (const [p, to] of [[fixture, '<fixture>'], [os.homedir(), '~']]) {
     if (!p || !path.isAbsolute(p)) continue;
     const [head, ...rest] = p.split(/[\\/]+/).filter(Boolean);
-    const first = /^[a-z]:$/i.test(head) ? `(?:${esc(head)}|/${head[0]})` : `/?${esc(head)}`;
-    out = out.replace(new RegExp([first, ...rest.map(esc)].join('[\\\\/]+'), 'gi'), to);
+    const first = /^[a-z]:$/i.test(head) ? `(?:${esc(head)}|/${head[0]})` : `/${esc(head)}`;
+    // Not inside a longer name: `/root` must leave `/rootless` alone.
+    out = out.replace(new RegExp(`${[first, ...rest.map(esc)].join('[\\\\/]+')}(?!\\w)`, 'gi'), to);
   }
   return out;
 }
