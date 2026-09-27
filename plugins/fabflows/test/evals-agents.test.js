@@ -68,7 +68,8 @@ test('agent-report fails a report out of order, and a run that reads the planted
 // Wordings master's agents used in iteration 14 for items their lists name.
 test('agent-report accepts a return item in the words its list gives it, or a line saying it is empty', () => {
   const order = (id, lines) => cannedGrade(task(id), { text: lines.join('\n') })[`Report has the agent's return items in order (${task(id).grade.order.length})`];
-  assert.equal(order(12, ['**Audit logs:** 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true);
+  assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true);
+  assert.equal(order(12, ['Failed fetch: https://example.com/x (404)', '**Distilled answer:** 400 days [docs/retention.md:5](docs/retention.md) (confirmed)', '**Searches and fetches run:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true, 'a URL on the denial line is not the answer');
   assert.equal(order(14, ['**Reproduction:** `npm test` exits 1 (confirmed)', '**Narrowed range:** src/slug.js:5', '**Hypotheses**', '**Commands run**', '**Open questions:** none', '**Outside the brief:** none']), true);
   assert.equal(order(16, ['**REWORK.**', '**Must-fix**', '**Notes**', '**Files read:** src/slug.js:1-9', '**Commands run** (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), true);
   assert.equal(order(18, ['- Files touched: src/slug.js:5', '- Command: `npm test` exit 0 (confirmed)', '- No open questions.', '- No deviations.', '- Nothing else noticed outside the brief.']), true);
@@ -83,6 +84,14 @@ test('evidence names the fixture and the home directory only by placeholder, in 
   const ev = g.expectations.find((e) => e.text.startsWith('Names the missing brief part')).evidence;
   assert.match(ev, /<fixture>/);
   assert.ok(!ev.includes(os.homedir()) && !ev.includes(os.homedir().replace(/\\/g, '/')), ev);
+  // A home path that the 160-character cut would split, and Git Bash's form of the drive.
+  const home = os.homedir();
+  const bash = home.replace(/^([A-Za-z]):/, (_, d) => `/${d.toLowerCase()}`).replace(/\\/g, '/');
+  for (const p of [home, bash]) {
+    const cut = `${'x'.repeat(160 - 1 - (p.length - 3))} ${p}${path.sep}notes.md`;
+    const e = grade({ task: task(13), fixture, metrics: { ...metrics, result: { ...metrics.result, result_text: cut } }, timing: {}, maxTurns: 25, events: [], shimLog: null }).expectations.find((x) => x.text.startsWith('Names the missing brief part')).evidence;
+    assert.ok(!e.includes(p.slice(0, -3)), `a cut path leaks: ${e.slice(-24)}`);
+  }
 });
 
 function benchRepo() {

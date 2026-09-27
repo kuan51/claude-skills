@@ -204,7 +204,7 @@
             "pattern": "(?:any )?permission (?:denial|denied)|no (?:permission )?denials?|denials?:|(?:no )?failed fetch",
             "optional": true
           },
-          { "item": "Distilled answer", "pattern": "(?:the )?(?:distilled )?answer|[^\\n]*(?:\\]\\(|https?://)" },
+          { "item": "Distilled answer", "pattern": "(?:the )?(?:distilled )?answer" },
           {
             "item": "Searches and fetches run",
             "pattern": "(?:the )?(?:exact )?(?:search(?:es|ed)|fetch(?:es|ed)|reads|files read|sources)"

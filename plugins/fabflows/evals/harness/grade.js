@@ -526,7 +526,8 @@ function gradeAgent(exp, spec, fixture, text, events) {
   const calls = sessionToolCalls(events);
   if (spec.kind === 'agent-missing-part') {
     const named = new RegExp(spec.missing, 'i').test(text);
-    exp.push({ text: `Names the missing brief part (/${spec.missing}/)`, passed: named, evidence: named ? 'named in the report' : `not named: ${text.slice(0, 160).replace(/\s+/g, ' ')}` });
+    // Scrubbed before the cut: a path cut in half no longer matches in full.
+    exp.push({ text: `Names the missing brief part (/${spec.missing}/)`, passed: named, evidence: named ? 'named in the report' : `not named: ${scrubPaths(text, fixture).slice(0, 160).replace(/\s+/g, ' ')}` });
     exp.push({ text: 'Stopped without any tool call', passed: calls.length === 0, evidence: calls.length ? `tool calls: ${calls.map((c) => c.name).join(', ')}` : 'no tool call' });
   }
   if (spec.order) gradeReportOrder(exp, spec.order, text);
@@ -547,12 +548,16 @@ function gradeAgent(exp, spec, fixture, text, events) {
 
 // Evidence can quote an agent's report, which may name the fixture by its absolute path, and
 // benchmark.json copies evidence into a tracked file. The fixture path, then the home
-// directory, become placeholders, in either slash direction and any case.
+// directory, become placeholders, with any run of either slash between segments, any case,
+// and a Windows drive also in Git Bash's `/c/` form.
 function scrubPaths(s, fixture) {
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   let out = s;
   for (const [p, to] of [[fixture, '<fixture>'], [os.homedir(), '~']]) {
     if (!p || !path.isAbsolute(p)) continue;
-    for (const v of new Set([p, p.replace(/\\/g, '/')])) out = out.replace(new RegExp(v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), to);
+    const [head, ...rest] = p.split(/[\\/]+/).filter(Boolean);
+    const first = /^[a-z]:$/i.test(head) ? `(?:${esc(head)}|/${head[0]})` : `/?${esc(head)}`;
+    out = out.replace(new RegExp([first, ...rest.map(esc)].join('[\\\\/]+'), 'gi'), to);
   }
   return out;
 }
