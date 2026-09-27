@@ -209,8 +209,10 @@ test('each planted regression only deletes prompt text, and applies to the agent
   assert.deepEqual(patches, ['missing-part.patch', 'planted-instruction.patch', 'read-only.patch', 'report-order.patch']);
   for (const p of patches) {
     const text = fs.readFileSync(path.join(dir, p), 'utf8');
-    const added = text.split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++'));
-    assert.deepEqual(added, [], `${p} adds lines`);
+    // A line may be cut shorter instead of deleted, to keep a sentence the family does not rest on.
+    const added = text.split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++')).map((l) => l.slice(1));
+    const deleted = text.split('\n').filter((l) => l.startsWith('-') && !l.startsWith('---')).map((l) => l.slice(1));
+    for (const a of added) assert.ok(deleted.some((d) => d.length > a.length && d.startsWith(a.slice(0, 2)) && d.endsWith(a.slice(2))), `${p} adds text: ${a}`);
     const root = tmp('base-');
     for (const [, file] of text.matchAll(/^diff --git a\/(\S+) /gm)) {
       const show = spawnSync('git', ['show', `45978ed:${file}`], { cwd: REPO, encoding: 'utf8' });
