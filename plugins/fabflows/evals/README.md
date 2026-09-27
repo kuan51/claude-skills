@@ -196,6 +196,11 @@ node plugins/fabflows/evals/harness/assertions.js plugins/fabflows/evals/runs/it
 configuration, read from `grading.json`. `--add a+b` adds a column that sums two configurations,
 such as a new run and its rerun.
 
+An assertion is stable when it passes in every baseline run on master's prompts. A prose pass
+counts a regression only on a stable assertion: some fail on master itself, and a pass that must
+not change behaviour cannot fix them (#120 does). A planted regression shows its check can fail
+by failing a stable assertion, so it runs only on the tasks where its family has one.
+
 ### Planted regressions
 
 `regressions/` holds one tracked patch per assertion family, each deleting the prompt text that
@@ -207,7 +212,7 @@ read-only bullet). A regression run shows that each gate can fail:
 ```bash
 D=$(mktemp -d) && cp -r plugins/fabflows "$D/ff-order"
 (cd "$D/ff-order" && git apply -p3 "$OLDPWD/plugins/fabflows/evals/regressions/report-order.patch")
-node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 10,12,14,16,18,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 12,14,16,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
 ```
 
 The unit test checks that every patch only deletes lines and still applies to the agents at
