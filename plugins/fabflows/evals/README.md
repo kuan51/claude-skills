@@ -70,7 +70,7 @@ absolute numbers without touching the delta.
 
 ### Per-model attribution
 
-The final result's `modelUsage` rolls all agents together. The stream does not: every
+The final result's `modelUsage` rolls all agents together. The stream keeps them apart. Every
 `assistant` event carries `message.model` and `message.usage`, and a worker's events carry the
 `parent_tool_use_id` of the `Agent` call that spawned it, which joins to that call's
 `subagent_type`. `harness/metrics.js` sums usage once per `message.id` (one message arrives as
@@ -97,12 +97,12 @@ several events that repeat its usage) and reports:
 
 | # | Name | Routing row | Graded by |
 | --- | --- | --- | --- |
-| 1 | `wide-search` | explorer (Haiku) | Every `plugins/*/agents/*.md` named; correct model per pinned agent, as `path:line`; every unpinned agent flagged; no invented files; repo unchanged. |
-| 2 | `scoped-edit` | editor (Sonnet) + gate | Guard tests pass; exactly `guard.js` and `guard.test.js` changed; `guard.js` really denies `pipx install black` and still allows `pipx run`. |
-| 3 | `write-tests` | test-runner (Sonnet) | New `*.test.js` under `plugins/fabflows/test/`; suite passes; nothing outside that directory changed; the test covers the three cases. |
-| 4 | `short-chain` | none (DEC-0004 predicts inline wins) | Both manifests read `0.3.7`; marketplace test passes; exactly two files changed. |
-| 5 | `deep-read` | explorer, volume: 13 decision records, ~60k chars of prose | Every record listed with its id, title, status and chosen option (from frontmatter and the outcome section); a 20+ word row each; no invented id; repo unchanged. |
-| 6 | `triage-failures` | test-runner, volume: a ~200-line suite log with 3 planted failures | Every failing test and file named (truth from a TAP re-run); no invented or falsely failing file; repo unchanged. The three breaks are applied and committed by the task's `setup` before the session starts. |
+| 1 | `wide-search` | explorer (Haiku) | Every `plugins/*/agents/*.md` named. Correct model per pinned agent, as `path:line`. Every unpinned agent flagged. No invented files. Repo unchanged. |
+| 2 | `scoped-edit` | editor (Sonnet) + gate | Guard tests pass. Exactly `guard.js` and `guard.test.js` changed. `guard.js` really denies `pipx install black` and still allows `pipx run`. |
+| 3 | `write-tests` | test-runner (Sonnet) | New `*.test.js` under `plugins/fabflows/test/`. Suite passes. Nothing outside that directory changed. The test covers the cases the prompt names. |
+| 4 | `short-chain` | none (DEC-0004 predicts inline wins) | Both manifests read `0.3.7`. Marketplace test passes. Exactly two files changed. |
+| 5 | `deep-read` | explorer, volume: 13 decision records, ~60k chars of prose | Every record listed with its id, title, status and chosen option (from frontmatter and the outcome section). A 20+ word row each. No invented id. Repo unchanged. |
+| 6 | `triage-failures` | test-runner, volume: a ~200-line suite log with 3 planted failures | Every failing test and file named (truth from a TAP re-run). No invented or falsely failing file. Repo unchanged. The breaks are applied and committed by the task's `setup` before the session starts. |
 | 7 | `build-component` | `fabflows:build` (a spec'd, sizeable change) | A greenfield project (`fixtures/dep-resolver/visible`: a spec for a semver range parser, a flat backtracking resolver and a CLI, plus `package.json`). Graded by a hidden 41-test acceptance suite (`fixtures/dep-resolver/hidden`) run against the fixture at grade time, plus: `npm test` passes, the tree is clean and committed, no dependency added, every launched workflow finished. Caps 200 turns, $60, 120 min. |
 | 9 | `update-minimal` | `fabflows:build` loop arm only, `repeats: 3` | A brownfield fixture (`fixtures/lockstep-update/visible`: the `dep-resolver` reference plus a spec for `lockstep update`, a minimal-change re-resolution with a unique answer under rules U1 to U3). Graded by a hidden suite (`fixtures/lockstep-update/hidden`) against a brute-force oracle on small registries and a hand-checked 16-package case with a 10 s timeout, plus `resolve` and `check` regression cases. No planted defect: the review's REWORK row is the signal. Caps 120 turns, $15, 30 min. |
 
@@ -125,13 +125,13 @@ wrong `satisfies` in the project cannot vouch for its own lockfile). The referen
 whole suite, and `test/evals-harness.test.js` keeps it that way for free, so a hidden assertion
 that stopped following from the spec would fail the suite before it could grade a run. The spec
 and suite were reviewed adversarially before iteration 5 (four lenses, two refuters per finding,
-`git show 735ea1d:docs/RUNLOG.md`); the defects that survived were fixed in the spec text.
+`git show 735ea1d:docs/RUNLOG.md`). The defects that survived were fixed in the spec text.
 
 ## Fixtures are blind
 
 From iteration 5 a fixture never carries the benchmark: no `tasks.json`, no graders, no
 RESULTS.md, no run-log entries or decision records about it, and no hint in the prompt about
-delegation or the build loop. Two fixture kinds do that (`fixture` in `tasks.json`, top-level
+delegation or the build loop. These fixture kinds do that (`fixture` in `tasks.json`, top-level
 default and per-task override):
 
 - `repo` clones this repository at a pinned pre-benchmark commit (`3fbe15b`: 13 decision
@@ -163,7 +163,7 @@ The description stays identical in a variant so that triggering is not a second 
 
 Variants so far: `h1-trimmed.patch` (iteration 3: 38% shorter, gate scoped to worker reports,
 build-loop outcomes moved to `references/build-loop.md`) and `h1b-narrowed.patch` (iteration
-4: the same plus a volume rule, "delegate the reading, keep the judging", and a judgment
+4: the same plus a volume rule, "delegate the reading, keep the judging," and a judgment
 clause narrowed to root-cause, architecture and coupled-refactor calls).
 
 ## Caps
@@ -179,8 +179,8 @@ touches routing, and whenever a decision record wants a number instead of arithm
 ## Limitations and Windows notes
 
 - Subscription weighting of Fable, Opus, Sonnet and Haiku tokens against a weekly cap is
-  unpublished. Tokens by model are directional; `total_cost_usd` is list price.
-- Two repeats per cell show direction and catch one outlier. They do not give significance.
+  unpublished. Tokens by model are directional. `total_cost_usd` is list price.
+- A cell's pair of repeats shows direction and catches one outlier. They do not give significance.
 - The `with_skill` prompt names the skill explicitly, so triggering is not measured here.
 - Until iteration 5 the `Workflow` tool was not in `--allowedTools`, so no build loop could have
   run in iterations 1 to 4 whatever the lead decided. Both arms now allow it; a bare lead has no
@@ -191,7 +191,7 @@ touches routing, and whenever a decision record wants a number instead of arithm
   fired.
 - Per-message stream usage is the message-start snapshot: input-side fields are final, the
   output field is a placeholder. Output comes from the result's `usage` and `modelUsage` and
-  from each Agent call's `subagent_tokens`; never from the stream.
+  from each Agent call's `subagent_tokens`, never from the stream.
 - `os.tmpdir()` can return an 8.3 short name (`REXLIN~1`). A cwd in that form made don't-ask
   mode deny every edit as outside the working directory, so the runner resolves it first.
 - Don't-ask mode denies a Bash command that combines `cd <dir> &&` with a pipe, and every
@@ -203,7 +203,7 @@ touches routing, and whenever a decision record wants a number instead of arithm
   PowerShell`. The note only loads with `--setting-sources user,project`; `user` alone drops
   the project CLAUDE.md, which is why the first iteration-2 launch still hit the denials and
   was stopped after two runs. Iteration 1 therefore ran without the repo's own CLAUDE.md in
-  either arm; from iteration 2 both arms carry it. This is benchmark-only and widens no permission: the plugin, its guard included,
+  either arm. From iteration 2 both arms carry it. This is benchmark-only and widens no permission: the plugin, its guard included,
   is unchanged for every platform. On Linux and macOS the PowerShell tool is not offered, so
   the disallow should be a no-op there (not tested from this machine). On Windows the benchmark
   therefore runs without a tool a real session would have. Re-probed on CLI 2.1.272 before
@@ -214,7 +214,7 @@ touches routing, and whenever a decision record wants a number instead of arithm
   so the note now says so and tells the lead to retry without the `cd` instead.
 - The fixture's own `guard.test.js` drives `guard.js` with synthetic payloads while the task's
   test command runs, and they land in the `FABFLOWS_PROBE` file. `metrics.js` sets aside every
-  payload without a `session_id`; only hook-runner payloads are counted.
+  payload without a `session_id`. Only hook-runner payloads are counted.
 
 ## Trigger corpus
 
