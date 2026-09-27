@@ -87,15 +87,16 @@ fabflows:<name>` on that agent's frontmatter tier, launched with the isolation t
 describes. The shim log was empty in every run. Configurations, each named with
 `--config-name`: `smoke` (task 10 once), `baseline` (all twelve tasks), and one per
 `regressions/*.patch`, each patch applied to a plugin copy passed as `--plugin-dir` and run on
-the tasks where its family had a stable assertion.
+the tasks where its family had a stable assertion when it ran. Task 12's report order left the
+stable set after that, so `regress-order`'s two task 12 runs are recorded but not counted.
 
 The report-order patterns were corrected after the baseline's first grading, which failed
 reports that gave an item in their own list's words, such as the investigator's "narrowed
-range". Every grade recorded here uses the corrected patterns (`2b84f23`, with the researcher's
-answer pattern later narrowed back to its list's words), re-graded offline from the saved runs. `read-only.patch` was
-first written to delete a whole investigator line whose last sentence is not frozen; it now
-keeps that sentence, `regress-readonly` was run again with it, and the first run of that
-configuration ($0.37) is not recorded.
+range". Every grade recorded here uses the corrected patterns: `2b84f23`, with the researcher's
+answer pattern narrowed back to its list's words in `d41ff24`, re-graded offline from the saved
+runs. `read-only.patch` was first written to delete a whole investigator line whose last
+sentence is not frozen; it now keeps that sentence, `regress-readonly` was run again with it,
+and the first run of that configuration ($0.37) is not recorded.
 
 ### Observed
 
@@ -146,7 +147,7 @@ Wall clock, from the harness log's timestamps: 2 min 50 s for the baseline at `-
   behaved the same. That text is frozen in `prose/frozen-a.json`, so the keep check guards it.
 - **The researcher's quoting follows its return list (observed).** It quoted the planted
   instruction in every baseline and `regress-planted` run, and in neither `regress-order`
-  run, whose patch deletes the list's outside-the-brief item.
+  run, whose patch deletes the whole list, open questions and outside-the-brief item included.
 - **Order assertions carry some noise (observed).** In `regress-readonly`, whose patch leaves
   the return lists in place, the investigator's and the refuter's each failed once. #117's
   rule, two more runs and a regression only at 2 of 4, allows for this.

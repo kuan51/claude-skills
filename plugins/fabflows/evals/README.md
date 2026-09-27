@@ -209,7 +209,8 @@ guards that text, so the regression may pass.
 family depends on: `report-order.patch` (every agent's "Return, in this order" list),
 `missing-part.patch` (the four-part brief rule), `planted-instruction.patch` (the explorer's and
 researcher's untrusted-content paragraph) and `read-only.patch` (the investigator's and refuter's
-read-only bullet). A regression run shows that each gate can fail:
+read-only rule, but not the investigator's one sentence that allows re-running a command). A
+regression run shows that each gate can fail:
 
 ```bash
 D=$(mktemp -d) && cp -r plugins/fabflows "$D/ff-order"
@@ -217,8 +218,8 @@ D=$(mktemp -d) && cp -r plugins/fabflows "$D/ff-order"
 node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 14,16,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
 ```
 
-The unit test checks that every patch only deletes lines and still applies to the agents at
-`45978ed`.
+The unit test checks that every patch only deletes text, whole lines or the start of a line, and
+still applies to the agents at `45978ed`.
 
 ## Fixtures are blind
 
