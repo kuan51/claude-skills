@@ -198,8 +198,10 @@ such as a new run and its rerun.
 
 An assertion is stable when it passes in every baseline run on master's prompts. A prose pass
 counts a regression only on a stable assertion: some fail on master itself, and a pass that must
-not change behaviour cannot fix them (#120 does). A planted regression shows its check can fail
-by failing a stable assertion, so it runs only on the tasks where its family has one.
+not change behaviour cannot fix them (#120 tracks them). To show its check can fail, a planted
+regression must fail a stable assertion of its family, so it runs only on the tasks where its
+family has one. The exception is a regression that deletes only frozen text: the keep check
+guards that text, so the regression may pass.
 
 ### Planted regressions
 
@@ -212,7 +214,7 @@ read-only bullet). A regression run shows that each gate can fail:
 ```bash
 D=$(mktemp -d) && cp -r plugins/fabflows "$D/ff-order"
 (cd "$D/ff-order" && git apply -p3 "$OLDPWD/plugins/fabflows/evals/regressions/report-order.patch")
-node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 12,14,16,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 14,16,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
 ```
 
 The unit test checks that every patch only deletes lines and still applies to the agents at
