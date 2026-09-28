@@ -130,6 +130,26 @@ test('cells interleave by repeat then arm, and a task sets its own repeats unles
   assert.equal(buildCells({ tasks: [7], arms: null, repeats: null }).length, 4, 'a task without repeats falls back to 2');
 });
 
+test('takenRunDirs lists only the run directories that already exist', () => {
+  const { buildCells, runDirFor, takenRunDirs } = require('../evals/harness/run.js');
+  const a = { tasks: [8], arms: null, repeats: 1, iteration: 1 };
+  const cells = buildCells(a);
+  const old = runDirFor(a, cells[1]);
+  assert.deepEqual(takenRunDirs(a, cells, (d) => d === old), [old]);
+  assert.deepEqual(takenRunDirs(a, cells, () => false), [], 'nothing taken, nothing refused');
+});
+
+test('refuseTakenRunDirs stops on a taken run directory unless re-grading', () => {
+  const { buildCells, runDirFor, refuseTakenRunDirs } = require('../evals/harness/run.js');
+  const a = { tasks: [8], arms: null, repeats: 1, iteration: 1 };
+  const cells = buildCells(a);
+  const old = runDirFor(a, cells[1]);
+  const taken = (d) => d === old;
+  assert.throws(() => refuseTakenRunDirs(a, cells, taken), (e) => e.message.includes(old) && e.message.includes('--regrade'));
+  assert.doesNotThrow(() => refuseTakenRunDirs({ ...a, regrade: true }, cells, taken), '--regrade reuses the directory');
+  assert.doesNotThrow(() => refuseTakenRunDirs(a, cells, () => false), 'nothing taken, nothing refused');
+});
+
 test("an arm's disallowedTools reach the claude argument list", () => {
   const { buildCells, claudeArgs } = require('../evals/harness/run.js');
   const a = { tasks: [8], arms: null, repeats: 1, model: 'fable', effort: 'medium', stagedPluginDir: '/staged' };
