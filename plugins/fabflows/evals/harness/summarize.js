@@ -23,8 +23,10 @@ for (const evalDir of fs.readdirSync(iterDir).filter((d) => d.startsWith('eval-'
       const fu = (first && first.message.usage) || {};
       const substantive = g.expectations.filter((e) => e.text !== 'No tool call was denied' && !e.informational);
       const wb = m.workersByModel || {};
+      const runJson = path.join(dir, 'run.json');
+      const plugin = (fs.existsSync(runJson) && JSON.parse(fs.readFileSync(runJson, 'utf8')).plugin) || null;
       rows.push({
-        task, arm, run,
+        task, arm, run, plugin,
         quality: substantive.filter((e) => e.passed).length / substantive.length,
         denials: m.result.permission_denials.length,
         turns: m.result.num_turns,

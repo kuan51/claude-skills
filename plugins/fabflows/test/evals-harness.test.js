@@ -18,8 +18,10 @@ const UPDATE = path.join(EVALS, 'fixtures', 'lockstep-update');
 
 test('tasks.json is well formed: unique ids, both arms or per-task arms, a prompt and a grade kind per task', () => {
   const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
-  assert.deepEqual(Object.keys(cfg.arms).sort(), ['with_skill', 'without_skill']);
+  assert.deepEqual(Object.keys(cfg.arms).sort(), ['superpowers', 'with_skill', 'without_skill']);
   assert.ok(cfg.arms.with_skill.pluginDir, 'with_skill must name the plugin directory to load');
+  // superpowers loads a cached install, not a path, and starts from its own SessionStart hook.
+  assert.deepEqual(cfg.arms.superpowers, { plugin: 'superpowers@claude-plugins-official', promptPrefix: '' });
   assert.ok(cfg.caps.maxTurns > 0 && cfg.caps.maxBudgetUsd > 0, 'caps must be set: an uncapped run is an open wallet');
   // The default fixture is a pinned commit so no session ever sees the benchmark's own tasks,
   // graders or results inside its working tree.
@@ -122,12 +124,12 @@ test('the update-minimal fixture fails only the update and cli cases', () => {
   assert.deepEqual(other, [], 'no other hidden test may fail on the fixture');
 });
 
-test('cells interleave by repeat then arm, and a task sets its own repeats unless --repeats is given', () => {
+test('cells interleave by repeat then arm, rotating the arm order, and a task sets its own repeats unless --repeats is given', () => {
   const { buildCells } = require('../evals/harness/run.js');
   const labels = buildCells({ tasks: [8], arms: null, repeats: null }).map((c) => `${c.arm}-${c.run}`);
-  assert.deepEqual(labels, ['inline-1', 'loop-1', 'inline-2', 'loop-2', 'inline-3', 'loop-3', 'inline-4', 'loop-4', 'inline-5', 'loop-5']);
+  assert.deepEqual(labels, ['inline-1', 'loop-1', 'loop-2', 'inline-2', 'inline-3', 'loop-3', 'loop-4', 'inline-4', 'inline-5', 'loop-5']);
   assert.equal(buildCells({ tasks: [8], arms: null, repeats: 1 }).length, 2, 'the flag overrides the task');
-  assert.equal(buildCells({ tasks: [7], arms: null, repeats: null }).length, 4, 'a task without repeats falls back to 2');
+  assert.equal(buildCells({ tasks: [7], arms: null, repeats: null }).length, 6, 'a task without repeats falls back to 2, across the three arms');
 });
 
 test('takenRunDirs lists only the run directories that already exist', () => {
@@ -152,7 +154,7 @@ test('refuseTakenRunDirs stops on a taken run directory unless re-grading', () =
 
 test("an arm's disallowedTools reach the claude argument list", () => {
   const { buildCells, claudeArgs } = require('../evals/harness/run.js');
-  const a = { tasks: [8], arms: null, repeats: 1, model: 'fable', effort: 'medium', stagedPluginDir: '/staged' };
+  const a = { tasks: [8], arms: null, repeats: 1, model: 'fable', effort: 'medium', stagedPluginDirs: { inline: '/staged-inline', loop: '/staged-loop' } };
   const byArm = Object.fromEntries(buildCells(a).map((c) => {
     const args = claudeArgs(a, c, '/run', '/settings.json');
     return [c.arm, args[args.indexOf('--disallowedTools') + 1]];

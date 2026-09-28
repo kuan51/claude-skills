@@ -1,7 +1,7 @@
 # fabflows benchmark
 
-Measures what a fabflows-led session costs against a plain session on the same tasks, with
-tokens attributed to the lead and to each worker type by model. It exists because DEC-0004,
+Measures what a fabflows-led session costs against a plain session, and against a session
+with the superpowers plugin (obra/superpowers), on the same tasks, with tokens attributed to the lead and to each worker type by model. It exists because DEC-0004,
 DEC-0012 and DEC-0013 each accepted the same gap: every tier, effort pin and cost claim in
 this plugin rested on list-price arithmetic, and nothing measured it.
 
@@ -19,14 +19,21 @@ node plugins/fabflows/evals/harness/run.js --iteration <n> --confirm  # launch t
 ```
 
 Options: `--tasks 1,2` `--arms with_skill` `--repeats 2` `--parallel 1` `--model fable`
-`--effort medium` `--plugin-dir <path>` (a modified snapshot of the plugin for the with_skill
-arm) `--regrade` (re-measure and re-grade existing transcripts without new sessions)
+`--effort medium` `--plugin-dir <path>` (a modified snapshot of the plugin for every arm that
+names a `pluginDir`, never the superpowers arm) `--regrade` (re-measure and re-grade existing transcripts without new sessions)
 `--config-name <name>` (the configuration directory a run is written to, in place of the arm's
 name, so several configurations of one iteration sit side by side; see
 [Old against new](#old-against-new)).
 
 A run never writes into an existing run directory. The runner stops and names it, so delete the
 directory first or pass `--regrade`.
+
+A cell that fails does not stop the others. An error while building its arguments, launching
+it, preparing its fixture or grading it is written to that cell's run directory as
+`error.json`, with the message and the stage. At the end the runner lists every failed cell
+and exits non-zero. A successful `--regrade` of the cell deletes its `error.json`. A session
+that runs past its time cap is killed with its whole process tree (`taskkill /T /F` on
+Windows).
 
 Then summarise, aggregate and view. `summarize.js` prints the per-cell table and writes
 `cells.json`; the other two are skill-creator's, run with `<skill-creator>` set to that skill's
@@ -50,30 +57,63 @@ Results are summarised in `RESULTS.md`. Raw runs under `runs/` are gitignored.
 
 1. Clones this repo into a short temp path (`%TEMP%/fabflows-bench/...`; a clone inside the
    repo's own deep path fails on Windows with "Filename too long") and checks out a `bench/`
-   branch, so the guard's default-branch rule never fires on the task itself.
+   branch, so the guard's default-branch rule never fires on the task itself. Its `origin`
+   becomes an unresolvable `.invalid` address, whatever the fixture kind.
 2. Launches `claude -p` in that clone with the task prompt. The `with_skill` arm prefixes
    "Invoke the fabflows:using-fabflows skill first" and loads the plugin from this repo via
-   `--plugin-dir`; the `without_skill` arm gets the bare task.
+   `--plugin-dir`; the `without_skill` arm gets the bare task; the `superpowers` arm gets the
+   bare task and loads superpowers (see [The superpowers arm](#the-superpowers-arm)). The arm
+   order rotates each repeat, so no arm always runs first and pays the first cache write.
 3. Streams the session to `transcript.jsonl`, then snapshots `git status`, `git diff`, the
    final result text, and runs the task's test command in the clone.
 4. Writes `metrics.json`, `timing.json` and `grading.json` per run.
 
 ### The clean room
 
-Both arms run with every installed plugin disabled through `--settings` and `--strict-mcp-config`,
-and with the advisor tool removed (`advisorModel: ""`). Probes showed the alternative: the
+Every arm runs with every installed plugin disabled through `--settings` and `--strict-mcp-config`,
+and with the advisor tool removed (`advisorModel: ""`). The settings file turns off each plugin
+that `~/.claude/settings.json` enables, and each synced claude.ai plugin: for every
+`~/.claude/plugins/synced/<org>/<dir>/.claude-plugin/plugin.json` it adds
+`"<name>@synced": false`, with the name from that file (the folder `data-analysis-review~g2`
+loads as `data-analysis-review`). It never sets `syncClaudeAiPlugins`, which in user settings
+moves the synced copies to `~/.claude/plugins/.trash/`. Probes showed the alternative: the
 user's normal environment puts about 55k tokens of MCP tool schemas into every system prompt
 and injects other plugins' SessionStart hooks (a persona, a memory dump) into the lead, and an
 advisor tool whose instructions tell the lead to consult it before substantive work. The clean
-room drops the system prompt to about 37k tokens and leaves fabflows as the only difference
-between the arms. `--bare` would be cleaner still but requires an API key, and `--safe-mode`
-drops `--plugin-dir` plugins too.
+room drops the system prompt to about 37k tokens and leaves the arm's plugin as the only
+difference between the arms. `--bare` would be cleaner still but requires an API key, and
+`--safe-mode` drops `--plugin-dir` plugins too.
+
+Every arm loads project settings only (`--setting-sources project`), so the maintainer's own
+`CLAUDE.md` and user settings stay out. A `CLAUDE.md` that names fabflows would prime the
+with_skill arm and mislead the others, and results would depend on whose machine ran them.
+
+Every session also gets an empty `gh` config directory (`GH_CONFIG_DIR`) and a fixture whose
+`origin` cannot resolve, so nothing a session does reaches a real repository or GitHub. The
+agent tasks get the fuller [isolation](#isolation) on top.
+
+Confounds that remain, shared by every arm: plugins the organization requires still load, and
+so may user-level agents or skills that project-only settings do not turn off. The smoke run
+before a baseline records which ones load.
 
 Every run sets `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` (recorded in `run.json`), so
 runs do not have the 600 s ceiling on waiting for background work in print mode.
 
-Both arms still load the user's global `CLAUDE.md`. It is the same in both, so it inflates
-absolute numbers without touching the delta.
+### The superpowers arm
+
+`superpowers` names a cached install, `superpowers@claude-plugins-official`, in place of a
+path, with an empty prompt prefix: its SessionStart hook injects `using-superpowers`, which is
+how it is meant to start, where the with_skill arm is told to invoke using-fabflows. The runner
+takes the highest version, compared as semver, under
+`~/.claude/plugins/cache/claude-plugins-official/superpowers/`. To keep a copy there, install
+superpowers and then disable it. When no version is there and a selected cell uses the arm, a
+`--confirm` run stops before staging anything; a dry run and `--regrade` do not.
+
+Each plugin arm records what it loaded in each cell's `run.json` and its `cells.json` row: the
+plugin's name, its version from the staged `plugin.json`, and a sha256 of the staged file tree.
+The superpowers arm also records `marketplacePin`, the `source.sha` of its entry in the
+claude-plugins-official marketplace clone. That is the marketplace's pin at run time, not a
+property of the cached copy.
 
 ### Per-model attribution
 
@@ -238,9 +278,11 @@ default and per-task override):
 - `dir` copies a directory under `evals/fixtures/` into a fresh `git init` repository. Task 7
   uses it.
 
-The with_skill plugin is staged into `<iteration>/plugin/` with only `.claude-plugin`, `agents`,
-`hooks`, `skills`, `workflows` and `README.md`, so `plugins/fabflows/evals/` never rides along
-under `--plugin-dir`.
+Each plugin arm is staged into its own `<iteration>/plugin-<configuration>/`, and each cell's
+`--plugin-dir` (and an agent task's frontmatter lookup) uses its own arm's copy. A fabflows arm
+copies only `.claude-plugin`, `agents`, `hooks`, `skills`, `workflows` and `README.md`, so
+`plugins/fabflows/evals/` never rides along under `--plugin-dir`. The superpowers arm copies
+its whole cached tree, which is already what an install carries.
 
 ## Skill variants
 
@@ -273,7 +315,7 @@ touches routing, and whenever a decision record wants a number instead of arithm
   unpublished. Tokens by model are directional. `total_cost_usd` is list price.
 - A cell's pair of repeats shows direction and catches one outlier. They do not give significance.
 - The `with_skill` prompt names the skill explicitly, so triggering is not measured here.
-- Both arms allow the `Workflow` tool. A bare lead has no reason to use it. Workflow agents
+- Every arm allows the `Workflow` tool. A bare lead has no reason to use it. Workflow agents
   cache prompts at the 5-minute rate where the lead uses the 1-hour rate, which shows up in
   `modelUsage` as cheaper cache writes for them.
 - The guard hook fires inside Workflow-tool agents. Whether a guard *denial* inside one is
@@ -289,8 +331,8 @@ touches routing, and whenever a decision record wants a number instead of arithm
   `PowerShell(node:*)` were all probed and changed nothing; `--permission-mode auto` is not
   accepted headless). To work around this, the runner appends an environment note to the fixture's `CLAUDE.md`
   (run from the root without `cd`, use Bash not PowerShell) and passes `--disallowedTools
-  PowerShell`. The note only loads with `--setting-sources user,project`; `user` alone drops
-  the project CLAUDE.md. Both arms carry it. This is benchmark-only and widens no permission: the plugin, its guard included,
+  PowerShell`. The note loads through `--setting-sources project`, which every arm passes.
+  Every arm carries it. This is benchmark-only and widens no permission: the plugin, its guard included,
   is unchanged for every platform. On Linux and macOS the PowerShell tool is not offered, so
   the disallow should be a no-op there (not tested from this machine). On Windows the benchmark
   therefore runs without a tool a real session would have. Re-probed on CLI 2.1.272: a bare
