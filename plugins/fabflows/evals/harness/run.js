@@ -151,6 +151,15 @@ function runDirFor(a, cell) {
   return path.join(EVALS, 'runs', `iteration-${a.iteration}`, `eval-${cell.task.id}-${cell.task.name}`, cell.config, `run-${cell.run}`);
 }
 
+function takenRunDirs(a, cells, exists = fs.existsSync) {
+  return cells.map((c) => runDirFor(a, c)).filter((d) => exists(d));
+}
+
+function refuseTakenRunDirs(a, cells, exists = fs.existsSync) {
+  const taken = a.regrade ? [] : takenRunDirs(a, cells, exists);
+  if (taken.length) throw new Error(`${taken.length} run director${taken.length === 1 ? 'y already exists' : 'ies already exist'}, first ${taken[0]}: delete them, or pass --regrade to re-grade them`);
+}
+
 // Fixtures live in a short temp path on purpose: a clone inside the repo's own deep path
 // fails on Windows with "Filename too long" at .git/objects/info/commit-graphs. The temp dir
 // is resolved to its long name: os.tmpdir() can return an 8.3 form (REXLIN~1), and a cwd in
@@ -421,8 +430,7 @@ function runCell(a, cell, settingsPath) {
   }
 
   const args = claudeArgs(a, cell, runDir, settingsPath);
-  // The guard appends, so a relaunch into the same run directory would carry the abandoned
-  // launch's payloads into this run's hook counts (observed in iteration 5, two stale rows).
+  // The guard appends, so the probe file starts empty.
   const probePath = path.join(runDir, 'hook-probe.jsonl');
   fs.rmSync(probePath, { force: true });
   // A ceiling of '0' lifts the 600 s cap on waiting for background work in print mode.
@@ -498,6 +506,8 @@ async function main() {
     console.log('\nDry run. Add --confirm to launch these sessions (they spend real tokens).');
     return;
   }
+  // A run never writes into an old run's directory: leftover files would mix two records.
+  refuseTakenRunDirs(a, cells);
   fs.mkdirSync(iterDir, { recursive: true });
   const settingsPath = path.join(iterDir, 'settings.json');
   writeJson(settingsPath, cleanRoomSettings());
@@ -519,7 +529,7 @@ async function main() {
   spawnSync(process.execPath, [path.join(HARNESS, 'summarize.js'), iterDir], { stdio: 'inherit' });
 }
 
-module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, stageOnce, buildCells, claudeArgs, isolatedLaunch, resolveOnPath, runDirFor, parseArgs, FIXTURE_REMOTE };
+module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, stageOnce, buildCells, claudeArgs, isolatedLaunch, resolveOnPath, runDirFor, takenRunDirs, refuseTakenRunDirs, parseArgs, FIXTURE_REMOTE };
 
 if (require.main === module) {
   main().catch((e) => {

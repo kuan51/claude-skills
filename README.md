@@ -101,8 +101,8 @@ first session.
     It also blocks commits and pushes to a default branch, destructive commands, and credential
     reads and writes. Read the plugin's README, including its "Known gaps" section, before
     installing.
-  - **Measured.** On a spec'd build with Opus 5.5 workers, fabflows matched a plain Fable
-    session on 41 hidden tests at 18% lower list price and 83% fewer lead output tokens. See
+  - **Measured.** fabflows's cost and quality against no skill and against superpowers are
+    being re-measured in [#123](https://github.com/kuan51/claude-skills/issues/123). See
     [docs/EVALS.md](docs/EVALS.md).
 
 ## Adding a new plugin

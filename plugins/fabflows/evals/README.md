@@ -14,8 +14,8 @@ agent tasks' graders, isolation and planted regressions.
 ## Running it
 
 ```bash
-node plugins/fabflows/evals/harness/run.js --iteration 1            # print the matrix and caps
-node plugins/fabflows/evals/harness/run.js --iteration 1 --confirm  # launch the runs
+node plugins/fabflows/evals/harness/run.js --iteration <n>            # print the matrix and caps
+node plugins/fabflows/evals/harness/run.js --iteration <n> --confirm  # launch the runs
 ```
 
 Options: `--tasks 1,2` `--arms with_skill` `--repeats 2` `--parallel 1` `--model fable`
@@ -25,16 +25,19 @@ arm) `--regrade` (re-measure and re-grade existing transcripts without new sessi
 name, so several configurations of one iteration sit side by side; see
 [Old against new](#old-against-new)).
 
+A run never writes into an existing run directory. The runner stops and names it, so delete the
+directory first or pass `--regrade`.
+
 Then summarise, aggregate and view. `summarize.js` prints the per-cell table and writes
 `cells.json`; the other two are skill-creator's, run with `<skill-creator>` set to that skill's
 directory; `annotate_benchmark.py` fixes the run count and model names the aggregator hardcodes
 and attaches analyst notes:
 
 ```bash
-node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-1
-(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-1 --skill-name fabflows)
-python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-1 <skill-creator> <abs>/runs/iteration-1/notes.json
-python <skill-creator>/eval-viewer/generate_review.py <abs>/runs/iteration-1 --skill-name fabflows --benchmark <abs>/runs/iteration-1/benchmark.json --static <abs>/runs/iteration-1/review.html
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-<n>
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-<n> --skill-name fabflows)
+python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-<n> <skill-creator> <abs>/runs/iteration-<n>/notes.json
+python <skill-creator>/eval-viewer/generate_review.py <abs>/runs/iteration-<n> --skill-name fabflows --benchmark <abs>/runs/iteration-<n>/benchmark.json --static <abs>/runs/iteration-<n>/review.html
 ```
 
 If a transcript contains the literal text `</script>`, `generate_review.py` embeds it unescaped
@@ -66,8 +69,8 @@ room drops the system prompt to about 37k tokens and leaves fabflows as the only
 between the arms. `--bare` would be cleaner still but requires an API key, and `--safe-mode`
 drops `--plugin-dir` plugins too.
 
-From iteration 11 every run sets `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` (recorded in `run.json`), so
-runs no longer have the 600 s ceiling on waiting for background work in print mode.
+Every run sets `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` (recorded in `run.json`), so
+runs do not have the 600 s ceiling on waiting for background work in print mode.
 
 Both arms still load the user's global `CLAUDE.md`. It is the same in both, so it inflates
 absolute numbers without touching the delta.
@@ -110,12 +113,10 @@ several events that repeat its usage) and reports:
 | 7 | `build-component` | `fabflows:build` (a spec'd, sizeable change) | A greenfield project (`fixtures/dep-resolver/visible`: a spec for a semver range parser, a flat backtracking resolver and a CLI, plus `package.json`). Graded by a hidden 41-test acceptance suite (`fixtures/dep-resolver/hidden`) run against the fixture at grade time, plus: `npm test` passes, the tree is clean and committed, no dependency added, every launched workflow finished. Caps 200 turns, $60, 120 min. |
 | 9 | `update-minimal` | `fabflows:build` loop arm only, `repeats: 3` | A brownfield fixture (`fixtures/lockstep-update/visible`: the `dep-resolver` reference plus a spec for `lockstep update`, a minimal-change re-resolution with a unique answer under rules U1 to U3). Graded by a hidden suite (`fixtures/lockstep-update/hidden`) against a brute-force oracle on small registries and a hand-checked 16-package case with a 10 s timeout, plus `resolve` and `check` regression cases. No planted defect: the review's REWORK row is the signal. Caps 120 turns, $15, 30 min. |
 
-Tasks 1 to 4 are short chains, added in iteration 1. Tasks 5 and 6 were added for iteration 2
-because iteration 1 showed the lead never delegating on short work: they carry evidence large
-enough that the skill's own rule ("delegate when it keeps a large volume out of the lead")
-should apply, while the graded answer stays small. Task 7 was added for iteration 5: the shape
-fabflows is for, a whole component built from a spec in a long session, where the routing table
-sends the work to the build loop.
+Tasks 1 to 4 are short chains. Tasks 5 and 6 carry evidence large enough that the skill's own
+rule ("delegate when it keeps a large volume out of the lead") should apply, while the graded
+answer stays small. Task 7 is the shape fabflows is for, a whole component built from a spec in
+a long session, where the routing table sends the work to the build loop.
 
 Every run also checks: finished without error, no denied tool call, under the turn cap.
 Grading is programmatic against the clone, never against what the lead said it did.
@@ -128,13 +129,12 @@ uses `fixtures/dep-resolver/reference/` as the oracle for the resolver's validit
 wrong `satisfies` in the project cannot vouch for its own lockfile). The reference passes the
 whole suite, and `test/evals-harness.test.js` keeps it that way for free, so a hidden assertion
 that stopped following from the spec would fail the suite before it could grade a run. The spec
-and suite were reviewed adversarially before iteration 5 (four lenses, two refuters per finding,
+and suite were reviewed adversarially (four lenses, two refuters per finding,
 `git show 735ea1d:docs/RUNLOG.md`). The defects that survived were fixed in the spec text.
 
 ## Agent tasks
 
-Tasks 10 to 21 test the six fabflows agents' own prompts, so a rewrite of that prose can be shown
-to behave the same, old against new. Each task runs one agent as the session itself
+Tasks 10 to 21 measure the six fabflows agents' own prompts. Each task runs one agent as the session itself
 (`claude -p --agent fabflows:<name>` with the staged plugin) on the model and effort in that
 agent's frontmatter, not the lead's. No lead sits in between: a lead that loads using-fabflows
 may repair a brief before it spawns, and the grader cannot see a worker's report. The brief
@@ -193,9 +193,9 @@ or the harness stops rather than overwrite the record. The name takes letters, d
 and `-` only. The new prompts come in through `--plugin-dir`:
 
 ```bash
-node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 10,11,12,13,14,15,16,17,18,19,20,21 --config-name old --plugin-dir <copy of master's plugin> --confirm
-node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 10,11,12,13,14,15,16,17,18,19,20,21 --config-name new --confirm
-node plugins/fabflows/evals/harness/assertions.js plugins/fabflows/evals/runs/iteration-14 --add new+rerun
+node plugins/fabflows/evals/harness/run.js --iteration <n> --tasks 10,11,12,13,14,15,16,17,18,19,20,21 --config-name old --plugin-dir <copy of master's plugin> --confirm
+node plugins/fabflows/evals/harness/run.js --iteration <n> --tasks 10,11,12,13,14,15,16,17,18,19,20,21 --config-name new --confirm
+node plugins/fabflows/evals/harness/assertions.js plugins/fabflows/evals/runs/iteration-<n> --add new+rerun
 ```
 
 `harness/assertions.js` prints, for each task and assertion, how many runs passed in each
@@ -203,11 +203,9 @@ configuration, read from `grading.json`. `--add a+b` adds a column that sums two
 such as a new run and its rerun.
 
 An assertion is stable when it passes in every baseline run on master's prompts. A prose pass
-counts a regression only on a stable assertion: some fail on master itself, and a pass that must
-not change behaviour cannot fix them (#120 tracks them). To show its check can fail, a planted
-regression must fail a stable assertion of its family, so it runs only on the tasks where its
-family has one. The exception is a regression that deletes only frozen text: the keep check
-guards that text, so the regression may pass.
+counts a regression only on a stable assertion: some fail on master itself (#120 tracks them).
+To show its check can fail, a planted regression must fail a stable assertion of its family, so
+it runs only on the tasks where its family has one.
 
 ### Planted regressions
 
@@ -221,7 +219,7 @@ regression run shows that each gate can fail:
 ```bash
 D=$(mktemp -d) && cp -r plugins/fabflows "$D/ff-order"
 (cd "$D/ff-order" && git apply -p3 "$OLDPWD/plugins/fabflows/evals/regressions/report-order.patch")
-node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 14,16,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
+node plugins/fabflows/evals/harness/run.js --iteration <n> --tasks 14,16,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
 ```
 
 The unit test checks that every patch only deletes text, whole lines or the start of a line, and
@@ -229,22 +227,20 @@ still applies to the agents at `45978ed`.
 
 ## Fixtures are blind
 
-From iteration 5 a fixture never carries the benchmark: no `tasks.json`, no graders, no
+A fixture never carries the benchmark: no `tasks.json`, no graders, no
 RESULTS.md, no run-log entries or decision records about it, and no hint in the prompt about
 delegation or the build loop. These fixture kinds do that (`fixture` in `tasks.json`, top-level
 default and per-task override):
 
 - `repo` clones this repository at a pinned pre-benchmark commit (`3fbe15b`: 13 decision
   records, no `evals/` directory) and checks out the `bench/` branch there. Tasks 1 to 6 use it,
-  so their ground truth is unchanged from earlier iterations.
+  so their ground truth stays fixed.
 - `dir` copies a directory under `evals/fixtures/` into a fresh `git init` repository. Task 7
   uses it.
 
 The with_skill plugin is staged into `<iteration>/plugin/` with only `.claude-plugin`, `agents`,
 `hooks`, `skills`, `workflows` and `README.md`, so `plugins/fabflows/evals/` never rides along
-under `--plugin-dir`. Iterations 2 to 4 cloned the branch head, which did carry `tasks.json` and
-RESULTS.md. A scan of every tool call in those 32 transcripts found none that touched `evals/`,
-`tasks.json`, RESULTS.md or the run log, so the numbers stand, but the door was open.
+under `--plugin-dir`.
 
 ## Skill variants
 
@@ -253,18 +249,13 @@ A hypothesis about the skill's prose runs against a modified copy of the plugin 
 (gitignored) and is reproducible from a tracked patch under `snapshots/`:
 
 ```bash
-mkdir -p plugins/fabflows/evals/runs/snapshots/h1-trimmed
-cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/h1-trimmed/
-patch -p3 -d plugins/fabflows/evals/runs/snapshots/h1-trimmed/skills < plugins/fabflows/evals/snapshots/h1-trimmed.patch
-node plugins/fabflows/evals/harness/run.js --iteration 3 --arms with_skill --plugin-dir plugins/fabflows/evals/runs/snapshots/h1-trimmed --tasks 1,5,6 --confirm
+mkdir -p plugins/fabflows/evals/runs/snapshots/<variant>
+cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/<variant>/
+patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant>/skills < plugins/fabflows/evals/snapshots/<variant>.patch
+node plugins/fabflows/evals/harness/run.js --iteration <n> --arms with_skill --plugin-dir plugins/fabflows/evals/runs/snapshots/<variant> --tasks 1,5,6 --confirm
 ```
 
 The description stays identical in a variant so that triggering is not a second variable.
-
-Variants so far: `h1-trimmed.patch` (iteration 3: 38% shorter, gate scoped to worker reports,
-build-loop outcomes moved to `references/build-loop.md`) and `h1b-narrowed.patch` (iteration
-4: the same plus a volume rule, "delegate the reading, keep the judging," and a judgment
-clause narrowed to root-cause, architecture and coupled-refactor calls).
 
 ## Caps
 
@@ -282,75 +273,41 @@ touches routing, and whenever a decision record wants a number instead of arithm
   unpublished. Tokens by model are directional. `total_cost_usd` is list price.
 - A cell's pair of repeats shows direction and catches one outlier. They do not give significance.
 - The `with_skill` prompt names the skill explicitly, so triggering is not measured here.
-- Until iteration 5 the `Workflow` tool was not in `--allowedTools`, so no build loop could have
-  run in iterations 1 to 4 whatever the lead decided. Both arms now allow it; a bare lead has no
-  reason to use it. Workflow agents cache prompts at the 5-minute rate where the lead uses the
-  1-hour rate, which shows up in `modelUsage` as cheaper cache writes for them.
-- Iteration 5 measured the guard hook firing inside Workflow-tool agents, so that gap is closed;
-  what remains unmeasured is whether a guard *denial* inside one is handled well, since none
-  fired.
+- Both arms allow the `Workflow` tool. A bare lead has no reason to use it. Workflow agents
+  cache prompts at the 5-minute rate where the lead uses the 1-hour rate, which shows up in
+  `modelUsage` as cheaper cache writes for them.
+- The guard hook fires inside Workflow-tool agents. Whether a guard *denial* inside one is
+  handled well is not measured. That it fires was measured in the record before the reset,
+  which can be read at commit `dce556c`.
 - Per-message stream usage is the message-start snapshot: input-side fields are final, the
   output field is a placeholder. Output comes from the result's `usage` and `modelUsage` and
   from each Agent call's `subagent_tokens`, never from the stream.
-- `os.tmpdir()` can return an 8.3 short name (`REXLIN~1`). A cwd in that form made don't-ask
+- `os.tmpdir()` can return an 8.3 short name (such as `USERNA~1`). A cwd in that form made don't-ask
   mode deny every edit as outside the working directory, so the runner resolves it first.
 - Don't-ask mode denies a Bash command that combines `cd <dir> &&` with a pipe, and every
   PowerShell call, allow list or not (`Bash(cd *)`, `Bash(cd:*)`, `PowerShell(*)` and
   `PowerShell(node:*)` were all probed and changed nothing; `--permission-mode auto` is not
-  accepted headless). Iteration 1 took 28 such denials across both arms, each costing a turn.
-  From iteration 2 the runner appends an environment note to the fixture's `CLAUDE.md` (run
-  from the root without `cd`, use Bash not PowerShell) and passes `--disallowedTools
+  accepted headless). To work around this, the runner appends an environment note to the fixture's `CLAUDE.md`
+  (run from the root without `cd`, use Bash not PowerShell) and passes `--disallowedTools
   PowerShell`. The note only loads with `--setting-sources user,project`; `user` alone drops
-  the project CLAUDE.md, which is why the first iteration-2 launch still hit the denials and
-  was stopped after two runs. Iteration 1 therefore ran without the repo's own CLAUDE.md in
-  either arm. From iteration 2 both arms carry it. This is benchmark-only and widens no permission: the plugin, its guard included,
+  the project CLAUDE.md. Both arms carry it. This is benchmark-only and widens no permission: the plugin, its guard included,
   is unchanged for every platform. On Linux and macOS the PowerShell tool is not offered, so
   the disallow should be a no-op there (not tested from this machine). On Windows the benchmark
-  therefore runs without a tool a real session would have. Re-probed on CLI 2.1.272 before
-  iteration 5: a bare `npm test`, a pipe into `tail`, `$HOME`, a redirect, and a quoted `cd`
-  into the fixture's own Windows path were all allowed; `cd /mnt/c/...` (a WSL path that does
-  not exist here) was denied as a move outside the working directory. The Haiku smoke of task 7
-  hit exactly that, then spent its last turns trying to edit permissions and never committed,
-  so the note now says so and tells the lead to retry without the `cd` instead.
+  therefore runs without a tool a real session would have. Re-probed on CLI 2.1.272: a bare
+  `npm test`, a pipe into `tail`, `$HOME`, a redirect, and a quoted `cd` into the fixture's own
+  Windows path were all allowed; `cd /mnt/c/...` (a WSL path that does not exist here) was
+  denied as a move outside the working directory, so the note says so and tells the lead to
+  retry without the `cd` instead.
 - The fixture's own `guard.test.js` drives `guard.js` with synthetic payloads while the task's
   test command runs, and they land in the `FABFLOWS_PROBE` file. `metrics.js` sets aside every
   payload without a `session_id`. Only hook-runner payloads are counted.
 
 ## Prose tooling
 
-`prose/` holds the gates the prompt prose passes (#117, #119) run, so anyone can run them:
-
-- `frozen-a.json` and `frozen-b.json` list the text each pass must keep word for word. They are
-  kept byte for byte.
-- `keep_check.py` compares each prompt file with its base and fails on a frontmatter change; a
-  code span, fenced block, link target or number lost from, or new to, any section cut at the
-  base headings; a base heading missing or out of order; code spans reordered in a paragraph;
-  frozen text not kept; a Vale comment other than an own-line `Style.Rule = NO` ... `= YES`
-  pair, for a `nonword` or `sequence` rule, around unchanged base text; a pair that covers no
-  finding of its rule, or a finding of a paired rule outside every pair; a Vale comment between
-  two table lines; long sentences that did not fall, or a mean sentence length that rose; total
-  characters that did not fall; or a prompt file added, deleted or renamed. `--table` writes
-  every changed sentence beside its base text for the reviewer. Paths are relative to the
-  repository it runs in. Self-test: `python plugins/fabflows/evals/prose/test_keep_check.py`.
-- `vale-warn-gate.sh <files>` prints every Vale warning or error in the files and exits 1 when
-  there is one, since Vale itself exits 0 on warnings. Self-test:
-  `bash plugins/fabflows/evals/prose/test_vale_warn_gate.sh`, which needs no `vale sync`.
-- `gate.sh --base <ref> --frozen <list> --files <paths>` runs all of it in one command: the keep
-  check and its table, `vale-warn-gate.sh` on the files, Vale at error level and
-  `markdownlint-cli2` on every changed Markdown file, the `Prompts` vocabulary check when
-  `styles/config/vocabularies/Prompts/accept.txt` exists (each line a literal phrase in a
-  fabflows prompt whose removal brings back a finding), the `vale-warn-gate.sh` probe, both
-  node test suites (the three Windows-failing trace tests skipped by name) and `audit.py` from
-  the installed docs-warden (found through `installed_plugins.json`, as CLAUDE.md requires). When
-  Vale's packages are missing it says to run `vale sync` first.
-
-```bash
-bash plugins/fabflows/evals/prose/gate.sh --base 45978ed --frozen plugins/fabflows/evals/prose/frozen-a.json --files plugins/fabflows/agents/*.md
-```
-
-The results files (`RESULTS.md`, `runs/**/benchmark.md`, `brainstorming/*.md`) have their own
-section in `.vale.ini` that keeps only the Clarity style: they record what was true when each
-iteration ran, like the other history files.
+`prose/vale-warn-gate.sh <files>` prints every Vale warning or error in the given files and
+exits 1 when there is one, since Vale itself exits 0 on warnings. Its self-test is
+`bash plugins/fabflows/evals/prose/test_vale_warn_gate.sh` and needs no `vale sync`. CI runs the
+self-test.
 
 ## Trigger corpus
 
