@@ -270,19 +270,19 @@ touches routing, and whenever a decision record wants a number instead of arithm
   unpublished. Tokens by model are directional. `total_cost_usd` is list price.
 - A cell's pair of repeats shows direction and catches one outlier. They do not give significance.
 - The `with_skill` prompt names the skill explicitly, so triggering is not measured here.
-- Both arms allow the `Workflow` tool; a bare lead has no reason to use it. Workflow agents
+- Both arms allow the `Workflow` tool. A bare lead has no reason to use it. Workflow agents
   cache prompts at the 5-minute rate where the lead uses the 1-hour rate, which shows up in
   `modelUsage` as cheaper cache writes for them.
 - Whether a guard *denial* inside a Workflow-tool agent is handled well is not measured.
 - Per-message stream usage is the message-start snapshot: input-side fields are final, the
   output field is a placeholder. Output comes from the result's `usage` and `modelUsage` and
   from each Agent call's `subagent_tokens`, never from the stream.
-- `os.tmpdir()` can return an 8.3 short name (`REXLIN~1`). A cwd in that form made don't-ask
+- `os.tmpdir()` can return an 8.3 short name (such as `USERNA~1`). A cwd in that form made don't-ask
   mode deny every edit as outside the working directory, so the runner resolves it first.
 - Don't-ask mode denies a Bash command that combines `cd <dir> &&` with a pipe, and every
   PowerShell call, allow list or not (`Bash(cd *)`, `Bash(cd:*)`, `PowerShell(*)` and
   `PowerShell(node:*)` were all probed and changed nothing; `--permission-mode auto` is not
-  accepted headless). So the runner appends an environment note to the fixture's `CLAUDE.md`
+  accepted headless). To work around this, the runner appends an environment note to the fixture's `CLAUDE.md`
   (run from the root without `cd`, use Bash not PowerShell) and passes `--disallowedTools
   PowerShell`. The note only loads with `--setting-sources user,project`; `user` alone drops
   the project CLAUDE.md. Both arms carry it. This is benchmark-only and widens no permission: the plugin, its guard included,
