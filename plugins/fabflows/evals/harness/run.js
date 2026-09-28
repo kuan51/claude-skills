@@ -635,8 +635,8 @@ function runCell(a, cell, settingsPath, spawnSession = spawn) {
     child.on('close', (code) => {
       if (!settle()) return;
       setTimeout(() => {
-        writeJson(path.join(runDir, 'timing.json'), { exit_code: code, duration_ms: Date.now() - started, total_duration_seconds: Number(((Date.now() - started) / 1000).toFixed(1)) });
         try {
+          writeJson(path.join(runDir, 'timing.json'), { exit_code: code, duration_ms: Date.now() - started, total_duration_seconds: Number(((Date.now() - started) / 1000).toFixed(1)) });
           resolve({ cell, ...measureAndGrade(a, cell, runDir, fixture) });
         } catch (e) {
           reject(tagged('grade', e));

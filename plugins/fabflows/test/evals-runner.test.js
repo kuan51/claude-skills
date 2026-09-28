@@ -69,6 +69,18 @@ test('a cell whose fixture setup throws gets an error.json naming its stage, and
   assert.notEqual(exitCode, 0);
 });
 
+test('a timing.json that cannot be written fails only its own cell', async () => {
+  const a = baseArgs();
+  const [cell] = run.buildCells({ tasks: [7], arms: ['without_skill'], repeats: 1 });
+  // A directory where the file goes makes the write throw.
+  fs.mkdirSync(path.join(run.runDirFor(a, cell), 'timing.json'), { recursive: true });
+  const { spawnSession } = standIn('close');
+  const { failed, exitCode } = await run.runAll(a, [cell], spawnSession);
+  assert.equal(failed.length, 1);
+  assert.equal(readJson(path.join(run.runDirFor(a, cell), 'error.json')).stage, 'grade');
+  assert.notEqual(exitCode, 0);
+});
+
 test('a successful regrade removes the cell\'s stale error.json', async () => {
   const a = baseArgs({ regrade: true });
   const [cell] = run.buildCells({ tasks: [11], arms: null, repeats: 1 });
