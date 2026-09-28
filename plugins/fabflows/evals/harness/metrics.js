@@ -43,13 +43,40 @@ function parseTranscript(text) {
   return events;
 }
 
-const zeroInput = () => ({ messages: 0, input: 0, cacheRead: 0, cacheWrite: 0 });
+const zeroInput = () => ({ messages: 0, input: 0, cacheRead: 0, cacheWrite: 0, cacheWrite1h: 0, cacheWrite5m: 0 });
 
 function addInput(acc, u) {
   acc.messages += 1;
   acc.input += u.input_tokens || 0;
   acc.cacheRead += u.cache_read_input_tokens || 0;
   acc.cacheWrite += u.cache_creation_input_tokens || 0;
+  // The split by cache lifetime, which list price charges differently (1h costs more than 5m).
+  const cc = u.cache_creation || {};
+  acc.cacheWrite1h += cc.ephemeral_1h_input_tokens || 0;
+  acc.cacheWrite5m += cc.ephemeral_5m_input_tokens || 0;
+}
+
+// Characters a SessionStart hook injected. A hook that adds context prints JSON whose
+// hookSpecificOutput.additionalContext holds the text; any other stdout is injected as is.
+function injectedChars(stdout) {
+  if (typeof stdout !== 'string' || !stdout) return 0;
+  try {
+    const ctx = JSON.parse(stdout).hookSpecificOutput.additionalContext;
+    if (typeof ctx === 'string') return ctx.length;
+  } catch {
+    // Not that JSON: the plain stdout is what the session got.
+  }
+  return stdout.length;
+}
+
+// Where an init-listed plugin came from: the run's own `plugin-<config>` copy, a synced
+// claude.ai plugin, a builtin, or anything else (a user-installed plugin, say).
+function pluginSource(p) {
+  const s = String(p || '').replace(/\\/g, '/');
+  if (s === 'builtin') return 'builtin';
+  if (s.includes('/plugins/synced/')) return 'synced';
+  if (/\/plugin-[^/]+\/?$/.test(s)) return 'staged';
+  return 'other';
 }
 
 function bump(map, key) {
@@ -157,6 +184,13 @@ function computeMetrics(events, opts = {}) {
   const workers = {}; // subagent_type -> input-side sums, spawns, tool calls, reported totals
   const workflows = {}; // Workflow tool_use id -> { name, transcriptDir, completed, agents by agentId }
   const hooks = { started: {}, permissionDenied: 0, rateLimitEvents: 0 };
+  // A Skill call's tool_result is only "Launching skill: <name>"; the skill's text is the next
+  // synthetic user message in the same thread. Keyed by thread ('' is the lead).
+  const skillLoads = [];
+  const skillCalls = {}; // Skill tool_use id -> its skillLoads entry
+  const pendingSkill = {};
+  let hookChars = 0;
+  let initPlugins = null;
   let sawSpawn = false;
   const results = [];
 
@@ -168,6 +202,8 @@ function computeMetrics(events, opts = {}) {
 
   for (const e of events) {
     if (e.type === 'system') {
+      if (e.subtype === 'init' && !initPlugins) initPlugins = (e.plugins || []).map((p) => ({ name: p.name, source: pluginSource(p.path) }));
+      if (e.subtype === 'hook_response' && /SessionStart/.test(e.hook_event || e.hook_name || '')) hookChars += injectedChars(e.stdout);
       if (e.subtype === 'hook_started') bump(hooks.started, e.hook_name || e.hook_event || '?');
       if (e.subtype === 'permission_denied') hooks.permissionDenied += 1;
       const wf = workflows[e.tool_use_id];
@@ -190,6 +226,18 @@ function computeMetrics(events, opts = {}) {
     if (e.type === 'result') {
       results.push(e);
       continue;
+    }
+    if (e.type === 'user') {
+      const thread = e.parent_tool_use_id || '';
+      const content = (e.message && e.message.content) || [];
+      const text = textOf(content);
+      if (e.isSynthetic && pendingSkill[thread] && text.startsWith('Base directory for this skill')) {
+        pendingSkill[thread].chars = text.length;
+        delete pendingSkill[thread];
+      }
+      for (const b of Array.isArray(content) ? content : []) {
+        if (b && b.type === 'tool_result' && skillCalls[b.tool_use_id]) pendingSkill[thread] = skillCalls[b.tool_use_id];
+      }
     }
     if (e.type === 'user' && !e.parent_tool_use_id) {
       for (const b of (e.message && e.message.content) || []) {
@@ -216,6 +264,10 @@ function computeMetrics(events, opts = {}) {
     for (const b of m.content || []) {
       if (b.type !== 'tool_use' || seenToolUses.has(b.id)) continue;
       seenToolUses.add(b.id);
+      if (b.name === 'Skill') {
+        skillCalls[b.id] = { name: (b.input && b.input.skill) || null, chars: null };
+        skillLoads.push(skillCalls[b.id]);
+      }
       if (parent) {
         bump(workerFor(parent).toolCalls, b.name);
         continue;
@@ -278,12 +330,12 @@ function computeMetrics(events, opts = {}) {
       const f = dir ? readWorkflowAgent(dir, a.agentId) : null;
       a.agentType = (f && f.agentType) || a.agentType || null;
       a.model = (f && f.model) || a.model || null;
-      for (const k of ['messages', 'input', 'cacheRead', 'cacheWrite', 'output', 'thinking']) a[k] = f ? f[k] : null;
+      for (const k of ['messages', 'input', 'cacheRead', 'cacheWrite', 'cacheWrite1h', 'cacheWrite5m', 'output', 'thinking']) a[k] = f ? f[k] : null;
       const w = workerByType(a.agentType || `workflow:${a.label}`);
       w.spawnIds.add(a.agentId);
       w.model = w.model || a.model;
       if (!f) continue;
-      for (const k of ['messages', 'input', 'cacheRead', 'cacheWrite']) w[k] += f[k];
+      for (const k of ['messages', 'input', 'cacheRead', 'cacheWrite', 'cacheWrite1h', 'cacheWrite5m']) w[k] += f[k];
       w.output = (w.output || 0) + f.output;
       w.thinking = (w.thinking || 0) + f.thinking;
       exact.add(w);
@@ -319,6 +371,12 @@ function computeMetrics(events, opts = {}) {
       cacheWrite: mu.cacheWrite - (isLead ? ru.cache_creation_input_tokens || 0 : 0),
     };
     if (w.input || w.output || w.cacheRead || w.cacheWrite) workersByModel[model] = w;
+  }
+  // modelUsage carries no lifetime split, so each worker model's is summed from its messages.
+  for (const [model, w] of Object.entries(workersByModel)) {
+    const types = Object.values(workers).filter((x) => x.model === model);
+    w.cacheWrite1h = types.reduce((n, x) => n + x.cacheWrite1h, 0);
+    w.cacheWrite5m = types.reduce((n, x) => n + x.cacheWrite5m, 0);
   }
   // When exactly one worker type ran on a model, that model's residual output is its output.
   // Two types on one model (editor and test-runner on Sonnet, say) stay null: ambiguous. When
@@ -364,6 +422,9 @@ function computeMetrics(events, opts = {}) {
     },
     workflows: workflowList,
     hooks,
+    skillLoads,
+    hookChars,
+    initPlugins: initPlugins || [],
   };
 }
 

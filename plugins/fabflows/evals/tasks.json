@@ -11,6 +11,10 @@
     },
     "without_skill": {
       "promptPrefix": ""
+    },
+    "superpowers": {
+      "plugin": "superpowers@claude-plugins-official",
+      "promptPrefix": ""
     }
   },
   "tasks": [

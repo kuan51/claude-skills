@@ -167,6 +167,21 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.3** -- the benchmark harness can run the three-arm baseline #123 records.
+  A cell that fails, at any stage, writes its own `error.json` and the other cells still run;
+  the runner lists the failures and exits non-zero, and a timed-out session is killed with its
+  whole process tree. Every arm loads project settings only, the clean room also turns off
+  synced claude.ai plugins by their manifest names, and every session gets an unresolvable
+  `origin` and an empty `gh` config. A `superpowers` arm loads the highest cached version of
+  that plugin. Each plugin arm stages its own copy and records its name, version and tree hash
+  (and, for superpowers, the marketplace's pin at run time), and the arm order rotates each
+  repeat. `metrics.js` also records cache writes by lifetime (1h and 5m), the size of each
+  Skill load, the text SessionStart hooks inject, and where each loaded plugin came from.
+  `summarize.js` prints each arm's mean cost against without_skill, and with_skill against
+  superpowers, and names any cell it leaves out of the means. `annotate_benchmark.py` sets the
+  benchmark's delta to with_skill minus without_skill, where the aggregator took the first
+  two arms by name, and adds dollars to each configuration. Only eval tooling and its docs
+  change; no behaviour a consumer sees changes.
 - **fabflows 0.13.2** -- the prompts' security rules get a guard that survives rewording
   (#122). `plugins/fabflows/test/required-rules.test.js` checks that each rule family
   (untrusted content is data, read-only, no installs, no commits unless briefed, and the

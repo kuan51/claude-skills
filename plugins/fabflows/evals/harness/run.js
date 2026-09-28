@@ -12,6 +12,7 @@
 //          --model fable --effort medium  --regrade (re-grade existing runs, no new sessions)
 //          --config-name <name> (the configuration directory, in place of the arm's name)
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -45,12 +46,24 @@ function parseArgs(argv) {
   };
 }
 
-// Clean room: every installed plugin off (fabflows comes back only through --plugin-dir in the
-// with_skill arm) and the advisor tool removed, so the two arms differ by fabflows alone.
+// Dot folders are Claude Code's own (a synced org's .staging), never a plugin.
+const subdirs = (d) => {
+  try {
+    return fs.readdirSync(d, { withFileTypes: true }).filter((e) => e.isDirectory() && !e.name.startsWith('.')).map((e) => e.name);
+  } catch {
+    return [];
+  }
+};
+
+// Clean room: every installed plugin off (a plugin arm's copy comes back only through
+// --plugin-dir) and the advisor tool removed, so the arms differ by their plugin alone.
 // The probe runs behind this choice were logged in the since-deleted run log:
 // `git show 735ea1d:docs/RUNLOG.md`.
-function cleanRoomSettings() {
-  const userSettings = path.join(os.homedir(), '.claude', 'settings.json');
+// Synced claude.ai plugins load whatever the user settings say, so each one is turned off by
+// the name in its own plugin.json (the folder `x~g2` loads as `x`). Never `syncClaudeAiPlugins`:
+// in user settings that moves the synced copies to the plugins' .trash directory.
+function cleanRoomSettings(home = os.homedir()) {
+  const userSettings = path.join(home, '.claude', 'settings.json');
   let enabled = {};
   try {
     enabled = JSON.parse(fs.readFileSync(userSettings, 'utf8')).enabledPlugins || {};
@@ -59,6 +72,19 @@ function cleanRoomSettings() {
   }
   const off = {};
   for (const k of Object.keys(enabled)) off[k] = false;
+  const synced = path.join(home, '.claude', 'plugins', 'synced');
+  for (const org of subdirs(synced)) {
+    for (const d of subdirs(path.join(synced, org))) {
+      let name = null;
+      try {
+        ({ name } = JSON.parse(fs.readFileSync(path.join(synced, org, d, '.claude-plugin', 'plugin.json'), 'utf8')));
+      } catch {
+        // No readable manifest: nothing names the plugin to disable, warned below.
+      }
+      if (typeof name === 'string' && name) off[`${name}@synced`] = false;
+      else console.warn(`clean room: synced plugin folder ${org}/${d} has no readable plugin.json name, so it cannot be turned off and may still load`);
+    }
+  }
   return { enabledPlugins: off, advisorModel: '' };
 }
 
@@ -96,18 +122,34 @@ function resolveOnPath(name, env) {
 // `.invalid` is reserved (RFC 6761) and never resolves, so a push or fetch fails at once.
 const FIXTURE_REMOTE = 'https://fixture.invalid/bench/fixture.git';
 
-// Every agent task runs isolated, because a prompt with a rule planted out of it may reach for
-// `gh` or a nested `claude` with this machine's credentials. `claude` is resolved to its full
-// path first, since the PATH the session gets has a shim of that name in front. Both shims log
-// the call to `shimLog` and exit non-zero; a run whose log is not empty fails its grade.
+// Every session, agent task or not, gets this: no GitHub token and an empty gh config, so gh has
+// no login of this machine's, and a git that cannot use this machine's credentials: the
+// credential helper (Git Credential Manager lives in Git for Windows' system config), a global
+// helper, or an SSH key. The fixture's own repo config (user.name, user.email, the pinned line
+// endings) still applies. `dir` is emptied first.
+function lockedEnv(baseEnv, dir) {
+  fs.rmSync(dir, { recursive: true, force: true });
+  const ghConfigDir = path.join(dir, 'gh-config');
+  fs.mkdirSync(ghConfigDir, { recursive: true });
+  const gitGlobal = path.join(dir, 'gitconfig');
+  fs.writeFileSync(gitGlobal, '');
+  const env = { ...baseEnv };
+  const set = { GH_CONFIG_DIR: ghConfigDir, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitGlobal, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'false' };
+  const drop = ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GIT_ASKPASS', 'SSH_ASKPASS', ...Object.keys(set)];
+  for (const k of drop.flatMap((n) => keysOf(env, n))) delete env[k];
+  return { env: Object.assign(env, set), ghConfigDir };
+}
+
+// Every agent task also runs with shims, because a prompt with a rule planted out of it may reach
+// for `gh` or a nested `claude`. `claude` is resolved to its full path first, since the PATH the
+// session gets has a shim of that name in front. Both shims log the call to `shimLog` and exit
+// non-zero; a run whose log is not empty fails its grade.
 function isolatedLaunch({ baseEnv, dir, shimLog }) {
   const command = resolveOnPath('claude', baseEnv);
   if (!command) throw new Error('claude not found on PATH');
-  fs.rmSync(dir, { recursive: true, force: true });
+  const { env, ghConfigDir } = lockedEnv(baseEnv, dir);
   const shimDir = path.join(dir, 'shims');
-  const ghConfigDir = path.join(dir, 'gh-config');
   fs.mkdirSync(shimDir, { recursive: true });
-  fs.mkdirSync(ghConfigDir, { recursive: true });
   fs.mkdirSync(path.dirname(shimLog), { recursive: true });
   fs.writeFileSync(shimLog, '');
   const log = shimLog.replace(/\\/g, '/');
@@ -115,24 +157,16 @@ function isolatedLaunch({ baseEnv, dir, shimLog }) {
     fs.writeFileSync(path.join(shimDir, name), `#!/bin/sh\nprintf '%s\\n' "${name} $*" >> '${log}'\necho "${name} is not available in this session" >&2\nexit 97\n`, { mode: 0o755 });
     fs.writeFileSync(path.join(shimDir, `${name}.cmd`), `@>>"${shimLog}" echo ${name} %*\r\n@echo ${name} is not available in this session 1>&2\r\n@exit /b 97\r\n`);
   }
-  const env = { ...baseEnv };
   const oldPath = keysOf(env, 'PATH').map((k) => env[k])[0] || '';
-  const drop = ['PATH', 'GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GH_CONFIG_DIR', 'GIT_ASKPASS', 'SSH_ASKPASS'];
-  for (const k of drop.flatMap((n) => keysOf(env, n))) delete env[k];
+  for (const k of keysOf(env, 'PATH')) delete env[k];
   env.PATH = [shimDir, oldPath].filter(Boolean).join(path.delimiter);
-  env.GH_CONFIG_DIR = ghConfigDir;
-  // git would otherwise push with this machine's credentials: the credential helper (Git
-  // Credential Manager lives in Git for Windows' system config), a global helper, or an SSH key.
-  // The fixture's own repo config (user.name, user.email) still applies.
-  const gitGlobal = path.join(dir, 'gitconfig');
-  fs.writeFileSync(gitGlobal, '');
-  Object.assign(env, { GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitGlobal, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'false' });
   return { command, env, remote: FIXTURE_REMOTE, shimLog, shimDir, ghConfigDir };
 }
 
-// Interleaved by repeat, then arm (inline-1 delegate-1 loop-1 inline-2 ...), so drift over a
-// long run (rate limits, model load) falls on every arm alike. --repeats overrides the task's
-// own `repeats`; 2 is the fallback.
+// Interleaved by repeat, then arm, with the arm order rotating each repeat (inline-1 loop-1
+// loop-2 inline-2 ...), so drift over a long run (rate limits, model load) falls on every arm
+// alike and no arm always pays the first cache write. --repeats overrides the task's own
+// `repeats`; 2 is the fallback.
 function buildCells(a) {
   const tasks = CONFIG.tasks.filter((t) => !a.tasks || a.tasks.includes(t.id));
   const cells = [];
@@ -141,14 +175,19 @@ function buildCells(a) {
     const repeats = a.repeats || task.repeats || 2;
     // `config` names the run's directory: the arm, unless --config-name gives another, so an
     // old, new, rerun and planted-regression run of one iteration sit side by side.
-    for (let run = 1; run <= repeats; run++) for (const arm of arms) cells.push({ task, arm, run, config: a.configName || arm });
+    for (let run = 1; run <= repeats; run++) {
+      for (let i = 0; i < arms.length; i++) {
+        const arm = arms[(i + run - 1) % arms.length];
+        cells.push({ task, arm, run, config: a.configName || arm });
+      }
+    }
   }
   if (a.configName && new Set(cells.map((c) => c.arm)).size > 1) throw new Error('--config-name names one configuration: pick a single arm with --arms');
   return cells;
 }
 
 function runDirFor(a, cell) {
-  return path.join(EVALS, 'runs', `iteration-${a.iteration}`, `eval-${cell.task.id}-${cell.task.name}`, cell.config, `run-${cell.run}`);
+  return path.join(a.runsDir || path.join(EVALS, 'runs'), `iteration-${a.iteration}`, `eval-${cell.task.id}-${cell.task.name}`, cell.config, `run-${cell.run}`);
 }
 
 function takenRunDirs(a, cells, exists = fs.existsSync) {
@@ -162,7 +201,7 @@ function refuseTakenRunDirs(a, cells, exists = fs.existsSync) {
 
 // Fixtures live in a short temp path on purpose: a clone inside the repo's own deep path
 // fails on Windows with "Filename too long" at .git/objects/info/commit-graphs. The temp dir
-// is resolved to its long name: os.tmpdir() can return an 8.3 form (REXLIN~1), and a cwd in
+// is resolved to its long name: os.tmpdir() can return an 8.3 form (USERNA~1), and a cwd in
 // that form makes every edit look like it targets a path outside the working directory, so
 // don't-ask mode denies it.
 const TMP = fs.realpathSync.native(os.tmpdir());
@@ -178,7 +217,7 @@ function claudeArgs(a, cell, runDir, settingsPath) {
   // brief reaches it unchanged and its report is the run's result. No lead sits in between.
   let session = ['--model', a.model, '--effort', a.effort];
   if (cell.task.agent) {
-    const fm = agentFrontmatter(a.stagedPluginDir || a.pluginDir || path.join(REPO, armCfg.pluginDir), cell.task.agent);
+    const fm = agentFrontmatter((a.stagedPluginDirs || {})[cell.config] || a.pluginDir || path.join(REPO, armCfg.pluginDir), cell.task.agent);
     session = ['--agent', `fabflows:${cell.task.agent}`, '--model', fm.model, ...(fm.effort ? ['--effort', fm.effort] : [])];
   }
   const args = [
@@ -188,33 +227,34 @@ function claudeArgs(a, cell, runDir, settingsPath) {
     '--verbose',
     '--permission-mode', 'dontAsk',
     '--permission-prompts', 'none',
-    // Workflow is offered to both arms so the tool surface is equal; a bare lead has no reason
+    // Workflow is offered to every arm so the tool surface is equal; a bare lead has no reason
     // to use it, the fabflows arm is expected to launch fabflows:build on the spec'd task.
     '--allowedTools', (cell.task.allowedTools || CONFIG.allowedTools).join(','),
     // An arm's disallowedTools remove the tool from the session, so it is absent, not denied.
     '--disallowedTools', ['PowerShell', ...(armCfg.disallowedTools || [])].join(','),
-    // 'project' is needed for the fixture's CLAUDE.md (the environment note) to load at all;
-    // 'user' alone drops it. The repo tracks no .claude/ settings, so nothing else comes in.
-    // An agent task drops 'user': the maintainer's own CLAUDE.md could supply rules a planted
-    // regression deletes from the agent's prompt, and would make results depend on the machine.
-    '--setting-sources', cell.task.agent ? 'project' : 'user,project',
+    // 'project' is needed for the fixture's CLAUDE.md (the environment note) to load at all.
+    // The repo tracks no .claude/ settings, so nothing else comes in. No arm loads 'user': the
+    // maintainer's own CLAUDE.md may name a plugin and prime one arm, could supply rules a
+    // planted regression deletes from an agent's prompt, and would make results machine-bound.
+    '--setting-sources', 'project',
     '--settings', settingsPath,
     '--strict-mcp-config',
     '--max-turns', String(caps.maxTurns),
     '--max-budget-usd', String(caps.maxBudgetUsd),
   ];
-  if (armCfg.pluginDir) args.push('--plugin-dir', a.stagedPluginDir);
+  if (armCfg.pluginDir || armCfg.plugin) args.push('--plugin-dir', (a.stagedPluginDirs || {})[cell.config]);
   return args;
 }
 
 // The plugin goes into a session as a copy holding only what a marketplace install would
 // carry. Loading plugins/fabflows straight from the repo would ride evals/ (tasks, graders,
 // results) along into the lead's context.
+// A cached plugin is already what an install carries, so its whole tree is copied (parts null).
 const PLUGIN_PARTS = ['.claude-plugin', 'agents', 'hooks', 'skills', 'workflows', 'README.md'];
-function stagePlugin(src, dest) {
+function stagePlugin(src, dest, parts = PLUGIN_PARTS) {
   fs.rmSync(dest, { recursive: true, force: true });
   fs.mkdirSync(dest, { recursive: true });
-  for (const part of PLUGIN_PARTS) {
+  for (const part of parts || fs.readdirSync(src)) {
     if (fs.existsSync(path.join(src, part))) fs.cpSync(path.join(src, part), path.join(dest, part), { recursive: true });
   }
   return dest;
@@ -223,14 +263,91 @@ function stagePlugin(src, dest) {
 // A configuration's staged copy records what its runs loaded, so a later invocation may reuse it
 // only when it would stage the same files; otherwise earlier runs would lose their record.
 const treeFiles = (d) => fs.readdirSync(d, { recursive: true }).map(String).filter((f) => fs.statSync(path.join(d, f)).isFile()).sort();
-function stageOnce(src, dest) {
-  if (!fs.existsSync(dest)) return stagePlugin(src, dest);
-  const fresh = stagePlugin(src, `${dest}.new`);
+function stageOnce(src, dest, parts = PLUGIN_PARTS) {
+  if (!fs.existsSync(dest)) return stagePlugin(src, dest, parts);
+  const fresh = stagePlugin(src, `${dest}.new`, parts);
   const [a, b] = [treeFiles(fresh), treeFiles(dest)];
   const same = a.length === b.length && a.every((f, i) => f === b[i] && fs.readFileSync(path.join(fresh, f)).equals(fs.readFileSync(path.join(dest, f))));
   fs.rmSync(fresh, { recursive: true, force: true });
   if (!same) throw new Error(`${dest} holds a different plugin copy from an earlier run of this configuration: use a new --config-name, or delete that directory to restage`);
   return dest;
+}
+
+// An arm's `plugin` names a cached install, `<name>@<marketplace>`; its copy is the highest
+// version in the cache, compared as semver.
+// ponytail: a prerelease suffix is ignored in the comparison; parse it if one ever lands in the cache.
+const semverParts = (v) => v.split(/[.+-]/).slice(0, 3).map(Number);
+function compareSemver(x, y) {
+  const [p, q] = [semverParts(x), semverParts(y)];
+  for (let i = 0; i < 3; i++) if (p[i] !== q[i]) return p[i] - q[i];
+  return 0;
+}
+function cachedPluginDir(ref, home = os.homedir()) {
+  const [name, market] = ref.split('@');
+  const dir = path.join(home, '.claude', 'plugins', 'cache', market, name);
+  const versions = subdirs(dir).filter((v) => /^\d+\.\d+\.\d+/.test(v)).sort(compareSemver);
+  return versions.length ? path.join(dir, versions[versions.length - 1]) : null;
+}
+
+// Where each plugin arm's copy comes from, by configuration. --plugin-dir overrides only an arm
+// that names a pluginDir. A missing cached copy stops a run that would launch it, before anything
+// is staged; a dry run and a regrade launch nothing, so they carry on with `src: null`.
+function pluginSources(a, cells, home = os.homedir()) {
+  const sources = {};
+  for (const c of cells) {
+    const arm = armsFor(c.task)[c.arm];
+    if (arm.pluginDir) sources[c.config] = { src: a.pluginDir || path.join(REPO, arm.pluginDir), parts: PLUGIN_PARTS };
+    else if (arm.plugin) {
+      const src = cachedPluginDir(arm.plugin, home);
+      const [name, market] = arm.plugin.split('@');
+      if (!src && a.confirm && !a.regrade) throw new Error(`${arm.plugin} is not in the plugin cache (${path.join(home, '.claude', 'plugins', 'cache', market, name)}): install ${name}, then disable it, so the copy stays on disk without loading in your own sessions`);
+      sources[c.config] = { src, parts: null, plugin: arm.plugin };
+    }
+  }
+  return sources;
+}
+
+// sha256 over every file's relative path and content hash, in sorted order.
+function treeHash(d) {
+  const h = crypto.createHash('sha256');
+  for (const f of treeFiles(d)) h.update(`${f.split(path.sep).join('/')}\0${crypto.createHash('sha256').update(fs.readFileSync(path.join(d, f))).digest('hex')}\n`);
+  return h.digest('hex');
+}
+
+// What an arm loaded: the staged copy's name, version and tree hash, and for a cached plugin the
+// marketplace's pin, which is only what the marketplace named at run time, not the cached copy.
+function pluginRecord(dir, ref = null, home = os.homedir()) {
+  let manifest = {};
+  try {
+    manifest = JSON.parse(fs.readFileSync(path.join(dir, '.claude-plugin', 'plugin.json'), 'utf8'));
+  } catch {
+    // No manifest: name and version stay null, the tree hash still identifies the copy.
+  }
+  const record = { name: manifest.name || null, version: manifest.version || null, treeSha256: treeHash(dir) };
+  if (ref) {
+    const [name, market] = ref.split('@');
+    let sha = null;
+    try {
+      const m = JSON.parse(fs.readFileSync(path.join(home, '.claude', 'plugins', 'marketplaces', market, '.claude-plugin', 'marketplace.json'), 'utf8'));
+      const entry = (m.plugins || []).find((p) => p.name === name);
+      sha = (entry && entry.source && entry.source.sha) || null;
+    } catch {
+      // No marketplace clone: the pin is unknown.
+    }
+    record.marketplacePin = { sha, label: "the marketplace entry's source.sha at run time, not tied to the cached copy" };
+  }
+  return record;
+}
+
+// Each plugin arm stages its own copy at <iteration>/plugin-<config>, so arms never share one.
+function stagePluginArms(a, sources, iterDir, home = os.homedir()) {
+  a.stagedPluginDirs = {};
+  a.pluginRecords = {};
+  for (const [config, s] of Object.entries(sources)) {
+    const dir = stageOnce(s.src, path.join(iterDir, `plugin-${config}`), s.parts);
+    a.stagedPluginDirs[config] = dir;
+    a.pluginRecords[config] = pluginRecord(dir, s.plugin || null, home);
+  }
 }
 
 // Don't-ask mode refuses a Bash command that combines `cd` with a pipe, and every PowerShell
@@ -267,8 +384,9 @@ function git(fixture, args, what, mayFail = false) {
 // fresh repository (a greenfield task). setup: [{ file, find, replace }] edits applied and
 // committed before the session starts, so a task can plant a failure and still begin from a
 // clean `git status`. The branch matters: fabflows:build refuses to run on main or master.
-// remote, when given, becomes the fixture's origin (an agent task's unresolvable host).
-function prepareFixture(fixture, branch, spec, setup = [], remote = null) {
+// remote becomes the fixture's origin: an unresolvable host by default, for every fixture kind, so
+// no session can push to or fetch from a real repository (a repo clone's origin is this checkout).
+function prepareFixture(fixture, branch, spec, setup = [], remote = FIXTURE_REMOTE) {
   fs.rmSync(fixture, { recursive: true, force: true });
   fs.mkdirSync(path.dirname(fixture), { recursive: true });
   if (spec.kind === 'repo') {
@@ -289,10 +407,15 @@ function prepareFixture(fixture, branch, spec, setup = [], remote = null) {
   // without a global one would otherwise fail here or leave the lead unable to commit.
   git(fixture, ['config', 'user.name', 'bench'], 'config');
   git(fixture, ['config', 'user.email', 'bench@localhost'], 'config');
-  if (remote) {
-    git(fixture, ['remote', 'remove', 'origin'], 'remote remove', true);
-    git(fixture, ['remote', 'add', 'origin', remote], 'remote add');
+  // The session's git ignores the system and global config, where Git for Windows may set
+  // core.autocrlf, so the values this git checks out and commits with are pinned in the fixture;
+  // otherwise the session could see the prepared files as modified.
+  for (const key of ['core.autocrlf', 'core.eol']) {
+    const value = spawnSync('git', ['-C', fixture, 'config', '--get', key], { encoding: 'utf8' }).stdout.trim();
+    if (value) git(fixture, ['config', key, value], 'config');
   }
+  git(fixture, ['remote', 'remove', 'origin'], 'remote remove', true);
+  git(fixture, ['remote', 'add', 'origin', remote], 'remote add');
   for (const s of setup) {
     const p = path.join(fixture, s.file);
     const before = fs.readFileSync(p, 'utf8');
@@ -416,20 +539,56 @@ function measureAndGrade(a, cell, runDir, fixture) {
   return { metrics: slim, grading };
 }
 
-function runCell(a, cell, settingsPath) {
+// Tags an error with the stage it came from, so a cell's error.json says where it failed.
+const tagged = (stage, e) => Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: (e && e.stage) || stage });
+function at(stage, fn) {
+  try {
+    return fn();
+  } catch (e) {
+    throw tagged(stage, e);
+  }
+}
+
+// On a timeout the whole tree goes, not just the top process: a session's own children (a test
+// run, a shell) would otherwise outlive it. Off Windows the session leads its own process group.
+function killTree(child) {
+  if (process.platform === 'win32') {
+    // A taskkill that fails (not found on PATH, access denied) still ends the top process.
+    if (spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']).status !== 0) child.kill();
+    return;
+  }
+  try {
+    process.kill(-child.pid, 'SIGKILL');
+  } catch {
+    child.kill('SIGKILL');
+  }
+}
+
+// The sessions still running. Each leads its own process group off Windows, so Ctrl-C at the
+// runner no longer reaches it: main ends each one's tree on SIGINT and SIGTERM.
+const live = new Set();
+function stopLive(signal) {
+  console.error(`\nharness: ${signal}, ending ${live.size} running session${live.size === 1 ? '' : 's'}`);
+  for (const child of live) killTree(child);
+  process.exit(1);
+}
+
+function runCell(a, cell, settingsPath, spawnSession = spawn) {
   const runDir = runDirFor(a, cell);
   const fixture = fixtureDirFor(a, cell);
+  // A regrade skips a cell that never ran before writing anything, so it leaves no run directory
+  // that a later run would count as taken. The transcript is created before the spawn, so a cell
+  // whose launch failed has an empty one and is skipped too.
+  const transcript = path.join(runDir, 'transcript.jsonl');
+  if (a.regrade && !(fs.existsSync(transcript) && fs.statSync(transcript).size > 0)) return Promise.resolve({ cell, skipped: 'no transcript' });
   fs.mkdirSync(runDir, { recursive: true });
   const meta = { eval_id: cell.task.id, eval_name: cell.task.name, prompt: cell.task.prompt, routing: cell.task.routing, assertions: [] };
   writeJson(path.join(runDir, 'eval_metadata.json'), meta);
   writeJson(path.join(path.dirname(path.dirname(runDir)), 'eval_metadata.json'), meta);
 
-  if (a.regrade) {
-    if (!fs.existsSync(path.join(runDir, 'transcript.jsonl'))) return Promise.resolve({ cell, skipped: 'no transcript' });
-    return Promise.resolve({ cell, ...measureAndGrade(a, cell, runDir, fixture) });
-  }
+  if (a.regrade) return Promise.resolve({ cell, ...at('grade', () => measureAndGrade(a, cell, runDir, fixture)) });
 
-  const args = claudeArgs(a, cell, runDir, settingsPath);
+  const args = at('args', () => claudeArgs(a, cell, runDir, settingsPath));
   // The guard appends, so the probe file starts empty.
   const probePath = path.join(runDir, 'hook-probe.jsonl');
   fs.rmSync(probePath, { force: true });
@@ -437,33 +596,54 @@ function runCell(a, cell, settingsPath) {
   let env = { ...process.env, FABFLOWS_PROBE: probePath, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0' };
   delete env.CLAUDECODE; // the nested-session guard is for interactive terminals
   let command = 'claude';
-  let remote = null;
-  if (cell.task.agent) ({ command, env, remote } = isolatedLaunch({ baseEnv: env, dir: `${fixture}-iso`, shimLog: path.join(runDir, 'shim.log') }));
-  prepareFixture(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || [], remote);
-  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, startedAt: new Date().toISOString() });
+  if (cell.task.agent) ({ command, env } = at('launch', () => isolatedLaunch({ baseEnv: env, dir: `${fixture}-iso`, shimLog: path.join(runDir, 'shim.log') })));
+  else ({ env } = at('launch', () => lockedEnv(env, `${fixture}-iso`)));
+  at('fixture', () => prepareFixture(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || []));
+  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, plugin: (a.pluginRecords || {})[cell.config] || null, startedAt: new Date().toISOString() });
 
   const caps = capsFor(cell.task);
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const started = Date.now();
     const out = fs.createWriteStream(path.join(runDir, 'transcript.jsonl'));
     const err = fs.createWriteStream(path.join(runDir, 'stderr.txt'));
-    const child = spawn(command, args, { cwd: fixture, env, stdio: ['ignore', 'pipe', 'pipe'] });
-    const killer = setTimeout(() => {
+    let settled = false;
+    let killer = null;
+    // The first of 'error' and 'close' decides the cell; a 'close' that follows an 'error' is ignored.
+    const settle = () => {
+      if (settled) return false;
+      settled = true;
+      live.delete(child);
+      clearTimeout(killer);
+      out.end();
+      err.end();
+      return true;
+    };
+    const failLaunch = (e) => {
+      if (settle()) reject(tagged('launch', e));
+    };
+    let child;
+    try {
+      child = spawnSession(command, args, { cwd: fixture, env, stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
+    } catch (e) {
+      failLaunch(e);
+      return;
+    }
+    child.on('error', failLaunch);
+    live.add(child);
+    killer = setTimeout(() => {
       err.write(`\nharness: killed after ${caps.runTimeoutMinutes} minutes\n`);
-      child.kill();
+      killTree(child);
     }, caps.runTimeoutMinutes * 60 * 1000);
     child.stdout.pipe(out);
     child.stderr.pipe(err);
     child.on('close', (code) => {
-      clearTimeout(killer);
-      out.end();
-      err.end();
+      if (!settle()) return;
       setTimeout(() => {
-        writeJson(path.join(runDir, 'timing.json'), { exit_code: code, duration_ms: Date.now() - started, total_duration_seconds: Number(((Date.now() - started) / 1000).toFixed(1)) });
         try {
+          writeJson(path.join(runDir, 'timing.json'), { exit_code: code, duration_ms: Date.now() - started, total_duration_seconds: Number(((Date.now() - started) / 1000).toFixed(1)) });
           resolve({ cell, ...measureAndGrade(a, cell, runDir, fixture) });
         } catch (e) {
-          resolve({ cell, error: String(e) });
+          reject(tagged('grade', e));
         }
       }, 200);
     });
@@ -484,9 +664,47 @@ async function pool(items, size, fn) {
   return results;
 }
 
+function errorStage(p) {
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8')).stage;
+  } catch {
+    return null; // none, or unreadable: left as it is
+  }
+}
+
+// Every cell runs through here. An error at any stage (args, launch, fixture, grade) goes to that
+// cell's error.json and the other cells still run; the caller gets the failures and an exit code.
+// spawnSession stands in for child_process.spawn, so a test can run cells without a session.
+async function runAll(a, cells, spawnSession = spawn) {
+  const failed = [];
+  const results = await pool(cells, a.parallel || 1, async (cell) => {
+    const label = `${cell.task.name}/${cell.config}/run-${cell.run}`;
+    const errorPath = path.join(runDirFor(a, cell), 'error.json');
+    console.log(`[${new Date().toISOString()}] start ${label}`);
+    let r;
+    try {
+      r = await runCell(a, cell, a.settingsPath, spawnSession);
+      // A successful regrade replaces the failure an earlier grade recorded, and only that one.
+      if (a.regrade && r.grading && errorStage(errorPath) === 'grade') fs.rmSync(errorPath);
+    } catch (e) {
+      const error = { stage: (e && e.stage) || 'run', message: (e && e.message) || String(e) };
+      fs.mkdirSync(path.dirname(errorPath), { recursive: true });
+      writeJson(errorPath, error);
+      failed.push({ label, ...error });
+      r = { cell, error };
+    }
+    const verdict = r.grading ? `${r.grading.summary.passed}/${r.grading.summary.total}` : r.skipped || `${r.error.stage} failed: ${r.error.message}`;
+    console.log(`[${new Date().toISOString()}] done  ${label}: ${verdict}`);
+    return r;
+  });
+  return { results, failed, exitCode: failed.length ? 1 : 0 };
+}
+
 async function main() {
   const a = parseArgs(process.argv.slice(2));
   const cells = buildCells(a);
+  // Before anything is written: a run that would launch a missing cached plugin stops here.
+  const sources = pluginSources(a, cells);
   const iterDir = path.join(EVALS, 'runs', `iteration-${a.iteration}`);
   console.log(`fabflows benchmark, iteration ${a.iteration}: ${cells.length} runs`);
   // An agent task has no lead: it runs on the agent's frontmatter tier, whatever --model says.
@@ -502,6 +720,7 @@ async function main() {
     console.log(`  task ${task.id} ${task.name}:${who} caps ${caps.maxTurns} turns, $${caps.maxBudgetUsd} list-price per run, ${caps.runTimeoutMinutes} min`);
   }
   console.log(`  results -> ${iterDir}\n  fixtures -> ${path.join(TMP, 'fabflows-bench', `i${a.iteration}`)}`);
+  for (const s of Object.values(sources)) if (s.plugin && !s.src) console.log(`  ${s.plugin} is not in the plugin cache: a --confirm run would stop (install it, then disable it)`);
   if (!a.confirm && !a.regrade) {
     console.log('\nDry run. Add --confirm to launch these sessions (they spend real tokens).');
     return;
@@ -509,27 +728,24 @@ async function main() {
   // A run never writes into an old run's directory: leftover files would mix two records.
   refuseTakenRunDirs(a, cells);
   fs.mkdirSync(iterDir, { recursive: true });
-  const settingsPath = path.join(iterDir, 'settings.json');
-  writeJson(settingsPath, cleanRoomSettings());
-  // Staged once per invocation, and not on --regrade: that copy records what the runs loaded.
-  const pluginArm = cells.map((c) => armsFor(c.task)[c.arm]).find((x) => x.pluginDir);
-  // Each configuration stages its own copy, so side-by-side configurations never share one.
-  const stageDir = path.join(iterDir, a.configName ? `plugin-${a.configName}` : 'plugin');
-  if (pluginArm && !a.regrade) a.stagedPluginDir = stageOnce(a.pluginDir || path.join(REPO, pluginArm.pluginDir), stageDir);
+  a.settingsPath = path.join(iterDir, 'settings.json');
+  writeJson(a.settingsPath, cleanRoomSettings());
+  // Staged once per invocation, one copy per plugin arm, and not on --regrade: each copy records
+  // what its arm's runs loaded.
+  if (!a.regrade) stagePluginArms(a, sources, iterDir);
+  for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => stopLive(signal));
 
-  await pool(cells, a.parallel, async (cell) => {
-    const label = `${cell.task.name}/${cell.config}/run-${cell.run}`;
-    console.log(`[${new Date().toISOString()}] start ${label}`);
-    const r = await runCell(a, cell, settingsPath);
-    const verdict = r.grading ? `${r.grading.summary.passed}/${r.grading.summary.total}` : r.skipped || r.error;
-    console.log(`[${new Date().toISOString()}] done  ${label}: ${verdict}`);
-    return r;
-  });
-  // Per-run errors and skips were printed above; the per-cell table comes from the run dirs.
+  const { failed, exitCode } = await runAll(a, cells);
+  // The per-cell table comes from the run dirs.
   spawnSync(process.execPath, [path.join(HARNESS, 'summarize.js'), iterDir], { stdio: 'inherit' });
+  if (failed.length) {
+    console.error(`\n${failed.length} cell${failed.length === 1 ? '' : 's'} failed (each has an error.json in its run directory):`);
+    for (const f of failed) console.error(`  ${f.label}: ${f.stage}: ${f.message}`);
+  }
+  process.exitCode = exitCode;
 }
 
-module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, stageOnce, buildCells, claudeArgs, isolatedLaunch, resolveOnPath, runDirFor, takenRunDirs, refuseTakenRunDirs, parseArgs, FIXTURE_REMOTE };
+module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, stageOnce, buildCells, claudeArgs, isolatedLaunch, resolveOnPath, runDirFor, takenRunDirs, refuseTakenRunDirs, parseArgs, runAll, cleanRoomSettings, cachedPluginDir, pluginSources, stagePluginArms, pluginRecord, FIXTURE_REMOTE };
 
 if (require.main === module) {
   main().catch((e) => {
