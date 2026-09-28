@@ -550,7 +550,8 @@ function at(stage, fn) {
 // run, a shell) would otherwise outlive it. Off Windows the session leads its own process group.
 function killTree(child) {
   if (process.platform === 'win32') {
-    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']);
+    // A taskkill that fails (not found on PATH, access denied) still ends the top process.
+    if (spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']).status !== 0) child.kill();
     return;
   }
   try {
