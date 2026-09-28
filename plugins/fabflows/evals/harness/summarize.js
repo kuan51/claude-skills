@@ -23,6 +23,10 @@ for (const evalDir of fs.readdirSync(iterDir).filter((d) => d.startsWith('eval-'
         leftOut.push(`${task}/${arm}/${run} (no metrics.json)`);
         continue;
       }
+      if (!fs.existsSync(path.join(dir, 'grading.json'))) {
+        leftOut.push(`${task}/${arm}/${run} (no grading.json)`);
+        continue;
+      }
       const m = JSON.parse(fs.readFileSync(path.join(dir, 'metrics.json'), 'utf8'));
       const g = JSON.parse(fs.readFileSync(path.join(dir, 'grading.json'), 'utf8'));
       const events = fs.readFileSync(path.join(dir, 'transcript.jsonl'), 'utf8').split(/\r?\n/).filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return {}; } });

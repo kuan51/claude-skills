@@ -340,6 +340,29 @@ test('summarize.js compares three arms by cost, counts synced plugins without wr
   );
 });
 
+test('summarize.js leaves out a cell with metrics.json but no grading.json, and still summarizes the rest', (t) => {
+  const os = require('node:os');
+  const iterDir = fs.mkdtempSync(path.join(os.tmpdir(), 'summarize-'));
+  t.after(() => fs.rmSync(iterDir, { recursive: true, force: true }));
+  const e1 = 'eval-1-wide-search';
+  writeCell(iterDir, e1, 'with_skill', 'run-1', { cost: 1.5 });
+  const dir = path.join(iterDir, e1, 'without_skill', 'run-1');
+  fs.mkdirSync(dir, { recursive: true }); // grading stage failed: no grading.json written
+  fs.writeFileSync(path.join(dir, 'metrics.json'), JSON.stringify({
+    result: { permission_denials: [], num_turns: 1, duration_ms: 1000, total_cost_usd: 1.0 },
+    lead: { output: 10, thinking: 0, messages: 1, cacheRead: 0, cacheWrite: 30, cacheWrite1h: 20, cacheWrite5m: 10, finalContext: 0, verificationRuns: 0, toolCalls: {} },
+    workers: {}, workersByModel: {}, hooks: {}, skillLoads: [], hookChars: 0, initPlugins: [],
+  }));
+  fs.writeFileSync(path.join(dir, 'transcript.jsonl'), '');
+
+  const r = spawnSync(process.execPath, [path.join(EVALS, 'harness', 'summarize.js'), iterDir], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /left out of the means:\s+wide-search\/without_skill\/run-1 \(no grading\.json\)/);
+  const rows = JSON.parse(fs.readFileSync(path.join(iterDir, 'cells.json'), 'utf8'));
+  assert.equal(rows.length, 1, 'the ungraded cell is left out; the other cell is still written');
+  assert.equal(rows[0].arm, 'with_skill');
+});
+
 test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus without_skill, and adds dollars and true run counts', (t) => {
   const py = spawnSync('python', ['--version'], { encoding: 'utf8' });
   if (py.error || py.status !== 0) {
