@@ -564,9 +564,10 @@ function runCell(a, cell, settingsPath, spawnSession = spawn) {
   const runDir = runDirFor(a, cell);
   const fixture = fixtureDirFor(a, cell);
   // A regrade skips a cell that never ran before writing anything, so it leaves no run directory
-  // that a later run would count as taken.
+  // that a later run would count as taken. The transcript is created before the spawn, so a cell
+  // whose launch failed has an empty one and is skipped too.
   const transcript = path.join(runDir, 'transcript.jsonl');
-  if (a.regrade && !fs.existsSync(transcript)) return Promise.resolve({ cell, skipped: 'no transcript' });
+  if (a.regrade && !(fs.existsSync(transcript) && fs.statSync(transcript).size > 0)) return Promise.resolve({ cell, skipped: 'no transcript' });
   fs.mkdirSync(runDir, { recursive: true });
   const meta = { eval_id: cell.task.id, eval_name: cell.task.name, prompt: cell.task.prompt, routing: cell.task.routing, assertions: [] };
   writeJson(path.join(runDir, 'eval_metadata.json'), meta);
@@ -648,6 +649,14 @@ async function pool(items, size, fn) {
   return results;
 }
 
+function errorStage(p) {
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8')).stage;
+  } catch {
+    return null; // none, or unreadable: left as it is
+  }
+}
+
 // Every cell runs through here. An error at any stage (args, launch, fixture, grade) goes to that
 // cell's error.json and the other cells still run; the caller gets the failures and an exit code.
 // spawnSession stands in for child_process.spawn, so a test can run cells without a session.
@@ -660,8 +669,8 @@ async function runAll(a, cells, spawnSession = spawn) {
     let r;
     try {
       r = await runCell(a, cell, a.settingsPath, spawnSession);
-      // A successful regrade replaces the failure an earlier grade recorded.
-      if (a.regrade && r.grading) fs.rmSync(errorPath, { force: true });
+      // A successful regrade replaces the failure an earlier grade recorded, and only that one.
+      if (a.regrade && r.grading && errorStage(errorPath) === 'grade') fs.rmSync(errorPath);
     } catch (e) {
       const error = { stage: (e && e.stage) || 'run', message: (e && e.message) || String(e) };
       fs.mkdirSync(path.dirname(errorPath), { recursive: true });

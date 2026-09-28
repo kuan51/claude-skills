@@ -83,6 +83,26 @@ test('a successful regrade removes the cell\'s stale error.json', async () => {
   assert.equal(fs.existsSync(path.join(dir, 'error.json')), false);
 });
 
+test('a regrade skips a cell whose launch failed, and keeps its error.json', async () => {
+  const a = baseArgs({ regrade: true });
+  const [cell] = run.buildCells({ tasks: [11], arms: null, repeats: 1 });
+  const dir = run.runDirFor(a, cell);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'transcript.jsonl'), '');
+  const launch = '{"stage":"launch","message":"spawn claude ENOENT"}\n';
+  fs.writeFileSync(path.join(dir, 'error.json'), launch);
+  const { results } = await run.runAll(a, [cell], () => assert.fail('a regrade never launches a session'));
+  assert.equal(results[0].skipped, 'no transcript');
+  assert.equal(fs.readFileSync(path.join(dir, 'error.json'), 'utf8'), launch);
+  assert.equal(fs.existsSync(path.join(dir, 'grading.json')), false);
+
+  // A graded regrade removes only a grade-stage failure, never one from an earlier stage.
+  fs.copyFileSync(SAMPLE, path.join(dir, 'transcript.jsonl'));
+  await run.runAll(a, [cell], () => assert.fail('a regrade never launches a session'));
+  assert.ok(fs.existsSync(path.join(dir, 'grading.json')), 'the cell was graded');
+  assert.equal(fs.readFileSync(path.join(dir, 'error.json'), 'utf8'), launch);
+});
+
 test('a regrade creates nothing for a cell that never ran', async () => {
   const a = baseArgs({ regrade: true });
   const [cell] = run.buildCells({ tasks: [1], arms: ['superpowers'], repeats: 1 });
