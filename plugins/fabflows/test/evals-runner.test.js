@@ -32,7 +32,7 @@ const after = (args, flag) => args[args.indexOf(flag) + 1];
 // A stand-in for child_process.spawn: records each call and ends the "session" with an event.
 // A call is recorded only once onCall returns, so a check that throws there (which the runner
 // would record as a launch error) leaves the call uncounted and fails the test's count.
-function standIn(end, onCall = () => {}) {
+function standIn(end, onCall = () => {}, stdout = '') {
   const calls = [];
   const spawnSession = (command, args, opts) => {
     onCall(opts);
@@ -41,7 +41,7 @@ function standIn(end, onCall = () => {}) {
     child.stdout = new PassThrough();
     child.stderr = new PassThrough();
     process.nextTick(() => {
-      child.stdout.end();
+      child.stdout.end(stdout);
       child.stderr.end();
       if (end === 'error') child.emit('error', Object.assign(new Error('spawn claude ENOENT'), { code: 'ENOENT' }));
       else child.emit('close', 0);
@@ -235,6 +235,28 @@ test('the superpowers arm resolves to the highest semver copy, and its version, 
   assert.notEqual(r.treeSha256, run.pluginRecord(path.join(cache, '6.9.0')).treeSha256);
   assert.equal(r.marketplacePin.sha, 'abc123');
   assert.match(r.marketplacePin.label, /at run time/);
+});
+
+test('a plugin arm\'s record lands in its cell\'s run.json, and summarize.js copies it into the cell\'s row', async () => {
+  const { home } = fakeCache();
+  const a = baseArgs({ tasks: [1], arms: ['superpowers'], repeats: 1, confirm: true });
+  const cells = run.buildCells(a);
+  const iterDir = path.join(a.runsDir, `iteration-${iteration}`);
+  run.stagePluginArms(a, run.pluginSources(a, cells, home), iterDir, home);
+  const record = a.pluginRecords.superpowers;
+  const { calls, spawnSession } = standIn('close', () => {}, fs.readFileSync(SAMPLE, 'utf8'));
+  const { failed } = await run.runAll(a, cells, spawnSession);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(failed, []);
+  assert.deepEqual(readJson(path.join(run.runDirFor(a, cells[0]), 'run.json')).plugin, record);
+  assert.deepEqual(Object.keys(record).sort(), ['marketplacePin', 'name', 'treeSha256', 'version']);
+  assert.equal(record.marketplacePin.sha, 'abc123');
+
+  const summary = spawnSync(process.execPath, [path.join(__dirname, '..', 'evals', 'harness', 'summarize.js'), iterDir], { encoding: 'utf8' });
+  assert.equal(summary.status, 0, summary.stderr);
+  const rows = readJson(path.join(iterDir, 'cells.json'));
+  assert.equal(rows.length, 1);
+  assert.deepEqual(rows[0].plugin, record);
 });
 
 test('a missing superpowers copy stops only a run that would launch the arm', () => {
