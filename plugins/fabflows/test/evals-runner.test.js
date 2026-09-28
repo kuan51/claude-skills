@@ -83,6 +83,16 @@ test('a successful regrade removes the cell\'s stale error.json', async () => {
   assert.equal(fs.existsSync(path.join(dir, 'error.json')), false);
 });
 
+test('a regrade creates nothing for a cell that never ran', async () => {
+  const a = baseArgs({ regrade: true });
+  const [cell] = run.buildCells({ tasks: [1], arms: ['superpowers'], repeats: 1 });
+  const { results, failed } = await run.runAll(a, [cell], () => assert.fail('a regrade never launches a session'));
+  assert.equal(results[0].skipped, 'no transcript');
+  assert.deepEqual(failed, []);
+  assert.equal(fs.existsSync(path.dirname(path.dirname(run.runDirFor(a, cell)))), false, 'no eval or run directory was made');
+  assert.deepEqual(run.takenRunDirs({ ...a, regrade: false }, [cell]), []);
+});
+
 test('the baseline matrix: 54 cells for tasks 1-6 at 3 repeats, 18 per arm, 6 for task 7 at 2, and the first arm rotates', () => {
   const cells = run.buildCells({ tasks: [1, 2, 3, 4, 5, 6], arms: null, repeats: 3 });
   assert.equal(cells.length, 54);

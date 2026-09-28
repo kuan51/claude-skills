@@ -563,15 +563,16 @@ function killTree(child) {
 function runCell(a, cell, settingsPath, spawnSession = spawn) {
   const runDir = runDirFor(a, cell);
   const fixture = fixtureDirFor(a, cell);
+  // A regrade skips a cell that never ran before writing anything, so it leaves no run directory
+  // that a later run would count as taken.
+  const transcript = path.join(runDir, 'transcript.jsonl');
+  if (a.regrade && !fs.existsSync(transcript)) return Promise.resolve({ cell, skipped: 'no transcript' });
   fs.mkdirSync(runDir, { recursive: true });
   const meta = { eval_id: cell.task.id, eval_name: cell.task.name, prompt: cell.task.prompt, routing: cell.task.routing, assertions: [] };
   writeJson(path.join(runDir, 'eval_metadata.json'), meta);
   writeJson(path.join(path.dirname(path.dirname(runDir)), 'eval_metadata.json'), meta);
 
-  if (a.regrade) {
-    if (!fs.existsSync(path.join(runDir, 'transcript.jsonl'))) return Promise.resolve({ cell, skipped: 'no transcript' });
-    return Promise.resolve({ cell, ...at('grade', () => measureAndGrade(a, cell, runDir, fixture)) });
-  }
+  if (a.regrade) return Promise.resolve({ cell, ...at('grade', () => measureAndGrade(a, cell, runDir, fixture)) });
 
   const args = at('args', () => claudeArgs(a, cell, runDir, settingsPath));
   // The guard appends, so the probe file starts empty.
