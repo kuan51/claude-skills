@@ -1,6 +1,8 @@
 # Lints and audits the documentation on every pull request: markdownlint,
-# docs-warden's audit (which also checks that generated documents are
-# current), then Vale on the changed files, as .pre-commit-config.yaml runs it.
+# the fabflows prompt security rules guard, docs-warden's audit (which also
+# checks that generated documents are current), then Vale on the changed
+# files, as .pre-commit-config.yaml runs it, then a self-test of the
+# vale-warn-gate script.
 name: docs
 
 # Also on push to master: a pull_request run does not re-run when master
@@ -42,6 +44,10 @@ jobs:
 
       - name: markdownlint
         run: npx --yes markdownlint-cli2@0.23.2
+      # Guards that fabflows prompts still state their security rules.
+      - name: fabflows prompt security rules
+        if: ${{ !cancelled() }}
+        run: node --test plugins/fabflows/test/required-rules.test.js
       # Before Vale is installed or synced, on purpose. With no vale on PATH,
       # audit's lint row skips its repo-wide Vale run (the step below lints
       # the changed files), and `vale sync` has not yet put untracked package
@@ -67,3 +73,8 @@ jobs:
           vale sync
           git diff -z --name-only --diff-filter=ACMR HEAD^1 HEAD -- '*.md' \
             | xargs -0 -r vale --minAlertLevel=warning
+      # Self-test for the vale-warn-gate script, using the vale binary the
+      # step above installed. No vale sync needed.
+      - name: vale-warn-gate self-test
+        if: ${{ !cancelled() }}
+        run: bash plugins/fabflows/evals/prose/test_vale_warn_gate.sh
