@@ -560,6 +560,15 @@ function killTree(child) {
   }
 }
 
+// The sessions still running. Each leads its own process group off Windows, so Ctrl-C at the
+// runner no longer reaches it: main ends each one's tree on SIGINT and SIGTERM.
+const live = new Set();
+function stopLive(signal) {
+  console.error(`\nharness: ${signal}, ending ${live.size} running session${live.size === 1 ? '' : 's'}`);
+  for (const child of live) killTree(child);
+  process.exit(1);
+}
+
 function runCell(a, cell, settingsPath, spawnSession = spawn) {
   const runDir = runDirFor(a, cell);
   const fixture = fixtureDirFor(a, cell);
@@ -599,6 +608,7 @@ function runCell(a, cell, settingsPath, spawnSession = spawn) {
     const settle = () => {
       if (settled) return false;
       settled = true;
+      live.delete(child);
       clearTimeout(killer);
       out.end();
       err.end();
@@ -615,6 +625,7 @@ function runCell(a, cell, settingsPath, spawnSession = spawn) {
       return;
     }
     child.on('error', failLaunch);
+    live.add(child);
     killer = setTimeout(() => {
       err.write(`\nharness: killed after ${caps.runTimeoutMinutes} minutes\n`);
       killTree(child);
@@ -718,6 +729,7 @@ async function main() {
   // Staged once per invocation, one copy per plugin arm, and not on --regrade: each copy records
   // what its arm's runs loaded.
   if (!a.regrade) stagePluginArms(a, sources, iterDir);
+  for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => stopLive(signal));
 
   const { failed, exitCode } = await runAll(a, cells);
   // The per-cell table comes from the run dirs.
