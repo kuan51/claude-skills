@@ -193,7 +193,8 @@ function writeManifest(dir, manifest) {
   fs.writeFileSync(path.join(dir, '.claude-plugin', 'plugin.json'), JSON.stringify(manifest));
 }
 
-test('the clean room turns off each synced plugin by its plugin.json name, once, and the settings-enabled ones', () => {
+test('the clean room turns off each synced plugin by its plugin.json name, once, and the settings-enabled ones', (t) => {
+  const warn = t.mock.method(console, 'warn', () => {});
   const home = tmp('home-');
   fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
   fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify({ enabledPlugins: { 'ciso@claude-skills': true } }));
@@ -206,6 +207,9 @@ test('the clean room turns off each synced plugin by its plugin.json name, once,
   assert.deepEqual(s.enabledPlugins, { 'ciso@claude-skills': false, 'data-analysis-review@synced': false, 'fabflows@synced': false });
   assert.equal('syncClaudeAiPlugins' in s, false);
   assert.equal(JSON.stringify(s).includes('syncClaudeAiPlugins'), false);
+  // The folder with no manifest would still load, so it is named once in a warning.
+  assert.equal(warn.mock.callCount(), 1);
+  assert.match(warn.mock.calls[0].arguments[0], /org-a\/no-manifest/);
 });
 
 function fakeCache() {

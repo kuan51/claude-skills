@@ -74,12 +74,14 @@ function cleanRoomSettings(home = os.homedir()) {
   const synced = path.join(home, '.claude', 'plugins', 'synced');
   for (const org of subdirs(synced)) {
     for (const d of subdirs(path.join(synced, org))) {
+      let name = null;
       try {
-        const { name } = JSON.parse(fs.readFileSync(path.join(synced, org, d, '.claude-plugin', 'plugin.json'), 'utf8'));
-        if (typeof name === 'string' && name) off[`${name}@synced`] = false;
+        ({ name } = JSON.parse(fs.readFileSync(path.join(synced, org, d, '.claude-plugin', 'plugin.json'), 'utf8')));
       } catch {
-        // No readable manifest: nothing names the plugin to disable.
+        // No readable manifest: nothing names the plugin to disable, warned below.
       }
+      if (typeof name === 'string' && name) off[`${name}@synced`] = false;
+      else console.warn(`clean room: synced plugin folder ${org}/${d} has no readable plugin.json name, so it cannot be turned off and may still load`);
     }
   }
   return { enabledPlugins: off, advisorModel: '' };
