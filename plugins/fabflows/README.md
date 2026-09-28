@@ -237,8 +237,9 @@ fabflows includes a benchmark (`evals/`) that runs a headless Fable lead on the 
 with and without the plugin and grades the result programmatically, never from what the lead
 said it did.
 
-The baseline against no skill and against superpowers is being measured in #123, and its
-results will be recorded in `evals/RESULTS.md`.
+The baseline against no skill and against superpowers is being measured in
+[#123](https://github.com/kuan51/claude-skills/issues/123), and its results will be recorded in
+`evals/RESULTS.md`.
 
 ## Long sessions
 

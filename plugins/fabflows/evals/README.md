@@ -25,6 +25,9 @@ arm) `--regrade` (re-measure and re-grade existing transcripts without new sessi
 name, so several configurations of one iteration sit side by side; see
 [Old against new](#old-against-new)).
 
+A run never writes into an existing run directory. The runner stops and names it, so delete the
+directory first or pass `--regrade`.
+
 Then summarise, aggregate and view. `summarize.js` prints the per-cell table and writes
 `cells.json`; the other two are skill-creator's, run with `<skill-creator>` set to that skill's
 directory; `annotate_benchmark.py` fixes the run count and model names the aggregator hardcodes
@@ -273,7 +276,9 @@ touches routing, and whenever a decision record wants a number instead of arithm
 - Both arms allow the `Workflow` tool. A bare lead has no reason to use it. Workflow agents
   cache prompts at the 5-minute rate where the lead uses the 1-hour rate, which shows up in
   `modelUsage` as cheaper cache writes for them.
-- Whether a guard *denial* inside a Workflow-tool agent is handled well is not measured.
+- The guard hook fires inside Workflow-tool agents. Whether a guard *denial* inside one is
+  handled well is not measured. That it fires was measured in the record before the reset,
+  which can be read at commit `dce556c`.
 - Per-message stream usage is the message-start snapshot: input-side fields are final, the
   output field is a placeholder. Output comes from the result's `usage` and `modelUsage` and
   from each Agent call's `subagent_tokens`, never from the stream.
@@ -296,6 +301,13 @@ touches routing, and whenever a decision record wants a number instead of arithm
 - The fixture's own `guard.test.js` drives `guard.js` with synthetic payloads while the task's
   test command runs, and they land in the `FABFLOWS_PROBE` file. `metrics.js` sets aside every
   payload without a `session_id`. Only hook-runner payloads are counted.
+
+## Prose tooling
+
+`prose/vale-warn-gate.sh <files>` prints every Vale warning or error in the given files and
+exits 1 when there is one, since Vale itself exits 0 on warnings. Its self-test is
+`bash plugins/fabflows/evals/prose/test_vale_warn_gate.sh` and needs no `vale sync`. CI runs the
+self-test.
 
 ## Trigger corpus
 

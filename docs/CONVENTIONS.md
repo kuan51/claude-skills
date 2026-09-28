@@ -81,7 +81,9 @@ Behavioral evals for a plugin's skills live in `plugins/<name>/evals/` in
 `evals/README.md` gives the command and its prerequisites. `docs-warden` has the
 one suite in that format (DEC-0022). `fabflows`'s benchmark predates it and keeps its
 own harness under `evals/harness/`. Its `brainstorming` evals are in
-`skills/brainstorming/evals/evals.json`, with their results reset in #122 and not yet re-measured. `ciso` and `data-analysis-review` have trigger-accuracy
+`skills/brainstorming/evals/evals.json`, with their results reset in
+[#122](https://github.com/kuan51/claude-skills/issues/122) and not yet re-measured. `ciso` and
+`data-analysis-review` have trigger-accuracy
 lists run by hand: `evals/trigger-corpus.json` (procedure in `evals/RUNBOOK.md`)
 and `skills/data-analysis-review/references/evals.md`. [EVALS.md](EVALS.md)
 compares each plugin with no skill wherever that has been measured, and points

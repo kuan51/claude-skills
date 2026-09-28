@@ -7,15 +7,16 @@ generated: false
 # Eval results
 
 Each row answers one question: does the plugin or skill do better than Claude with no plugin,
-and what does it cost? Every number is copied from the source line cited beside it. Those files
-keep the setup, every run and the caveats, and they win if this page disagrees with them.
+and what does it cost? Where a row has numbers, every one is copied from the source line cited
+beside it. Those files keep the setup, every run and the caveats, and they win if this page
+disagrees with them.
 
 | Plugin or skill | Useful compared with no skill? | Cost compared with no skill | Runs | Source |
 | --- | --- | --- | --- | --- |
-| fabflows, a spec'd build | Not yet measured on the new baseline (#123) | Not yet measured on the new baseline (#123) | none yet | `RESULTS.md` |
-| fabflows, reading 13 files | Not yet measured on the new baseline (#123) | Not yet measured on the new baseline (#123) | none yet | `RESULTS.md` |
-| fabflows, short tasks (a scoped edit, a small test file, a version bump) | Not yet measured on the new baseline (#123) | Not yet measured on the new baseline (#123) | none yet | `RESULTS.md` |
-| fabflows `brainstorming` | Not yet measured on the new baseline (#123) | Not yet measured on the new baseline (#123) | none yet | `RESULTS.md` |
+| fabflows, a spec'd build | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | none yet | `RESULTS.md` |
+| fabflows, reading 13 files | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | none yet | `RESULTS.md` |
+| fabflows, short tasks (a scoped edit, a small test file, a version bump) | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | none yet | `RESULTS.md` |
+| fabflows `brainstorming` | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | none yet | `plugins/fabflows/skills/brainstorming/evals/evals.json` (no results yet) |
 | docs-warden | Not measured | Not measured | none | see below |
 | ciso | Not measured | Not measured | none | see below |
 | data-analysis-review | Not measured | Not measured | none | see below |

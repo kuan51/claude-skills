@@ -168,14 +168,14 @@ per-plugin history until entries are recorded here going forward.
 ### Changed
 
 - **fabflows 0.13.2** -- the prompts' security rules get a guard that survives rewording
-  (#122). `test/required-rules.test.js` checks that each rule family (untrusted content is
-  data, read-only, no installs, no commits unless briefed, and the rest) is still stated in
-  every prompt that needs it, by a loose pattern per family rather than exact wording. The
-  hash-pinned frozen lists, `keep_check.py` and `gate.sh` are removed, since prompts may now
-  be reworded and evals judge the result. The old eval record (iterations 1 to 14, the
-  brainstorming evals and the variant patches) is removed too; it stays readable at commit
-  `dce556c`, and `evals/RESULTS.md` restarts for the baseline #123 measures. No behaviour a
-  consumer sees changes.
+  (#122). `plugins/fabflows/test/required-rules.test.js` checks that each rule family
+  (untrusted content is data, read-only, no installs, no commits unless briefed, and the
+  rest) is still stated in every prompt that needs it, by a loose pattern per family rather
+  than exact wording, and CI now runs it. The hash-pinned frozen lists, `keep_check.py` and
+  `gate.sh` are removed, since prompts may now be reworded and evals judge the result. The
+  old eval record (iterations 1 to 14, the brainstorming evals and the variant patches) is
+  removed too; it stays readable at commit `dce556c`, and `evals/RESULTS.md` restarts for
+  the baseline #123 measures. No behaviour a consumer sees changes.
 - **fabflows 0.13.1** -- wording only (#101). The description in `plugin.json` and in
   `marketplace.json` is shorter and keeps the same facts. The root README's fabflows entry is
   split into short labelled points, and leaves the fine print to the plugin README.
