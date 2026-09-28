@@ -114,19 +114,35 @@ test('every arm loads project settings only, and each plugin arm its own staged 
   assert.equal(after(args, '--plugin-dir'), staged);
 });
 
-test('every fixture kind gets an unresolvable origin, and every session an empty gh config', async () => {
+test('every fixture kind gets an unresolvable origin, and every session an empty gh config, no credentials and a clean git status', async (t) => {
   const a = baseArgs();
   const cells = [...run.buildCells({ tasks: [1], arms: ['without_skill'], repeats: 1 }), ...run.buildCells({ tasks: [7], arms: ['without_skill'], repeats: 1 })];
+  const saved = process.env.GH_TOKEN;
+  process.env.GH_TOKEN = 'dummy-token';
+  t.after(() => {
+    if (saved === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = saved;
+  });
   const seen = [];
   const { calls, spawnSession } = standIn('error', (opts) => {
     const origin = spawnSync('git', ['-C', opts.cwd, 'remote', 'get-url', 'origin'], { encoding: 'utf8' }).stdout.trim();
-    seen.push({ origin, gh: fs.readdirSync(opts.env.GH_CONFIG_DIR) });
+    // The session's own git: no system or global config, so line endings come from the fixture.
+    const status = spawnSync('git', ['-C', opts.cwd, 'status', '--porcelain'], { env: opts.env, encoding: 'utf8' });
+    const pinned = spawnSync('git', ['-C', opts.cwd, 'config', '--local', '--get', 'core.autocrlf'], { encoding: 'utf8' }).stdout.trim();
+    seen.push({ origin, gh: fs.readdirSync(opts.env.GH_CONFIG_DIR), env: opts.env, status: status.stdout + status.stderr, pinned });
   });
   await run.runAll(a, cells, spawnSession);
   assert.equal(calls.length, 2, 'both the repo and the dir fixture reached the session');
+  const preparing = spawnSync('git', ['config', '--get', 'core.autocrlf'], { cwd: TMP, encoding: 'utf8' }).stdout.trim();
+  const secrets = ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GIT_ASKPASS', 'SSH_ASKPASS'];
   for (const s of seen) {
     assert.ok(new URL(s.origin).hostname.endsWith('.invalid'), `${s.origin} is not under the reserved .invalid domain`);
     assert.deepEqual(s.gh, []);
+    assert.deepEqual(Object.keys(s.env).filter((k) => secrets.includes(k.toUpperCase())), []);
+    assert.deepEqual([s.env.GIT_CONFIG_NOSYSTEM, s.env.GIT_TERMINAL_PROMPT, s.env.GIT_SSH_COMMAND], ['1', '0', 'false']);
+    assert.equal(fs.readFileSync(s.env.GIT_CONFIG_GLOBAL, 'utf8'), '');
+    assert.equal(s.status, '', 'the session sees the prepared fixture unmodified');
+    assert.equal(s.pinned, preparing, 'the preparing git\'s core.autocrlf is pinned in the fixture');
   }
 });
 

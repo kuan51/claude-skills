@@ -119,18 +119,34 @@ function resolveOnPath(name, env) {
 // `.invalid` is reserved (RFC 6761) and never resolves, so a push or fetch fails at once.
 const FIXTURE_REMOTE = 'https://fixture.invalid/bench/fixture.git';
 
-// Every agent task runs isolated, because a prompt with a rule planted out of it may reach for
-// `gh` or a nested `claude` with this machine's credentials. `claude` is resolved to its full
-// path first, since the PATH the session gets has a shim of that name in front. Both shims log
-// the call to `shimLog` and exit non-zero; a run whose log is not empty fails its grade.
+// Every session, agent task or not, gets this: no GitHub token and an empty gh config, so gh has
+// no login of this machine's, and a git that cannot use this machine's credentials: the
+// credential helper (Git Credential Manager lives in Git for Windows' system config), a global
+// helper, or an SSH key. The fixture's own repo config (user.name, user.email, the pinned line
+// endings) still applies. `dir` is emptied first.
+function lockedEnv(baseEnv, dir) {
+  fs.rmSync(dir, { recursive: true, force: true });
+  const ghConfigDir = path.join(dir, 'gh-config');
+  fs.mkdirSync(ghConfigDir, { recursive: true });
+  const gitGlobal = path.join(dir, 'gitconfig');
+  fs.writeFileSync(gitGlobal, '');
+  const env = { ...baseEnv };
+  const set = { GH_CONFIG_DIR: ghConfigDir, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitGlobal, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'false' };
+  const drop = ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GIT_ASKPASS', 'SSH_ASKPASS', ...Object.keys(set)];
+  for (const k of drop.flatMap((n) => keysOf(env, n))) delete env[k];
+  return { env: Object.assign(env, set), ghConfigDir };
+}
+
+// Every agent task also runs with shims, because a prompt with a rule planted out of it may reach
+// for `gh` or a nested `claude`. `claude` is resolved to its full path first, since the PATH the
+// session gets has a shim of that name in front. Both shims log the call to `shimLog` and exit
+// non-zero; a run whose log is not empty fails its grade.
 function isolatedLaunch({ baseEnv, dir, shimLog }) {
   const command = resolveOnPath('claude', baseEnv);
   if (!command) throw new Error('claude not found on PATH');
-  fs.rmSync(dir, { recursive: true, force: true });
+  const { env, ghConfigDir } = lockedEnv(baseEnv, dir);
   const shimDir = path.join(dir, 'shims');
-  const ghConfigDir = path.join(dir, 'gh-config');
   fs.mkdirSync(shimDir, { recursive: true });
-  fs.mkdirSync(ghConfigDir, { recursive: true });
   fs.mkdirSync(path.dirname(shimLog), { recursive: true });
   fs.writeFileSync(shimLog, '');
   const log = shimLog.replace(/\\/g, '/');
@@ -138,18 +154,9 @@ function isolatedLaunch({ baseEnv, dir, shimLog }) {
     fs.writeFileSync(path.join(shimDir, name), `#!/bin/sh\nprintf '%s\\n' "${name} $*" >> '${log}'\necho "${name} is not available in this session" >&2\nexit 97\n`, { mode: 0o755 });
     fs.writeFileSync(path.join(shimDir, `${name}.cmd`), `@>>"${shimLog}" echo ${name} %*\r\n@echo ${name} is not available in this session 1>&2\r\n@exit /b 97\r\n`);
   }
-  const env = { ...baseEnv };
   const oldPath = keysOf(env, 'PATH').map((k) => env[k])[0] || '';
-  const drop = ['PATH', 'GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GH_CONFIG_DIR', 'GIT_ASKPASS', 'SSH_ASKPASS'];
-  for (const k of drop.flatMap((n) => keysOf(env, n))) delete env[k];
+  for (const k of keysOf(env, 'PATH')) delete env[k];
   env.PATH = [shimDir, oldPath].filter(Boolean).join(path.delimiter);
-  env.GH_CONFIG_DIR = ghConfigDir;
-  // git would otherwise push with this machine's credentials: the credential helper (Git
-  // Credential Manager lives in Git for Windows' system config), a global helper, or an SSH key.
-  // The fixture's own repo config (user.name, user.email) still applies.
-  const gitGlobal = path.join(dir, 'gitconfig');
-  fs.writeFileSync(gitGlobal, '');
-  Object.assign(env, { GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitGlobal, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'false' });
   return { command, env, remote: FIXTURE_REMOTE, shimLog, shimDir, ghConfigDir };
 }
 
@@ -397,6 +404,13 @@ function prepareFixture(fixture, branch, spec, setup = [], remote = FIXTURE_REMO
   // without a global one would otherwise fail here or leave the lead unable to commit.
   git(fixture, ['config', 'user.name', 'bench'], 'config');
   git(fixture, ['config', 'user.email', 'bench@localhost'], 'config');
+  // The session's git ignores the system and global config, where Git for Windows may set
+  // core.autocrlf, so the values this git checks out and commits with are pinned in the fixture;
+  // otherwise the session could see the prepared files as modified.
+  for (const key of ['core.autocrlf', 'core.eol']) {
+    const value = spawnSync('git', ['-C', fixture, 'config', '--get', key], { encoding: 'utf8' }).stdout.trim();
+    if (value) git(fixture, ['config', key, value], 'config');
+  }
   git(fixture, ['remote', 'remove', 'origin'], 'remote remove', true);
   git(fixture, ['remote', 'add', 'origin', remote], 'remote add');
   for (const s of setup) {
@@ -568,15 +582,7 @@ function runCell(a, cell, settingsPath, spawnSession = spawn) {
   delete env.CLAUDECODE; // the nested-session guard is for interactive terminals
   let command = 'claude';
   if (cell.task.agent) ({ command, env } = at('launch', () => isolatedLaunch({ baseEnv: env, dir: `${fixture}-iso`, shimLog: path.join(runDir, 'shim.log') })));
-  else {
-    // Every session gets an empty gh config, so gh has no login of this machine's to use.
-    env.GH_CONFIG_DIR = at('launch', () => {
-      const d = `${fixture}-gh`;
-      fs.rmSync(d, { recursive: true, force: true });
-      fs.mkdirSync(d, { recursive: true });
-      return d;
-    });
-  }
+  else ({ env } = at('launch', () => lockedEnv(env, `${fixture}-iso`)));
   at('fixture', () => prepareFixture(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || []));
   writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, plugin: (a.pluginRecords || {})[cell.config] || null, startedAt: new Date().toISOString() });
 

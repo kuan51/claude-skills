@@ -89,8 +89,9 @@ Every arm loads project settings only (`--setting-sources project`), so the main
 with_skill arm and mislead the others, and results would depend on whose machine ran them.
 
 Every session also gets an empty `gh` config directory (`GH_CONFIG_DIR`) and a fixture whose
-`origin` cannot resolve, so nothing a session does reaches a real repository or GitHub. The
-agent tasks get the fuller [isolation](#isolation) on top.
+`origin` cannot resolve, so nothing a session does reaches a real repository or GitHub. Every
+session also drops the GitHub tokens and gets a git locked out of this machine's credentials,
+as listed under [isolation](#isolation); the agent tasks get the `gh` and `claude` shims on top.
 
 Confounds that remain, shared by every arm: plugins the organization requires still load, and
 so may user-level agents or skills that project-only settings do not turn off. The smoke run
@@ -207,22 +208,27 @@ Each agent task sets its own `allowedTools`, `caps` (turn cap, budget, time) and
 ### Isolation
 
 A prompt with a rule planted out of it could run `gh` against the real repository with this
-machine's credentials, so every agent task runs isolated (`isolatedLaunch` in `harness/run.js`):
+machine's credentials, so every session is locked out of them (`lockedEnv` in `harness/run.js`):
+
+- `GH_TOKEN`, `GITHUB_TOKEN`, their enterprise forms, `GIT_ASKPASS` and `SSH_ASKPASS` are
+  unset, and `GH_CONFIG_DIR` points at an empty temporary directory.
+- git ignores the system and global config (`GIT_CONFIG_NOSYSTEM`, an empty
+  `GIT_CONFIG_GLOBAL`), which drops any credential helper, and it cannot prompt or use SSH
+  (`GIT_TERMINAL_PROMPT=0`, `GIT_SSH_COMMAND=false`). The `core.autocrlf` and `core.eol` the
+  harness prepared the fixture with are pinned in the fixture's own config, so the session sees
+  a clean `git status`.
+- The fixture's `origin` is `https://fixture.invalid/...`, a host that cannot resolve.
+
+Every agent task also runs with shims (`isolatedLaunch`):
 
 - The harness resolves `claude` to its full path first (on Windows only a `.com` or `.exe`,
   which `spawn` can run) and launches it by that path.
-- `GH_TOKEN`, `GITHUB_TOKEN` and their enterprise forms are unset, and `GH_CONFIG_DIR` points
-  at an empty temporary directory.
-- git ignores the system and global config (`GIT_CONFIG_NOSYSTEM`, an empty
-  `GIT_CONFIG_GLOBAL`), which drops any credential helper, and it cannot prompt or use SSH
-  (`GIT_TERMINAL_PROMPT=0`, `GIT_SSH_COMMAND=false`).
 - `gh` and `claude` on PATH are shims, first on PATH, that log the call to the run's
   `shim.log` and exit non-zero.
-- The fixture's `origin` is `https://fixture.invalid/...`, a host that cannot resolve.
 
 The grade adds an assertion that no call reached the gh or claude shim. It fails when
 `shim.log` is not empty or missing. `test/evals-agents.test.js` proves each of these on the function that builds the
-environment.
+environment, and `test/evals-runner.test.js` proves the lockout on a session that is not an agent task.
 
 ### Old against new
 
