@@ -266,3 +266,125 @@ test('grade reads the two halves of the review question from the workflow journa
   assert.equal(accept['The review named the planted defect'], false);
   assert.equal(accept['The build round shipped the planted defect'], false);
 });
+
+test('metrics record the cache-write split, each Skill load, SessionStart hook text and where each init plugin came from', () => {
+  const events = parseTranscript(fs.readFileSync(path.join(__dirname, 'fixtures', 'transcript-cache-split.jsonl'), 'utf8'));
+  const m = computeMetrics(events);
+  assert.equal(m.lead.cacheWrite1h, 4000);
+  assert.equal(m.lead.cacheWrite5m, 1000 + 300);
+  const w = m.workers['fabflows:explorer'];
+  assert.equal(w.cacheWrite1h, 0);
+  assert.equal(w.cacheWrite5m, 2000);
+  assert.equal(m.workersByModel['claude-haiku-4-5-20251001'].cacheWrite5m, 2000, 'each worker model carries its split');
+  const body = 'Base directory for this skill: /x\n\nAsk one question at a time.';
+  assert.deepEqual(m.skillLoads, [{ name: 'superpowers:brainstorming', chars: body.length }], "the skill's text is the synthetic message after its tool_result");
+  assert.equal(m.hookChars, 'You have superpowers.'.length + 'plain text'.length, 'additionalContext when stdout is hook JSON, else stdout; other events not counted');
+  assert.deepEqual(m.initPlugins, [
+    { name: 'fabflows', source: 'staged' },
+    { name: 'data-analysis-review', source: 'synced' },
+    { name: 'core', source: 'builtin' },
+    { name: 'mine', source: 'other' },
+  ]);
+});
+
+// One cell's files, as the runner leaves them. cost undefined means a result with no cost.
+function writeCell(iterDir, evalDir, arm, run, { cost, synced = [] } = {}) {
+  const dir = path.join(iterDir, evalDir, arm, run);
+  fs.mkdirSync(dir, { recursive: true });
+  const lead = { output: 10, thinking: 0, messages: 1, cacheRead: 0, cacheWrite: 30, cacheWrite1h: 20, cacheWrite5m: 10, finalContext: 0, verificationRuns: 0, toolCalls: {} };
+  const metrics = {
+    result: { permission_denials: [], num_turns: 1, duration_ms: 1000, total_cost_usd: cost },
+    lead, workers: { 'fabflows:explorer': { spawns: 2, cacheWrite1h: 5, cacheWrite5m: 0 } }, workersByModel: {}, hooks: {},
+    skillLoads: [{ name: 's', chars: 100 }], hookChars: 7,
+    initPlugins: synced.map((name) => ({ name, source: 'synced' })),
+  };
+  fs.writeFileSync(path.join(dir, 'metrics.json'), JSON.stringify(metrics));
+  fs.writeFileSync(path.join(dir, 'grading.json'), JSON.stringify({ expectations: [{ text: 'a', passed: true }] }));
+  fs.writeFileSync(path.join(dir, 'transcript.jsonl'), '');
+}
+
+test('summarize.js compares three arms by cost, counts synced plugins without writing their names, and names cells it leaves out', (t) => {
+  const os = require('node:os');
+  const iterDir = fs.mkdtempSync(path.join(os.tmpdir(), 'summarize-'));
+  t.after(() => fs.rmSync(iterDir, { recursive: true, force: true }));
+  const e1 = 'eval-1-wide-search';
+  const e2 = 'eval-2-scoped-edit';
+  writeCell(iterDir, e1, 'with_skill', 'run-1', { cost: 1.5 });
+  writeCell(iterDir, e1, 'without_skill', 'run-1', { cost: 1.0 });
+  fs.mkdirSync(path.join(iterDir, e1, 'without_skill', 'run-2'), { recursive: true }); // failed: no metrics.json
+  writeCell(iterDir, e1, 'superpowers', 'run-1', { cost: 1.2, synced: ['secret-org-plugin'] });
+  writeCell(iterDir, e1, 'superpowers', 'run-2', {}); // no total_cost_usd
+  writeCell(iterDir, e2, 'with_skill', 'run-1', { cost: 2.0 });
+  writeCell(iterDir, e2, 'without_skill', 'run-1', { cost: 1.0 });
+
+  const r = spawnSync(process.execPath, [path.join(EVALS, 'harness', 'summarize.js'), iterDir], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  const out = r.stdout;
+  assert.doesNotMatch(out, /NaN/);
+  assert.match(out, /mean cost, with_skill against without_skill:\s+wide-search: \+\$0\.50 \(\+50%\)\s+scoped-edit: \+\$1\.00 \(\+100%\)\s+overall \(2 shared tasks\): \+\$0\.75 \(\+75%\)/);
+  assert.match(out, /mean cost, superpowers against without_skill:\s+wide-search: \+\$0\.20 \(\+20%\)\s+overall \(1 shared tasks\): \+\$0\.20 \(\+20%\)/, 'the overall figure covers only tasks both arms ran');
+  assert.match(out, /mean cost, with_skill against superpowers:\s+wide-search: \+\$0\.30 \(\+25%\)/);
+  assert.match(out, /left out of the means:\s+wide-search\/superpowers\/run-2 \(no total_cost_usd\)\s+wide-search\/without_skill\/run-2 \(no metrics\.json\)/);
+  assert.match(out, /wide-search\/superpowers\/run-1: secret-org-plugin/, 'synced names are printed');
+
+  const text = fs.readFileSync(path.join(iterDir, 'cells.json'), 'utf8');
+  assert.doesNotMatch(text, /secret-org-plugin/, 'and never written to cells.json');
+  const rows = JSON.parse(text);
+  assert.equal(rows.length, 6);
+  const sp = rows.find((x) => x.arm === 'superpowers' && x.run === 'run-1');
+  assert.equal(sp.synced_plugin_count, 1);
+  assert.equal(rows.find((x) => x.arm === 'superpowers' && x.run === 'run-2').cost, null);
+  assert.deepEqual(
+    { w1h: sp.cache_write_1h, w5m: sp.cache_write_5m, skill: sp.skill_chars, hook: sp.hook_chars, spawns: sp.spawns, plugin: sp.plugin },
+    { w1h: 25, w5m: 10, skill: 100, hook: 7, spawns: 2, plugin: null },
+  );
+});
+
+test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus without_skill, and adds dollars and true run counts', (t) => {
+  const py = spawnSync('python', ['--version'], { encoding: 'utf8' });
+  if (py.error || py.status !== 0) {
+    t.skip('python is not on PATH');
+    return;
+  }
+  const os = require('node:os');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'annotate-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const creator = path.join(root, 'skill-creator');
+  fs.mkdirSync(path.join(creator, 'scripts'), { recursive: true });
+  fs.writeFileSync(path.join(creator, 'scripts', 'aggregate_benchmark.py'), 'def generate_markdown(b):\n    return "configs: " + ",".join(b["run_summary"])\n');
+  const iterDir = path.join(root, 'iteration-1');
+  const cost = (evalDir, arm, run, c) => {
+    const dir = path.join(iterDir, evalDir, arm, run);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'metrics.json'), JSON.stringify({ lead: { model: 'claude-fable-5-1' }, result: { total_cost_usd: c } }));
+  };
+  cost('eval-1-a', 'with_skill', 'run-1', 1.5);
+  cost('eval-1-a', 'with_skill', 'run-2', 2.5);
+  cost('eval-2-b', 'with_skill', 'run-1', 2.0);
+  cost('eval-1-a', 'without_skill', 'run-1', 1.0);
+  cost('eval-2-b', 'without_skill', 'run-1', 1.0);
+  cost('eval-1-a', 'superpowers', 'run-1', 1.2);
+  const s = (pr, sec, tok) => ({ pass_rate: { mean: pr }, time_seconds: { mean: sec }, tokens: { mean: tok } });
+  // The aggregator's shape: configurations sorted by name, the delta taken from the first two.
+  fs.writeFileSync(path.join(iterDir, 'benchmark.json'), JSON.stringify({
+    metadata: { runs_per_configuration: 3 },
+    run_summary: { superpowers: s(0.5, 10, 100), with_skill: s(0.9, 30, 300), without_skill: s(0.6, 20, 200), delta: { pass_rate: '-0.40', time_seconds: '-20.0', tokens: '-200' } },
+    notes: [],
+  }));
+
+  const r = spawnSync('python', [path.join(EVALS, 'harness', 'annotate_benchmark.py'), iterDir, creator], { encoding: 'utf8', env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' } });
+  assert.equal(r.status, 0, r.stderr);
+  const b = JSON.parse(fs.readFileSync(path.join(iterDir, 'benchmark.json'), 'utf8'));
+  assert.deepEqual(Object.keys(b.run_summary), ['with_skill', 'without_skill', 'superpowers', 'delta']);
+  assert.deepEqual(b.run_summary.delta, { pass_rate: '+0.30', time_seconds: '+10.0', tokens: '+100', cost_usd: '+1.00' });
+  assert.deepEqual(b.run_summary.with_skill.cost_usd, { mean: 2, stddev: 0.5, min: 1.5, max: 2.5 });
+  assert.deepEqual(b.run_summary.without_skill.cost_usd, { mean: 1, stddev: 0, min: 1, max: 1 });
+  assert.deepEqual(b.run_summary.superpowers.cost_usd, { mean: 1.2, stddev: 0, min: 1.2, max: 1.2 });
+  assert.deepEqual(b.notes, [
+    'Cost: with_skill mean $2.00 per run, $+1.00 (+100%) against without_skill',
+    'Cost: without_skill mean $1.00 per run',
+    'Cost: superpowers mean $1.20 per run, $+0.20 (+20%) against without_skill',
+  ]);
+  assert.equal(b.metadata.runs_per_configuration, 'with_skill 3, without_skill 2, superpowers 1');
+  assert.equal(fs.readFileSync(path.join(iterDir, 'benchmark.md'), 'utf8').trimEnd(), 'configs: with_skill,without_skill,superpowers,delta');
+});

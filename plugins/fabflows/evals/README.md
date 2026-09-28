@@ -35,10 +35,24 @@ and exits non-zero. A successful `--regrade` of the cell deletes its `error.json
 that runs past its time cap is killed with its whole process tree (`taskkill /T /F` on
 Windows).
 
-Then summarise, aggregate and view. `summarize.js` prints the per-cell table and writes
-`cells.json`; the other two are skill-creator's, run with `<skill-creator>` set to that skill's
-directory; `annotate_benchmark.py` fixes the run count and model names the aggregator hardcodes
-and attaches analyst notes:
+Then summarise, aggregate and view. `summarize.js` writes `cells.json` and prints, per task
+and arm, the mean of each column plus the min-max of cost. After the table it prints each
+arm's mean cost against without_skill, as a dollar and a percentage difference, per task and overall, and the
+same for with_skill against superpowers. The overall figure pools the cells of the tasks where
+both arms have cells. A cell with no `metrics.json`, or no `total_cost_usd`, is left out of the
+means and named. Each `cells.json` row also carries `cache_write_1h` and `cache_write_5m`
+(lead and workers), `skill_chars`, `hook_chars`, `spawns` (the total), `plugin` and
+`synced_plugin_count`. The names of synced plugins are printed, never written to
+`cells.json`: an organization's plugin names may be private.
+
+The other two are skill-creator's, run with `<skill-creator>` set to that skill's directory.
+The aggregator sorts configurations by name and takes the first two as its delta, which with
+three arms gives superpowers minus with_skill. `annotate_benchmark.py` puts with_skill and
+without_skill first and sets the delta to with_skill minus without_skill. It adds cost stats
+(mean, stddev, min, max of `total_cost_usd`) to each configuration's summary, and one note per
+configuration with its mean cost and its difference from without_skill: the viewer's Benchmark
+tab shows the notes list but not the cost stats. It also counts each configuration's own runs
+and fixes the model names the aggregator hardcodes, and attaches analyst notes:
 
 ```bash
 node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-<n>
@@ -126,8 +140,18 @@ several events that repeat its usage) and reports:
 
 - **lead**: model, messages, uncached input, cache writes, cache reads, output, thinking,
   final context size, tool calls, and how many times it re-ran the task's test command after
-  spawning a worker (the verification gate).
-- **workers**: the same per `subagent_type`, plus spawn count.
+  spawning a worker (the verification gate). Cache writes are also split by lifetime,
+  `cacheWrite1h` and `cacheWrite5m`, summed per message from `usage.cache_creation`.
+- **workers**: the same per `subagent_type`, plus spawn count. `workersByModel` carries each
+  worker model's `cacheWrite1h` and `cacheWrite5m` too.
+- **skillLoads**: one entry per Skill call, with the skill's name and the length in characters
+  of its text. The tool result is only `Launching skill: <name>`; the text is the next
+  synthetic user message, which starts `Base directory for this skill`.
+- **hookChars**: the characters SessionStart hooks inject, from `system/hook_response` events:
+  `hookSpecificOutput.additionalContext` when the hook prints that JSON, else its `stdout`.
+  This is how superpowers loads `using-superpowers`.
+- **initPlugins**: each plugin the init event lists, with its name and its source: `staged`
+  (the run's `plugin-<config>` copy), `synced`, `builtin` or `other`.
 - **byModel** and **totals**, alongside the result's own `modelUsage` and `total_cost_usd`.
 - **workflows**: every Workflow-tool run the lead launched (`fabflows:build` is one), with each
   agent's label, type, model and exact usage. Workflow agents emit no stream events: they show

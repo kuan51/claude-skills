@@ -131,6 +131,7 @@ never by editing this file.
 | slugify | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_new.py:23` |
 | source_files | function | `plugins/docs-warden/skills/ontological-documentation/scripts/extract_concepts.py:314` |
 | split | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_compact.py:95` |
+| stats | function | `plugins/fabflows/evals/harness/annotate_benchmark.py:42` |
 | strip_code | function | `plugins/docs-warden/skills/docs-warden/scripts/_common.py:333` |
 | test_REQ_FIX_001_rejects_empty_snapshot | function | `plugins/docs-warden/test/fixtures/repo-regulated/tests/test_pressure.py:13` |
 | test_REQ_FIX_003_rounds_to_one_decimal | function | `plugins/docs-warden/test/fixtures/repo-regulated/tests/test_pressure.py:18` |
