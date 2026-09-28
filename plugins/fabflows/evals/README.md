@@ -107,9 +107,10 @@ Every session also gets an empty `gh` config directory (`GH_CONFIG_DIR`) and a f
 session also drops the GitHub tokens and gets a git locked out of this machine's credentials,
 as listed under [isolation](#isolation); the agent tasks get the `gh` and `claude` shims on top.
 
-Confounds that remain, shared by every arm: plugins the organization requires still load, and
-so may user-level agents or skills that project-only settings do not turn off. The smoke run
-before a baseline records which ones load.
+Confounds that remain, shared by every arm: plugins the organization requires still load. In
+the smoke run before iteration 1, project-only settings also kept out every user-level agent
+and skill: each arm listed only Claude Code's built-in ones plus its own plugin's. The smoke
+run before each baseline checks both again.
 
 Every run sets `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` (recorded in `run.json`), so
 runs do not have the 600 s ceiling on waiting for background work in print mode.
