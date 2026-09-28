@@ -30,11 +30,13 @@ const readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const after = (args, flag) => args[args.indexOf(flag) + 1];
 
 // A stand-in for child_process.spawn: records each call and ends the "session" with an event.
+// A call is recorded only once onCall returns, so a check that throws there (which the runner
+// would record as a launch error) leaves the call uncounted and fails the test's count.
 function standIn(end, onCall = () => {}) {
   const calls = [];
   const spawnSession = (command, args, opts) => {
-    calls.push({ command, args, opts });
     onCall(opts);
+    calls.push({ command, args, opts });
     const child = new EventEmitter();
     child.stdout = new PassThrough();
     child.stderr = new PassThrough();
