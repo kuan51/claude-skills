@@ -203,6 +203,7 @@ test('the clean room turns off each synced plugin by its plugin.json name, once,
   writeManifest(path.join(synced, 'org-b', 'data-analysis-review'), { name: 'data-analysis-review' });
   writeManifest(path.join(synced, 'org-a', 'fabflows'), { name: 'fabflows' });
   fs.mkdirSync(path.join(synced, 'org-a', 'no-manifest'), { recursive: true });
+  fs.mkdirSync(path.join(synced, 'org-a', '.staging'), { recursive: true });
   const s = run.cleanRoomSettings(home);
   assert.deepEqual(s.enabledPlugins, { 'ciso@claude-skills': false, 'data-analysis-review@synced': false, 'fabflows@synced': false });
   assert.equal('syncClaudeAiPlugins' in s, false);

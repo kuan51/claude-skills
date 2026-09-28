@@ -46,9 +46,10 @@ function parseArgs(argv) {
   };
 }
 
+// Dot folders are Claude Code's own (a synced org's .staging), never a plugin.
 const subdirs = (d) => {
   try {
-    return fs.readdirSync(d, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
+    return fs.readdirSync(d, { withFileTypes: true }).filter((e) => e.isDirectory() && !e.name.startsWith('.')).map((e) => e.name);
   } catch {
     return [];
   }
