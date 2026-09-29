@@ -77,8 +77,10 @@ measured quality gain on any task.
 
 This table splits with_skill minus without_skill, in dollars per run. The figures come from
 bookkeeping on each lead request's cache write and cache read in `transcript.jsonl`, at the
-rates above. Thinking text is redacted, so deliberation and narration split lead output by
-character share. Those two columns are estimates.
+rates above. Thinking text is redacted, so deliberation splits lead output by character share
+and is an estimate. Narration could be separated from the residual only on short-chain and
+triage-failures, and verification on build-component not at all. That part of the attribution
+#123 asked for is missing.
 
 | Task | Gap | Start-up¹ | Deliberation | Workers, net of reading saved | Verification | Narration | Other / residual |
 |---|---|---|---|---|---|---|---|
@@ -102,7 +104,8 @@ What this shows:
   On tasks costing about $0.33 without the plugin, it adds 44-49% on its own.
 - **Writing context costs more than re-reading it.** A 1-hour cache write costs 80 times a cache
   read. Writing the skill text costs about $0.085 once. Re-reading it on later turns costs
-  $0.002-$0.006. Cache writes are 70-75% of lead cost in every arm. Only 11,796 tokens of the
+  $0.002-$0.006. Cache writes are 70-84% of a run's lead cost on tasks 1-6 in every arm, and 34-71% on
+  build-component. Only 11,796 tokens of the
   first request hit a cache shared across runs, probably because each run's working directory
   enters the system prompt (inferred).
 - **Tasks 1-4 had no workers.** No run delegated, and `verification_runs` was 0. The lead said it
@@ -137,7 +140,7 @@ What this shows:
 - **build-component** (inferred). The +$0.350 splits into about $0.24 for the `brainstorming` and
   `test-driven-development` text (26,923 chars, about 9.9k tokens), about $0.053 for the
   start-up, $0.021 for extra output, and $0.036 unexplained. superpowers did not stall headless.
-  Both runs loaded brainstorming, then TDD, wrote failing tests first and passed 50/50. Run-2 said
+  Both runs loaded brainstorming, then TDD, wrote failing tests first and passed all 41 hidden tests. Run-2 said
   `SPEC.md` itself met brainstorming's approval gates. `AskUserQuestion` was not among the tools.
 - **fabflows against superpowers.** On tasks 1-6 most of the gap is the start-up asymmetry.
   fabflows pays about $0.09 more for its Skill text, plus 2 extra requests. On triage, fabflows'
@@ -160,7 +163,7 @@ What this shows:
 - **Task 7, a difference the grader cannot see.** The fabflows reviewer caught one defect. Ranges
   were split on any whitespace, but `SPEC.md` says comparators are separated by spaces. All four
   non-fabflows runs have the same `split(/\s+/)`, and both final fabflows builds use
-  `split(/ +/)`. The hidden suite has no tab or newline case, so every arm scores 50/50. The
+  `split(/ +/)`. The hidden suite has no tab or newline case, so every arm passes all 41 hidden tests. The
   fixture's own reference also uses `\s+`, so this is a strict reading of the spec. The hidden
   differences also cut the other way. All four non-fabflows leads ran `chmod +x bin/lockstep.js`,
   and with_skill run-1 did not.
@@ -192,7 +195,7 @@ The gaps these runs show:
 
 - **The stop rule holds for three agents and fails for three.** All six agent files say "If any of
   the four is missing, say which one and stop." Explorer, researcher and test-runner neither
-  named the missing part nor stopped in any run. Both Haiku agents failed, and so did both runs
+  named the missing part nor stopped in any run. Both Haiku agents failed, and so did all four runs
   where "tools and paths" was missing. Test-runner run-2 did write that the brief "had no
   separate 'tools and paths' section", which the naming regex misses. It still went on with 4
   tool calls.
@@ -217,7 +220,7 @@ The first attempt at task 7 hit the account's usage limit. Repeat 2 of every arm
 mid-run on "You've hit your session limit", after $0.92 to $2.54 each. Those runs said nothing
 about the arms, so all six task 7 runs were deleted and the task was run again. Only the re-run
 is in `runs/iteration-1/eval-7-build-component/`, with run-1 and run-2 in each arm. All six
-re-run cells passed 50/50, and no transcript in the iteration shows a usage-limit message. With
+re-run cells passed every check, including all 41 hidden tests, and no transcript in the iteration shows a usage-limit message. With
 n=2, no ranking of the task 7 arms is robust.
 
 ### Confounds
