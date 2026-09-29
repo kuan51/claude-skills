@@ -251,6 +251,10 @@ confounds. Iteration 2 ([#133](https://github.com/kuan51/claude-skills/issues/13
 recovery table and four long-session habits out of the skill's start-up text, into
 `skills/fabflows/references/recovery.md`. A run now writes about 470 fewer tokens at start-up,
 about $0.009, and every run still passed.
+Iteration 3 ([#120](https://github.com/kuan51/claude-skills/issues/120)) measured clearer stop,
+quote and empty-item rules in the six agent files. The Opus and Sonnet agents then stopped on
+every brief with a missing part, and the two Haiku agents in 2 of 6. The rules were not adopted,
+and [#140](https://github.com/kuan51/claude-skills/issues/140) follows up.
 
 ## Long sessions
 
