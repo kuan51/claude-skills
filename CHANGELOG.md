@@ -169,7 +169,7 @@ per-plugin history until entries are recorded here going forward.
 
 - **fabflows 0.13.9** -- the benchmark grader no longer fails correct work in the forms iteration 1
   produced (#132). The report-order check counts return items named together in one line's
-  label, and accepts the investigator's "Files involved" and the test-runner's "Command". The
+  label, and accepts the investigator's "Files involved" and the test-runner's "Command" headings. The
   missing-part check accepts `no separate <part> section`. Task 2 drops its literal `pipx` check
   on `guard.js` and keeps the guard's behaviour checks. Iteration 1 is regraded in place with no
   new sessions: 7 runs change, superpowers' scoped-edit quality becomes 1, and the agent tasks
