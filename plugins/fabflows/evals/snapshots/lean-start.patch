@@ -1,7 +1,16 @@
 diff --git a/plugins/fabflows/skills/fabflows/SKILL.md b/plugins/fabflows/skills/fabflows/SKILL.md
-index e9de610..b9f0f3f 100644
+index e9de610..8334f0b 100644
 --- a/plugins/fabflows/skills/fabflows/SKILL.md
 +++ b/plugins/fabflows/skills/fabflows/SKILL.md
+@@ -97,7 +97,7 @@ Trusting the report is how this pattern fails. Before accepting a worker's resul
+ | `fabflows:investigator` | Run the reproduction command yourself, output capped, and confirm the failure it reports. |
+ 
+ Anything you cannot confirm is `UNVERIFIABLE`, not done: say so. Surface a permission denial
+-to the user. Never re-issue the denied call yourself. A worker's report of scope creep is
++to the user with the exact call. Never re-issue the denied call yourself. A worker's report of scope creep is
+ your decision, not its.
+ 
+ Narrate delegation in-session: what you are handing off and why before the spawn, what you
 @@ -141,22 +141,11 @@ containment on a worker is its tool allowlist. Rules and known gaps: the plugin
  
  ## Long sessions
