@@ -188,6 +188,31 @@ test('every fixture kind gets an unresolvable origin, and every session an empty
   }
 });
 
+test('a session does not inherit the launching session\'s variables, keeps its login, and run.json lists the removed names without values', async (t) => {
+  const a = baseArgs();
+  const cells = run.buildCells({ tasks: [1], arms: ['without_skill'], repeats: 1 });
+  const fake = { CLAUDECODE: 'fake-1', CLAUDE_CODE_SESSION_ID: 'fake-session', CLAUDE_CODE_OAUTH_TOKEN: 'fake-oauth' };
+  const saved = Object.fromEntries(Object.keys(fake).map((k) => [k, process.env[k]]));
+  Object.assign(process.env, fake);
+  t.after(() => {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+  const seen = [];
+  const { spawnSession } = standIn('error', (opts) => seen.push(opts.env));
+  await run.runAll(a, cells, spawnSession);
+  assert.equal(seen.length, 1);
+  assert.deepEqual(Object.keys(fake).filter((k) => k in seen[0]), ['CLAUDE_CODE_OAUTH_TOKEN']);
+  assert.equal(seen[0].CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, '0');
+  const record = fs.readFileSync(path.join(run.runDirFor(a, cells[0]), 'run.json'), 'utf8');
+  const { droppedEnv } = JSON.parse(record);
+  for (const k of ['CLAUDECODE', 'CLAUDE_CODE_SESSION_ID']) assert.ok(droppedEnv.includes(k), `droppedEnv lacks ${k}`);
+  assert.equal(droppedEnv.includes('CLAUDE_CODE_OAUTH_TOKEN'), false);
+  for (const v of Object.values(fake)) assert.equal(record.includes(v), false, 'run.json holds no value of a removed or kept name');
+});
+
 function writeManifest(dir, manifest) {
   fs.mkdirSync(path.join(dir, '.claude-plugin'), { recursive: true });
   fs.writeFileSync(path.join(dir, '.claude-plugin', 'plugin.json'), JSON.stringify(manifest));

@@ -184,6 +184,26 @@ test('isolatedLaunch: no GitHub token, an empty gh config, shims first on PATH t
   assert.equal(spawnSync('git', ['-C', fixture, 'remote', 'get-url', 'origin'], { encoding: 'utf8' }).stdout.trim(), iso.remote);
 });
 
+test('lockedEnv and isolatedLaunch remove a parent session\'s variables and env-passed git config, keep login, provider and network names, and list what they removed', () => {
+  const fakeBin = tmp('bin-');
+  fs.writeFileSync(path.join(fakeBin, process.platform === 'win32' ? 'claude.exe' : 'claude'), '', { mode: 0o755 });
+  const removed = ['AI_AGENT', 'CCR_TEST_FLAG', 'CLAUDECODE', 'CLAUDE_CODE_USE_CCR_V2', 'Claude_Code_Session_Id', 'GH_TOKEN', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0'];
+  const kept = ['ANTHROPIC_BASE_URL', 'AWS_REGION', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CODE_PROXY_RESOLVES_HOSTS', 'CLAUDE_CODE_USE_BEDROCK'];
+  const parent = Object.fromEntries([...removed, ...kept].map((k) => [k, 'fake']));
+  parent.PATH = fakeBin;
+  const lockout = ['GH_CONFIG_DIR', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_SSH_COMMAND', 'GIT_TERMINAL_PROMPT'];
+  const sorted = (xs) => [...xs].sort();
+
+  const locked = run.lockedEnv(parent, path.join(tmp('lock-'), 'x'));
+  assert.deepEqual(sorted(Object.keys(locked.env)), sorted([...kept, 'PATH', ...lockout]));
+  assert.deepEqual(locked.droppedEnv, sorted(removed));
+  assert.equal(parent.CLAUDECODE, 'fake', 'the parent environment is not changed');
+
+  const iso = run.isolatedLaunch({ baseEnv: parent, dir: path.join(tmp('iso-'), 'x'), shimLog: path.join(tmp('run-'), 'shim.log') });
+  assert.deepEqual(sorted(Object.keys(iso.env)), sorted([...kept, 'PATH', ...lockout]));
+  assert.deepEqual(iso.droppedEnv, sorted(removed));
+});
+
 test('an agent task launches the agent as the session, on its own frontmatter tier and the task\'s tools', () => {
   const a = run.parseArgs(['--tasks', '10,16', '--repeats', '1']);
   const byTask = Object.fromEntries(run.buildCells(a).map((c) => [c.task.id, run.claudeArgs(a, c, '/run', '/settings.json')]));
