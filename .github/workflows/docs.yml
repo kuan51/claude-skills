@@ -1,8 +1,9 @@
 # Lints and audits the documentation on every pull request: markdownlint,
 # the fabflows prompt security rules guard, docs-warden's audit (which also
 # checks that generated documents are current), then Vale on the changed
-# files, as .pre-commit-config.yaml runs it, then a self-test of the
-# vale-warn-gate script.
+# files, as .pre-commit-config.yaml runs it, then self-tests of the
+# vale-warn-gate script and the Prompting style, then a report of every
+# Prompting suggestion in the fabflows prompts.
 name: docs
 
 # Also on push to master: a pull_request run does not re-run when master
@@ -78,3 +79,15 @@ jobs:
       - name: vale-warn-gate self-test
         if: ${{ !cancelled() }}
         run: bash plugins/fabflows/evals/prose/test_vale_warn_gate.sh
+      # Self-test for the Prompting style's rules and for the .vale.ini section
+      # that applies them. Its second half uses the packages the Vale step synced.
+      - name: Prompting style self-test
+        if: ${{ !cancelled() }}
+        run: bash plugins/fabflows/evals/prose/test_prompting_style.sh
+      # Prints every Prompting suggestion in the fabflows prompts. The filter
+      # keeps only Prompting's suggestions, so Vale exits 0 whatever it finds;
+      # only a Vale that cannot run fails the step. Relative paths, since an
+      # absolute path skips every path-specific .vale.ini section.
+      - name: Prompting report
+        if: ${{ !cancelled() }}
+        run: vale --minAlertLevel=suggestion --filter='.Name matches "^Prompting"' plugins/fabflows/agents plugins/fabflows/skills

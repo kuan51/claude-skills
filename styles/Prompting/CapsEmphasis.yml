@@ -1,0 +1,10 @@
+extends: existence
+message: "Dial back the all-caps emphasis: '%s'"
+link: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+level: suggestion
+ignorecase: false
+nonword: true
+# ponytail: a fixed list of emphasis words, since a regex cannot tell emphasis from an acronym.
+# The guards skip a hyphenated compound such as MUST-have.
+tokens:
+  - '(?<![\w-])(?:MUST|NEVER|ALWAYS|CRITICAL|IMPORTANT|NOT|ONLY|STOP|DON[''’]T)(?![\w''’-])'

@@ -382,6 +382,14 @@ exits 1 when there is one, since Vale itself exits 0 on warnings. Its self-test 
 `bash plugins/fabflows/evals/prose/test_vale_warn_gate.sh` and needs no `vale sync`. CI runs the
 self-test.
 
+The `Prompting` Vale style, in `styles/Prompting/`, lints the fabflows agents and skills against
+Anthropic's prompt-writing advice. `NegativeOnly` flags a sentence that opens with `Never`,
+`Do not` or `Don't` and doesn't say what to do instead. `CapsEmphasis` flags an all-caps MUST,
+NEVER, ALWAYS, CRITICAL or IMPORTANT. Both rules are suggestions, so CI prints their hits in a report step that
+never fails the job. A rule blocks only once it moves to `error`, after an eval shows that following
+it keeps quality. Its self-test is `bash plugins/fabflows/evals/prose/test_prompting_style.sh`,
+which CI runs after the warn-gate self-test.
+
 ## Trigger corpus
 
 `trigger-corpus.json` measures skill selection, the one thing the benchmark above never does
