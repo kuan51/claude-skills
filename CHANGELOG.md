@@ -167,6 +167,10 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.6** -- three prompt sentences split at a semicolon into two (#135): in the
+  editor agent, the build-loop reference and the using-fabflows skill. Each held the only
+  error-level Vale alert in its file, which would fail CI on any pull request that edits it.
+  The wording is otherwise unchanged.
 - **fabflows 0.13.5** -- a `Prompting` Vale style lints the fabflows agents and skills against
   Anthropic's prompt-writing advice (#124). `NegativeOnly` flags a sentence that opens with
   `Never`, `Do not` or `Don't` and doesn't say what to do instead, and `CapsEmphasis` flags
