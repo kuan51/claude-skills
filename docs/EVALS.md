@@ -13,9 +13,9 @@ disagrees with them.
 
 | Plugin or skill | Useful compared with no skill? | Cost compared with no skill | Runs | Source |
 | --- | --- | --- | --- | --- |
-| fabflows, a spec'd build | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | none yet | `RESULTS.md` |
-| fabflows, reading 13 files | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | none yet | `RESULTS.md` |
-| fabflows, short tasks (a scoped edit, a small test file, a version bump) | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | Not yet measured on the new baseline ([#123](https://github.com/kuan51/claude-skills/issues/123)) | none yet | `RESULTS.md` |
+| fabflows, a spec'd build | No measured gain. Every arm passed 50/50. Its reviewer caught a whitespace defect the hidden tests do not check | +$0.63 per run (+24%): $3.23 against $2.61. superpowers +$0.35 (+13%) | 2 per arm | `RESULTS.md`, iteration 1 |
+| fabflows, reading 13 files | No measured gain. Every run passed, and it took 179 s against 36 s | +$0.10 per run (+11.5%): $1.00 against $0.90. superpowers +$0.05 (+5.5%) | 3 per arm | `RESULTS.md`, iteration 1 |
+| fabflows, short tasks (a scoped edit, a small test file, a version bump) | No measured gain. Every run passed | +$0.18 to +$0.24 per run (+55% to +72%), of which about $0.15 is a fixed start-up charge. superpowers +17% to +53% | 3 per arm per task | `RESULTS.md`, iteration 1 |
 | fabflows `brainstorming` | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | none yet | `plugins/fabflows/skills/brainstorming/evals/evals.json` (no results yet) |
 | docs-warden | Not measured | Not measured | none | see below |
 | ciso | Not measured | Not measured | none | see below |

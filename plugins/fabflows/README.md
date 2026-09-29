@@ -237,9 +237,15 @@ fabflows includes a benchmark (`evals/`) that runs a headless Fable lead on the 
 with and without the plugin and grades the result programmatically, never from what the lead
 said it did.
 
-The baseline against no skill and against superpowers is being measured in
-[#123](https://github.com/kuan51/claude-skills/issues/123), and its results will be recorded in
-`evals/RESULTS.md`.
+Iteration 1 measured fabflows 0.13.3 against no skill and against superpowers over 84 runs
+([#123](https://github.com/kuan51/claude-skills/issues/123)). Pooled over seven tasks, a run
+cost $0.874 with fabflows, $0.640 without it (+36.6%) and $0.756 with superpowers (+18.0%).
+Quality did not separate the arms. Of the 60 task runs, 58 passed all their substantive checks.
+The others were superpowers runs that failed a text match, which the analysis reads as a grader
+artifact. On short tasks, most of the extra cost is a fixed start-up charge of about
+$0.15 per run for the plugin listing and the two Skill loads, while the build task's extra cost
+is the Opus builder and reviewer. [evals/RESULTS.md](evals/RESULTS.md) has the per-task
+figures, the attribution and the confounds.
 
 ## Long sessions
 

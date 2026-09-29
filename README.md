@@ -101,9 +101,9 @@ first session.
     It also blocks commits and pushes to a default branch, destructive commands, and credential
     reads and writes. Read the plugin's README, including its "Known gaps" section, before
     installing.
-  - **Measured.** fabflows's cost and quality against no skill and against superpowers are
-    being re-measured in [#123](https://github.com/kuan51/claude-skills/issues/123). See
-    [docs/EVALS.md](docs/EVALS.md).
+  - **Measured.** In iteration 1 ([#123](https://github.com/kuan51/claude-skills/issues/123)),
+    a fabflows run's list price was 36.6% above no skill and 15.7% above superpowers, with no
+    measured quality difference. See [docs/EVALS.md](docs/EVALS.md).
 
 ## Adding a new plugin
 
