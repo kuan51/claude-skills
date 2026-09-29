@@ -42,9 +42,10 @@ check NegativeOnly none $'Never edit the original, rather\nthan the copy.'
 check NegativeOnly none 'Never edit the file. Instead, open a ticket.'
 check NegativeOnly none 'Never push to master. Open a pull request instead.'
 check NegativeOnly none 'Never delete a file: use an inert stand-in.'
-for w in MUST NEVER ALWAYS CRITICAL IMPORTANT; do
+for w in MUST NEVER ALWAYS CRITICAL IMPORTANT NOT ONLY STOP "DON'T"; do
   check CapsEmphasis hit "You $w read the file."
 done
 check CapsEmphasis none 'You must read the file.'
+check CapsEmphasis none 'The MUST-have list is short.'
 [ "$fail" -eq 0 ] && echo "PASS" || echo "FAIL"
 exit "$fail"
