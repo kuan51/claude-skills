@@ -252,7 +252,7 @@ machine's credentials, so every session is locked out of them (`lockedEnv` in `h
 
 When the harness runs inside another Claude Code session, as iteration 1 did in a cloud session,
 that session's variables would reach every test session and change its tools, skills, scratchpad,
-messaging socket and effort. So `lockedEnv` removes them before it sets anything:
+messaging socket and effort. `lockedEnv` removes them before it sets anything:
 
 - `CLAUDECODE`, and every name starting `CLAUDE_` or `CCR_` except an exact keep-list.
 - `SESSION_INGRESS_URL`, `MAX_THINKING_TOKENS`, `AI_AGENT`, `TRACEPARENT`,
