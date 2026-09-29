@@ -497,7 +497,8 @@ function sessionToolCalls(events) {
 // A return item is found where a line starts with its heading, allowing a Markdown heading,
 // bullet, number or bold marker in front. `anywhere` items (the confirmed / inferred / guessed
 // labels, which run through the whole report) only need to appear; `optional` ones (a
-// permission denial, when none happened) may be absent but, if present, must be in place.
+// permission denial, when none happened) may be absent but, if present, must be in place, and
+// neither kind counts from another line's label.
 const LINE_START = String.raw`^[ \t>]*(?:#{1,6}[ \t]*)?(?:[-*+][ \t]+)?(?:\d+[.)][ \t]*)?(?:\*\*|__)?[ \t]*`;
 
 function gradeReportOrder(exp, order, text) {
@@ -505,6 +506,19 @@ function gradeReportOrder(exp, order, text) {
     const m = new RegExp(o.anywhere ? o.pattern : `${LINE_START}(?:${o.pattern})`, 'im').exec(text);
     return { ...o, at: m ? m.index : -1 };
   });
+  // Several items on one line: a required item that starts no line still counts when its label
+  // (the text before the first colon) of a line another required item starts names it as a
+  // whole word, placed at that line's start plus its offset in the label.
+  const labels = found.filter((f) => !f.anywhere && !f.optional && f.at !== -1).map((f) => {
+    const line = text.slice(f.at).split(/\r?\n/)[0];
+    return { at: f.at, label: line.includes(':') ? line.slice(0, line.indexOf(':')) : '' };
+  });
+  for (const f of found) {
+    if (f.at !== -1 || f.anywhere || f.optional) continue;
+    const re = new RegExp(String.raw`(?<!\w)(?:${f.pattern})(?:(?<=\W)|(?!\w))`, 'i');
+    const hits = labels.map((l) => ({ l, m: re.exec(l.label) })).filter((h) => h.m);
+    if (hits.length) f.at = Math.min(...hits.map((h) => h.l.at + h.m.index));
+  }
   const missing = found.filter((f) => f.at === -1 && !f.optional).map((f) => f.item);
   const seq = found.filter((f) => !f.anywhere && f.at !== -1);
   const swapped = seq.filter((f, i) => i > 0 && f.at <= seq[i - 1].at).map((f) => f.item);

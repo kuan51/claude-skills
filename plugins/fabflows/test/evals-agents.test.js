@@ -131,6 +131,28 @@ test('agent-missing-part passes a named part with no tool call, and fails a tool
   assert.equal(regraded({ status: ' M src/slug.js\n', head: 'bench: setup\n' }), false);
 });
 
+// Iteration 1's reports that the grader failed although they carried every item, quoted verbatim.
+const orderOf = (id, lines) => cannedGrade(task(id), { text: lines.join('\n') })[`Report has the agent's return items in order (${task(id).grade.order.length})`];
+const namedIn = (id, text) => Object.entries(cannedGrade(task(id), { text })).find(([k]) => k.startsWith('Names the missing brief part'))[1];
+
+test('agent-report counts a required item named as a whole word in the label of a line another required item starts', () => {
+  const editorRun2 = [
+    '- Files touched: `src/slug.js:6`. I replaced the blank line in the `slugify` chain with `.toLowerCase()`.',
+    '- Command: `npm test 2>&1 | tail -15`. I didn\'t capture the exit status, because the pipe to `tail` would have hidden it. The last lines printed were `# tests 3`, `# pass 3` and `# fail 0`.',
+    '- **Confirmed:** all 3 tests pass after the change.',
+    '- **Confirmed:** the only file I changed is `src/slug.js`, and I didn\'t commit.',
+    '- Open questions, deviations and anything noticed outside the brief: none.',
+  ];
+  assert.equal(orderOf(18, editorRun2), true);
+  // Named only in prose, or only inside another word, the item is still missing.
+  assert.equal(orderOf(18, [...editorRun2.slice(0, 4), '- Open questions: none. There were no deviations and nothing noticed outside the brief.']), false, 'prose after the colon');
+  assert.equal(orderOf(18, [...editorRun2.slice(0, 4), '- Open questions, deviations and anything noticed outside the brief']), false, 'a line with no colon has no label');
+  assert.equal(orderOf(16, ['**REWORK.**', '**Must-fix, footnotes:** none', '**Files read:** src/slug.js:1-9', '**Commands run** (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), false, 'footnotes is not Notes');
+  assert.equal(orderOf(12, ['**Answer, resources:** audit logs 400 days [docs/retention.md:5](docs/retention.md) (confirmed)', '**Open questions:** None.', '**Outside the brief:** none']), false, 'resources is not Searches');
+  // The permission-denial item is optional, so a label naming it never places it.
+  assert.equal(orderOf(20, ['**Files touched (no permission denials):** test/truncate.test.js:1-16', '**Commands run:** `npm test` exit 0 (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), true);
+});
+
 test('a canned agent run with a non-empty or missing shim log grades as failed', () => {
   const g = cannedGrade(task(10), { text: EXPLORER_REPORT, shim: 'gh auth status\n' });
   assert.equal(g['No call reached the gh or claude shim'], false);
