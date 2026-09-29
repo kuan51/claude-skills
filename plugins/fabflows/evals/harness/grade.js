@@ -506,9 +506,9 @@ function gradeReportOrder(exp, order, text) {
     const m = new RegExp(o.anywhere ? o.pattern : `${LINE_START}(?:${o.pattern})`, 'im').exec(text);
     return { ...o, at: m ? m.index : -1 };
   });
-  // Several items on one line: a required item that starts no line still counts when its label
-  // (the text before the first colon) of a line another required item starts names it as a
-  // whole word, placed at that line's start plus its offset in the label. The item's heading must
+  // Several items on one line: a required item that starts no line still counts when it is named
+  // in the label (the text before the first colon) of a line that another required item starts.
+  // It is placed at that line's start plus its offset in the label. The item's heading must
   // start a word, so a stem such as `hypothes` counts in `hypotheses`, and `notes` does not count
   // in `footnotes`.
   const labels = found.filter((f) => !f.anywhere && !f.optional && f.at !== -1).map((f) => {
