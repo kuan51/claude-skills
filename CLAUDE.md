@@ -113,5 +113,7 @@ Rules that bite here:
   checked by its own version of docs-warden. Vale lints only the Markdown files the PR changes, as pre-commit does.
   lychee is not in CI: it runs from the pre-commit hook, or from `audit.py` when it is on PATH.
   `freshness.py` still runs only by hand. CI also runs
-  `plugins/fabflows/test/required-rules.test.js` and the self-test of
-  `plugins/fabflows/evals/prose/vale-warn-gate.sh`.
+  `plugins/fabflows/test/required-rules.test.js`, the self-test of
+  `plugins/fabflows/evals/prose/vale-warn-gate.sh`, and the self-test of the `Prompting` style
+  (`test_prompting_style.sh`). A last step prints every `Prompting` suggestion in the fabflows
+  agents and skills and never fails the job.
