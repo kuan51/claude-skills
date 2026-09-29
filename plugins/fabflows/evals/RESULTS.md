@@ -26,6 +26,9 @@ The data is in `runs/iteration-1/`: `cells.json` has one row per run, and `bench
   own frontmatter model, with no lead.
 - **Lead.** claude-fable-5-1 at medium effort. Tasks 1-6 ran 3 times per arm and task 7 twice.
   Each agent task ran twice. All sessions ran 3 at a time (`--parallel 3`).
+- **Not run.** Tasks 8 (review-catch, where the reviewer must find a planted defect) and 9, and
+  the loop arm, were out of scope for #123. So nothing in this iteration measures what the
+  build loop's reviewer catches.
 - **Dollars.** Every figure is the CLI's `total_cost_usd` at list price. Rates fitted from this
   iteration's `byModel.costUSD`, with zero residual over 60 runs:
   - claude-fable-5-1, per 1M tokens: input $10, output $50 (thinking counts as output), cache
@@ -60,7 +63,7 @@ The "No tool call was denied" check is left out.
 | 3 write-tests | $0.3288 | $0.5648 | $0.5029 | +$0.2360 (+71.8%) | +$0.1741 (+52.9%) | 1 / 1 / 1 | 26.8 / 35.8 / 34.2 |
 | 4 short-chain | $0.3104 | $0.4950 | $0.3644 | +$0.1846 (+59.5%) | +$0.0540 (+17.4%) | 1 / 1 / 1 | 20.5 / 24.4 / 19.7 |
 | 5 deep-read | $0.8977 | $1.0014 | $0.9467 | +$0.1037 (+11.5%) | +$0.0490 (+5.5%) | 1 / 1 / 1 | 35.5 / 178.9 / 35.2 |
-| 6 triage-failures | $0.3357 | $0.5481 | $0.3970 | +$0.2124 (+63.3%) | +$0.0613 (+18.3%) | 1 / 1 / 1 | 36.8 / 79.8 / 33.7 |
+| 6 triage-failures (see Overlap) | $0.3357 | $0.5481 | $0.3970 | +$0.2124 (+63.3%) | +$0.0613 (+18.3%) | 1 / 1 / 1 | 36.8 / 79.8 / 33.7 |
 | 7 build-component (n=2) | $2.6093 | $3.2343 | $2.9597 | +$0.6250 (+24.0%) | +$0.3505 (+13.4%) | 1 / 1 / 1 | 315.6 / 761.9 / 370.3 |
 
 ### Overall
@@ -77,7 +80,10 @@ measured quality gain on any task.
 
 This table splits with_skill minus without_skill, in dollars per run. The figures come from
 bookkeeping on each lead request's cache write and cache read in `transcript.jsonl`, at the
-rates above. Thinking text is redacted, so deliberation splits lead output by character share
+rates above. The transcripts are not tracked, so `cells.json` holds only the per-run totals
+behind these figures, not the figures themselves. Verification is the lead's own reads and
+re-runs after a worker returned. It is not the `verification_runs` column, which counts only
+re-runs of the task's test command after a spawn. Thinking text is redacted, so deliberation splits lead output by character share
 and is an estimate. Narration could be separated from the residual only on short-chain and
 triage-failures, and verification on build-component not at all. So that part of the
 attribution #123 asked for is missing.
@@ -108,7 +114,7 @@ What this shows:
   build-component. Only 11,796 tokens of the
   first request hit a cache shared across runs, probably because each run's working directory
   enters the system prompt (inferred).
-- **Tasks 1-4 had no workers.** No run delegated, and `verification_runs` was 0. The lead said it
+- **Tasks 1-4 had no workers.** No run delegated. The lead said it
   would do the work directly because the task was small. But `eval_metadata.json` names an
   explorer, editor or test-runner route for tasks 1-3, so these tasks never tested a delegation
   path. The residual on tasks 1-3 (18-32% of the gap) is extra tool calls, tool output and report
@@ -181,25 +187,28 @@ Each agent ran two tasks: a full-brief report task and a brief with one of its f
 missing. The 24 runs cost $0.757 in total. These tasks have no without_skill or superpowers
 comparison.
 
-| Agent | Model | Missing part | Stopped | Mean cost (report task) | Mean cost (both tasks) | Substantive passes | After order-regex fix |
+| Agent | Model | Missing part | Stopped | Mean cost (report task) | Mean cost (both tasks) | Substantive passes | After grader fixes |
 |---|---|---|---|---|---|---|---|
 | investigator | Opus | boundaries | 2/2 | $0.0907 | $0.0533 | 20/22 | 22/22 |
 | refuter | Opus | output format | 2/2 | $0.0849 | $0.0505 | 22/22 | 22/22 |
 | editor | Sonnet | boundaries | 2/2 | $0.0257 | $0.0161 | 17/18 | 18/18 |
-| test-runner | Sonnet | tools and paths | 0/2 | $0.0310 | $0.0279 | 13/18 | 14/18 |
+| test-runner | Sonnet | tools and paths | 0/2 | $0.0310 | $0.0279 | 13/18 | 15/18 |
 | explorer | Haiku | output format | 0/2 | $0.0247 | $0.0240 | 17/22 | 17/22 |
 | researcher | Haiku | tools and paths | 0/2 | $0.0176 | $0.0175 | 16/22 | 16/22 |
-| **Total** | | | 6/12 | | | **105/124** | **109/124** |
+| **Total** | | | 6/12 | | | **105/124** | **110/124** |
 
 The gaps these runs show:
 
-- **The stop rule holds for three agents and fails for three.** All six agent files say "If any of
-  the four is missing, say which one and stop." Explorer, researcher and test-runner neither
-  named the missing part nor stopped in any run. Both Haiku agents failed, and so did all four runs
-  where "tools and paths" was missing. Test-runner run-2 did write that the brief "had no
-  separate 'tools and paths' section", which the naming regex misses. It still went on with 4
-  tool calls.
-- **Four of the five return-order failures are grader artifacts.** Investigator runs 1 and 2 wrote
+- **The stop rule held in 6 of 12 runs.** All six agent files say "If any of the four is
+  missing, say which one and stop." Investigator, refuter and editor stopped in both runs.
+  Explorer, researcher and test-runner stopped in neither. This design cannot say whether the
+  agent or the missing part decides it, because each agent was tested with one missing part
+  only. All four "tools and paths" runs failed and all four "boundaries" runs passed. The
+  grader adds to the mix: the boundaries check accepts any mention of `boundary` or
+  `boundaries`, while the others need "missing", "lacks", "omits" or "without" within 40
+  characters of the part's name. Test-runner run-2 did name its part ("had no separate 'tools
+  and paths' section"), which the regex misses. It still went on with 4 tool calls.
+- **Four of the five return-order failures are grader artifacts, and so is one naming failure.** Investigator runs 1 and 2 wrote
   "**Files involved:**". Editor run-2 put three empty items on one line. Test-runner run-1 wrote
   the singular "**Command**". Only researcher run-1 really left an item out. It has no Open
   questions section.
@@ -219,9 +228,10 @@ The gaps these runs show:
 The first attempt at task 7 hit the account's usage limit. Repeat 2 of every arm stopped
 mid-run on "You've hit your session limit", after $0.92 to $2.54 each. Those runs said nothing
 about the arms, so all six task 7 runs were deleted and the task was run again. Only the re-run
-is in `runs/iteration-1/eval-7-build-component/`, with run-1 and run-2 in each arm. All six
-re-run cells passed every check, including all 41 hidden tests, and no transcript in the iteration shows a usage-limit message. With
-n=2, no ranking of the task 7 arms is robust.
+is in the record, as the build-component rows of `runs/iteration-1/cells.json`, with run-1
+and run-2 in each arm. All six re-run cells passed every check, including all 41 hidden tests,
+and no transcript in the iteration shows a usage-limit message. With n=2, no ranking of the
+task 7 arms is robust.
 
 ### Confounds
 
@@ -236,14 +246,19 @@ n=2, no ranking of the task 7 arms is robust.
 - **Start-up.** The arms did not start the same way: a prompt prefix for fabflows, a hook for
   superpowers. The fabflows prefix also makes 2 extra requests.
 - **Overlap.** Runs overlapped in time. The rate-limit events all read "allowed". Parallel runs
-  share `/tmp`. On triage-failures, runs 2 and 3 both wrote `/tmp/out.log`, and run-3's worker
-  reported run-2's paths.
+  share `/tmp`. On triage-failures, with_skill runs 2 and 3 both wrote `/tmp/out.log`, and run-3's
+  worker read run-2's output from it: run-2's fixture path appears 11 times in run-3's raw
+  stream. The cell stays in the means with quality 1, because both runs tested the same fixture
+  and so report the same failures (inferred). Leaving it out moves triage-failures with_skill
+  from $0.5481 to $0.5411, a gap of +61.2% in place of +63.3%.
 - **Timing.** For build-component, with_skill `result.duration_ms` leaves out the background
   workflow. Wall time is in `timing.json` and `cells.json` `sec`.
 - **Single task.** fabflows keeps the lead's context smaller on build-component. `final_ctx` is
   40-45k, against 55-59k without the skill and 70-71k with superpowers. A single-task run cannot
   credit that saving on later turns.
 - **benchmark.md.** It pools every task, so build-component dominates its time and token means,
-  and its pass rate also counts non-substantive assertions. Its dollar note for the agent arm
-  compares it with without_skill, although those arms ran different tasks. Use `cells.json` for
-  the per-task, three-arm figures.
+  and its pass rate also counts non-substantive assertions. `annotate_benchmark.py` writes three
+  artifacts into it. The model line lists every arm's session model, although the lead was
+  claude-fable-5-1 in every task run. The dollar notes put the sign after the dollar sign
+  (`$+0.23`). The agent arm's note compares it with without_skill, although those arms ran
+  different tasks. Use `cells.json` for the per-task, three-arm figures.
