@@ -13,9 +13,11 @@ disagrees with them.
 
 | Plugin or skill | Useful compared with no skill? | Cost compared with no skill | Runs | Source |
 | --- | --- | --- | --- | --- |
-| fabflows, a spec'd build | No measured gain. Every arm passed all 41 hidden tests. Its reviewer caught a whitespace defect the hidden tests do not check | +$0.63 per run (+24%): $3.23 against $2.61. superpowers +$0.35 (+13%) | 2 per arm | `RESULTS.md`, iteration 1 |
-| fabflows, reading 13 files | No measured gain. Every run passed, and it took 179 s against 36 s | +$0.10 per run (+11.5%): $1.00 against $0.90. superpowers +$0.05 (+5.5%) | 3 per arm | `RESULTS.md`, iteration 1 |
-| fabflows, short tasks (a scoped edit, a small test file, a version bump) | No measured gain. Every fabflows and no-skill run passed, and two superpowers runs failed one text-match check | +$0.18 to +$0.24 per run (+55% to +72%), of which about $0.15 is a fixed start-up charge. superpowers +17% to +53% | 3 per arm per task | `RESULTS.md`, iteration 1 |
+| fabflows, a spec'd build | No measured gain: quality 1 / 1 / 1. Task 8, which tests whether the reviewer finds a planted defect, was not run | $3.2343 against $2.6093, +$0.6250 (+24.0%). superpowers +$0.3505 (+13.4%) | 2 per arm | `RESULTS.md:67`, `:29` |
+| fabflows, reading 13 files | No measured gain: quality 1 / 1 / 1, and 178.9 s against 35.5 s | $1.0014 against $0.8977, +$0.1037 (+11.5%). superpowers +$0.0490 (+5.5%) | 3 per arm | `RESULTS.md:65` |
+| fabflows, a wide search | No measured gain: quality 1 / 1 / 1 | $0.5316 against $0.3129, +$0.2186 (+69.9%). superpowers +$0.0807 (+25.8%) | 3 per arm | `RESULTS.md:61` |
+| fabflows, running and triaging a failing test suite | No measured gain: quality 1 / 1 / 1 | $0.5481 against $0.3357, +$0.2124 (+63.3%). superpowers +$0.0613 (+18.3%) | 3 per arm | `RESULTS.md:66` |
+| fabflows, short tasks (a scoped edit, a small test file, a version bump) | No measured gain: quality 1 for fabflows and no skill on each. superpowers scored 0.917 on the scoped edit, a grader artifact | +$0.1887 (+54.8%), +$0.2360 (+71.8%) and +$0.1846 (+59.5%). superpowers +$0.1169 (+34.0%), +$0.1741 (+52.9%) and +$0.0540 (+17.4%) | 3 per arm per task | `RESULTS.md:62-64`, `:163` |
 | fabflows `brainstorming` | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | none yet | `plugins/fabflows/skills/brainstorming/evals/evals.json` (no results yet) |
 | docs-warden | Not measured | Not measured | none | see below |
 | ciso | Not measured | Not measured | none | see below |
