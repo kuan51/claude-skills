@@ -302,7 +302,7 @@ configuration, read from `grading.json`. `--add a+b` adds a column that sums two
 such as a new run and its rerun.
 
 An assertion is stable when it passes in every baseline run on master's prompts. A prose pass
-counts a regression only on a stable assertion: some fail on master itself (#120 tracks them).
+counts a regression only on a stable assertion: some fail on master itself (see #120 and #140).
 To show its check can fail, a planted regression must fail a stable assertion of its family, so
 it runs only on the tasks where its family has one.
 
@@ -316,7 +316,7 @@ read-only rule, but not the investigator's one sentence that allows re-running a
 regression run shows that each gate can fail:
 
 ```bash
-D=$(mktemp -d) && cp -r plugins/fabflows "$D/ff-order"
+D=$(mktemp -d) && mkdir "$D/ff-order" && git archive 45978ed plugins/fabflows | tar -x -C "$D/ff-order" --strip-components=2
 (cd "$D/ff-order" && git apply -p3 "$OLDPWD/plugins/fabflows/evals/regressions/report-order.patch")
 node plugins/fabflows/evals/harness/run.js --iteration <n> --tasks 14,16,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
 ```

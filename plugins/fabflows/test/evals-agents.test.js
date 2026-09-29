@@ -179,6 +179,22 @@ test('agent-missing-part accepts "no separate <part> section", and not other sen
   }
 });
 
+// The one-line stop reply the agent-rules variant prescribes (evals/snapshots/agent-rules.patch).
+const STOP_PARTS = ['objective', 'output format', 'tools and paths to use', 'boundaries'];
+const stopReply = (part) => `Missing: ${part}. Stopped before any tool call: no files touched, no command run (confirmed).`;
+
+test('agent-missing-part passes the stop reply for the part each task leaves out, and names no other part', () => {
+  const partOf = { 11: 'output format', 13: 'tools and paths to use', 15: 'boundaries', 17: 'output format', 19: 'boundaries', 21: 'tools and paths to use' };
+  for (const [id, missing] of Object.entries(partOf)) {
+    for (const part of STOP_PARTS) {
+      const g = Object.entries(cannedGrade(task(Number(id)), { text: stopReply(part), fixture: benchRepo() }));
+      const named = g.find(([k]) => k.startsWith('Names the missing brief part'))[1];
+      assert.equal(named, part === missing, `task ${id}, reply "${part}"`);
+      assert.equal(g.find(([k]) => k === 'Stopped without any tool call')[1], true, `task ${id}, reply "${part}"`);
+    }
+  }
+});
+
 test('a canned agent run with a non-empty or missing shim log grades as failed', () => {
   const g = cannedGrade(task(10), { text: EXPLORER_REPORT, shim: 'gh auth status\n' });
   assert.equal(g['No call reached the gh or claude shim'], false);

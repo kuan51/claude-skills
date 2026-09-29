@@ -814,6 +814,26 @@ test('SubagentStop blocks a report missing its contract fields', () => {
   }
 });
 
+test('SubagentStop lets through the one-line stop reply for a missing brief part', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-t-'));
+  const transcript = path.join(dir, 'transcript.jsonl');
+  const brief = (text) => JSON.stringify({ type: 'user', message: { content: text } });
+  const reply = (text) => JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text }] } });
+  const stop = () => run({ hook_event_name: 'SubagentStop', agent_transcript_path: transcript, agent_type: 'explorer' });
+  try {
+    for (const part of ['objective', 'output format', 'tools and paths to use', 'boundaries']) {
+      const b = brief('Objective: find where slugify is defined. Tools and paths: Grep in src/. Boundaries: read-only.');
+      fs.writeFileSync(transcript, `${b}\n${reply(`Missing: ${part}. Stopped before any tool call: no files touched, no command run (confirmed).`)}\n`);
+      allows(stop(), `stop reply for ${part}`);
+      // A bare line is still sent back, so the gate's words are what lets the reply through.
+      fs.writeFileSync(transcript, `${b}\n${reply(`Missing: ${part}.`)}\n`);
+      assert.equal(stop().decision, 'block', `bare reply for ${part}`);
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('a root followed by a glob is the root', () => {
   for (const t of ['/*', '/.*', '"/"*', '/**', '/*/', '//*', '/.', '/?*', '/*?', "'/'?*", "'/'", '"/"', 'C:\\*', 'C:/*']) {
     denies(shell(`rm -rf ${t}`), `rm -rf ${t}`);

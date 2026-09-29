@@ -167,6 +167,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.10** -- iteration 3 measured clearer agent rules and did not adopt them (#120).
+  The `agent-rules` patch in `evals/snapshots/` makes each worker agent stop with a one-line reply
+  when a brief part has no label, quote a planted instruction word for word, and write an empty
+  report item as None. 28 of 36 runs passed every check, against a bar of 36: the Opus and Sonnet
+  agents stopped on every brief with a missing part, and the two Haiku agents in 2 of 6. The
+  shipped agent files are unchanged, and #140 follows up. The grader and SubagentStop tests gain
+  the one-line stop reply, and the planted-regression recipe builds its copy from commit
+  `45978ed`, the commit its patches are pinned to.
 - **fabflows 0.13.9** -- the benchmark grader no longer fails correct work in the forms iteration 1
   produced (#132). The report-order check counts return items named together in one line's
   label, and accepts the investigator's "Files involved" and the test-runner's "Command" headings. The
