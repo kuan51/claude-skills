@@ -167,6 +167,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.7** -- the evals harness no longer passes a launching Claude Code session's
+  variables to the sessions it runs (#128). `lockedEnv` removes `CLAUDECODE`, the `CLAUDE_` and
+  `CCR_` names outside a keep-list of login, provider and network settings, other session
+  variables and git configuration passed in the environment. Each `run.json` lists the removed
+  names as `droppedEnv`. Runs from a cloud session no longer need a wrapper script.
 - **fabflows 0.13.6** -- three prompt sentences split at a semicolon into two (#135): in the
   editor agent, the build-loop reference and the using-fabflows skill. Each held the only
   error-level Vale alert in its file, which would fail CI on any pull request that edits it.
