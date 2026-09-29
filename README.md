@@ -102,8 +102,8 @@ first session.
     reads and writes. Read the plugin's README, including its "Known gaps" section, before
     installing.
   - **Measured.** In iteration 1 ([#123](https://github.com/kuan51/claude-skills/issues/123)),
-    a fabflows run's list price was 36.6% above no skill and 15.7% above superpowers, with no
-    measured quality difference. See [docs/EVALS.md](docs/EVALS.md).
+    a fabflows run's list price was 36.6% above no skill and 15.7% above superpowers. Quality
+    differed on one check only, which the analysis reads as a grader artifact. See [docs/EVALS.md](docs/EVALS.md).
 
 ## Adding a new plugin
 

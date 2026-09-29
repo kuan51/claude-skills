@@ -167,9 +167,9 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
-- **fabflows 0.13.4** -- iteration 1 of the benchmark is recorded (#123). Across 84 runs, a
-  fabflows run cost 36.6% more than no skill and 15.7% more than superpowers, with no quality
-  difference the graders could see. `evals/RESULTS.md` gives the per-task figures, where the
+- **fabflows 0.13.4** -- iteration 1 of the benchmark is recorded (#123). Pooled over the 60 task
+  runs, a fabflows run cost 36.6% more than no skill and 15.7% more than superpowers. Quality
+  differed on one text-match check only, which the analysis reads as a grader artifact. `evals/RESULTS.md` gives the per-task figures, where the
   extra cost goes, the agent-task gaps and the confounds. `docs/EVALS.md` and the READMEs point
   to it. Only the eval record and its docs change; no behaviour a consumer sees changes.
 - **fabflows 0.13.3** -- the benchmark harness can run the three-arm baseline #123 records.

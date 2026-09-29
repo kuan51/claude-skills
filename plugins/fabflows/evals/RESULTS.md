@@ -37,7 +37,7 @@ The data is in `runs/iteration-1/`: `cells.json` has one row per run, and `bench
   session's own variables removed (`CLAUDECODE`, `CLAUDE_*`, `CCR_*`, `MAX_THINKING_TOKENS`
   and the session-ingress, telemetry and MCP settings). A first smoke run without that step
   gave every session 45 tools, the cloud-only skills and a scratchpad, and cost $0.83 for a bare
-  task 1 run. With it, each session reported 31 tools at init, and the same run cost $0.31. Every
+  task 1 run. With it, each lead session reported 31 tools at init, and the same run cost $0.31. Every
   session used a 1-hour prompt cache. No synced or organization plugin loaded in any run, and
   each arm listed only Claude Code's built-in skills and agents plus its own plugin's.
 - **The arms start differently.** fabflows is loaded by the prompt prefix. The lead spends 2 Skill
@@ -99,7 +99,7 @@ final report. It is a residual, because its split did not survive checking.
 What this shows:
 
 - **A fixed start-up charge dominates short tasks.** It is about $0.15 per run whatever the task.
-  On tasks costing about $0.33 without the plugin, it adds 44-47% on its own.
+  On tasks costing about $0.33 without the plugin, it adds 44-49% on its own.
 - **Writing context costs more than re-reading it.** A 1-hour cache write costs 80 times a cache
   read. Writing the skill text costs about $0.085 once. Re-reading it on later turns costs
   $0.002-$0.006. Cache writes are 70-75% of lead cost in every arm. Only 11,796 tokens of the
@@ -164,9 +164,9 @@ What this shows:
   fixture's own reference also uses `\s+`, so this is a strict reading of the spec. The hidden
   differences also cut the other way. All four non-fabflows leads ran `chmod +x bin/lockstep.js`,
   and with_skill run-1 did not.
-- **Variance.** without_skill cost is tight on tasks 1-6 (sample sd $0.007-$0.019). The
+- **Variance.** without_skill cost is tight on tasks 1-6 (sample sd $0.004-$0.019). The
   high-variance cells are:
-  - deep-read with_skill (sd $0.133). This is one lead decision, 1 explorer or 2.
+  - deep-read with_skill (sd $0.163). This is one lead decision, 1 explorer or 2.
   - scoped-edit and write-tests with_skill ($0.050 and $0.063).
   - scoped-edit superpowers ($0.061), where it loaded TDD in 1 run of 3.
   - build-component, which swings on one reviewer verdict for fabflows and on 12 against 26 API
@@ -229,7 +229,7 @@ n=2, no ranking of the task 7 arms is robust.
   gaps would be smaller.
 - **Environment.** The sessions ran in a trimmed cloud container (31 tools, no synced plugins), so
   these are not the numbers of a full local install. Before the trim, a bare run cost about
-  2.6 times as much.
+  2.7 times as much.
 - **Start-up.** The arms did not start the same way: a prompt prefix for fabflows, a hook for
   superpowers. The fabflows prefix also makes 2 extra requests.
 - **Overlap.** Runs overlapped in time. The rate-limit events all read "allowed". Parallel runs
