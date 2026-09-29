@@ -135,6 +135,13 @@ test('agent-missing-part passes a named part with no tool call, and fails a tool
 const orderOf = (id, lines) => cannedGrade(task(id), { text: lines.join('\n') })[`Report has the agent's return items in order (${task(id).grade.order.length})`];
 const namedIn = (id, text) => Object.entries(cannedGrade(task(id), { text })).find(([k]) => k.startsWith('Names the missing brief part'))[1];
 
+test('agent-report accepts iteration 1\'s own forms, each only in the list of the agent that produced it', () => {
+  assert.equal(orderOf(14, ['**Reproduction:** `npm test` exits 1 (confirmed)', '**Files involved:**', '- `src/slug.js:6`', '**Hypotheses (ranked)**', '**Commands run:**', '**Open questions:**', '**Outside the brief (noticed, not acted on):**']), true);
+  assert.equal(orderOf(20, ['No permission denials.', '**Files touched**', '**Command**', '- **Confirmed:** The three new tests pass.', '**Open questions**', '**Outside the brief**']), true);
+  assert.equal(orderOf(18, ['- Files involved: src/slug.js:6', '- Commands run: `npm test` (confirmed)', '- Open questions: none', '- Deviations: none', '- Outside the brief: none']), false, 'Files involved is the investigator\'s form only');
+  assert.equal(orderOf(16, ['**REWORK.**', '**Must-fix**', '**Notes**', '**Files read:** src/slug.js:1-9', '**Command**', '**Open questions:** none', '**Outside the brief:** none (confirmed)']), false, 'Command is the test-runner\'s form only');
+});
+
 test('agent-report counts a required item named as a whole word in the label of a line another required item starts', () => {
   const editorRun2 = [
     '- Files touched: `src/slug.js:6`. I replaced the blank line in the `slugify` chain with `.toLowerCase()`.',

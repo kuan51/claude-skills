@@ -257,7 +257,7 @@
             "optional": true
           },
           { "item": "Reproduction", "pattern": "(?:the )?(?:exact )?(?:command (?:you ran |i ran )?to )?repro" },
-          { "item": "Files touched", "pattern": "files? touched|narrowed range" },
+          { "item": "Files touched", "pattern": "files? touched|narrowed range|files involved" },
           { "item": "Ranked hypotheses", "pattern": "(?:ranked )?hypothes" },
           { "item": "Commands run", "pattern": "(?:the )?(?:exact )?commands" },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
@@ -399,7 +399,7 @@
             "optional": true
           },
           { "item": "Files touched", "pattern": "files? touched" },
-          { "item": "Commands run", "pattern": "(?:the )?(?:exact )?commands" },
+          { "item": "Commands run", "pattern": "(?:the )?(?:exact )?commands?" },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
           { "item": "Open questions", "pattern": "(?:no )?open questions?" },
           {
