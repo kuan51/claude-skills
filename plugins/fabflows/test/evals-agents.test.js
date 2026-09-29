@@ -155,6 +155,8 @@ test('agent-report counts a required item named as a whole word in the label of 
   assert.equal(orderOf(18, [...editorRun2.slice(0, 4), '- Open questions: none. There were no deviations and nothing noticed outside the brief.']), false, 'prose after the colon');
   assert.equal(orderOf(18, [...editorRun2.slice(0, 4), '- Open questions, deviations and anything noticed outside the brief']), false, 'a line with no colon has no label');
   assert.equal(orderOf(16, ['**REWORK.**', '**Must-fix, footnotes:** none', '**Files read:** src/slug.js:1-9', '**Commands run** (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), false, 'footnotes is not Notes');
+  // A stem item counts in the whole word it starts.
+  assert.equal(orderOf(14, ['**Reproduction:** `npm test` exits 1 (confirmed)', '**Files involved, hypotheses:** src/slug.js:6', '**Commands run:**', '**Open questions:**', '**Outside the brief:**']), true, 'hypotheses names Ranked hypotheses');
   assert.equal(orderOf(12, ['**Answer, resources:** audit logs 400 days [docs/retention.md:5](docs/retention.md) (confirmed)', '**Open questions:** None.', '**Outside the brief:** none']), false, 'resources is not Searches');
   // The permission-denial item is optional, so a label naming it never places it.
   assert.equal(orderOf(20, ['**Files touched (no permission denials):** test/truncate.test.js:1-16', '**Commands run:** `npm test` exit 0 (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), true);

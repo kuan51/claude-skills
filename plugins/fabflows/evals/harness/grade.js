@@ -508,14 +508,16 @@ function gradeReportOrder(exp, order, text) {
   });
   // Several items on one line: a required item that starts no line still counts when its label
   // (the text before the first colon) of a line another required item starts names it as a
-  // whole word, placed at that line's start plus its offset in the label.
+  // whole word, placed at that line's start plus its offset in the label. The item's heading must
+  // start a word, so a stem such as `hypothes` counts in `hypotheses`, and `notes` does not count
+  // in `footnotes`.
   const labels = found.filter((f) => !f.anywhere && !f.optional && f.at !== -1).map((f) => {
     const line = text.slice(f.at).split(/\r?\n/)[0];
     return { at: f.at, label: line.includes(':') ? line.slice(0, line.indexOf(':')) : '' };
   });
   for (const f of found) {
     if (f.at !== -1 || f.anywhere || f.optional) continue;
-    const re = new RegExp(String.raw`(?<!\w)(?:${f.pattern})(?:(?<=\W)|(?!\w))`, 'i');
+    const re = new RegExp(String.raw`(?<!\w)(?:${f.pattern})`, 'i');
     const hits = labels.map((l) => ({ l, m: re.exec(l.label) })).filter((h) => h.m);
     if (hits.length) f.at = Math.min(...hits.map((h) => h.l.at + h.m.index));
   }
