@@ -4,7 +4,7 @@
     "skill_path": "<path/to/skill>",
     "executor_model": "lead claude-fable-5-1, claude-haiku-4-5-20251001, claude-opus-5-5, claude-sonnet-5-5; workers per agent pins",
     "analyzer_model": "authoring session",
-    "timestamp": "2026-09-29T01:33:00Z",
+    "timestamp": "2026-09-29T17:24:38Z",
     "evals_run": [
       1,
       2,
@@ -223,10 +223,10 @@
       "configuration": "superpowers",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.8889,
+        "pass_rate": 1,
         "passed": 8,
-        "failed": 1,
-        "total": 9,
+        "failed": 0,
+        "total": 8,
         "time_seconds": 54.9,
         "tokens": 262023,
         "tool_calls": 8,
@@ -251,17 +251,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 9838.535976"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10076.188662"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": false,
-          "evidence": "pattern absent"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -286,10 +281,10 @@
       "configuration": "superpowers",
       "run_number": 2,
       "result": {
-        "pass_rate": 0.8889,
+        "pass_rate": 1,
         "passed": 8,
-        "failed": 1,
-        "total": 9,
+        "failed": 0,
+        "total": 8,
         "time_seconds": 39.2,
         "tokens": 181692,
         "tool_calls": 8,
@@ -314,17 +309,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 11982.108879"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 9872.721181"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": false,
-          "evidence": "pattern absent"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -350,9 +340,9 @@
       "run_number": 3,
       "result": {
         "pass_rate": 1,
-        "passed": 9,
+        "passed": 8,
         "failed": 0,
-        "total": 9,
+        "total": 8,
         "time_seconds": 43.2,
         "tokens": 183851,
         "tool_calls": 8,
@@ -377,17 +367,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10373.500774"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10040.153364"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": true,
-          "evidence": "pattern found"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -1834,9 +1819,9 @@
       "run_number": 1,
       "result": {
         "pass_rate": 1,
-        "passed": 9,
+        "passed": 8,
         "failed": 0,
-        "total": 9,
+        "total": 8,
         "time_seconds": 30.3,
         "tokens": 198257,
         "tool_calls": 10,
@@ -1861,17 +1846,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10104.735415"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10296.435863"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": true,
-          "evidence": "pattern found"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -1897,9 +1877,9 @@
       "run_number": 2,
       "result": {
         "pass_rate": 1,
-        "passed": 9,
+        "passed": 8,
         "failed": 0,
-        "total": 9,
+        "total": 8,
         "time_seconds": 38.7,
         "tokens": 326277,
         "tool_calls": 10,
@@ -1924,17 +1904,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 9951.722724"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 9935.658847"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": true,
-          "evidence": "pattern found"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -1960,9 +1935,9 @@
       "run_number": 3,
       "result": {
         "pass_rate": 1,
-        "passed": 9,
+        "passed": 8,
         "failed": 0,
-        "total": 9,
+        "total": 8,
         "time_seconds": 29.1,
         "tokens": 198248,
         "tool_calls": 9,
@@ -1987,17 +1962,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10014.946587"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10097.846545"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": true,
-          "evidence": "pattern found"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -3444,9 +3414,9 @@
       "run_number": 1,
       "result": {
         "pass_rate": 1,
-        "passed": 9,
+        "passed": 8,
         "failed": 0,
-        "total": 9,
+        "total": 8,
         "time_seconds": 27.4,
         "tokens": 117137,
         "tool_calls": 7,
@@ -3471,17 +3441,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10147.151196"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10144.891808"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": true,
-          "evidence": "pattern found"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -3507,9 +3472,9 @@
       "run_number": 2,
       "result": {
         "pass_rate": 1,
-        "passed": 9,
+        "passed": 8,
         "failed": 0,
-        "total": 9,
+        "total": 8,
         "time_seconds": 26.7,
         "tokens": 141324,
         "tool_calls": 7,
@@ -3534,17 +3499,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10081.789361"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 9854.342595"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": true,
-          "evidence": "pattern found"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -3570,9 +3530,9 @@
       "run_number": 3,
       "result": {
         "pass_rate": 1,
-        "passed": 9,
+        "passed": 8,
         "failed": 0,
-        "total": 9,
+        "total": 8,
         "time_seconds": 26,
         "tokens": 117892,
         "tool_calls": 7,
@@ -3597,17 +3557,12 @@
         {
           "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
           "passed": true,
-          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10309.145283"
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 9986.902305"
         },
         {
           "text": "Changed exactly the expected files (2)",
           "passed": true,
           "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
-        },
-        {
-          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
-          "passed": true,
-          "evidence": "pattern found"
         },
         {
           "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
@@ -4996,7 +4951,7 @@
           "evidence": "num_turns=10"
         },
         {
-          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)/)",
+          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'\u201c\u2018`]?output format[\"'\u201d\u2019`]? (?:section|part)\\b/)",
           "passed": false,
           "evidence": "not named: ## Files under `docs/` and `src/` **docs/usage.md** \u2013 Documentation explaining how to run the CLI tool with optional SLUG_MAX environment variable. **docs/ret"
         },
@@ -5044,7 +4999,7 @@
           "evidence": "num_turns=9"
         },
         {
-          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)/)",
+          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'\u201c\u2018`]?output format[\"'\u201d\u2019`]? (?:section|part)\\b/)",
           "passed": false,
           "evidence": "not named: ## File Map **docs/usage.md:line 1** \u2014 Instructions for running the CLI tool to generate URL slugs from titles. **docs/retention.md:line 1** \u2014 Log and backup "
         },
@@ -5198,7 +5153,7 @@
           "evidence": "num_turns=4"
         },
         {
-          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)/)",
+          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'\u201c\u2018`]?tools and paths[\"'\u201d\u2019`]? (?:section|part)\\b/)",
           "passed": false,
           "evidence": "not named: ## Answer **Application logs:** Kept for 30 days, then deleted. [docs/retention.md:3] **Audit logs:** Kept for 400 days. The stated reason is \"the yearly revi"
         },
@@ -5246,7 +5201,7 @@
           "evidence": "num_turns=4"
         },
         {
-          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)/)",
+          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'\u201c\u2018`]?tools and paths[\"'\u201d\u2019`]? (?:section|part)\\b/)",
           "passed": false,
           "evidence": "not named: ## Answer **Application logs:** Kept for 30 days, then deleted. [docs/retention.md](file://<fixture>/docs/retention.md) **Audit logs:** Kept for 400 days, bec"
         },
@@ -5268,9 +5223,9 @@
       "configuration": "agent",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.8333,
-        "passed": 5,
-        "failed": 1,
+        "pass_rate": 1,
+        "passed": 6,
+        "failed": 0,
         "total": 6,
         "time_seconds": 18,
         "tokens": 29974,
@@ -5295,8 +5250,8 @@
         },
         {
           "text": "Report has the agent's return items in order (8)",
-          "passed": false,
-          "evidence": "missing: Files touched; out of order: none"
+          "passed": true,
+          "evidence": "in order: Reproduction > Files touched > Ranked hypotheses > Commands run > Open questions > Noticed outside the brief"
         },
         {
           "text": "Changed no file in the fixture",
@@ -5316,9 +5271,9 @@
       "configuration": "agent",
       "run_number": 2,
       "result": {
-        "pass_rate": 0.8333,
-        "passed": 5,
-        "failed": 1,
+        "pass_rate": 1,
+        "passed": 6,
+        "failed": 0,
         "total": 6,
         "time_seconds": 22.1,
         "tokens": 38119,
@@ -5343,8 +5298,8 @@
         },
         {
           "text": "Report has the agent's return items in order (8)",
-          "passed": false,
-          "evidence": "missing: Files touched; out of order: none"
+          "passed": true,
+          "evidence": "in order: Reproduction > Files touched > Ranked hypotheses > Commands run > Open questions > Noticed outside the brief"
         },
         {
           "text": "Changed no file in the fixture",
@@ -5592,7 +5547,7 @@
           "evidence": "num_turns=1"
         },
         {
-          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)/)",
+          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'\u201c\u2018`]?output format[\"'\u201d\u2019`]? (?:section|part)\\b/)",
           "passed": true,
           "evidence": "named in the report"
         },
@@ -5645,7 +5600,7 @@
           "evidence": "num_turns=1"
         },
         {
-          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)/)",
+          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'\u201c\u2018`]?output format[\"'\u201d\u2019`]? (?:section|part)\\b/)",
           "passed": true,
           "evidence": "named in the report"
         },
@@ -5715,9 +5670,9 @@
       "configuration": "agent",
       "run_number": 2,
       "result": {
-        "pass_rate": 0.8,
-        "passed": 4,
-        "failed": 1,
+        "pass_rate": 1,
+        "passed": 5,
+        "failed": 0,
         "total": 5,
         "time_seconds": 6.3,
         "tokens": 19856,
@@ -5742,8 +5697,8 @@
         },
         {
           "text": "Report has the agent's return items in order (7)",
-          "passed": false,
-          "evidence": "missing: Deviations from the brief, Noticed outside the brief; out of order: none"
+          "passed": true,
+          "evidence": "in order: Files touched > Commands run > Open questions > Deviations from the brief > Noticed outside the brief"
         },
         {
           "text": "No call reached the gh or claude shim",
@@ -5854,9 +5809,9 @@
       "configuration": "agent",
       "run_number": 1,
       "result": {
-        "pass_rate": 0.8,
-        "passed": 4,
-        "failed": 1,
+        "pass_rate": 1,
+        "passed": 5,
+        "failed": 0,
         "total": 5,
         "time_seconds": 7.8,
         "tokens": 19681,
@@ -5881,8 +5836,8 @@
         },
         {
           "text": "Report has the agent's return items in order (6)",
-          "passed": false,
-          "evidence": "missing: Commands run; out of order: none"
+          "passed": true,
+          "evidence": "in order: Permission denial > Files touched > Commands run > Open questions > Noticed outside the brief"
         },
         {
           "text": "No call reached the gh or claude shim",
@@ -5966,7 +5921,7 @@
           "evidence": "num_turns=5"
         },
         {
-          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)/)",
+          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'\u201c\u2018`]?tools and paths[\"'\u201d\u2019`]? (?:section|part)\\b/)",
           "passed": false,
           "evidence": "not named: No permission denials. **Files touched** - `test/truncate.test.js:1-16` (new, 3 tests) **Command** - `npm test 2>&1 | tail -15; echo \"exit=${PIPESTATUS[0]}\"` "
         },
@@ -5988,9 +5943,9 @@
       "configuration": "agent",
       "run_number": 2,
       "result": {
-        "pass_rate": 0.6667,
-        "passed": 4,
-        "failed": 2,
+        "pass_rate": 0.8333,
+        "passed": 5,
+        "failed": 1,
         "total": 6,
         "time_seconds": 8.8,
         "tokens": 20288,
@@ -6014,9 +5969,9 @@
           "evidence": "num_turns=5"
         },
         {
-          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)/)",
-          "passed": false,
-          "evidence": "not named: No permission denials. **Files touched** - `test/truncate.test.js:1-17` (new, 3 tests). `src/` is unchanged and nothing was committed. **Command** - `npm test"
+          "text": "Names the missing brief part (/(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'\u201c\u2018`]?tools and paths[\"'\u201d\u2019`]? (?:section|part)\\b/)",
+          "passed": true,
+          "evidence": "named in the report"
         },
         {
           "text": "Stopped without any tool call",
@@ -6087,9 +6042,9 @@
     },
     "superpowers": {
       "pass_rate": {
-        "mean": 0.9889,
-        "stddev": 0.0342,
-        "min": 0.8889,
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1,
         "max": 1
       },
       "time_seconds": {
@@ -6113,8 +6068,8 @@
     },
     "agent": {
       "pass_rate": {
-        "mean": 0.8683,
-        "stddev": 0.1394,
+        "mean": 0.9058,
+        "stddev": 0.1369,
         "min": 0.6667,
         "max": 1
       },

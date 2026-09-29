@@ -1,7 +1,7 @@
 # Skill Benchmark: fabflows
 
 **Model**: lead claude-fable-5-1, claude-haiku-4-5-20251001, claude-opus-5-5, claude-sonnet-5-5; workers per agent pins
-**Date**: 2026-09-29T01:33:00Z
+**Date**: 2026-09-29T17:24:38Z
 **Evals**: 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 (with_skill 20, without_skill 20, superpowers 20, agent 24 runs each per configuration)
 
 ## Summary

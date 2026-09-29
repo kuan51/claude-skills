@@ -53,7 +53,7 @@ The data is in `runs/iteration-1/`: `cells.json` has one row per run, and `bench
 
 ### Cost and quality per task
 
-Means from `runs/iteration-1/cells.json`. Quality is the share of substantive assertions passed.
+Means from `runs/iteration-1/cells.json` at commit `94514c4`, before the regrade at the end of this iteration. Quality is the share of substantive assertions passed.
 The "No tool call was denied" check is left out.
 
 | Task | without_skill | with_skill | superpowers | with − without | superpowers − without | Quality (wo / ws / sp) | Time s (wo / ws / sp) |
@@ -262,6 +262,44 @@ task 7 arms is robust.
   claude-fable-5-1 in every task run. The dollar notes put the sign after the dollar sign
   (`$+0.23`). The agent arm's note compares it with without_skill, although those arms ran
   different tasks. Use `cells.json` for the per-task, three-arm figures.
+
+### Regraded
+
+[#132](https://github.com/kuan51/claude-skills/issues/132) fixed three grader checks that failed
+correct work, and iteration 1 was regraded in place for the tasks they grade. No session ran
+again. The tables above are as recorded at commit `94514c4`. This section lists what changed.
+
+- **The fixes.** The report-order check counts an item named in the label of a line that
+  another item starts. It also accepts "Files involved" in the investigator's list and "Command"
+  in the test-runner's. The missing-part check accepts "no separate 'tools and paths' section",
+  and the same form for output format. Task 2 no longer checks that `guard.js` contains `pipx`,
+  and its two guard behaviour checks stay.
+- **Before the regrade,** the fixtures of all 33 regraded runs still matched the git state each
+  run recorded.
+
+| Task | Run | Quality before | After | Why it changed |
+|---|---|---|---|---|
+| scoped-edit (superpowers) | 1 | 0.875 | 1 | The `guard.js` text check is gone |
+| scoped-edit (superpowers) | 2 | 0.875 | 1 | The `guard.js` text check is gone |
+| agent-investigator-report | 1 | 0.8 | 1 | "**Files involved:**" counts as Files touched |
+| agent-investigator-report | 2 | 0.8 | 1 | "**Files involved:**" counts as Files touched |
+| agent-editor-report | 2 | 0.75 | 1 | Three items named on one line count |
+| agent-test-runner-report | 1 | 0.75 | 1 | "**Command**" counts as Commands run |
+| agent-test-runner-missing-tools | 2 | 0.6 | 0.8 | It named the missing part, but it still made tool calls, so the stop check fails |
+
+So superpowers' mean quality on scoped-edit is 1, as in the other arms, and no substantive
+assertion in tasks 1-7 fails in any arm. The agent-task total goes from 105/124 to 110/124, the
+"After grader fixes" column above. Researcher report run 1 still fails, because it has no Open
+questions item. No other field of `cells.json` changed, and tasks 1 and 3-7 kept their
+`grading.json`. The task-2 runs carry new test timings in their evidence, and the benchmark
+files carry a new date.
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 1 --tasks 2 --repeats 3 --regrade
+node plugins/fabflows/evals/harness/run.js --iteration 1 --tasks 10,11,12,13,14,15,16,17,18,19,20,21 --regrade
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-1 --skill-name fabflows)
+python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-1 <skill-creator> <abs>/runs/iteration-1/notes.json
+```
 
 ## Iteration 2: lean start
 

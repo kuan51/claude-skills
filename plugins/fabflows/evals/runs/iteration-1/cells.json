@@ -640,7 +640,7 @@
    "version": "0.13.3",
    "treeSha256": "9aaf79fb26568b6b143835da15f6b257ba5ef98be01d646ab2a8b7d118f0663d"
   },
-  "quality": 0.8,
+  "quality": 1,
   "denials": 0,
   "turns": 4,
   "lead_out": 1684,
@@ -676,7 +676,7 @@
    "version": "0.13.3",
    "treeSha256": "9aaf79fb26568b6b143835da15f6b257ba5ef98be01d646ab2a8b7d118f0663d"
   },
-  "quality": 0.8,
+  "quality": 1,
   "denials": 0,
   "turns": 5,
   "lead_out": 1871,
@@ -961,7 +961,7 @@
    "version": "0.13.3",
    "treeSha256": "9aaf79fb26568b6b143835da15f6b257ba5ef98be01d646ab2a8b7d118f0663d"
   },
-  "quality": 0.75,
+  "quality": 1,
   "denials": 0,
   "turns": 4,
   "lead_out": 489,
@@ -1071,7 +1071,7 @@
     "label": "the marketplace entry's source.sha at run time, not tied to the cached copy"
    }
   },
-  "quality": 0.875,
+  "quality": 1,
   "denials": 0,
   "turns": 10,
   "lead_out": 1601,
@@ -1114,7 +1114,7 @@
     "label": "the marketplace entry's source.sha at run time, not tied to the cached copy"
    }
   },
-  "quality": 0.875,
+  "quality": 1,
   "denials": 0,
   "turns": 9,
   "lead_out": 1446,
@@ -1421,7 +1421,7 @@
    "version": "0.13.3",
    "treeSha256": "9aaf79fb26568b6b143835da15f6b257ba5ef98be01d646ab2a8b7d118f0663d"
   },
-  "quality": 0.75,
+  "quality": 1,
   "denials": 0,
   "turns": 5,
   "lead_out": 924,
@@ -1535,7 +1535,7 @@
    "version": "0.13.3",
    "treeSha256": "9aaf79fb26568b6b143835da15f6b257ba5ef98be01d646ab2a8b7d118f0663d"
   },
-  "quality": 0.6,
+  "quality": 0.8,
   "denials": 0,
   "turns": 5,
   "lead_out": 1180,
