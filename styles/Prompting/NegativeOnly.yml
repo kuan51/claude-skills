@@ -1,0 +1,8 @@
+extends: existence
+message: "Say what to do instead, and keep the prohibition: '%s'"
+link: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+level: suggestion
+nonword: true
+scope: sentence
+tokens:
+  - '^(?:Never|Do not|Don[''’]t)\b(?![^\n]*\b(?:instead|rather than)\b)[^\n]*'
