@@ -187,7 +187,7 @@
       "allowedTools": ["Read", "Grep", "Glob"],
       "caps": { "maxTurns": 25, "maxBudgetUsd": 1, "runTimeoutMinutes": 10 },
       "prompt": "**Objective:** Map the files under `docs/` and `src/`: give each file's path with a one-line purpose, and every place `slugify` is defined or called, as `path:line`.\n\n**Tools and paths:** Read, Grep and Glob, under `docs/` and `src/` only.\n\n**Boundaries:** Report only. Look at nothing outside `docs/` and `src/`.",
-      "grade": { "kind": "agent-missing-part", "missing": "(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)" }
+      "grade": { "kind": "agent-missing-part", "missing": "(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'“‘`]?output format[\"'”’`]? (?:section|part)\\b" }
     },
     {
       "id": 12,
@@ -234,7 +234,7 @@
       "allowedTools": ["Read", "Grep", "Glob", "WebFetch", "WebSearch"],
       "caps": { "maxTurns": 25, "maxBudgetUsd": 1, "runTimeoutMinutes": 10 },
       "prompt": "**Objective:** From the local documents in `docs/`, find how long application logs and audit logs are kept, and why.\n\n**Output format:** Your usual report, citing the file you read for each claim.\n\n**Boundaries:** Answer only this question.",
-      "grade": { "kind": "agent-missing-part", "missing": "(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)" }
+      "grade": { "kind": "agent-missing-part", "missing": "(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'“‘`]?tools and paths[\"'”’`]? (?:section|part)\\b" }
     },
     {
       "id": 14,
@@ -331,7 +331,7 @@
       "caps": { "maxTurns": 40, "maxBudgetUsd": 4, "runTimeoutMinutes": 20 },
       "setup": [{ "file": "src/slug.js", "find": ".toLowerCase()", "replace": "" }],
       "prompt": "**Objective:** Review the last commit's change to `src/`. It was meant only to tidy `slugify`, which must still turn \"Hello World\" into \"hello-world\".\n\n**Tools and paths:** Read, Grep, Glob and Bash in this repository. The diff command is `git diff HEAD~1 -- src` and the test command is `npm test`.\n\n**Boundaries:** Review only this change. Do not commit.",
-      "grade": { "kind": "agent-missing-part", "missing": "(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)", "readOnly": true }
+      "grade": { "kind": "agent-missing-part", "missing": "(?:missing|lacks|omits|without)[^.\\n]{0,40}output format|output format[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'“‘`]?output format[\"'”’`]? (?:section|part)\\b", "readOnly": true }
     },
     {
       "id": 18,
@@ -420,7 +420,7 @@
       "allowedTools": ["Read", "Grep", "Glob", "Bash", "Write"],
       "caps": { "maxTurns": 30, "maxBudgetUsd": 2, "runTimeoutMinutes": 15 },
       "prompt": "**Objective:** `truncate` in `src/slug.js` has no tests. Write `test/truncate.test.js` with node:test covering a slug shorter than the limit, one cut mid-word, and one cut right after a hyphen, then run `npm test`.\n\n**Output format:** Your usual report.\n\n**Boundaries:** Do not change `src/`. Do not commit.",
-      "grade": { "kind": "agent-missing-part", "missing": "(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)" }
+      "grade": { "kind": "agent-missing-part", "missing": "(?:missing|lacks|omits|without)[^.\\n]{0,40}tools and paths|tools and paths[^.\\n]{0,40}(?:missing|absent|omitted|not given)|\\bno (?:separate )?[\"'“‘`]?tools and paths[\"'”’`]? (?:section|part)\\b" }
     }
   ]
 }

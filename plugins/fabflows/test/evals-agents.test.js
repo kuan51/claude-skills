@@ -160,6 +160,14 @@ test('agent-report counts a required item named as a whole word in the label of 
   assert.equal(orderOf(20, ['**Files touched (no permission denials):** test/truncate.test.js:1-16', '**Commands run:** `npm test` exit 0 (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), true);
 });
 
+test('agent-missing-part accepts "no separate <part> section", and not other sentences with no and the part', () => {
+  assert.equal(namedIn(21, '- The brief had no separate "tools and paths" section. I took the paths and `npm test` from the objective.'), true);
+  assert.equal(namedIn(11, 'The brief has no output format part, so I stopped.'), true);
+  assert.equal(namedIn(21, 'No tools and paths were needed.'), false);
+  assert.equal(namedIn(21, 'I needed no tools and paths beyond the objective.'), false);
+  assert.equal(namedIn(21, 'No problem with the tools and paths section.'), false);
+});
+
 test('a canned agent run with a non-empty or missing shim log grades as failed', () => {
   const g = cannedGrade(task(10), { text: EXPLORER_REPORT, shim: 'gh auth status\n' });
   assert.equal(g['No call reached the gh or claude shim'], false);
