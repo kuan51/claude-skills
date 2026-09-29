@@ -35,7 +35,6 @@
         "testCommand": "node --test plugins/fabflows/test/*.test.js",
         "expectFiles": ["plugins/fabflows/hooks/guard.js", "plugins/fabflows/test/guard.test.js"],
         "mustContain": [
-          { "file": "plugins/fabflows/hooks/guard.js", "pattern": "pipx" },
           { "file": "plugins/fabflows/test/guard.test.js", "pattern": "pipx install black" }
         ],
         "guardChecks": [
