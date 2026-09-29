@@ -79,8 +79,8 @@ This table splits with_skill minus without_skill, in dollars per run. The figure
 bookkeeping on each lead request's cache write and cache read in `transcript.jsonl`, at the
 rates above. Thinking text is redacted, so deliberation splits lead output by character share
 and is an estimate. Narration could be separated from the residual only on short-chain and
-triage-failures, and verification on build-component not at all. That part of the attribution
-#123 asked for is missing.
+triage-failures, and verification on build-component not at all. So that part of the
+attribution #123 asked for is missing.
 
 | Task | Gap | Start-up¹ | Deliberation | Workers, net of reading saved | Verification | Narration | Other / residual |
 |---|---|---|---|---|---|---|---|
