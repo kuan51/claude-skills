@@ -78,3 +78,14 @@ jobs:
       - name: vale-warn-gate self-test
         if: ${{ !cancelled() }}
         run: bash plugins/fabflows/evals/prose/test_vale_warn_gate.sh
+      # Self-test for the Prompting style's rule files. No vale sync needed.
+      - name: Prompting style self-test
+        if: ${{ !cancelled() }}
+        run: bash plugins/fabflows/evals/prose/test_prompting_style.sh
+      # Prints every Prompting suggestion in the fabflows prompts. Advice only:
+      # it never fails the job. Relative paths, since an absolute path skips
+      # every path-specific .vale.ini section.
+      - name: Prompting report
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: vale --minAlertLevel=suggestion --filter='.Name matches "^Prompting"' plugins/fabflows/agents plugins/fabflows/skills
