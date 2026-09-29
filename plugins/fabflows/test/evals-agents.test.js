@@ -140,6 +140,10 @@ test('agent-report accepts iteration 1\'s own forms, each only in the list of th
   assert.equal(orderOf(20, ['No permission denials.', '**Files touched**', '**Command**', '- **Confirmed:** The three new tests pass.', '**Open questions**', '**Outside the brief**']), true);
   assert.equal(orderOf(18, ['- Files involved: src/slug.js:6', '- Commands run: `npm test` (confirmed)', '- Open questions: none', '- Deviations: none', '- Outside the brief: none']), false, 'Files involved is the investigator\'s form only');
   assert.equal(orderOf(16, ['**REWORK.**', '**Must-fix**', '**Notes**', '**Files read:** src/slug.js:1-9', '**Command**', '**Open questions:** none', '**Outside the brief:** none (confirmed)']), false, 'Command is the test-runner\'s form only');
+  // A report of the same agent that really lacks the item still fails.
+  assert.equal(orderOf(14, ['**Reproduction:** `npm test` exits 1 (confirmed)', '**Hypotheses (ranked)**', '**Commands run:**', '**Open questions:**', '**Outside the brief:**']), false, 'investigator with no files item');
+  assert.equal(orderOf(20, ['**Files touched**', '- **Confirmed:** The three new tests pass.', '**Open questions**', '**Outside the brief**']), false, 'test-runner with no commands item');
+  assert.equal(orderOf(20, ['**Files touched:** test/truncate.test.js. I ran the command `npm test` and it exited 0.', '- **Confirmed:** The three new tests pass.', '**Open questions**', '**Outside the brief**']), false, 'command only in prose');
 });
 
 test('agent-report counts a required item named as a whole word in the label of a line another required item starts', () => {
@@ -168,6 +172,11 @@ test('agent-missing-part accepts "no separate <part> section", and not other sen
   assert.equal(namedIn(21, 'No tools and paths were needed.'), false);
   assert.equal(namedIn(21, 'I needed no tools and paths beyond the objective.'), false);
   assert.equal(namedIn(21, 'No problem with the tools and paths section.'), false);
+  for (const id of [11, 17]) {
+    assert.equal(namedIn(id, 'No output format was needed.'), false);
+    assert.equal(namedIn(id, 'I needed no output format beyond the objective.'), false);
+    assert.equal(namedIn(id, 'No problem with the output format section.'), false);
+  }
 });
 
 test('a canned agent run with a non-empty or missing shim log grades as failed', () => {
