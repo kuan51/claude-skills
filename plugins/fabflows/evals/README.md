@@ -316,7 +316,7 @@ read-only rule, but not the investigator's one sentence that allows re-running a
 regression run shows that each gate can fail:
 
 ```bash
-D=$(mktemp -d) && cp -r plugins/fabflows "$D/ff-order"
+D=$(mktemp -d) && mkdir "$D/ff-order" && git archive 45978ed plugins/fabflows | tar -x -C "$D/ff-order" --strip-components=2
 (cd "$D/ff-order" && git apply -p3 "$OLDPWD/plugins/fabflows/evals/regressions/report-order.patch")
 node plugins/fabflows/evals/harness/run.js --iteration <n> --tasks 14,16,20 --config-name regress-order --plugin-dir "$D/ff-order" --confirm
 ```
