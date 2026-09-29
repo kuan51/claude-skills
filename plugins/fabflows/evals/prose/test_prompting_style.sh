@@ -28,6 +28,7 @@ check NegativeOnly hit '- **Never commit secrets.** Keep them out of the diff.'
 check NegativeOnly none 'You should never push to master.'
 check NegativeOnly none 'Never push to master, and open a pull request instead.'
 check NegativeOnly none 'Do not merge the branch rather than rebase it.'
+check NegativeOnly none $'Never push to master, and open a pull request\ninstead.'
 for w in MUST NEVER ALWAYS CRITICAL IMPORTANT; do
   check CapsEmphasis hit "You $w read the file."
 done

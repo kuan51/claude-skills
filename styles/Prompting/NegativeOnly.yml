@@ -5,4 +5,4 @@ level: suggestion
 nonword: true
 scope: sentence
 tokens:
-  - '^(?:Never|Do not|Don[''’]t)\b(?![^\n]*\b(?:instead|rather than)\b)[^\n]*'
+  - '^(?:Never|Do not|Don[''’]t)\b(?![\s\S]*\b(?:instead|rather than)\b)[^\n]*'
