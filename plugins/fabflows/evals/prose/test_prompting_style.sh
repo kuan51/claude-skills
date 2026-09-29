@@ -35,6 +35,7 @@ check() {
 check NegativeOnly hit 'Never push to master.'
 check NegativeOnly hit 'Do not merge the branch.'
 check NegativeOnly hit "Don't rebase the branch."
+check NegativeOnly hit 'Don’t rebase the branch.'
 check NegativeOnly hit '- **Never commit secrets.** Keep them out of the diff.'
 check NegativeOnly hit '**Never commit** unless your brief says so.'
 check NegativeOnly hit 'Do NOT edit the file.'
@@ -53,7 +54,10 @@ check NegativeOnly none $'Never edit the original, rather\nthan the copy.'
 check NegativeOnly none 'Never edit the file. Instead, open a ticket.'
 check NegativeOnly none 'Never push to master. Open a pull request instead.'
 check NegativeOnly none 'Never delete a file: use an inert stand-in.'
-for w in MUST NEVER ALWAYS CRITICAL IMPORTANT NOT ONLY STOP "DON'T"; do
+check NegativeOnly none 'Never push to master; use a pull request.'
+check NegativeOnly none 'Never edit SKILL.md, and write a copy instead.'
+check NegativeOnly none 'Never-ending loops are bad.'
+for w in MUST NEVER ALWAYS CRITICAL IMPORTANT NOT ONLY STOP "DON'T" 'DON’T'; do
   check CapsEmphasis hit "You $w read the file."
 done
 check CapsEmphasis none 'You must read the file.'

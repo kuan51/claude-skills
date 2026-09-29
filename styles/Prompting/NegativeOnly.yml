@@ -3,12 +3,13 @@ message: "Say what to do instead, and keep the prohibition: '%s'"
 link: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
 level: suggestion
 nonword: true
-# Paragraph scope, so the alternative can sit in the next sentence. The match is the opener and
-# the word after it, which appear verbatim in the source: Vale drops a match that spans markup
-# such as **bold**, and places a bare "Never" on the paragraph's first one.
+# Paragraph scope, so the alternative can sit in the next sentence. A dot with no space after it,
+# as in SKILL.md, does not end a sentence. The match is the opener and the word after it: Vale
+# places a bare "Never" on the paragraph's first one, and drops a match it cannot find verbatim in
+# the source, so an opener split from its next word by markup (**Never** push) is missed.
 # ponytail: word markers only ("instead", "rather than", or a colon or semicolon before an
 # imperative, in this sentence or the next). An alternative stated any other way, such as an
 # instruction in the sentence before, is still flagged. A Vale script rule if that matters.
 scope: paragraph
 tokens:
-  - '(?m)(?:(?<=^\s*)|(?<=[.!?]["''’”)\]]*\s+))(?:N(?i:ever)|D(?i:o)\s+(?i:not)|D(?i:on[''’]t))\b(?:\s+[\w''’-]+)?(?![^.!?]*(?:[.!?]+\s+[^.!?]*)?(?:\b(?i:instead|rather\s+than)\b|[:;]\s+(?i:use|cite|quote|say|name|report|ask|run|keep|write|point)\b))'
+  - '(?m)(?:(?<=^\s*)|(?<=[.!?]["''’”)\]]*\s+))(?:N(?i:ever)|D(?i:o)\s+(?i:not)|D(?i:on[''’]t))(?![\w''’-])(?:\s+[\w''’-]+)?(?!(?:[^.!?]|[.!?](?=\S))*(?:[.!?]+\s+(?:[^.!?]|[.!?](?=\S))*)?(?:\b(?i:instead|rather\s+than)\b|[:;]\s+(?i:use|cite|quote|say|name|report|ask|run|keep|write|point)\b))'
