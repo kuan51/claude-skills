@@ -1,0 +1,1723 @@
+{
+  "metadata": {
+    "skill_name": "fabflows",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "lead claude-fable-5-1; workers per agent pins",
+    "analyzer_model": "authoring session",
+    "timestamp": "2026-09-29T16:18:42Z",
+    "evals_run": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "runs_per_configuration": "lean-start 18, master 6, master-rerun 3"
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "lean-start",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 30.2,
+        "tokens": 192706,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "lean-start",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 26.6,
+        "tokens": 135428,
+        "tool_calls": 4,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=7"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=7"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "lean-start",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 28.2,
+        "tokens": 163738,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "lean-start",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 33.6,
+        "tokens": 250737,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=11"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=11"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10672.567773"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
+        },
+        {
+          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "Guard denies `pipx install black`",
+          "passed": true,
+          "evidence": "guard.js decision: deny"
+        },
+        {
+          "text": "Guard allows `pipx run black --check .`",
+          "passed": true,
+          "evidence": "guard.js decision: allow"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "lean-start",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 35.2,
+        "tokens": 251242,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=11"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=11"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10184.820777"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
+        },
+        {
+          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "Guard denies `pipx install black`",
+          "passed": true,
+          "evidence": "guard.js decision: deny"
+        },
+        {
+          "text": "Guard allows `pipx run black --check .`",
+          "passed": true,
+          "evidence": "guard.js decision: allow"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "lean-start",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 30.4,
+        "tokens": 250634,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=11"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=11"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10009.953937"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M plugins/fabflows/hooks/guard.js, M plugins/fabflows/test/guard.test.js"
+        },
+        {
+          "text": "plugins/fabflows/hooks/guard.js contains /pipx/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "plugins/fabflows/test/guard.test.js contains /pipx install black/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": "Guard denies `pipx install black`",
+          "passed": true,
+          "evidence": "guard.js decision: deny"
+        },
+        {
+          "text": "Guard allows `pipx run black --check .`",
+          "passed": true,
+          "evidence": "guard.js decision: allow"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "lean-start",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 42.8,
+        "tokens": 208885,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=13"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=13"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10299.158758"
+        },
+        {
+          "text": "A new *.test.js file exists under plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "new: plugins/fabflows/test/parse-frontmatter.test.js"
+        },
+        {
+          "text": "Changed nothing outside plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "only test files changed"
+        },
+        {
+          "text": "New test targets parseFrontmatter and covers the three cases",
+          "passed": true,
+          "evidence": "4 test() calls; all required mentions present"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "lean-start",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 41.1,
+        "tokens": 233501,
+        "tool_calls": 7,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=10"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=10"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10252.320417"
+        },
+        {
+          "text": "A new *.test.js file exists under plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "new: plugins/fabflows/test/frontmatter-helper.test.js"
+        },
+        {
+          "text": "Changed nothing outside plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "only test files changed"
+        },
+        {
+          "text": "New test targets parseFrontmatter and covers the three cases",
+          "passed": true,
+          "evidence": "3 test() calls; all required mentions present"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "lean-start",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 63.6,
+        "tokens": 168309,
+        "tool_calls": 7,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=10"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=10"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test plugins/fabflows/test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 10456.542563"
+        },
+        {
+          "text": "A new *.test.js file exists under plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "new: plugins/fabflows/test/frontmatter-helper.test.js"
+        },
+        {
+          "text": "Changed nothing outside plugins/fabflows/test/",
+          "passed": true,
+          "evidence": "only test files changed"
+        },
+        {
+          "text": "New test targets parseFrontmatter and covers the three cases",
+          "passed": true,
+          "evidence": "3 test() calls; all required mentions present"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "lean-start",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 33.4,
+        "tokens": 191407,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=12"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=12"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 87.721165"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "lean-start",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 20.4,
+        "tokens": 192330,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=12"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=12"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 87.747842"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "lean-start",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 19.4,
+        "tokens": 191202,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=11"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=11"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 85.395359"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "lean-start",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 207.1,
+        "tokens": 310272,
+        "tool_calls": 20,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Lists every record (13)",
+          "passed": true,
+          "evidence": "all ids present"
+        },
+        {
+          "text": "Gives each record its own title",
+          "passed": true,
+          "evidence": "first four words of every title match"
+        },
+        {
+          "text": "Gives each record its frontmatter status",
+          "passed": true,
+          "evidence": "every status matches"
+        },
+        {
+          "text": "Gives the chosen option number for every record that states one (12)",
+          "passed": true,
+          "evidence": "every chosen option matches"
+        },
+        {
+          "text": "Says something about each record beyond its metadata (20+ words in its row)",
+          "passed": true,
+          "evidence": "every row carries a summary"
+        },
+        {
+          "text": "Invents no record id",
+          "passed": true,
+          "evidence": "19 id mentions, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "lean-start",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 225.6,
+        "tokens": 342617,
+        "tool_calls": 20,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Lists every record (13)",
+          "passed": true,
+          "evidence": "all ids present"
+        },
+        {
+          "text": "Gives each record its own title",
+          "passed": true,
+          "evidence": "first four words of every title match"
+        },
+        {
+          "text": "Gives each record its frontmatter status",
+          "passed": true,
+          "evidence": "every status matches"
+        },
+        {
+          "text": "Gives the chosen option number for every record that states one (12)",
+          "passed": true,
+          "evidence": "every chosen option matches"
+        },
+        {
+          "text": "Says something about each record beyond its metadata (20+ words in its row)",
+          "passed": true,
+          "evidence": "every row carries a summary"
+        },
+        {
+          "text": "Invents no record id",
+          "passed": true,
+          "evidence": "16 id mentions, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 5,
+      "configuration": "lean-start",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 10,
+        "failed": 0,
+        "total": 10,
+        "time_seconds": 169.7,
+        "tokens": 308018,
+        "tool_calls": 21,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=10"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=10"
+        },
+        {
+          "text": "Lists every record (13)",
+          "passed": true,
+          "evidence": "all ids present"
+        },
+        {
+          "text": "Gives each record its own title",
+          "passed": true,
+          "evidence": "first four words of every title match"
+        },
+        {
+          "text": "Gives each record its frontmatter status",
+          "passed": true,
+          "evidence": "every status matches"
+        },
+        {
+          "text": "Gives the chosen option number for every record that states one (12)",
+          "passed": true,
+          "evidence": "every chosen option matches"
+        },
+        {
+          "text": "Says something about each record beyond its metadata (20+ words in its row)",
+          "passed": true,
+          "evidence": "every row carries a summary"
+        },
+        {
+          "text": "Invents no record id",
+          "passed": true,
+          "evidence": "19 id mentions, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "lean-start",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 68.7,
+        "tokens": 194180,
+        "tool_calls": 7,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=8"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=8"
+        },
+        {
+          "text": "Names every failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Names every file with a failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Invents no test file",
+          "passed": true,
+          "evidence": "3 test files mentioned, all real"
+        },
+        {
+          "text": "Reports no passing file as failing",
+          "passed": true,
+          "evidence": "no false failures"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "lean-start",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 68.1,
+        "tokens": 196501,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=11"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=11"
+        },
+        {
+          "text": "Names every failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Names every file with a failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Invents no test file",
+          "passed": true,
+          "evidence": "3 test files mentioned, all real"
+        },
+        {
+          "text": "Reports no passing file as failing",
+          "passed": true,
+          "evidence": "no false failures"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 6,
+      "configuration": "lean-start",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 33.3,
+        "tokens": 135647,
+        "tool_calls": 4,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=7"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=7"
+        },
+        {
+          "text": "Names every failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Names every file with a failing test (3)",
+          "passed": true,
+          "evidence": "missing: none"
+        },
+        {
+          "text": "Invents no test file",
+          "passed": true,
+          "evidence": "3 test files mentioned, all real"
+        },
+        {
+          "text": "Reports no passing file as failing",
+          "passed": true,
+          "evidence": "no false failures"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "master",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 161.9,
+        "tokens": 264863,
+        "tool_calls": 25,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=8"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=8"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "master",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 46.4,
+        "tokens": 166033,
+        "tool_calls": 5,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=8"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=8"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "master",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 26.3,
+        "tokens": 140230,
+        "tool_calls": 5,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=8"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=8"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "master",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 19,
+        "tokens": 193406,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=12"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=12"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 85.41384"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "master",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 20.6,
+        "tokens": 194432,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=12"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=12"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 83.990082"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 4,
+      "configuration": "master",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 20.2,
+        "tokens": 194266,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=13"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=13"
+        },
+        {
+          "text": "Test command passes in the fixture (node --test test/*.test.js)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 87.30068"
+        },
+        {
+          "text": "Changed exactly the expected files (2)",
+          "passed": true,
+          "evidence": "git status: M .claude-plugin/marketplace.json, M plugins/fabflows/.claude-plugin/plugin.json"
+        },
+        {
+          "text": "plugins/fabflows/.claude-plugin/plugin.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        },
+        {
+          "text": ".claude-plugin/marketplace.json contains /\"version\": \"0.3.7\"/",
+          "passed": true,
+          "evidence": "pattern found"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "master-rerun",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 28.3,
+        "tokens": 166043,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "master-rerun",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 28,
+        "tokens": 165792,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "master-rerun",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 27.9,
+        "tokens": 165612,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=9"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (80)",
+          "passed": true,
+          "evidence": "num_turns=9"
+        },
+        {
+          "text": "Names every agent file (18 agents)",
+          "passed": true,
+          "evidence": "all 18 agent paths present"
+        },
+        {
+          "text": "Reports the correct model for every pinned agent (7)",
+          "passed": true,
+          "evidence": "every pinned model matches the frontmatter"
+        },
+        {
+          "text": "Gives the model pin as path:line for every pinned agent",
+          "passed": true,
+          "evidence": "every pinned agent cited with its line number"
+        },
+        {
+          "text": "Flags every agent without a model pin (11)",
+          "passed": true,
+          "evidence": "every unpinned agent is flagged"
+        },
+        {
+          "text": "Invents no agent file",
+          "passed": true,
+          "evidence": "18 distinct agent paths mentioned, all real"
+        },
+        {
+          "text": "Changed nothing in the repo",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "lean-start": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 65.4111,
+        "stddev": 64.7239,
+        "min": 19.4,
+        "max": 225.6
+      },
+      "tokens": {
+        "mean": 217630.7778,
+        "stddev": 58649.8865,
+        "min": 135428,
+        "max": 342617
+      },
+      "cost_usd": {
+        "mean": 0.5879,
+        "stddev": 0.1592,
+        "min": 0.4634,
+        "max": 0.9375
+      }
+    },
+    "master": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 49.0667,
+        "stddev": 56.2218,
+        "min": 19,
+        "max": 161.9
+      },
+      "tokens": {
+        "mean": 192205.0,
+        "stddev": 41656.2332,
+        "min": 140230,
+        "max": 264863
+      },
+      "cost_usd": {
+        "mean": 0.5397,
+        "stddev": 0.0854,
+        "min": 0.4775,
+        "max": 0.6911
+      }
+    },
+    "master-rerun": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 28.0667,
+        "stddev": 0.2082,
+        "min": 27.9,
+        "max": 28.3
+      },
+      "tokens": {
+        "mean": 165815.6667,
+        "stddev": 216.4725,
+        "min": 165612,
+        "max": 166043
+      },
+      "cost_usd": {
+        "mean": 0.5158,
+        "stddev": 0.0047,
+        "min": 0.5125,
+        "max": 0.5212
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+16.3",
+      "tokens": "+25426"
+    }
+  },
+  "notes": [
+    "Iteration 2 tests the lean-start variant (#133): lean-start ran tasks 1-6 three times each; master ran tasks 1 and 4 as a drift check against iteration 1, and master-rerun ran task 1 again. Per-task figures and the verdict are in plugins/fabflows/evals/RESULTS.md, iteration 2.",
+    "The configurations ran different task sets, so the pooled figures and the delta on this tab are not comparisons. Read per-task figures from cells.json.",
+    "Cost: lean-start mean $0.59 per run",
+    "Cost: master mean $0.54 per run",
+    "Cost: master-rerun mean $0.52 per run"
+  ]
+}

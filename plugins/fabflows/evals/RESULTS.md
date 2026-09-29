@@ -6,7 +6,7 @@ to 0.13 under a method that is now retired, and it can be read at commit `dce556
 iteration numbers cited in code comments, in DEC-0014, DEC-0015 and DEC-0016, and in the specs
 under `docs/specs/` refer to that record.
 [#123](https://github.com/kuan51/claude-skills/issues/123) records iteration 1 of this one: the
-baseline against no skill and against superpowers.
+baseline against no skill and against superpowers. [#133](https://github.com/kuan51/claude-skills/issues/133) records iteration 2, the lean start.
 
 ## Iteration 1: the baseline against no skill and superpowers
 
@@ -262,3 +262,156 @@ task 7 arms is robust.
   claude-fable-5-1 in every task run. The dollar notes put the sign after the dollar sign
   (`$+0.23`). The agent arm's note compares it with without_skill, although those arms ran
   different tasks. Use `cells.json` for the per-task, three-arm figures.
+
+## Iteration 2: lean start
+
+Tracked in [#133](https://github.com/kuan51/claude-skills/issues/133). This iteration answers one
+question. If the text the lead needs only when something goes wrong leaves the skill's start-up
+load, does a run cost less, with no loss of quality?
+
+The data is in `runs/iteration-2/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. Its configurations ran different tasks, so its
+pooled figures and its delta are not comparisons. The transcripts are not tracked.
+
+### Setup
+
+- **The variant.** `lean-start` is fabflows 0.13.7 with `snapshots/lean-start.patch` applied,
+  built with the recipe in the evals README ("Skill variants"). It moves the "When it goes
+  wrong" table and four of the five "Long sessions" bullets, word for word, to a new
+  `skills/fabflows/references/recovery.md`. Each section keeps its heading and gains one pointer
+  to that file. The sentence "Surface a permission denial to the user" gains "with the exact
+  call", because the moved table was the only place that said so. The skill text the lead loads
+  falls from 11,209-11,221 chars on master to 9,786 (`skill_chars`).
+- **Runs.** The with_skill arm only, lead claude-fable-5-1 at medium effort, one session at a
+  time. The prompt, caps and clean-room settings are iteration 1's. The environment differs in
+  one way: since [#128](https://github.com/kuan51/claude-skills/issues/128) the harness removes
+  the launching session's variables itself, and it keeps two network settings that iteration 1's
+  wrapper script removed.
+- **Baseline.** Iteration 1's with_skill runs, after a drift check on today's master.
+
+### Readability probe
+
+A lead in the harness was once refused a Read of `references/build-loop.md` (DEC-0016), and no
+task 1-6 reads `references/`. So one session, launched the way `run.js` launches a cell, was
+asked to Read the snapshot's `references/recovery.md` and quote its first line. It returned
+`# Recovery and long sessions`, a match, with no permission denial, for $0.0224. The session ran
+on Haiku, since the probe tests only whether the Read is allowed.
+
+### Drift check
+
+Master's plugin ran tasks 1 and 4, three times each. Each task's mean had to lie within iteration
+1's with_skill mean ± 2 sample sd: task 1 $0.5084-$0.5548, task 4 $0.4610-$0.5290.
+
+| Task | Runs | Mean | In range |
+|---|---|---|---|
+| wide-search (`master`) | $0.6911, $0.5058, $0.5921 | $0.5963 | no |
+| short-chain (`master`) | $0.4775, $0.4842, $0.4878 | $0.4832 | yes |
+| wide-search (`master-rerun`) | $0.5212, $0.5137, $0.5125 | $0.5158 | yes |
+
+Task 1 landed out of range because of the lead's choices, not the environment. The $0.6911 run
+spawned a `fabflows:explorer`, which no iteration 1 wide-search run did. The start-up context
+did not move: every master run's first request held 23,441-23,458 tokens, and its start-up
+cache write 15,889-15,929 tokens, against 15,888-15,973 in iteration 1. The owner chose to
+re-run task 1 as `master-rerun`. It landed in range, and the owner chose to compare the variant
+against iteration 1.
+
+Lean-start minus master, reported because the drift tolerance is as large as the expected
+saving: task 1 −$0.0065 against `master-rerun` (−$0.0870 against `master`, −$0.0467 against all
+six master runs), and task 4 −$0.0065.
+
+### Cost and quality per task
+
+Means from both iterations' `cells.json`. The cap is iteration 1's with_skill mean plus 2
+sample sd. Start-up tokens are each run's cache-write tokens over the lead's requests up to and
+including the first request after the second Skill result, summed over distinct request ids
+in `transcript.jsonl`.
+
+| Task | Iteration 1 with_skill (sd) | Cap | lean-start | lean-start − iteration 1 | Quality | Start-up tokens, iteration 1 (runs 1/2/3) | Start-up tokens, lean-start (runs 1/2/3) |
+|---|---|---|---|---|---|---|---|
+| wide-search | $0.5316 (0.0116) | $0.5548 | $0.5093 | −$0.0223 | 1 | 15,906 / 15,916 / 15,913 | 15,439 / 15,439 / 15,442 |
+| scoped-edit | $0.5326 (0.0498) | $0.6322 | $0.4920 | −$0.0406 | 1 | 15,954 / 15,959 / 15,958 | 15,487 / 15,492 / 15,478 |
+| write-tests | $0.5648 (0.0627) | $0.6903 | $0.5797 | +$0.0148 | 1 | 15,973 / 15,963 / 15,957 | 15,489 / 15,492 / 15,494 |
+| short-chain | $0.4950 (0.0170) | $0.5290 | $0.4766 | −$0.0184 | 1 | 15,922 / 15,922 / 15,932 | 15,452 / 15,443 / 15,458 |
+| deep-read | $1.0014 (0.1634) | $1.3281 | $0.9197 | −$0.0817 | 1 | 15,891 / 15,896 / 15,888 | 15,417 / 15,420 / 15,425 |
+| triage-failures | $0.5481 (0.0130) | $0.5740 | $0.5499 | +$0.0018 | 1 | 15,892 / 15,898 / 15,897 | 15,424 / 15,437 / 15,427 |
+
+What this shows:
+
+- **The start-up write fell by about 470 tokens a run.** The mean is 15,453 against 15,924 in
+  iteration 1 and 15,897 on master. At the 1-hour cache-write rate in iteration 1's Setup, $20
+  per 1M, that is about $0.009 a run.
+- **The cost differences are mostly noise.** They run from −$0.082 to +$0.015 a task, far larger
+  than the $0.009 the start-up saves, and they point both ways. The lead's own choices, such as
+  whether to spawn a worker, move a run's cost more than the trim does.
+- **Quality held.** Every run passed every check, and no tool call was denied.
+- **The worker calls barely changed.** deep-read spawned 1 worker per run (iteration 1: 1, 2
+  and 1). triage-failures spawned 1 in runs 1 and 2, and none in run 3, where iteration 1
+  spawned 1 in every run.
+
+### Verdict
+
+The variant is adopted: every part of the bar holds. Computed from `plugins/fabflows/evals/runs`:
+
+```bash
+node -e '
+const a=require("./iteration-1/cells.json").filter(c=>c.arm==="with_skill"),L=require("./iteration-2/cells.json").filter(c=>c.arm==="lean-start");
+const m=x=>x.reduce((s,v)=>s+v,0)/x.length,sd=x=>Math.sqrt(x.reduce((s,v)=>s+(v-m(x))**2,0)/(x.length-1)),k=(r,t)=>r.filter(c=>c.task===t).map(c=>c.cost),f=v=>v.toFixed(4);
+console.log("runs",L.length,"quality 1:",L.every(c=>c.quality===1),"denials 0:",L.every(c=>c.denials===0));
+const P=["wide-search","short-chain","triage-failures"],p1=m(P.flatMap(t=>k(a,t))),p2=m(P.flatMap(t=>k(L,t)));console.log("pooled 1,4,6:",f(p2),"<",f(p1),p2<p1);
+for(const t of [...new Set(L.map(c=>c.task))]){const x=k(a,t),y=m(k(L,t)),cap=m(x)+2*sd(x);console.log(t+":",f(y),"<=",f(cap),y<=cap)}'
+```
+
+```text
+runs 18 quality 1: true denials 0: true
+pooled 1,4,6: 0.5119 < 0.5249 true
+wide-search: 0.5093 <= 0.5548 true
+scoped-edit: 0.4920 <= 0.6322 true
+write-tests: 0.5797 <= 0.6903 true
+short-chain: 0.4766 <= 0.5290 true
+deep-read: 0.9197 <= 1.3281 true
+triage-failures: 0.5499 <= 0.5740 true
+```
+
+| Part of the bar | Result |
+|---|---|
+| Every run passes all its substantive assertions | Holds: 18 of 18 runs at quality 1 |
+| Every run has `denials` 0 | Holds |
+| Mean over the 9 runs of tasks 1, 4 and 6 below $0.5249 | Holds: $0.5119 |
+| No task's mean more than 2 sd above iteration 1's | Holds: see the cap column above |
+| The tests pass | Holds: `node --test plugins/fabflows/test/*.test.js` 177 of 177 on the shipped skill, `node --test "test/*.test.js"` 4 of 4, `bats plugins/fabflows/test/pm` 37 of 37 |
+
+The pooled bar passing is not proof of a saving on its own: its margin, $0.013, is far smaller
+than the $0.08 gap between the two master batches on task 1. The start-up tokens are the
+evidence that the trim saves what it should.
+
+### Cost of this iteration
+
+$15.39 at list price: the probe $0.0224, the drift check $3.2384, the task 1 re-run $1.5474
+and the variant $10.5816.
+
+### Commands
+
+```bash
+mkdir -p plugins/fabflows/evals/runs/snapshots/lean-start
+cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/lean-start/
+patch -p3 -d plugins/fabflows/evals/runs/snapshots/lean-start < plugins/fabflows/evals/snapshots/lean-start.patch
+node plugins/fabflows/evals/harness/run.js --iteration 2 --arms with_skill --tasks 1,4 --repeats 3 --config-name master --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 2 --arms with_skill --tasks 1 --repeats 3 --config-name master-rerun --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 2 --arms with_skill --plugin-dir plugins/fabflows/evals/runs/snapshots/lean-start --config-name lean-start --tasks 1,2,3,4,5,6 --repeats 3 --confirm
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-2 --skill-name fabflows)
+python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-2 <skill-creator> <abs>/runs/iteration-2/notes.json
+```
+
+`run.js` writes `cells.json` when a batch ends. The probe is not a harness command: it was one
+`claude -p` session with the environment `lockedEnv` builds, the clean-room settings,
+`--permission-mode dontAsk`, `--setting-sources project`, `--strict-mcp-config`,
+`--plugin-dir plugins/fabflows/evals/runs/snapshots/lean-start` and `tasks.json`'s allowed tools.
+
+### Confounds
+
+- **One session at a time.** Iteration 1 ran 3 sessions at a time and this one ran 1. The drift
+  check ran the same way as the variant, and it landed in range after the task 1 re-run.
+- **Two network settings.** See Setup. They did not change the start-up context (the drift check
+  above).
+- **Three runs per task.** The per-task differences are within the noise of 3 runs, so only the
+  start-up token count is a firm result.
