@@ -250,8 +250,9 @@ confounds.
 
 ## Long sessions
 
-The [skill](skills/fabflows/SKILL.md) carries the long-session habits. The lead runs at
-the session's effort; only the workers pin their own, per the table above.
+The skill's [recovery reference](skills/fabflows/references/recovery.md) carries the
+long-session habits. The lead runs at the session's effort; only the workers pin their own,
+per the table above.
 
 On a Claude subscription within plan usage, the main conversation's prompt cache already
 lives one hour. Workers and the build loop get five minutes, so set
