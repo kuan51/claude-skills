@@ -106,6 +106,9 @@ Every session also gets an empty `gh` config directory (`GH_CONFIG_DIR`) and a f
 `origin` cannot resolve, so nothing a session does reaches a real repository or GitHub. Every
 session also drops the GitHub tokens and gets a git locked out of this machine's credentials,
 as listed under [isolation](#isolation); the agent tasks get the `gh` and `claude` shims on top.
+No session inherits the variables of a Claude Code session that launched the harness, such as
+its tools, skills, scratchpad or effort. Login, provider and network settings still pass through,
+and `run.json` lists every removed name as `droppedEnv`.
 
 Confounds that remain, shared by every arm: plugins the organization requires still load. In
 the smoke run before iteration 1, project-only settings also kept out every user-level agent
@@ -242,7 +245,32 @@ machine's credentials, so every session is locked out of them (`lockedEnv` in `h
   (`GIT_TERMINAL_PROMPT=0`, `GIT_SSH_COMMAND=false`). The `core.autocrlf` and `core.eol` the
   harness prepared the fixture with are pinned in the fixture's own config, so the session sees
   a clean `git status`.
+- git configuration passed in the environment (`GIT_CONFIG_COUNT`, `GIT_CONFIG_KEY_<n>`,
+  `GIT_CONFIG_VALUE_<n>`, `GIT_CONFIG_PARAMETERS`) is unset. git reads it whatever
+  `GIT_CONFIG_NOSYSTEM` and `GIT_CONFIG_GLOBAL` say, so it could carry a credential helper.
 - The fixture's `origin` is `https://fixture.invalid/...`, a host that cannot resolve.
+
+When the harness runs inside another Claude Code session, as iteration 1 did in a cloud session,
+that session's variables would reach every test session and change its tools, skills, scratchpad,
+messaging socket and effort. `lockedEnv` removes them before it sets anything:
+
+- `CLAUDECODE`, and every name starting `CLAUDE_` or `CCR_` except an exact keep-list.
+- `SESSION_INGRESS_URL`, `MAX_THINKING_TOKENS`, `AI_AGENT`, `TRACEPARENT`,
+  `SBX_TELEMETRY_SOCKET`, `DOCUMENTS_MCP_SCRATCH_ROOT`, `USE_SHTTP_MCP`,
+  `MCP_CONNECTION_NONBLOCKING`, `MCP_TOOL_TIMEOUT`, `ENVRUNNER_SKIP_ACK` and
+  `ENV_MANAGER_ENABLE_DIAG_LOGS`.
+
+Names match in any case. The keep-list (`KEEP_ENV` in `harness/run.js`) holds the names the
+Claude Code CLI reads for login and config (`CLAUDE_CODE_OAUTH_TOKEN`, `CLAUDE_CONFIG_DIR` and
+the like), for the provider (`CLAUDE_CODE_USE_BEDROCK`, `CLAUDE_CODE_SKIP_BEDROCK_AUTH` and the
+other providers' forms), and for the network (client certificates, proxy host resolution, stream
+watchdogs and timeouts). A harness launched outside a cloud session logs in as before. Each name
+is exact, because a prefix would keep session variables too, such as `CLAUDE_CODE_USE_CCR_V2`.
+`ANTHROPIC_*`, `AWS_*`, proxy and certificate variables are not touched. The harness sets
+`FABFLOWS_PROBE` and `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS` after the removal.
+
+Each run's `run.json` records `droppedEnv`, the sorted names `lockedEnv` removed, the GitHub
+lockout's included. It holds names only, never values.
 
 Every agent task also runs with shims (`isolatedLaunch`):
 
@@ -253,7 +281,7 @@ Every agent task also runs with shims (`isolatedLaunch`):
 
 The grade adds an assertion that no call reached the gh or claude shim. It fails when
 `shim.log` is not empty or missing. `test/evals-agents.test.js` proves each of these on the function that builds the
-environment, and `test/evals-runner.test.js` proves the lockout on a session that is not an agent task.
+environment, and `test/evals-runner.test.js` proves the lockout and the removal on a session that is not an agent task.
 
 ### Old against new
 

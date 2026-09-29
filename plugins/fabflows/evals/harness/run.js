@@ -127,6 +127,22 @@ const FIXTURE_REMOTE = 'https://fixture.invalid/bench/fixture.git';
 // credential helper (Git Credential Manager lives in Git for Windows' system config), a global
 // helper, or an SSH key. The fixture's own repo config (user.name, user.email, the pinned line
 // endings) still applies. `dir` is emptied first.
+// A launching Claude Code session's own variables (tools, skills, scratchpad, messaging socket,
+// effort) are removed too, and so is git configuration passed in the environment, which git
+// reads whatever GIT_CONFIG_NOSYSTEM and GIT_CONFIG_GLOBAL say. `droppedEnv` lists the removed
+// names, sorted, never values.
+// Exact CLAUDE_ names the CLI reads for login, provider or network (a prefix would keep session variables too).
+const KEEP_ENV = [
+  'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CODE_OAUTH_REFRESH_TOKEN', 'CLAUDE_CODE_OAUTH_SCOPES', 'CLAUDE_CONFIG_DIR',
+  'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY', 'CLAUDE_CODE_USE_MANTLE', 'CLAUDE_CODE_USE_ANTHROPIC_AWS', 'CLAUDE_CODE_USE_ANTHROPIC_GOOGLE_CLOUD',
+  'CLAUDE_CODE_SKIP_BEDROCK_AUTH', 'CLAUDE_CODE_SKIP_VERTEX_AUTH', 'CLAUDE_CODE_SKIP_FOUNDRY_AUTH', 'CLAUDE_CODE_SKIP_MANTLE_AUTH', 'CLAUDE_CODE_SKIP_ANTHROPIC_AWS_AUTH', 'CLAUDE_CODE_SKIP_ANTHROPIC_GOOGLE_CLOUD_AUTH',
+  'CLAUDE_CODE_SKIP_AWS_CRED_CACHE', 'CLAUDE_CODE_AWS_CHAIN_RESOLVE_TIMEOUT_MS',
+  'CLAUDE_CODE_CERT_STORE', 'CLAUDE_CODE_CLIENT_CERT', 'CLAUDE_CODE_CLIENT_KEY', 'CLAUDE_CODE_CLIENT_KEY_PASSPHRASE', 'CLAUDE_CODE_DISABLE_MTLS_RELOAD_ON_STALE_CONNECTION',
+  'CLAUDE_CODE_PROXY_RESOLVES_HOSTS', 'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY', 'CLAUDE_ENABLE_STREAM_WATCHDOG', 'CLAUDE_ENABLE_BYTE_WATCHDOG', 'CLAUDE_ENABLE_BYTE_WATCHDOG_BEDROCK',
+  'CLAUDE_STREAM_IDLE_TIMEOUT_MS', 'CLAUDE_BYTE_STREAM_IDLE_TIMEOUT_MS', 'CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS',
+];
+// A parent session's variables that do not start CLAUDE_ or CCR_, and git config passed in the environment.
+const SESSION_ENV = ['CLAUDECODE', 'SESSION_INGRESS_URL', 'MAX_THINKING_TOKENS', 'AI_AGENT', 'TRACEPARENT', 'SBX_TELEMETRY_SOCKET', 'DOCUMENTS_MCP_SCRATCH_ROOT', 'USE_SHTTP_MCP', 'MCP_CONNECTION_NONBLOCKING', 'MCP_TOOL_TIMEOUT', 'ENVRUNNER_SKIP_ACK', 'ENV_MANAGER_ENABLE_DIAG_LOGS', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_PARAMETERS'];
 function lockedEnv(baseEnv, dir) {
   fs.rmSync(dir, { recursive: true, force: true });
   const ghConfigDir = path.join(dir, 'gh-config');
@@ -135,9 +151,11 @@ function lockedEnv(baseEnv, dir) {
   fs.writeFileSync(gitGlobal, '');
   const env = { ...baseEnv };
   const set = { GH_CONFIG_DIR: ghConfigDir, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitGlobal, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'false' };
-  const drop = ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GIT_ASKPASS', 'SSH_ASKPASS', ...Object.keys(set)];
-  for (const k of drop.flatMap((n) => keysOf(env, n))) delete env[k];
-  return { env: Object.assign(env, set), ghConfigDir };
+  const drop = new Set(['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GIT_ASKPASS', 'SSH_ASKPASS', ...Object.keys(set), ...SESSION_ENV]);
+  const byPrefix = (u) => ((u.startsWith('CLAUDE_') || u.startsWith('CCR_')) && !KEEP_ENV.includes(u)) || /^GIT_CONFIG_(KEY|VALUE)_/.test(u);
+  const droppedEnv = Object.keys(env).filter((k) => drop.has(k.toUpperCase()) || byPrefix(k.toUpperCase())).sort();
+  for (const k of droppedEnv) delete env[k];
+  return { env: Object.assign(env, set), ghConfigDir, droppedEnv };
 }
 
 // Every agent task also runs with shims, because a prompt with a rule planted out of it may reach
@@ -147,7 +165,7 @@ function lockedEnv(baseEnv, dir) {
 function isolatedLaunch({ baseEnv, dir, shimLog }) {
   const command = resolveOnPath('claude', baseEnv);
   if (!command) throw new Error('claude not found on PATH');
-  const { env, ghConfigDir } = lockedEnv(baseEnv, dir);
+  const { env, ghConfigDir, droppedEnv } = lockedEnv(baseEnv, dir);
   const shimDir = path.join(dir, 'shims');
   fs.mkdirSync(shimDir, { recursive: true });
   fs.mkdirSync(path.dirname(shimLog), { recursive: true });
@@ -160,7 +178,7 @@ function isolatedLaunch({ baseEnv, dir, shimLog }) {
   const oldPath = keysOf(env, 'PATH').map((k) => env[k])[0] || '';
   for (const k of keysOf(env, 'PATH')) delete env[k];
   env.PATH = [shimDir, oldPath].filter(Boolean).join(path.delimiter);
-  return { command, env, remote: FIXTURE_REMOTE, shimLog, shimDir, ghConfigDir };
+  return { command, env, remote: FIXTURE_REMOTE, shimLog, shimDir, ghConfigDir, droppedEnv };
 }
 
 // Interleaved by repeat, then arm, with the arm order rotating each repeat (inline-1 loop-1
@@ -592,14 +610,16 @@ function runCell(a, cell, settingsPath, spawnSession = spawn) {
   // The guard appends, so the probe file starts empty.
   const probePath = path.join(runDir, 'hook-probe.jsonl');
   fs.rmSync(probePath, { force: true });
-  // A ceiling of '0' lifts the 600 s cap on waiting for background work in print mode.
-  let env = { ...process.env, FABFLOWS_PROBE: probePath, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0' };
-  delete env.CLAUDECODE; // the nested-session guard is for interactive terminals
+  let env;
+  let droppedEnv;
   let command = 'claude';
-  if (cell.task.agent) ({ command, env } = at('launch', () => isolatedLaunch({ baseEnv: env, dir: `${fixture}-iso`, shimLog: path.join(runDir, 'shim.log') })));
-  else ({ env } = at('launch', () => lockedEnv(env, `${fixture}-iso`)));
+  if (cell.task.agent) ({ command, env, droppedEnv } = at('launch', () => isolatedLaunch({ baseEnv: process.env, dir: `${fixture}-iso`, shimLog: path.join(runDir, 'shim.log') })));
+  else ({ env, droppedEnv } = at('launch', () => lockedEnv(process.env, `${fixture}-iso`)));
+  // Set after the removal, which would otherwise take them. A ceiling of '0' lifts the 600 s cap
+  // on waiting for background work in print mode.
+  Object.assign(env, { FABFLOWS_PROBE: probePath, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0' });
   at('fixture', () => prepareFixture(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || []));
-  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, plugin: (a.pluginRecords || {})[cell.config] || null, startedAt: new Date().toISOString() });
+  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, droppedEnv, plugin: (a.pluginRecords || {})[cell.config] || null, startedAt: new Date().toISOString() });
 
   const caps = capsFor(cell.task);
   return new Promise((resolve, reject) => {
@@ -745,7 +765,7 @@ async function main() {
   process.exitCode = exitCode;
 }
 
-module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, stageOnce, buildCells, claudeArgs, isolatedLaunch, resolveOnPath, runDirFor, takenRunDirs, refuseTakenRunDirs, parseArgs, runAll, cleanRoomSettings, cachedPluginDir, pluginSources, stagePluginArms, pluginRecord, FIXTURE_REMOTE };
+module.exports = { prepareFixture, capsFor, compactTranscript, copyWorkflowDirs, stagePlugin, stageOnce, buildCells, claudeArgs, isolatedLaunch, lockedEnv, resolveOnPath, runDirFor, takenRunDirs, refuseTakenRunDirs, parseArgs, runAll, cleanRoomSettings, cachedPluginDir, pluginSources, stagePluginArms, pluginRecord, FIXTURE_REMOTE };
 
 if (require.main === module) {
   main().catch((e) => {
