@@ -167,6 +167,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.5** -- a `Prompting` Vale style lints the fabflows agents and skills against
+  Anthropic's prompt-writing advice (#124). `NegativeOnly` flags a sentence that opens with
+  `Never`, `Do not` or `Don't` and doesn't say what to do instead, and `CapsEmphasis` flags
+  all-caps emphasis. Both are suggestions, so the docs CI job prints them in a report step
+  that never fails. A self-test checks both rules. The prompts keep their wording, and no behaviour a
+  consumer sees changes.
 - **fabflows 0.13.4** -- iteration 1 of the benchmark is recorded (#123). Pooled over the 60 task
   runs, a fabflows run cost 36.6% more than no skill and 15.7% more than superpowers. Quality
   differed on one text-match check only, which the analysis reads as a grader artifact. `evals/RESULTS.md` gives the per-task figures, where the
