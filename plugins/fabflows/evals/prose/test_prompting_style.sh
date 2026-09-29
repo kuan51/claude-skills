@@ -59,26 +59,43 @@ done
 check CapsEmphasis none 'You must read the file.'
 check CapsEmphasis none 'The MUST-have list is short.'
 
-# wire PATH PROMPTING: the real .vale.ini on a planted file at PATH. PROMPTING is "hit" or "none";
-# Clarity must fire either way, which shows the base styles still apply there.
+# The repository's own .vale.ini on the same planted text at three paths. docs/probe.md is the
+# baseline: no Prompting alert, and whatever the base styles report. Each fabflows path must get
+# every rule in styles/Prompting and exactly the baseline's other alerts, so a rule missing from
+# the section, or a section that swaps out the base styles, fails here.
 mkdir -p real
-sed "s|^StylesPath = .*|StylesPath = $ROOT/styles|" "$ROOT/.vale.ini" > real/.vale.ini
-wire() {
+{ printf 'StylesPath = %s\n' "$ROOT/styles"; grep -v '^StylesPath' "$ROOT/.vale.ini"; } > real/.vale.ini
+# lint PATH: plant the probe at PATH and print its alerts as LINE:COL:RULE, or fail on a Vale error.
+lint() {
   mkdir -p "real/$(dirname "$1")"
-  printf '# Probe\n\nNever push to master, then merge.\n' > "real/$1"
+  printf '# Probe\n\nNever push to master, then merge. You MUST check it.\n' > "real/$1"
   out=$(cd real && vale --output=line "$1"); s=$?
-  p=$(printf '%s\n' "$out" | grep -c 'Prompting\.NegativeOnly:')
-  c=$(printf '%s\n' "$out" | grep -c 'Clarity\.OneInstructionPerStep:')
-  if [ "$s" -ge 2 ]; then
-    echo "FAIL: vale exited $s with the real config on $1: $out"; fail=1
-  elif [ "$c" -ge 1 ] && { { [ "$2" = hit ] && [ "$p" -ge 1 ]; } || { [ "$2" = none ] && [ "$p" -eq 0 ]; }; }; then
-    echo "ok: real config, Prompting $2 and Clarity kept on: $1"
-  else
-    echo "FAIL: real config on $1 gave Prompting $p and Clarity $c, expected Prompting $2: $out"; fail=1
-  fi
+  if [ "$s" -ge 2 ]; then echo "FAIL: vale exited $s with the real config on $1: $out" >&2; return 1; fi
+  printf '%s\n' "$out" | cut -d: -f2-4 | sort
 }
-wire plugins/fabflows/agents/probe.md hit
-wire plugins/fabflows/skills/probe/SKILL.md hit
-wire docs/probe.md none
+if ! base=$(lint docs/probe.md); then
+  fail=1
+elif printf '%s\n' "$base" | grep -q ':Prompting\.'; then
+  echo "FAIL: real config applied Prompting to docs/probe.md"; fail=1
+elif ! printf '%s\n' "$base" | grep -q ':Clarity\.'; then
+  echo "FAIL: real config applied no base style to docs/probe.md: $base"; fail=1
+else
+  echo "ok: real config, base styles and no Prompting on: docs/probe.md"
+fi
+for f in plugins/fabflows/agents/probe.md plugins/fabflows/skills/probe/SKILL.md; do
+  got=$(lint "$f") || { fail=1; continue; }
+  missing=""
+  for r in "$ROOT"/styles/Prompting/*.yml; do
+    r=$(basename "$r" .yml)
+    printf '%s\n' "$got" | grep -q ":Prompting\.$r\$" || missing="$missing $r"
+  done
+  if [ -n "$missing" ]; then
+    echo "FAIL: real config on $f missed Prompting rule(s):$missing"; fail=1
+  elif [ "$(printf '%s\n' "$got" | grep -v ':Prompting\.')" != "$base" ]; then
+    echo "FAIL: real config on $f changed the base styles' alerts"; fail=1
+  else
+    echo "ok: real config, every Prompting rule and the same base styles on: $f"
+  fi
+done
 [ "$fail" -eq 0 ] && echo "PASS" || echo "FAIL"
 exit "$fail"
