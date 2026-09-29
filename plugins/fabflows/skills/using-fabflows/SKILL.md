@@ -12,7 +12,7 @@ Start here, once, at the top of the conversation.
 
 Invoke the `fabflows:fabflows` skill with the Skill tool, before anything else. It carries
 the routing table, the four-part delegation brief, the worker report contract and the
-verification gate. They are not duplicated here; read them there.
+verification gate. They are not duplicated here. Read them there.
 
 ## Standing rule
 

@@ -9,5 +9,5 @@ Read this file for the one case the result cannot carry: **a workflow error in p
 result**, say a token budget running out, which makes the next `agent()` call throw. The builder
 may already have committed, so read `git log <baseRef>..HEAD`. To carry on, relaunch in a new
 turn of the same session with the `scriptPath` and run ID its launch returned, passing the run ID
-as `resumeFromRunId` and the same args; finished rounds replay from cache. Never restart with a
+as `resumeFromRunId` and the same args. Finished rounds replay from cache. Never restart with a
 fresh `baseRef`: the new reviewer would miss the earlier commits.
