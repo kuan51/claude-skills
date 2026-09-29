@@ -103,7 +103,9 @@ first session.
     installing.
   - **Measured.** In iteration 1 ([#123](https://github.com/kuan51/claude-skills/issues/123)),
     a fabflows run's list price was 36.6% above no skill and 15.7% above superpowers. Quality
-    differed on one check only, which the analysis reads as a grader artifact. See [docs/EVALS.md](docs/EVALS.md).
+    differed on one check only, a grader artifact. After the regrade in
+    [#132](https://github.com/kuan51/claude-skills/issues/132), quality is the same in every arm
+    (`plugins/fabflows/evals/RESULTS.md:290`). See [docs/EVALS.md](docs/EVALS.md).
 
 ## Adding a new plugin
 
