@@ -246,12 +246,16 @@ charge of about $0.15 per run for the plugin listing and the two Skill loads, wh
 task's extra cost is the Opus builder and reviewer. The routing aims to save money on large
 reads, and in iteration 1 delegation saved money only on the task that reads 13 files.
 [evals/RESULTS.md](evals/RESULTS.md) has the per-task figures, the attribution and the
-confounds.
+confounds. Iteration 2 ([#133](https://github.com/kuan51/claude-skills/issues/133)) moved the
+recovery table and four long-session habits out of the skill's start-up text, into
+`skills/fabflows/references/recovery.md`. A run now writes about 470 fewer tokens at start-up,
+about $0.009, and every run still passed.
 
 ## Long sessions
 
-The [skill](skills/fabflows/SKILL.md) carries the long-session habits. The lead runs at
-the session's effort; only the workers pin their own, per the table above.
+The skill's [recovery reference](skills/fabflows/references/recovery.md) carries the
+long-session habits. The lead runs at the session's effort; only the workers pin their own,
+per the table above.
 
 On a Claude subscription within plan usage, the main conversation's prompt cache already
 lives one hour. Workers and the build loop get five minutes, so set

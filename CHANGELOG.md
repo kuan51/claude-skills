@@ -167,6 +167,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.8** -- the fabflows skill loads less text at start-up (#133). Its "When it goes
+  wrong" table and four "Long sessions" bullets move, word for word, to
+  `skills/fabflows/references/recovery.md`, and the skill points there when something goes wrong
+  or a session runs long. A permission denial is still surfaced with the exact call. Iteration
+  2 of the benchmark measured the change: about 470 fewer start-up tokens a run, every run
+  passing, and a lower pooled cost on the short tasks. `evals/RESULTS.md` records it, and the
+  evals README's variant recipe now uses `patch -p3 -d` on the snapshot.
 - **fabflows 0.13.7** -- the evals harness no longer passes a launching Claude Code session's
   variables to the sessions it runs (#128). `lockedEnv` removes `CLAUDECODE`, the `CLAUDE_` and
   `CCR_` names outside a keep-list of login, provider and network settings, other session

@@ -352,9 +352,11 @@ A hypothesis about the skill's prose runs against a modified copy of the plugin 
 ```bash
 mkdir -p plugins/fabflows/evals/runs/snapshots/<variant>
 cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/<variant>/
-patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant>/skills < plugins/fabflows/evals/snapshots/<variant>.patch
+patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant> < plugins/fabflows/evals/snapshots/<variant>.patch
 node plugins/fabflows/evals/harness/run.js --iteration <n> --arms with_skill --plugin-dir plugins/fabflows/evals/runs/snapshots/<variant> --tasks 1,5,6 --confirm
 ```
+
+The recipe uses `patch`, not `git apply`: inside the repository `git apply` silently skips the paths.
 
 The description stays identical in a variant so that triggering is not a second variable.
 
