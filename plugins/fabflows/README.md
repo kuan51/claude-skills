@@ -240,8 +240,9 @@ said it did.
 Iteration 1 measured fabflows 0.13.3 against no skill and against superpowers
 ([#123](https://github.com/kuan51/claude-skills/issues/123)). Pooled over the 60 task runs, a
 run cost $0.874 with fabflows, $0.640 without it (+36.6%) and $0.756 with superpowers (+18.0%).
-Quality differed on one text-match check only, which failed two superpowers runs and which the
-analysis reads as a grader artifact. On short tasks, most of the extra cost is a fixed start-up
+Quality differed on one text-match check only, which failed two superpowers runs. It was a grader
+artifact, and after the regrade quality is the same in every arm (`evals/RESULTS.md:290`).
+On short tasks, most of the extra cost is a fixed start-up
 charge of about $0.15 per run for the plugin listing and the two Skill loads, while the build
 task's extra cost is the Opus builder and reviewer. The routing aims to save money on large
 reads, and in iteration 1 delegation saved money only on the task that reads 13 files.
