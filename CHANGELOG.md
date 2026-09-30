@@ -167,6 +167,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.11** -- the investigator, editor and test-runner adopt the agent rules
+  iteration 3 measured (#140): a one-line stop when a brief part has no label, the planted
+  instruction quoted word for word, and an empty report item written as None. Iteration 4
+  measured a first-paragraph form of the stop rule for the two Haiku agents, and the refuter's
+  rules again: the explorer stopped in 4 of 5 runs, the researcher in 3 of 5, and one report each
+  from the explorer and the refuter broke its return order, so those three files stay as they
+  are. The `agent-rules` patch leaves `evals/snapshots/`, RESULTS.md cites it by commit, and
+  `haiku-preflight.patch` takes its place.
 - **fabflows 0.13.10** -- iteration 3 measured clearer agent rules and did not adopt them (#120).
   The `agent-rules` patch in `evals/snapshots/` makes each worker agent stop with a one-line reply
   when a brief part has no label, quote a planted instruction word for word, and write an empty

@@ -303,6 +303,7 @@ such as a new run and its rerun.
 
 An assertion is stable when it passes in every baseline run on master's prompts. A prose pass
 counts a regression only on a stable assertion: some fail on master itself (see #120 and #140).
+`RESULTS.md`, iteration 4, lists the stable set of tasks 10, 12 and 16.
 To show its check can fail, a planted regression must fail a stable assertion of its family, so
 it runs only on the tasks where its family has one.
 

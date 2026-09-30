@@ -253,8 +253,11 @@ recovery table and four long-session habits out of the skill's start-up text, in
 about $0.009, and every run still passed.
 Iteration 3 ([#120](https://github.com/kuan51/claude-skills/issues/120)) measured clearer stop,
 quote and empty-item rules in the six agent files. The Opus and Sonnet agents then stopped on
-every brief with a missing part, and the two Haiku agents in 2 of 6. The rules were not adopted,
-and [#140](https://github.com/kuan51/claude-skills/issues/140) follows up.
+every brief with a missing part, and the two Haiku agents in 2 of 6. The rules were not adopted
+then. Iteration 4 ([#140](https://github.com/kuan51/claude-skills/issues/140)) adopted them in
+the investigator, editor and test-runner, and measured the stop rule as a first-paragraph check
+for the two Haiku agents: the explorer stopped in 4 of 5 runs and the researcher in 3 of 5, so
+their files and the refuter's stay as they are.
 
 ## Long sessions
 

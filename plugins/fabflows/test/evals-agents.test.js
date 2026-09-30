@@ -179,7 +179,7 @@ test('agent-missing-part accepts "no separate <part> section", and not other sen
   }
 });
 
-// The one-line stop reply the agent-rules variant prescribes (evals/snapshots/agent-rules.patch).
+// The one-line stop reply the agent-rules variant prescribes (git show 51a5cc1:plugins/fabflows/evals/snapshots/agent-rules.patch).
 const STOP_PARTS = ['objective', 'output format', 'tools and paths to use', 'boundaries'];
 const stopReply = (part) => `Missing: ${part}. Stopped before any tool call: no files touched, no command run (confirmed).`;
 
