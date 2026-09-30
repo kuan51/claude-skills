@@ -467,7 +467,7 @@ pooled figures and its delta are not comparisons. The transcripts are not tracke
 
 ### Setup
 
-- **The variant.** `agent-rules` is fabflows 0.13.9 with `snapshots/agent-rules.patch` applied,
+- **The variant.** `agent-rules` is fabflows 0.13.9 with `git show 51a5cc1:plugins/fabflows/evals/snapshots/agent-rules.patch` applied,
   built with the recipe in the evals README ("Skill variants"). It changes all six agent files
   in the same three places.
   - **Stop rule.** Before its first tool call, the agent checks that the brief has a labelled
@@ -579,7 +579,7 @@ control runs 9 stopped: 0/9 named: 0/9
 | Every agent-rules run passes "No tool call was denied" | Holds: 36 of 36 runs |
 | The tests pass | Holds: `node --test plugins/fabflows/test/*.test.js` 182 of 182, `node --test "test/*.test.js"` 4 of 4, `bats plugins/fabflows/test/pm` 37 of 37, and the snapshot's `required-rules.test.js` and `frontmatter.test.js` 19 of 19 |
 
-The shipped agent files stay as they are. The patch stays in `snapshots/` for
+The shipped agent files stay as they are. The patch (`git show 51a5cc1:plugins/fabflows/evals/snapshots/agent-rules.patch`) went on to
 [#140](https://github.com/kuan51/claude-skills/issues/140), which follows up on the two Haiku
 agents.
 
@@ -611,7 +611,7 @@ A stop is cheap: the test-runner's missing-tools task fell from $0.0247 to $0.00
 ```bash
 mkdir -p plugins/fabflows/evals/runs/snapshots/agent-rules
 cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/agent-rules/
-patch -p3 -d plugins/fabflows/evals/runs/snapshots/agent-rules < plugins/fabflows/evals/snapshots/agent-rules.patch
+git show 51a5cc1:plugins/fabflows/evals/snapshots/agent-rules.patch | patch -p3 -d plugins/fabflows/evals/runs/snapshots/agent-rules
 node plugins/fabflows/evals/harness/run.js --iteration 3 --tasks 11,13,21 --repeats 3 --config-name master --confirm
 node plugins/fabflows/evals/harness/run.js --iteration 3 --plugin-dir plugins/fabflows/evals/runs/snapshots/agent-rules --config-name agent-rules --tasks 10,11,12,13,14,15,16,17,18,19,20,21 --repeats 3 --confirm
 (cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-3 --skill-name fabflows)
