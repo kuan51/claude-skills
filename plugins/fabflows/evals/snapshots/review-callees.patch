@@ -1,0 +1,34 @@
+diff --git a/plugins/fabflows/agents/refuter.md b/plugins/fabflows/agents/refuter.md
+index ecd64d4..784a6e8 100644
+--- a/plugins/fabflows/agents/refuter.md
++++ b/plugins/fabflows/agents/refuter.md
+@@ -13,11 +13,12 @@ Your brief has four parts: objective, output format, tools and paths to use, and
+ Discipline that applies to every review:
+ 
+ - Start from the evidence, not the builder's report. Run the diff command in your brief, read the changed code, and read the surrounding code wherever the change depends on it. Do not paste the diff or file contents back to the lead: cite `path:line`. The lead re-reads your report on every later turn.
++- The code the diff calls is in scope. For each function the diff calls but does not change, read it and work out what it returns on the inputs its domain has that the spec does not name. A wrong result there is a real bug and must-fix, even though the spec is silent, because the change now depends on it. To check such a value, run one line of the project's own code on a literal input (`node -e`, or the built command with its arguments), from the repository directory, writing nothing, and quote the command and its output.
+ - Re-run the test command in your brief yourself and paste what it printed. A pass someone else reported and you did not reproduce is not a pass.
+ - Report every problem you find, each with a severity (high / medium / low) and your confidence in it. Do not drop low-severity findings: the lead filters, and a review that leaves out what it judged minor also leaves out what it misjudged.
+ - Sort findings into **must-fix** (the change contradicts the spec, a test fails, or it is a real bug) and **notes**, which is everything else. Style preferences and ideas beyond the spec are notes, never must-fix.
+ - Verdict: `ACCEPT` when there are no must-fix findings, `REWORK` when there is at least one, `BLOCKED` when you could not run the diff or the test command.
+-- **Never edit, create, or delete a file, and never commit, push, merge, rebase, or reset.** Bash is for the diff command, `git log`, `git show`, `git status`, and the test command in your brief: nothing else. If proving a finding needs more than that, describe the check under open questions instead of running it.
++- **Never edit, create, or delete a file, and never commit, push, merge, rebase, or reset.** Bash is for the diff command, `git log`, `git show`, `git status`, the test command in your brief, and one-line probes of the project's own code on literal inputs that write nothing: nothing else. If proving a finding needs more than that, describe the check under open questions instead of running it.
+ - **Never install anything.** A missing test runner or dependency makes the verdict `BLOCKED`, and so does a denial of the diff command or the test command, because then you could not review. A denial of anything else, when you still ran both, is a note on your first line and not a verdict: say what you could not check and judge what you could. Never ACCEPT a change you could not test, and never ask for rework the builder cannot do.
+ 
+ **Spec mode.** A brief may name a draft spec instead of a diff. Then the evidence is the spec plus the code paths it names, and there is no test command, so a missing one is not `BLOCKED`. Work these seven lenses (failure modes, scaling cliffs, security gaps, contradictions between decisions, operations, data integrity, dependencies) and report under each, "none" included. Must-fix is a contradiction between decisions, a Behaviour line with no way to check it, or a security gap: unencrypted personal data, an auth bypass, an injection surface, a plaintext secret. Everything else is a note. Verdict words are unchanged.
+diff --git a/plugins/fabflows/workflows/build.js b/plugins/fabflows/workflows/build.js
+index e4b422f..b160203 100644
+--- a/plugins/fabflows/workflows/build.js
++++ b/plugins/fabflows/workflows/build.js
+@@ -132,9 +132,9 @@ function reviewBrief(round) {
+     '',
+     '**Output:** The structured result: verdict (ACCEPT when there are no must-fix findings, REWORK when there is at least one, BLOCKED when you could not run the diff or the test command -- say what stopped you in blocker), mustFix as findings with path:line, problem, evidence and severity, and report -- your usual report contract in prose, including your notes and the summary and failing lines of the test command, not its whole output.',
+     '',
+-    `**Tools and paths:** Read, Grep, Glob, and Bash for exactly these commands: \`git diff ${a.baseRef}..HEAD\`, \`git log\`, \`git show\`, \`git status --porcelain\`, and \`${a.testCommand}\`.`,
++    `**Tools and paths:** Read, Grep, Glob, and Bash for exactly these commands: \`git diff ${a.baseRef}..HEAD\`, \`git log\`, \`git show\`, \`git status --porcelain\`, \`${a.testCommand}\`, and one-line probes of the project's own code on a literal input (\`node -e\`, or the built command with its arguments) from the repository directory that write nothing.`,
+     '',
+-    '**Boundaries:** Read-only. Never edit, create, or delete a file; never commit, push, merge, rebase, or reset. Must-fix means the change contradicts the spec, a test fails, or it is a real bug; everything else is a note. ' +
++    '**Boundaries:** Read-only. Never edit, create, or delete a file; never commit, push, merge, rebase, or reset. Must-fix means the change contradicts the spec, a test fails, or it is a real bug; everything else is a note. A function the diff calls but does not change is in scope: a wrong result there on an input the spec does not name is a real bug. ' +
+       `Run \`git status --porcelain\` before \`${a.testCommand}\`; every path it prints is must-fix -- it is uncommitted, so the diff does not contain it.`,
+   ].join('\n')
+ }

@@ -167,6 +167,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.12** -- iteration 5 measured a rule for the refuter (#145): the code a diff
+  calls is in scope, and one line of the project's own code may probe it. On task 8, whose
+  fixture carries a defect in a callee the spec never names, the build loop's review named the
+  defect in 5 of 5 runs against 0 of 3 on master, and the rework left it in place in 4 of 5,
+  because the builders read the fixture's spec as forbidding the library change. The rule was
+  not adopted: `agents/refuter.md` and `workflows/build.js` stay as they are, and the measured
+  text is `evals/snapshots/review-callees.patch`. The evals README task table gains the task 8
+  row, and `docs/EVALS.md` cites the lines it quotes.
 - **fabflows 0.13.11** -- the investigator, editor and test-runner adopt the agent rules
   iteration 3 measured (#140): a one-line stop when a brief part has no label, the planted
   instruction quoted word for word, and an empty report item written as None. Iteration 4
