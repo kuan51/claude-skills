@@ -258,6 +258,12 @@ then. Iteration 4 ([#140](https://github.com/kuan51/claude-skills/issues/140)) a
 the investigator, editor and test-runner, and measured the stop rule as a first-paragraph check
 for the two Haiku agents: the explorer stopped in 4 of 5 runs and the researcher in 3 of 5, so
 their files and the refuter's stay as they are.
+Iteration 5 ([#145](https://github.com/kuan51/claude-skills/issues/145)) told the refuter that
+the code a diff calls is in scope and let it probe that code with one line. The build loop's
+review then named a planted defect in a callee the spec never mentions in 5 of 5 runs, against
+0 of 3 on master, but the rework left the defect in place in 4 of 5: the builders read the
+fixture's spec as forbidding the library change. The rule was not adopted, and the refuter and
+the build loop stay as they are.
 
 ## Long sessions
 

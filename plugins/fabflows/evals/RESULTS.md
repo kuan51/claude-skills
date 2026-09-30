@@ -8,7 +8,7 @@ under `docs/specs/` refer to that record.
 [#123](https://github.com/kuan51/claude-skills/issues/123) records iteration 1 of this one: the
 baseline against no skill and against superpowers. [#133](https://github.com/kuan51/claude-skills/issues/133) records iteration 2, the lean start.
 [#120](https://github.com/kuan51/claude-skills/issues/120) records iteration 3, the agent rules, which were not adopted.
-[#140](https://github.com/kuan51/claude-skills/issues/140) records iteration 4, the Haiku pre-flight, which was not adopted either.
+[#140](https://github.com/kuan51/claude-skills/issues/140) records iteration 4, the Haiku pre-flight, which was not adopted either. [#145](https://github.com/kuan51/claude-skills/issues/145) records iteration 5, the review-callees rule for the refuter, which was not adopted.
 
 ## Iteration 1: the baseline against no skill and superpowers
 
@@ -794,3 +794,211 @@ python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration
 - **One missing part per agent**, as before.
 - **benchmark.md.** No lead ran, so its model line names the two agent models, and its second
   column is empty because one configuration ran.
+
+## Iteration 5: review-callees
+
+Tracked in [#145](https://github.com/kuan51/claude-skills/issues/145). This iteration answers one
+question. If the refuter is told that the code the diff calls is in scope, and may probe it with
+one line of the project's own code, does the build loop's review catch a latent defect in a
+callee the spec never names, and does the loop then fix it?
+
+The data is in `runs/iteration-5/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. All three configurations ran task 8, so its cost
+columns compare. The transcripts are not tracked.
+
+### Prior
+
+The retired record ran task 8 on fabflows 0.5.1 (`git show dce556c:plugins/fabflows/evals/RESULTS.md`,
+iterations 8 and 9). The defect shipped in 10 of 10 runs, five inline and five through
+`fabflows:build`, and the review named it in 0 of 8 loop runs, 5 at medium pins and 3 at the raised
+pins. Every reviewer walked the spec against the diff, opened `src/index.js`, and returned ACCEPT
+with no must-fix items. Its reading: nothing in the refuter's brief asks it to audit code the
+diff depends on.
+
+### Setup
+
+- **The task.** Task 8 `review-catch`: a `lockstep` library with `resolve` and `check`, and a
+  `SPEC.md` for a new `outdated` command that reports a locked version outside its declared range.
+  `caret()` at `src/index.js:89` gives `^0.2.3` the upper bound `<1.0.0` instead of `<0.3.0`, and
+  the spec never names a caret on a zero major. Of the hidden suite's 9 tests, three match the
+  grader's `defectPattern`: `outdated: reports a locked version outside a caret-on-zero range and
+  exits 1` (the primary outcome), `caret-on-zero: satisfies('0.3.0', '^0.2.3') is false`, and
+  `regression: ranges other than caret-on-zero are unchanged`. The first two fail on the fixture
+  as given, the third passes. The grader adds three informational rows from the build loop's
+  journals: "The review returned REWORK on any round", "The review named the planted defect" (a
+  must-fix item matching `caret-on-zero|satisfies|src/index\.js`) and "The build round shipped
+  the planted defect". Because that regex also matches any must-fix that cites `src/index.js`,
+  every match below was read by hand.
+- **The variant.** `review-callees` is fabflows 0.13.11 with `snapshots/review-callees.patch`
+  applied, built with the recipe in the evals README ("Skill variants"). `agents/refuter.md`
+  gains one discipline bullet: the code the diff calls is in scope; for each function the diff
+  calls but does not change, read it and work out what it returns on the inputs its domain has
+  that the spec does not name; a wrong result there is a real bug and must-fix, even though the
+  spec is silent; to check such a value, run one line of the project's own code on a literal
+  input (`node -e`, or the built command with its arguments), from the repository directory,
+  writing nothing, and quote the command and its output. Its Bash sentence adds that allowance.
+  `workflows/build.js` `reviewBrief` adds the same allowance to "Tools and paths" and the in-scope
+  sentence to "Boundaries". The spec-mode lens pass found that the bullet's first draft ended
+  with an example, "a range parser on every range shape", which names this task's own domain;
+  the owner dropped it before any run.
+- **Runs.** The `loop` arm only, lead claude-fable-5-1 at medium effort, one session at a time,
+  caps 120 turns, $15 list price and 30 minutes a run. The control, `master`, is the shipped
+  plugin, 3 runs. The variant ran 5 times: 4 under `review-callees`, and the fifth under
+  `review-callees-r5`, because a container restart killed the original fifth run mid-session
+  (see Confounds) and `run.js` refuses to add a run to a configuration whose run directories
+  exist. Both copies were staged from the same snapshot: `run.json` records tree hash
+  `a6a258ab…` for both, and `f2a0dd5b…` for master. Every run recorded plugin version 0.13.11;
+  the bump came after the runs.
+- **Clean room.** As iterations 2 to 4: the harness removes the launching session's variables
+  and keeps two network settings.
+
+### Control
+
+Master's review named the defect in none of the 3 runs, and the defect stayed in all 3, as in the
+retired record.
+
+| Run | Cost | Turns | Time s | Quality | Caret tests (primary / satisfies / regression) | Review rounds | Must-fix items | Named, regex | Named, by hand | Defect left in |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | $1.6137 | 11 | 288 | 0.833 | fail / fail / ok | REWORK, ACCEPT | 1 | yes | **no** | yes |
+| 2 | $1.1263 | 12 | 163 | 0.833 | fail / fail / ok | ACCEPT | 0 | no | no | yes |
+| 3 | $1.0875 | 12 | 127 | 0.833 | fail / fail / ok | ACCEPT | 0 | no | no | yes |
+
+Run 1's one must-fix is the regex false positive the lens pass predicted. It reads, in part:
+"`bin/lockstep.js:63` A declared range that is not a string is not rejected as an input error
+when it is a JSON object with a `sets` array. `parseRange` (`src/index.js:142`) returns any object
+that has a `sets` array unchanged." It is a real callee finding, about input validation, and not
+the caret defect. Runs 2 and 3 returned ACCEPT with no must-fix items. Quality is 15 of 18
+substantive assertions: the two failing caret tests and the `outdated` test that depends on them.
+
+### Variant
+
+| Run | Cost | Turns | Time s | Quality | Caret tests | Review rounds | Must-fix items per round | Named, by hand (round) | Defect left in | How the rework ended |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | $3.3031 | 13 | 696 | 0.833 | fail / fail / ok | REWORK, REWORK, ACCEPT | 3, 1 | yes (1) | yes | Fixed in round 2, reverted in round 3, accepted |
+| 2 | $2.3752 | 13 | 472 | 0.833 | fail / fail / ok | REWORK, REWORK | 4, 2 | yes (1) | yes | Builder declined the library change, then returned blocked; escalated |
+| 3 | $2.9340 | 14 | 571 | 0.833 | fail / fail / ok | REWORK, REWORK, REWORK | 3, 3, 2 | yes (2) | yes | Builder declined twice; rework cap; escalated |
+| 4 | $3.2453 | 15 | 751 | 1 | ok / ok / ok | REWORK, REWORK, ACCEPT | 4, 1 | yes (1) | **no** | Fixed in round 2, accepted |
+| 5 (`-r5`) | $3.1285 | 15 | 608 | 0.833 | fail / fail / ok | REWORK, REWORK, REWORK | 2, 2, 2 | yes (1) | yes | Builder declined the caret change; rework cap; escalated; the lead then reverted the builder's other library edits |
+
+The hand-read "named" items, first sentence of each:
+
+- Run 1, round 1: "`src/index.js:89` The diff calls `satisfies`, and `satisfies` gets full
+  `^0.y.z` ranges with y>0 wrong: the caret sets the upper bound at <1.0.0 instead of <0.(y+1).0."
+- Run 2, round 1: "`src/index.js:89` The new outdated command gets a wrong answer from caret()
+  for ^0.y.z when y > 0. caret() makes ^0.2.3 mean >=0.2.3 <1.0.0, when it should mean <0.3.0."
+- Run 3, round 2: "`src/index.js:89` The caret range sets the wrong upper bound for full 0.x
+  versions. When major is 0 and minor is above 0, caret() returns `<1.0.0` where it should return
+  `<0.(minor+1).0`." Its round-1 item that matched the regex was the validation finding
+  (`parseVersion` at `src/index.js:19`), so by hand round 1 did not name the defect.
+- Run 4, round 1: "`src/index.js:89` caret() is a callee of satisfies, which `outdated` calls. For
+  ^0.y.z with y>0 it sets the upper bound to <1.0.0 when it should be <0.(y+1).0."
+- Run 5: round 1: "`src/index.js:89` `outdated` relies on `satisfies`, which it calls without changing. For a caret range on a 0.x version with a patch, such as ^0.2.3, that function puts the upper bound at <1.0.0 when it should be <0.3.0."
+
+What the runs showed:
+
+- **The review now finds the defect.** Named by hand in 5 of 5 runs, against 0 of 3
+  on master and 0 of 8 in the retired record. Each reviewer read `caret()` and stated the wrong
+  bound; two also noted that the library contradicts itself (`^0.2` gives `<0.3.0` at line 84).
+- **The rework mostly does not fix it.** The defect stayed in 4 of 5 runs. The
+  builders read the fixture spec's "`resolve` and `check` keep working exactly as they do now" and
+  "Satisfies means the range rules the library already implements" as forbidding a change to
+  `src/index.js`, and the rework brief tells them to report, not do, work the spec does not need.
+  Run 2's builder wrote: "Item 1 (caret ^0.y.z) and item 4 (`>*` / `<*`): should library
+  semantics change even though that changes `check` and `resolve` and goes against the spec's
+  'exactly as now'? This needs a decision from the lead or the spec owner." Run 1's builder fixed
+  it in round 2 ("I took the must-fix list as permission for this change"), and its round-3
+  builder reverted it ("Restore library range rules; outdated uses existing satisfies
+  semantics"), after which the round-3 review returned ACCEPT. Run 4's builder fixed it and noted
+  the conflict. In run 5 the third review itself listed the builder's library edits as a must-fix, because
+  the spec says exactly as now: the rule and the fixture spec pulled the loop in opposite
+  directions. So the loop's review half caught the defect and its rework contract refused the
+  fix 4 times in 5.
+- **The rule widens the review beyond the planted defect.** Every variant review also returned
+  must-fix items for numbers above 2^53 losing precision in `Number()`, `<*` and `>*` matching
+  every version, and non-string ranges passing validation: 3 to 4 items in round 1, 2 to 3 review
+  rounds, two escalations (blocked, rework cap). The control's reviews returned 0 or 1 items and 1
+  or 2 rounds.
+- **Cost.** The variant's mean is $2.9972 a run against $1.2758 on master, and its wall clock
+  620 s against 193 s. The extra rounds and the reviewers' longer reports are the cost.
+
+### Verdict
+
+The variant is not adopted: the bar's second part fails. Computed from
+`plugins/fabflows/evals/runs`:
+
+```bash
+node -e '
+const fs=require("fs"),p=require("path"),I="iteration-5",d=fs.readdirSync(I).find(x=>x.startsWith("eval-8-"));
+const runs=C=>fs.readdirSync(p.join(I,d,C)).filter(r=>/^run-/.test(r)).sort().map(r=>JSON.parse(fs.readFileSync(p.join(I,d,C,r,"grading.json"))).expectations);
+const row=(e,t)=>e.find(x=>x.text===t||x.text==="hidden: "+t)||{};
+const V=[...runs("review-callees"),...runs("review-callees-r5")],M=runs("master");
+const caret=["outdated: reports a locked version outside a caret-on-zero range and exits 1","caret-on-zero: satisfies(\x270.3.0\x27, \x27^0.2.3\x27) is false","regression: ranges other than caret-on-zero are unchanged"];
+const n=(R,f)=>R.filter(f).length+"/"+R.length;
+console.log("variant named (regex)",n(V,e=>row(e,"The review named the planted defect").passed),"| hidden 9/9",n(V,e=>e.filter(x=>x.text.startsWith("hidden: ")).every(x=>x.passed)),"| caret 3 tests",n(V,e=>caret.every(t=>row(e,t).passed)),"| workflows finished",n(V,e=>row(e,"Every launched workflow finished before the session ended").passed),"| no denial",n(V,e=>row(e,"No tool call was denied").passed));
+console.log("control named (regex)",n(M,e=>row(e,"The review named the planted defect").passed),"| caret 3 tests",n(M,e=>caret.every(t=>row(e,t).passed)));
+const c=require("./iteration-5/cells.json"),k=a=>c.filter(x=>a.includes(x.arm)),m=(a,f)=>(k(a).reduce((s,x)=>s+f(x),0)/k(a).length).toFixed(4);
+console.log("master mean $",m(["master"],x=>x.cost),"variant mean $",m(["review-callees","review-callees-r5"],x=>x.cost),"runs",c.length,"cost $"+c.reduce((s,x)=>s+x.cost,0).toFixed(4))'
+```
+
+```text
+variant named (regex) 5/5 | hidden 9/9 1/5 | caret 3 tests 1/5 | workflows finished 5/5 | no denial 5/5
+control named (regex) 1/3 | caret 3 tests 0/3
+master mean $ 1.2758 variant mean $ 2.9972 runs 8 cost $18.8137
+```
+
+| Part of the bar | Result |
+|---|---|
+| All 5 variant runs: the review's must-fix names the defect, read by hand | Holds: 5 of 5 by hand (run 3 in its second round); the regex also passed 5 of 5 |
+| All 5 variant runs: the rework round then passes all 9 hidden tests | **Fails: 1 of 5** (run 4) |
+| All 5 variant runs: every launched workflow finished, no tool call denied | Holds |
+| The tests pass | Holds: `node --test plugins/fabflows/test/*.test.js` 182 of 182, `node --test "test/*.test.js"` 4 of 4, `bats plugins/fabflows/test/pm` 37 of 37, and the snapshot's `required-rules.test.js`, `frontmatter.test.js` and `build.test.js` 37 of 37 |
+
+`agents/refuter.md` and `workflows/build.js` stay as they are. The patch stays in `snapshots/`.
+The control is reported beside the bar: master named the defect in 0 of 3, so the naming is
+credited to the patch.
+
+### Cost of this iteration
+
+About $19.6 at list price: the control $3.8275 (3 runs), the variant $14.9861 (5 runs), and
+the killed fifth run, whose lead-side spend before the restart was about $0.78 (from its
+transcript's usage fields; its workers' share is not recorded).
+
+### Commands
+
+```bash
+mkdir -p plugins/fabflows/evals/runs/snapshots/review-callees
+cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/review-callees/
+patch -p3 -d plugins/fabflows/evals/runs/snapshots/review-callees < plugins/fabflows/evals/snapshots/review-callees.patch
+node plugins/fabflows/evals/harness/run.js --iteration 5 --tasks 8 --arms loop --repeats 3 --config-name master --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 5 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/review-callees --config-name review-callees --repeats 5 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 5 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/review-callees --config-name review-callees-r5 --repeats 1 --confirm
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-5
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-5 --skill-name fabflows)
+python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-5 <skill-creator> <abs>/runs/iteration-5/notes.json
+```
+
+The second `run.js` command was killed by a container restart during its fifth run; that run's
+directory was deleted and the third command ran the fifth run under its own name.
+
+### Confounds
+
+- **The restart.** The fifth variant run ran about 45 minutes after the fourth, in a fresh
+  container, under its own configuration name. Its plugin copy has the same tree hash as the other
+  four. The killed run's spend is not in `cells.json`.
+- **The fixture spec works against the fix.** `SPEC.md` says `resolve` and `check` keep working
+  exactly as they do now, and the rework brief tells the builder to report, not do, work the spec
+  does not need. So a callee fix the review demands is, to the builder, out of spec. The measured
+  miss is in the loop's rework contract, not in the review. Whether the builder should have taken
+  the must-fix as permission, as two of them did, is a design question for a follow-up, not a
+  grading question.
+- **The named regex.** It matched the control's validation finding and run 3's round-1 validation
+  finding. The counts above are by hand.
+- **Beyond the planted defect.** The variant's reviewers treated node-semver conformance the spec
+  never asks for (precision above 2^53, wildcard operators) as must-fix. On a real project the
+  lead would judge those; here they drove the extra rounds and both escalations.
+- **No inline arm and no same-day retired-record comparison.** The inline arm's text did not
+  change, and the retired record ran a different plugin version, so only the same-day control
+  is the comparison.
+- **benchmark.md.** Three configurations ran the same task, so its cost columns compare, but its
+  summary table compares master with review-callees and leaves the fifth run's configuration to
+  the Evals line, and its pass rate counts the informational rows and the hidden tests together.
