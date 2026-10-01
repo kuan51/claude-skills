@@ -8,7 +8,7 @@ const { parseFrontmatter } = require('./helpers/frontmatter.js');
 const AGENTS_DIR = path.join(__dirname, '..', 'agents');
 const FORBIDDEN_TOOLS = ['Write', 'Edit', 'Agent'];
 // Each agent's tools are scoped to what it actually uses: the 4 fixed EDA roles + extra-reviewer
-// execute code/queries (need Bash); thesis-auditor only reads and compares text (no Bash);
+// execute code/queries (need Bash); extra-reviewer-static runs a non-canned persona (no Bash); thesis-auditor only reads and compares text (no Bash);
 // findings-reconciler never receives a file path at all (no file/exec tools needed);
 // pattern-hunter recomputes the metric (needs Bash); so-what-auditor only judges given evidence.
 const EXPECTED_TOOLS = {
@@ -19,6 +19,7 @@ const EXPECTED_TOOLS = {
   'findings-reconciler': 'Read',
   'thesis-auditor': 'Read, Grep, Glob',
   'extra-reviewer': 'Read, Grep, Glob, Bash',
+  'extra-reviewer-static': 'Read, Grep, Glob',
   'pattern-hunter': 'Read, Grep, Glob, Bash',
   'so-what-auditor': 'Read',
 };
@@ -53,7 +54,7 @@ test('pattern-hunter and so-what-auditor omit the project CLAUDE.md', () => {
 });
 
 test('no extra agent files exist beyond the expected roster', () => {
-  assert.equal(EXPECTED_NAMES.length, 9);
+  assert.equal(EXPECTED_NAMES.length, 10);
   const files = fs.readdirSync(AGENTS_DIR).filter((f) => f.endsWith('.md'));
   assert.equal(
     files.length,

@@ -80,7 +80,8 @@ whether to save the report before any analysis runs.
 - **Real verification, not just reading.** Reviewers execute code against the raw data where
   possible to recompute claims themselves. Each finding carries a `verified` flag that is true
   only when the command ran and its output is in the evidence; the report tags anything else as
-  unverified so you can see which findings are empirically backed.
+  unverified so you can see which findings are empirically backed. An extra reviewer built from
+  web research cannot run commands, so its findings are always unverified.
 - **Same rigor whoever calls it.** The review agents are pinned to Opus, so the report's quality
   does not depend on the model your session happens to be running.
 
