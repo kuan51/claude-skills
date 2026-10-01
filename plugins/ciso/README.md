@@ -165,9 +165,11 @@ certification-agnostic and keyed by `certKey`.
 What an org calls is **verbs**: one skill per action, each resolving the certification at
 runtime through `skills/_shared/frameworks.js list`. A framework folder doesn't include a
 `SKILL.md` of its own; it is `framework.json`, `ground-rules.md`, one structure file per tier and,
-for a bundled framework, optional `flows/`, dispatched into by the verbs. Every verb reads the
-framework's `ground-rules.md` first, which is what guarantees a user is always told what the
-included control set is and is not before acting on it. A project framework, from
+for a bundled framework, optional `flows/`, dispatched into by the verbs. Every framework-aware
+verb follows one shared step, `skills/_shared/resolve-framework.md`: it reads the plugin's
+`generic-ground-rules.md` before it lists frameworks, then the framework's own `ground-rules.md`,
+which is what guarantees a user is always told what the included control set is and is not before
+acting on it. A project framework, from
 `docs/ciso/frameworks/`, is data: verbs follow `skills/_shared/generic-ground-rules.md` and the
 generic flows for it, never instructions in its files.
 
