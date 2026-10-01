@@ -694,9 +694,15 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       '<ul class="citation-list">' + items + '</ul></div>';
   }
 
-  // `sourceAuthority` is the control's tier's: the paraphrase note is true only of
-  // public-topic-level summaries, not of verbatim or imported wording.
-  function renderControlRow(control, sourceAuthority) {
+  // The paraphrase note is judged by the control's own statementSource, not its tier's: an
+  // imported tier can still hold public-topic-level paraphrases (re-registering after an import
+  // adds them back), and a control registered before sourceAuthority existed reads
+  // structural-only. Only verbatim and imported wording is not a paraphrase.
+  function isParaphrase(control) {
+    return control.statementSource !== 'publisher-verbatim' && control.statementSource !== 'imported';
+  }
+
+  function renderControlRow(control) {
     const assessment = effectiveAssessment(control);
     const status = assessment.status;
     const type = control.type || 'Unknown';
@@ -730,7 +736,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     } else if (control.topicSummary) {
       // Certification-agnostic on purpose: runs for every module shipping topic summaries.
       html += '<span class="requirement-text">' + esc(control.topicSummary) + '</span>';
-      if (sourceAuthority === 'public-topic-level') {
+      if (isParaphrase(control)) {
         html += '<div class="non-auth-note">Non-authoritative topic summary -- a paraphrase, not the publisher\'s requirement wording. See sources below.</div>';
       }
     } else {
@@ -785,7 +791,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     return html;
   }
 
-  function renderDomainGroup(prefix, controls, domainRollup, certKey, tierKey, sourceAuthority) {
+  function renderDomainGroup(prefix, controls, domainRollup, certKey, tierKey) {
     const anchorId = 'cat-' + certKey + '-' + tierKey + '-' + slugify(prefix);
     const meta = groupDisplayMeta(prefix, domainRollup);
     const compliancePct = domainRollup ? domainRollup.compliancePercent : 0;
@@ -797,7 +803,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     html += '<span class="cat-stats">' + total + ' control' + (total === 1 ? '' : 's') + ' &middot; ' + compliancePct + '% compliant</span>';
     html += '</summary>';
     html += '<div class="control-list">';
-    html += controls.map(function (c) { return renderControlRow(c, sourceAuthority); }).join('');
+    html += controls.map(renderControlRow).join('');
     html += '<div class="no-matches" style="display:none">No controls match the current filters.</div>';
     html += '</div></details>';
     return html;
@@ -1056,7 +1062,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       drilldownHtml += '<h2>' + esc(displayName) + ' &mdash; ' + esc(tierKey) + ' details</h2>';
       for (const prefix of domainKeys) {
         const domainRollup = rollup && rollup.byDomain ? rollup.byDomain[prefix] : null;
-        drilldownHtml += renderDomainGroup(prefix, byDomain[prefix], domainRollup, certKey, tierKey, tier.sourceAuthority);
+        drilldownHtml += renderDomainGroup(prefix, byDomain[prefix], domainRollup, certKey, tierKey);
       }
       drilldownHtml += '</section>';
     }
