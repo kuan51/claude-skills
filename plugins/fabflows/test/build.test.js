@@ -116,7 +116,7 @@ test('shows a later review the earlier must-fix items, fenced so finding text ca
 });
 
 test('the first review carries no earlier must-fix fence, and every review the same must-fix definition', async () => {
-  const { calls } = await run(ARGS, [built, rework, built, accept]);
+  const { calls } = await run(ARGS, [built, { ...rework, head: 'abc1234' }, built, accept]);
   assert.doesNotMatch(calls[1].prompt, /earlier-must-fix/);
   assert.match(calls[1].prompt, /you have not seen any earlier round\.$/m);
   const tight = /or it is a real bug: a wrong result on an input the code's domain has, not a difference from another library or a stricter standard; everything else is a note\./;
@@ -124,6 +124,50 @@ test('the first review carries no earlier must-fix fence, and every review the s
   assert.match(calls[3].prompt, tight);
   assert.match(calls[1].prompt, /writes nothing is your own check/, 'the probe is the reviewer\'s own write-nothing check, not an allow-list entry');
   assert.doesNotMatch(calls[1].prompt, /exactly these commands/);
+});
+
+const SWEEP = /probe one literal input per case with one line of the project's own code, and quote each probe and its output; a case not probed is an open question in the report, never a checked one\./;
+const REWORK_ONLY = /must-fix here is limited to: an earlier round's must-fix item still not fixed, a regression in `git diff [0-9a-f]+\.\.HEAD`, a real bug in code that diff changed, or an uncommitted path from `git status --porcelain`\. A new finding anywhere else is a note with its path:line, never must-fix/;
+const PER_ITEM = /say in the report whether it is fixed, not fixed, or regressed/;
+
+test('round 1 sweeps callees by their cases; rounds 2 and 3 judge only the rework since the previous head', async () => {
+  const h1 = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
+  const h2 = 'deadbee';
+  // A reviewer that pastes `git log -1 --format=%H` output leaves a newline on it: still a head.
+  const { calls } = await run(ARGS, [built, { ...rework, head: `${h1}\n` }, built, { ...rework, head: h2 }, built, accept]);
+  const [r1, r2, r3] = [calls[1].prompt, calls[3].prompt, calls[5].prompt];
+  assert.match(r1, SWEEP);
+  assert.match(r1, /The report names the callees you swept and the cases you probed\./);
+  assert.doesNotMatch(r1, /judges the rework only|limited to/);
+  assert.doesNotMatch(r1, PER_ITEM);
+  for (const [brief, prev] of [[r2, h1], [r3, h2]]) {
+    assert.match(brief, REWORK_ONLY);
+    assert.match(brief, PER_ITEM);
+    assert.ok(brief.includes(`\`git diff abc1234..HEAD\`, \`git diff ${prev}..HEAD\``), `Tools line carries git diff ${prev}..HEAD`);
+    assert.ok(brief.includes(`a regression in \`git diff ${prev}..HEAD\``));
+    assert.match(brief, new RegExp(`Judge the rework since \`${prev}\``));
+    assert.doesNotMatch(brief, SWEEP);
+    assert.doesNotMatch(brief, /names the callees you swept/);
+  }
+  assert.match(r3, /^round 1, item 1: .*\nround 2, item 1: /m, 'the earlier block keeps its round R, item I lines');
+});
+
+test('an invalid or missing head makes the next round judge the whole diff as round 1 does', async () => {
+  for (const head of [undefined, '', 'HEAD', 'DEADBEEF', 'abc12', 'abc1234; rm -rf /', 'g'.repeat(40), '0'.repeat(41), 42]) {
+    const { calls } = await run(ARGS, [built, { ...rework, head }, built, accept]);
+    const brief = calls[3].prompt;
+    assert.match(brief, /the boundary is unknown: judge the whole diff as round 1 does/, JSON.stringify(head));
+    assert.match(brief, SWEEP);
+    assert.match(brief, PER_ITEM);
+    assert.doesNotMatch(brief, /limited to/);
+    assert.equal(brief.match(/git diff [^`]*\.\.HEAD/g).length, 1, `only the baseRef diff: ${JSON.stringify(head)}`);
+  }
+});
+
+test('the verdict schema lists head', async () => {
+  const { calls } = await run(ARGS, [built, accept]);
+  assert.match(calls[1].opts.schema.properties.head.description, /git log -1 --format=%H/);
+  assert.match(calls[1].prompt, /head \(the commit you reviewed, from `git log -1 --format=%H`\)/);
 });
 
 test('the builder schema and the rework brief carry the deviations field', async () => {
