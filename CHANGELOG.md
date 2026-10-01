@@ -8,6 +8,16 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **ciso 1.2.0** -- every framework is one data folder: a `framework.json`, a `ground-rules.md`
+  (which replaces `invariants.md`) and one structure file per tier (#158). ciso loads them from
+  the plugin's `frameworks/` and from a project's own `docs/ciso/frameworks/`, and validates each
+  with `frameworks.js`. The four bundled frameworks moved there unedited, so existing `state.json`
+  files need no migration. A project framework is data, not instructions: it may not carry flow
+  files, verbs follow the plugin's generic flows and ground rules for it, and a certKey that
+  clashes with a bundled one is excluded. A control whose wording is `imported` never sends its
+  label or summary to vendor research or task sync. HITRUST's r2 maturity shape no longer applies
+  to another framework's tier named `r2`, and the dashboard stops calling CMMC's verbatim text a
+  paraphrase. `ADDING-A-CERTIFICATION.md` now opens with how to write a project framework.
 - **fabflows 0.15.0** -- the build loop's first review sweeps each function the diff calls by
   its cases, probing one literal input per case and reporting an unprobed case as an open
   question (#154). The reviewer's verdict gains `head`, the commit it read, and rounds 2 and 3
