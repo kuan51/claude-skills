@@ -39,7 +39,8 @@ Every certification supports this verb.
 
 ## The one invariant that matters most here
 
-**An org's posture never leaves the project.** This is the plugin's only outbound flow, and the only control
+**An org's posture never leaves the project.** This is the plugin's web-research flow (sync-tasks also
+sends data out, to the org's own tracker), and the only control
 fields permitted to reach a web-searching agent are the control's *public subject*:
 `relatedControlCode`, `relatedControlName`, `legacyCategoryPrefix`, `topicLabel`, `topicSummary`,
 `domain`, `domainKey`. Justifications, in-progress notes, and evidence records never leave the
