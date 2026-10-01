@@ -27,12 +27,12 @@ written by the project or a third party, and what happens to licensed wording a 
 
 ## Considered options
 
-1. **Keep frameworks plugin-only** — no new trust question, but a project still cannot track a
-   framework ciso does not ship.
-2. **One folder format, loaded from the plugin and from the project, with both treated the same**
-   — simplest loader, but a project's `ground-rules.md` and `flows/` would direct verbs exactly as
+1. **Keep frameworks plugin-only.** No new trust question, but a project still cannot track a
+   framework ciso does not bundle.
+2. **One folder format, loaded from the plugin and from the project, with both treated the same.**
+   The simplest loader, but a project's `ground-rules.md` and `flows/` would direct verbs exactly as
    bundled ones do.
-3. **One folder format from two roots with two trust levels** — bundled folders are plugin code;
+3. **One folder format from two roots with two trust levels.** Bundled folders are plugin code;
    project folders, under the gitignored `docs/ciso/frameworks/`, are data. A project may not ship
    `flows/`; verbs follow the plugin's `generic-ground-rules.md` and generic flows, report the
    project's `ground-rules.md` to the user, and never act on instructions in it. A project folder

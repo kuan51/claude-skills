@@ -47,7 +47,7 @@ Resumable, chunked by `domainKey` (the criteria family: `CC1`-`CC9`, `A1`, `C1`,
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json soc2 type2 <domainKey>
    ```
 
-   (four arguments, not five -- this marks the family complete in the interview session).
+   (four arguments, not five: this marks the family complete in the interview session).
 10. If the completed family turned up any `gap` or `in_progress` criteria whose `roadmap.status` is still `not_started`, offer [Roadmap](roadmap.md): it runs in the background and never blocks the next family.
 
 ## The observation-period question

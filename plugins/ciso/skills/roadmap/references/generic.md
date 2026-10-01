@@ -1,4 +1,4 @@
-# Roadmap: generic flow
+# Generic roadmap flow
 
 Read this when `ciso:roadmap` resolves a framework with no `flows/roadmap.md` of its own, which is
 every project framework. **Runs in the background:** launched fire-and-forget so it never blocks the

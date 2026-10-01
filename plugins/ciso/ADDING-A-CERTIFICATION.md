@@ -3,7 +3,7 @@
 A ciso framework is one folder of data. ciso loads frameworks from two places:
 
 - **Bundled**, in `plugins/ciso/frameworks/<certKey>/`: HITRUST, SOC 2, ISO 27001 and CMMC. These
-  ship with the plugin and are plugin code. See
+  come with the plugin and are plugin code. See
   [Contributing a bundled framework](#contributing-a-bundled-framework).
 - **Project**, in your project's `docs/ciso/frameworks/<certKey>/`: anything else you want to
   track. It lives inside the gitignored tracking folder, next to `state.json`, so its files are
@@ -91,7 +91,7 @@ out. Then run `ciso:register`: the framework is on its list, labelled **project*
 
 ### Project frameworks are data
 
-Every verb has unrestricted Bash, and a project framework may have come from anyone. So ciso treats
+Every verb has unrestricted Bash, and a project framework may have come from anyone, so ciso treats
 it as data, never as instructions:
 
 - Verbs follow the plugin's own
@@ -115,7 +115,7 @@ copyright. Before you write a structure file for one:
 - **Share no run of 8 or more words with the source.** That is the check that a paraphrase is one.
 - **Declare `imported` when the file holds licensed wording.** If you copied your organization's
   licensed text in, say so, and ciso keeps it off the network.
-- **Name your sources honestly.** `codeVerifiedBy` means the identifier was read out of the
+- **Name your sources exactly.** `codeVerifiedBy` means the identifier was read out of the
   publisher's own document. `codeCorroboratedBy` means it was reconstructed from independent
   secondary sources. Never put secondary URLs in `codeVerifiedBy`.
 - **Say what the set is not.** `ground-rules.md` must tell the user what the control set does not
@@ -124,8 +124,8 @@ copyright. Before you write a structure file for one:
 ## Contributing a bundled framework
 
 A bundled framework is the same folder, in `plugins/ciso/frameworks/<certKey>/`, plus whatever
-plugin code its flows need. It is held to a higher bar than a project framework: it ships to every
-user, so its sourcing has to survive scrutiny. `validate --bundled` checks it, and a bundled tier may
+plugin code its flows need. It is held to a higher bar than a project framework: every user installs
+it, so its sourcing has to survive scrutiny. `validate --bundled` checks it, and a bundled tier may
 not be `imported`. Everything below is the sourcing doctrine for one.
 
 `ciso` is built as **generic tracking core + one framework per certification** (bundled today:

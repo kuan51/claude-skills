@@ -8,7 +8,7 @@ work has no copyright (CMMC's NIST and eCFR sources). Licensed or copyrighted re
 wording, and your organization's real assessment data, are imported/generated per-project and stored
 only locally, gitignored by default. It stays on your machine, out of this repo.
 
-A project can also track a framework ciso doesn't ship: drop a framework folder into
+A project can also track a framework ciso doesn't bundle: drop a framework folder into
 `docs/ciso/frameworks/<certKey>/` and every verb resolves it (`scope`, `import` and `upgrade` have
 no flow for one yet). See
 [ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
@@ -116,11 +116,12 @@ something you feed in from your own machine.
   this reason in reverse: its catalog is reachable, but PCI SSC's terms forbid derivative works.)
 - **Your organization's posture stays local, except what you sync to your own tracker.**
   Assessment status, your written justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
-  project data. Two flows send control data off the machine. Background vendor research for gaps is sent *only* a
-  control's generic public subject (its topic label/code and domain), never your justifications or
-  posture notes; a fail-closed allowlist in the research workflow enforces this. `ciso:sync-tasks`
-  writes tickets to the Jira or Linear project you choose, and those tickets carry the control's
-  label, summary and your justification, because that is what a ticket is for.
+  project data. Control data leaves the machine through vendor research and `ciso:sync-tasks`.
+  Background vendor research for gaps is sent *only* a control's generic public subject (its topic
+  label/code and domain), never your justifications or posture notes. A fail-closed allowlist in the
+  research workflow enforces this. `ciso:sync-tasks` writes tickets to the Jira or Linear project you
+  choose, and those tickets carry the control's label, summary and your justification, which a
+  ticket needs.
 - **Licensed wording stays on your machine.** For a control whose wording was declared `imported`
   (licensed text held only in your project), neither vendor research nor `ciso:sync-tasks` sends
   its `topicLabel` or `topicSummary`.
