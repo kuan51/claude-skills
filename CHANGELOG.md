@@ -14,10 +14,17 @@ per-plugin history until entries are recorded here going forward.
   with `frameworks.js`. The four bundled frameworks' control files moved there unchanged, so existing
   `state.json` files need no migration. A project framework is data, not instructions: it may not carry flow
   files, verbs follow the plugin's generic flows and ground rules for it, and a certKey that
-  clashes with a bundled one is excluded. A control whose wording is `imported` never sends its
-  label or summary to vendor research or task sync. HITRUST's r2 maturity shape no longer applies
-  to another framework's tier named `r2`, and the dashboard stops calling CMMC's verbatim text a
-  paraphrase. `ADDING-A-CERTIFICATION.md` now opens with how to write a project framework.
+  clashes with a bundled one is excluded. Every framework-aware verb, `sync-tasks` included,
+  reads the plugin's ground rules before it lists frameworks. Validation also refuses symlinked
+  files in a project framework, a `tracker` field in a structure file, and keys with a leading,
+  trailing or doubled hyphen. For a control whose wording is `imported`, vendor research gets
+  only its codes, and task sync never sends its label or summary. HITRUST's r2 maturity shape is no
+  longer seeded for another framework's tier named `r2`, and roadmap results merge into the exact
+  tier they were researched for.
+  The dashboard stops calling CMMC's verbatim text a paraphrase, and reconcile no longer flags
+  every synced control as changed on a HITRUST upgrade. The dashboard cards and register's list
+  now run alphabetically (CMMC first) instead of HITRUST first. `ADDING-A-CERTIFICATION.md` now
+  opens with how to write a project framework.
 - **data-analysis 1.0.0** -- a second skill, `data-analysis:discover`, starts from a business
   decision, its metric and a baseline, and surfaces the patterns the raw data supports (#105).
   One pattern hunter cuts the data along each confirmed dimension, a reconciler flags patterns
