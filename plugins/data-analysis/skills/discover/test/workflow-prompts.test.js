@@ -96,6 +96,8 @@ test('refuses before any agent on a blank decision, metric or baseline, bad slic
   await refuses(baseArgs({ slices: five.slice(0, 3), maxSlices: 2 }));
   await refuses(baseArgs({ dataPaths: [...DATA, '/home/me/proj/data/users.csv'] }));
   await refuses(baseArgs({ sandboxRoot: '' }));
+  await refuses(baseArgs({ dataPaths: [[`${ROOT}/data/users.csv`]] }));
+  await refuses(baseArgs({ dataPaths: [`${ROOT}/../other/users.csv`] }));
 });
 
 test('maxSlices defaults to 4 and maxCandidates to 8 when absent or invalid', async () => {

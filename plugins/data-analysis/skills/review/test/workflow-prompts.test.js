@@ -234,3 +234,16 @@ test('every agentType is <plugin.json name>:<agent> with a matching agents/<agen
     assert.ok(fs.existsSync(path.join(pluginDir, 'agents', `${agentName}.md`)), `missing agents/${agentName}.md`);
   }
 });
+
+test('refuses before any agent on a non-string path or a path with a .. segment', async () => {
+  const parallel = (fns) => Promise.all(fns.map((f) => f().catch(() => null)));
+  async function refuses(args) {
+    const calls = [];
+    await assert.rejects(runWorkflow(async (p, o) => calls.push(o), parallel, () => {}, args, () => {}), /Refusing to run/);
+    assert.equal(calls.length, 0, 'no agent dispatched');
+  }
+  const fixed = baseArgs().fixedRolePaths;
+  await refuses(baseArgs({ fixedRolePaths: { ...fixed, dataQuality: [[`${ROOT}/data/users.csv`]] } }));
+  await refuses(baseArgs({ fixedRolePaths: { ...fixed, statistical: [`${ROOT}/../other/users.csv`] } }));
+  await refuses(baseArgs({ conclusionPaths: [`${ROOT}/reports/../../etc/passwd`] }));
+});
