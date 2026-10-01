@@ -86,6 +86,10 @@ const SUBJECT_FIELDS = [
   'domainKey',
 ]
 
+// Inlined from sanitize-control.js the same way: for a control whose `statementSource` is
+// "imported", these subject fields hold licensed wording and stay local.
+const IMPORTED_LOCAL_FIELDS = ['topicLabel', 'topicSummary']
+
 // Builds the research prompt from ONLY the control's subject fields (see SUBJECT_FIELDS) -- the
 // public "what this control is about" metadata a vendor researcher needs. Field names vary by tier
 // (e1 uses relatedControlCode/relatedControlName; i1/r2 use topicLabel/topicSummary/domain), so
@@ -94,7 +98,9 @@ const SUBJECT_FIELDS = [
 function buildPrompt(control) {
   const c = control || {}
   const descriptiveFields = {}
+  const imported = c.statementSource === 'imported'
   for (const field of SUBJECT_FIELDS) {
+    if (imported && IMPORTED_LOCAL_FIELDS.includes(field)) continue
     if (c[field] !== undefined && c[field] !== null) descriptiveFields[field] = c[field]
   }
   return [

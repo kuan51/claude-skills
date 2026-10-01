@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { SUBJECT_FIELDS, sanitizeControlForResearch } = require('../sanitize-control.js');
+const { SUBJECT_FIELDS, IMPORTED_LOCAL_FIELDS, sanitizeControlForResearch } = require('../sanitize-control.js');
 
 test('keeps every subject field and drops org-private / licensed fields', () => {
   const control = {
@@ -88,4 +88,31 @@ test('workflow.js inlines the same SUBJECT_FIELDS list', () => {
     !workflowSrc.includes('...descriptiveFields'),
     'workflow.js must not spread all non-id fields (the removed fail-open egress path)'
   );
+});
+
+test('an imported control sends neither topicLabel nor topicSummary; other sources keep both', () => {
+  const base = {
+    id: 'x-1', topicLabel: 'LICENSED label', topicSummary: 'LICENSED summary wording',
+    domain: 'Access Control', domainKey: 'AC', relatedControlCode: 'AC-1',
+  };
+  const imported = sanitizeControlForResearch({ ...base, statementSource: 'imported' });
+  assert.deepEqual(imported, { id: 'x-1', domain: 'Access Control', domainKey: 'AC', relatedControlCode: 'AC-1' });
+  assert.ok(!JSON.stringify(imported).includes('LICENSED'));
+
+  for (const statementSource of ['public-topic-level', 'publisher-verbatim', 'structural-only', undefined]) {
+    const out = sanitizeControlForResearch({ ...base, statementSource });
+    assert.equal(out.topicLabel, base.topicLabel, String(statementSource));
+    assert.equal(out.topicSummary, base.topicSummary, String(statementSource));
+    assert.ok(!('statementSource' in out), 'statementSource is read, never sent');
+  }
+});
+
+test('workflow.js inlines the same IMPORTED_LOCAL_FIELDS list and applies it', () => {
+  const workflowSrc = fs.readFileSync(path.join(__dirname, '..', 'workflow.js'), 'utf8');
+  const match = workflowSrc.match(/const IMPORTED_LOCAL_FIELDS = \[([^\]]*)\]/);
+  assert.ok(match, 'workflow.js must declare `const IMPORTED_LOCAL_FIELDS = [ ... ]`');
+  const inline = match[1].split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+  assert.deepEqual(inline, IMPORTED_LOCAL_FIELDS);
+  assert.ok(workflowSrc.includes("c.statementSource === 'imported'"), 'buildPrompt must check statementSource');
+  assert.ok(workflowSrc.includes('IMPORTED_LOCAL_FIELDS.includes(field)'), 'buildPrompt must skip the local-only fields');
 });

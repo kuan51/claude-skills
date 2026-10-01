@@ -103,7 +103,8 @@ function classifyState(stateJsonPath, certKey, tierKey) {
 
   const results = { creates: [], updates: [], closes: [], reopens: [] };
   for (const [controlId, control] of Object.entries(tier.controls)) {
-    const classified = tierKey === 'r2'
+    // Only HITRUST's r2 has the PRISMA maturity shape; another framework's tier named r2 is flat.
+    const classified = certKey === 'hitrust' && tierKey === 'r2'
       ? classifyR2Control(controlId, control)
       : classifyFlatControl(controlId, control);
     if (!classified) continue;

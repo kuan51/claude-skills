@@ -120,7 +120,8 @@ function applyAssessment(stateJsonPath, certKey, tierKey, controlId, payload) {
     throw new Error(`Control "${controlId}" not found in ${certKey}/${tierKey} -- register the tier first.`);
   }
 
-  if (tierKey === 'r2') {
+  // Only HITRUST's r2 has the PRISMA maturity shape; another framework's tier named r2 is flat.
+  if (certKey === 'hitrust' && tierKey === 'r2') {
     return applyR2Assessment(control, stateJsonPath, state, payload || {});
   }
 
@@ -180,7 +181,7 @@ function markCategoryComplete(stateJsonPath, certKey, tierKey, legacyCategoryPre
     throw new Error(`Tier ${certKey}/${tierKey} not found in state.json`);
   }
 
-  const isR2 = tierKey === 'r2';
+  const isR2 = certKey === 'hitrust' && tierKey === 'r2';
   const controlsInCategory = Object.values(tier.controls).filter(
     (c) => categoryKeyFor(c) === legacyCategoryPrefix
   );

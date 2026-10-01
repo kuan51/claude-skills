@@ -20,7 +20,7 @@ their contracting officer is the answer, not a guess made here.
 ## Run it
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/register-tier.js" <docs/ciso-dir> cmmc "CMMC" "${CLAUDE_PLUGIN_ROOT}/skills/cmmc/controls/<tier>.v32cfr170.structure.json"
+node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/register-tier.js" <docs/ciso-dir> cmmc "CMMC" "${CLAUDE_PLUGIN_ROOT}/frameworks/cmmc/<tier>.v32cfr170.structure.json"
 ```
 
 `cmmc` and `"CMMC"` are the certification key and display name, always these exact literal values
@@ -49,7 +49,7 @@ the 110 underneath. Registering both reports the percentage against all 134 requ
      Protection 6, Risk Assessment 3, Security Assessment 4, System and Communications Protection 16,
      System and Information Integrity 7.
    - `level3`: **24** enhanced requirements selected from NIST SP 800-172.
-2. **Restate the two things from `invariants.md` that a user will otherwise get wrong.** First, the
+2. **Restate the two things from `ground-rules.md` that a user will otherwise get wrong.** First, the
    **version trap**: CMMC binds NIST SP 800-171 **R2** and SP 800-172 (Feb 2021), both of which NIST
    has withdrawn in favour of Revision 3. Reading the current NIST publication means assessing
    against the wrong control set. Second, that unlike every other `ciso` module the requirement text

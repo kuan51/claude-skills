@@ -694,7 +694,9 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       '<ul class="citation-list">' + items + '</ul></div>';
   }
 
-  function renderControlRow(control) {
+  // `sourceAuthority` is the control's tier's: the paraphrase note is true only of
+  // public-topic-level summaries, not of verbatim or imported wording.
+  function renderControlRow(control, sourceAuthority) {
     const assessment = effectiveAssessment(control);
     const status = assessment.status;
     const type = control.type || 'Unknown';
@@ -727,8 +729,10 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       html += '<span class="requirement-text">' + esc(control.statementText) + '</span>';
     } else if (control.topicSummary) {
       // Certification-agnostic on purpose: runs for every module shipping topic summaries.
-      html += '<span class="requirement-text">' + esc(control.topicSummary) + '</span>' +
-        '<div class="non-auth-note">Non-authoritative topic summary -- a paraphrase, not the publisher\'s requirement wording. See sources below.</div>';
+      html += '<span class="requirement-text">' + esc(control.topicSummary) + '</span>';
+      if (sourceAuthority === 'public-topic-level') {
+        html += '<div class="non-auth-note">Non-authoritative topic summary -- a paraphrase, not the publisher\'s requirement wording. See sources below.</div>';
+      }
     } else {
       // Likewise: only one certification has an export to import, so the instruction to do so
       // belongs in that skill, not on every certification's page.
@@ -781,7 +785,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     return html;
   }
 
-  function renderDomainGroup(prefix, controls, domainRollup, certKey, tierKey) {
+  function renderDomainGroup(prefix, controls, domainRollup, certKey, tierKey, sourceAuthority) {
     const anchorId = 'cat-' + certKey + '-' + tierKey + '-' + slugify(prefix);
     const meta = groupDisplayMeta(prefix, domainRollup);
     const compliancePct = domainRollup ? domainRollup.compliancePercent : 0;
@@ -793,7 +797,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     html += '<span class="cat-stats">' + total + ' control' + (total === 1 ? '' : 's') + ' &middot; ' + compliancePct + '% compliant</span>';
     html += '</summary>';
     html += '<div class="control-list">';
-    html += controls.map(renderControlRow).join('');
+    html += controls.map(function (c) { return renderControlRow(c, sourceAuthority); }).join('');
     html += '<div class="no-matches" style="display:none">No controls match the current filters.</div>';
     html += '</div></details>';
     return html;
@@ -935,7 +939,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
 
   // One meta-index card per certification in the plugin's catalog. A certification this
   // project already tracks gets real gauges and a link to its own page; one it doesn't
-  // gets a recessive "not tracked yet" card naming the skill that would start it. The
+  // gets a recessive "not tracked yet" card naming ciso:register, the verb that starts it. The
   // catalog -- not state.json -- drives the list, so the index answers "what can this
   // plugin do" and not merely "what have I already started".
   function renderIndexCard(entry, cert, summary, state, cardIndex) {
@@ -950,7 +954,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     if (entry.summary) inner += '<div class="cert-summary">' + esc(entry.summary) + '</div>';
 
     if (!tracked) {
-      inner += '<div class="start-hint">Run <code>' + esc(entry.skill || ('ciso:' + certKey)) + '</code> to start tracking this certification.</div>';
+      inner += '<div class="start-hint">Run <code>ciso:register</code> to start tracking this certification.</div>';
       inner += '</div>';
       return inner;
     }
@@ -1052,7 +1056,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       drilldownHtml += '<h2>' + esc(displayName) + ' &mdash; ' + esc(tierKey) + ' details</h2>';
       for (const prefix of domainKeys) {
         const domainRollup = rollup && rollup.byDomain ? rollup.byDomain[prefix] : null;
-        drilldownHtml += renderDomainGroup(prefix, byDomain[prefix], domainRollup, certKey, tierKey);
+        drilldownHtml += renderDomainGroup(prefix, byDomain[prefix], domainRollup, certKey, tierKey, tier.sourceAuthority);
       }
       drilldownHtml += '</section>';
     }

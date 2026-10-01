@@ -7,9 +7,9 @@
  * Usage: node render-dashboard.js <target-dir>
  *
  * Writes one page per view, all from the same template:
- *   dashboard.html        -- the meta index: one card per certification this plugin
- *                            supports (from assets/certifications.json), whether or not
- *                            this project tracks it yet.
+ *   dashboard.html        -- the meta index: one card per framework frameworks.js lists
+ *                            (bundled, plus valid project frameworks under
+ *                            <target-dir>/frameworks/), whether or not this project tracks it yet.
  *   cert-<certKey>.html   -- one page per certification actually registered in state,
  *                            carrying that certification's overview cards, filter bar
  *                            and control drilldowns.
@@ -28,6 +28,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { listFrameworks } = require('./frameworks.js');
 
 // The 5 assessment statuses defined by the state.json schema. Fixed and
 // enumerable (unlike control "type" or certification/tier keys, which are
@@ -349,20 +350,18 @@ function readTemplate() {
   return { templatePath, template: fs.readFileSync(templatePath, 'utf8') };
 }
 
-// The catalog of certifications this plugin supports, whether or not a given project
-// tracks them yet -- the meta index renders a card for each. Resolved relative to this
-// file, exactly like readTemplate(). It ships with the plugin, so a missing or malformed
-// catalog is a packaging bug to fix, not a condition to render around.
-function readCatalog() {
-  const catalogPath = path.join(__dirname, '..', '..', 'assets', 'certifications.json');
-  if (!fs.existsSync(catalogPath)) {
-    throw new Error(`render-dashboard: certification catalog not found at ${catalogPath}`);
+// The catalog of frameworks this project can track, whether or not it tracks them yet -- the
+// meta index renders a card for each. A bundled framework ships with the plugin, so an invalid
+// one is a packaging bug to fix, not a condition to render around: it throws. An invalid project
+// framework is the user's data: it is reported on stderr and skipped.
+function readCatalog(targetDir) {
+  const { frameworks, errors } = listFrameworks(targetDir);
+  const bundledErrors = errors.filter((e) => e.origin === 'bundled');
+  if (bundledErrors.length > 0) {
+    throw new Error(`render-dashboard: invalid bundled framework: ${bundledErrors.map((e) => `${e.dir}: ${e.message}`).join('; ')}`);
   }
-  const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-  if (!Array.isArray(catalog)) {
-    throw new Error(`render-dashboard: certification catalog at ${catalogPath} must be a JSON array`);
-  }
-  return catalog;
+  for (const e of errors) console.error(`render-dashboard: skipping ${e.origin} ${e.dir}: ${e.message}`);
+  return frameworks.map(({ certKey, displayName, summary, tiers, origin }) => ({ certKey, displayName, summary, tiers, origin }));
 }
 
 // Removes cert-*.html pages left behind by a previous render whose certification is no
@@ -403,7 +402,7 @@ function pruneStaleCertPages(targetDir, writtenNames) {
 function renderDashboard(targetDir) {
   const { statePath, state } = readState(targetDir);
   const { template } = readTemplate();
-  const catalog = readCatalog();
+  const catalog = readCatalog(targetDir);
 
   state.generatedAt = new Date().toISOString();
 

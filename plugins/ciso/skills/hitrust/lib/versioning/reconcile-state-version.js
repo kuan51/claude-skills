@@ -33,10 +33,11 @@ function toStructuralEntry(control) {
 // register-tier.js. Structural fields are copied opaquely from `entry` -- whatever shape the
 // tier's structure file uses (e1's relatedControlCode/relatedControlName/legacyCategoryPrefix, or
 // i1/r2's topicLabel/topicSummary/domain/citations/nonAuthoritative) -- rather than naming them
-// individually, since this script must not assume e1's exact field names. `tierKey === 'r2'`
-// seeds the 5-dimension maturity object instead of a flat status, matching register-tier.js.
-function buildDefaultControl(entry, tierKey) {
-  const assessment = tierKey === 'r2'
+// individually, since this script must not assume e1's exact field names. HITRUST's r2 (certKey
+// "hitrust" AND tierKey "r2") seeds the 5-dimension maturity object instead of a flat status,
+// matching register-tier.js.
+function buildDefaultControl(entry, tierKey, certKey) {
+  const assessment = certKey === 'hitrust' && tierKey === 'r2'
     ? {
         status: null,
         maturity: R2_DIMENSIONS.reduce((acc, dim) => {
@@ -118,7 +119,7 @@ function reconcileStateVersion(stateJsonPath, certKey, tierKey, newStructure) {
 
   // added: seed fresh defaults.
   for (const id of diff.added) {
-    tier.controls[id] = buildDefaultControl(newById.get(id), tierKey);
+    tier.controls[id] = buildDefaultControl(newById.get(id), tierKey, certKey);
   }
 
   // removed: archive the entire existing control object -- never dropped.

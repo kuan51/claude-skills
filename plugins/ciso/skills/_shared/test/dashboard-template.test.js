@@ -569,3 +569,34 @@ test('extra fields: a nested object renders its keys, never the string "[object 
   assert.ok(drilldownsHtml.includes('SEC-413'), 'a nested subtask must recurse, not stop at the top level');
   assert.ok(drilldownsHtml.includes('href="https://example.atlassian.net/browse/SEC-412"'), 'the ticket URL must be clickable');
 });
+
+test('index view: unregistered bundled and project cards both name ciso:register, never ciso:<certKey>', () => {
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
+  const catalog = [
+    { certKey: 'hitrust', displayName: 'HITRUST CSF', tiers: ['e1'], summary: 'tracked', origin: 'bundled' },
+    { certKey: 'soc2', displayName: 'SOC 2 Type II', tiers: ['type2'], summary: 'bundled, untracked', origin: 'bundled' },
+    { certKey: 'example', displayName: 'Example Framework', tiers: ['core'], summary: 'project, untracked', origin: 'project' },
+  ];
+  const { overviewHtml } = renderIndexClientSide(state, catalog);
+  const hints = [...overviewHtml.matchAll(/<div class="start-hint">(.*?)<\/div>/g)].map((m) => m[1]);
+  assert.equal(hints.length, 2, 'one start hint per untracked card');
+  for (const hint of hints) assert.ok(hint.includes('<code>ciso:register</code>'), hint);
+  assert.ok(!overviewHtml.includes('ciso:soc2') && !overviewHtml.includes('ciso:example'));
+  assert.ok(overviewHtml.includes('Example Framework'));
+});
+
+for (const [sourceAuthority, expectNote] of [
+  ['public-topic-level', true],
+  ['publisher-verbatim', false],
+  ['imported', false],
+]) {
+  test(`the "a paraphrase" note ${expectNote ? 'appears' : 'does not appear'} under topicSummary for a ${sourceAuthority} tier`, () => {
+    const state = baseState({
+      c1: makeControl({ id: 'X-1', topicLabel: 'Label', topicSummary: 'The summary text.' }),
+    });
+    state.certifications.hitrust.tiers.e1.sourceAuthority = sourceAuthority;
+    const { drilldownsHtml } = renderClientSide(state);
+    assert.ok(drilldownsHtml.includes('The summary text.'));
+    assert.equal(drilldownsHtml.includes('a paraphrase, not the publisher'), expectNote);
+  });
+}

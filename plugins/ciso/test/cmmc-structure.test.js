@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const CONTROLS = path.join(__dirname, '..', 'skills', 'cmmc', 'controls');
+const CONTROLS = path.join(__dirname, '..', 'frameworks', 'cmmc');
 const load = (tier) =>
   JSON.parse(fs.readFileSync(path.join(CONTROLS, `${tier}.v32cfr170.structure.json`), 'utf8'));
 

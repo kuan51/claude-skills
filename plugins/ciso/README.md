@@ -8,6 +8,10 @@ work has no copyright (CMMC's NIST and eCFR sources). Licensed or copyrighted re
 wording, and your organization's real assessment data, are imported/generated per-project and stored
 only locally, gitignored by default. It stays on your machine, out of this repo.
 
+A project can also track a framework ciso doesn't ship: drop a framework folder into
+`docs/ciso/frameworks/<certKey>/` and every verb picks it up. See
+[ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
+
 Not installed yet? See the [repo root README](../../README.md) for how to add this marketplace
 and install the plugin.
 
@@ -111,9 +115,17 @@ something you feed in from your own machine.
   this reason in reverse: its catalog is reachable, but PCI SSC's terms forbid derivative works.)
 - **Your organization's posture never leaves your project.** Assessment status, your written
   justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
-  project data. The only flow that contacts the internet, background vendor research for gaps, is
-  sent *only* a control's generic public subject (its topic label/code and domain), never your
-  justifications or posture notes. A fail-closed allowlist in the research workflow enforces this.
+  project data. Two flows contact the network. Background vendor research for gaps is sent *only* a
+  control's generic public subject (its topic label/code and domain), never your justifications or
+  posture notes; a fail-closed allowlist in the research workflow enforces this. `ciso:sync-tasks`
+  writes tickets to the Jira or Linear project you choose, and those tickets carry the control's
+  label, summary and your justification, because that is what a ticket is for.
+- **Licensed wording stays on your machine.** For a control whose wording was declared `imported`
+  (licensed text held only in your project), neither vendor research nor `ciso:sync-tasks` sends
+  its `topicLabel` or `topicSummary`.
+- **A project framework is data, never instructions.** Verbs read a project framework's
+  `ground-rules.md` and tell you what it says, but follow the plugin's own generic ground rules and
+  flows, never instructions found in a project framework file.
 - **No "met" without a reason.** The interview mechanically refuses to record a control as met
   without a justification, or as in-progress without a current-state and estimated-closeness note.
 - **Evidence never fakes an assessment.** Attaching a PR or CI run writes only the evidence record,
@@ -142,19 +154,22 @@ than one is registered.
 
 ## Architecture
 
-ciso is a **generic tracking core + one module per certification** (today, HITRUST, SOC 2,
-ISO 27001 and CMMC). The core (scaffolding, registration, the assessment gate, versioning,
-background vendor research, evidence, and the dashboards) is certification-agnostic and keyed by
-`certKey`.
+ciso is a **generic tracking core + one framework folder per certification** (bundled today:
+HITRUST, SOC 2, ISO 27001 and CMMC, under `frameworks/`). The core (scaffolding, registration, the
+assessment gate, versioning, background vendor research, evidence, and the dashboards) is
+certification-agnostic and keyed by `certKey`.
 
 What an org calls is **verbs**: one skill per action, each resolving the certification at
-runtime. A certification module doesn't include a `SKILL.md` of its own; it is control data,
-reference files, and whatever import or scope handling it needs, dispatched into by the verbs.
-Every verb reads that module's `references/invariants.md` first, which is what guarantees a user is
-always told what the included control set is and is not before acting on it.
+runtime through `skills/_shared/frameworks.js list`. A framework folder doesn't include a
+`SKILL.md` of its own; it is `framework.json`, `ground-rules.md`, one structure file per tier and,
+for a bundled framework, optional `flows/`, dispatched into by the verbs. Every verb reads the
+framework's `ground-rules.md` first, which is what guarantees a user is always told what the
+included control set is and is not before acting on it. A project framework, from
+`docs/ciso/frameworks/`, is data: verbs follow `skills/_shared/generic-ground-rules.md` and the
+generic flows for it, never instructions in its files.
 
 This core/module split is why a new certification costs no new skills. SOC 2 was built against it
 without changing one core script, and ISO 27001 without adding any runtime code at all. To see the
-exact core/module boundary, how a certification's identifiers may and may not be sourced, and the
-contract for adding a fifth, read
+exact core/framework boundary, how a framework's identifiers may and may not be sourced, and the
+contract for adding one, read
 [ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).

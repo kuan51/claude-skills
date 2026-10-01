@@ -3,7 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const STRUCTURE_FILE = path.join(__dirname, '..', 'controls', 'e1.v11.8.structure.json');
+const HITRUST_DIR = path.join(__dirname, '..', '..', '..', 'frameworks', 'hitrust');
+const STRUCTURE_FILE = path.join(HITRUST_DIR, 'e1.v11.8.structure.json');
 
 function loadStructure(structureFilePath) {
   const raw = fs.readFileSync(structureFilePath || STRUCTURE_FILE, 'utf8');
@@ -30,12 +31,13 @@ function defaultMaturityDimension() {
 // tier's declared authority level ("structural-only" for e1, "public-topic-level" for i1/r2),
 // used as this control's initial `statementSource` too (they start in lockstep; e1's per-control
 // statementSource then advances independently to "imported" as export rows get matched).
-// `tierKey === 'r2'` seeds a five-dimension `maturity` object (Policy/Procedure/Implemented/
+// HITRUST's `r2` (certKey "hitrust" AND tierKey "r2"; another framework's tier named r2 stays
+// flat) seeds a five-dimension `maturity` object (Policy/Procedure/Implemented/
 // Measured/Managed, each independently assessable) instead of a flat status -- r2 is the only
 // HITRUST tier that scores multiple PRISMA maturity dimensions; e1/i1 keep the flat shape since
 // they are officially Implemented-only. See docs/specs/2026-09-22-ciso-hitrust.md.
-function defaultControl(entry, sourceAuthority, tierKey, structureCodeVerifiedBy) {
-  const assessment = tierKey === 'r2'
+function defaultControl(entry, sourceAuthority, tierKey, structureCodeVerifiedBy, certKey) {
+  const assessment = certKey === 'hitrust' && tierKey === 'r2'
     ? {
         status: null,
         maturity: R2_DIMENSIONS.reduce((acc, dim) => {
@@ -136,7 +138,7 @@ function registerTier(stateJsonPath, structure, certKey, certDisplayName) {
   let added = 0;
   for (const entry of resolvedStructure.controls) {
     if (!Object.prototype.hasOwnProperty.call(tier.controls, entry.id)) {
-      tier.controls[entry.id] = defaultControl(entry, tierSourceAuthority, tierKey, resolvedStructure.codeVerifiedBy);
+      tier.controls[entry.id] = defaultControl(entry, tierSourceAuthority, tierKey, resolvedStructure.codeVerifiedBy, certKey);
       added += 1;
     }
   }
@@ -163,15 +165,15 @@ function registerTier(stateJsonPath, structure, certKey, certDisplayName) {
 }
 
 // Resolves the CLI's optional second argument to a structure file path. Accepts either a bare
-// tier name ("e1", "i1", "r2" -- looked up as controls/<tier>.v11.8.structure.json alongside this
-// script's bundled controls/ directory) or a full/relative path to a structure JSON file directly
+// tier name ("e1", "i1", "r2" -- looked up as <tier>.v11.8.structure.json in the bundled
+// frameworks/hitrust/ folder) or a full/relative path to a structure JSON file directly
 // (so a maintainer testing a not-yet-bundled structure file, e.g. during a version-upgrade
-// rehearsal, doesn't need to place it under controls/ first). Defaults to e1 for backward
+// rehearsal, doesn't need to place it under frameworks/hitrust/ first). Defaults to e1 for backward
 // compatibility with existing callers that only ever pass <target-dir>.
 function resolveStructurePath(tierArg) {
   if (!tierArg) return STRUCTURE_FILE;
   if (/^(e1|i1|r2)$/.test(tierArg)) {
-    return path.join(__dirname, '..', 'controls', `${tierArg}.v11.8.structure.json`);
+    return path.join(HITRUST_DIR, `${tierArg}.v11.8.structure.json`);
   }
   return path.resolve(tierArg);
 }

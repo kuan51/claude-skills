@@ -1,7 +1,7 @@
 # Interview (flow b)
 
 Read this when `ciso:interview` dispatches here. The core discipline invariants live in
-`invariants.md`, which that verb reads first. The full mechanics are here.
+`ground-rules.md`, which that verb reads first. The full mechanics are here.
 
 Resumable, chunked by `domainKey` and, within each chunk, committed in sub-batches of 4-6
 requirements at a time rather than as one whole-domain commit. **Must run inside native plan

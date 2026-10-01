@@ -16,6 +16,7 @@ Linear always groups controls under a per-tier parent issue. If `destination.tie
 
 - `title`: `"[<control.id>] <control.topicLabel>"`
 - `description`: `<control.topicSummary>` (blank line) `Justification: <assessment.justification or inProgress.currentState>` (blank line, r2 only) `Outstanding dimensions: <comma-separated list from dimensionActions keys>`
+  - **When `control.statementSource` is `"imported"`, send neither `topicLabel` nor `topicSummary`.** That wording came from the org's licensed copy of the standard and stays on this machine. Use `"[<control.id>]"` alone as the `title`, and start the `description` at the `Justification:` line.
   - r2 controls have no whole-control `assessment.justification`/`assessment.inProgress`. For r2, build the `Justification:` lines per gapped dimension instead, from `assessment.maturity.<dimension>.justification` (or `assessment.maturity.<dimension>.inProgress.currentState` when still in progress).
 - `parentId`: `destination.tierGroupIds.<tier>`
 - If `dimensionActions` is present (r2), after creating the parent task, create one sub-issue per `dimensionActions` entry whose value is `"create"`: `title: "[<control.id>] <dimension>"`, `parentId` = the just-created task's id.

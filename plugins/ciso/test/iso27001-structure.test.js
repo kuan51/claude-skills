@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const STRUCTURE_PATH = path.join(
-  __dirname, '..', 'skills', 'iso27001', 'controls', 'isms.v2022.structure.json'
+  __dirname, '..', 'frameworks', 'iso27001', 'isms.v2022.structure.json'
 );
 const structure = JSON.parse(fs.readFileSync(STRUCTURE_PATH, 'utf8'));
 

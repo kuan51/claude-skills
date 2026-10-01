@@ -60,25 +60,6 @@ test('certification modules ship no SKILL.md -- they are dispatched into, not in
   }
 });
 
-// Every certification module must carry the invariants its verbs read on every invocation. These
-// hold the content-authority statements ("non-authoritative", "SOC 2 is a report, not a
-// certification") that used to live in the module's always-loaded SKILL.md. A verb-first surface
-// has many entry points instead of one, so losing this file would silently drop the guarantee that
-// a user is told what the shipped control set is and is not.
-test('every certification module ships references/invariants.md', () => {
-  for (const certModule of ['hitrust', 'soc2', 'iso27001']) {
-    const invariants = path.join(SKILLS_DIR, certModule, 'references', 'invariants.md');
-    assert.ok(
-      fs.existsSync(invariants),
-      `skills/${certModule}/references/invariants.md is missing -- every verb reads it after resolving certKey`
-    );
-    assert.ok(
-      fs.readFileSync(invariants, 'utf8').trim().length > 0,
-      `skills/${certModule}/references/invariants.md is empty`
-    );
-  }
-});
-
 for (const file of skillFiles) {
   const dirName = path.basename(path.dirname(file));
 
@@ -131,19 +112,32 @@ for (const file of skillFiles) {
 // The load-bearing rule of the verb-first surface. When each certification had its own SKILL.md,
 // that page was always loaded and its content-authority section reached the user on every
 // invocation for free. Verbs are certification-generic, so each one has to go and read the
-// invariants itself after resolving certKey -- and a verb that forgets silently drops the
+// ground rules itself after resolving certKey -- and a verb that forgets silently drops the
 // guarantee. Pin it here rather than trusting nine files to stay in step by convention.
 const CERT_AWARE_VERBS = [
   'audit', 'evidence', 'import', 'interview', 'register', 'review', 'roadmap', 'scope', 'upgrade',
 ];
 
 for (const verb of CERT_AWARE_VERBS) {
-  test(`${verb}/SKILL.md instructs reading the certification's invariants.md`, () => {
+  test(`${verb}/SKILL.md names ground-rules.md and generic-ground-rules.md`, () => {
     const body = fs.readFileSync(path.join(SKILLS_DIR, verb, 'SKILL.md'), 'utf8');
+    assert.match(body, /<dir>\/ground-rules\.md/, `${verb} never reads the framework's ground-rules.md`);
     assert.match(
       body,
-      /references\/invariants\.md/,
-      `${verb} resolves a certKey but never reads skills/<certKey>/references/invariants.md -- the content-authority statements would never reach the user`
+      /skills\/_shared\/generic-ground-rules\.md/,
+      `${verb} never reads generic-ground-rules.md -- a project framework would get no plugin-owned rules`
     );
+    assert.match(body, /frameworks\.js" list/, `${verb} must resolve the framework through frameworks.js list`);
+  });
+}
+
+// A project framework has no flows/, so these verbs need a plugin-owned generic flow to follow.
+for (const verb of ['register', 'interview', 'roadmap']) {
+  test(`${verb}/SKILL.md names its generic flow, and the flow exists`, () => {
+    const body = fs.readFileSync(path.join(SKILLS_DIR, verb, 'SKILL.md'), 'utf8');
+    assert.ok(body.includes(`skills/${verb}/references/generic.md`), `${verb} never names its generic.md`);
+    const generic = path.join(SKILLS_DIR, verb, 'references', 'generic.md');
+    assert.ok(fs.existsSync(generic), `${generic} is missing`);
+    assert.ok(fs.readFileSync(generic, 'utf8').trim().length > 0, `${generic} is empty`);
   });
 }

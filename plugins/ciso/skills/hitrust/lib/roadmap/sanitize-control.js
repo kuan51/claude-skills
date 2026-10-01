@@ -21,6 +21,10 @@ const SUBJECT_FIELDS = [
   'domainKey',
 ];
 
+// Subject fields that still never egress when the control's `statementSource` is "imported": that
+// wording came from an org's licensed copy of the standard, and licensed wording stays local.
+const IMPORTED_LOCAL_FIELDS = ['topicLabel', 'topicSummary'];
+
 // Fail-closed: returns `{ id, ...only the SUBJECT_FIELDS that are actually present }`. Any field
 // not on the allowlist -- justification, inProgress, inProgressNotes, statementText, or ANY field
 // added to a control in the future -- is dropped by default, so a new posture field can never
@@ -28,7 +32,9 @@ const SUBJECT_FIELDS = [
 function sanitizeControlForResearch(control) {
   const c = control || {};
   const out = { id: c.id };
+  const imported = c.statementSource === 'imported';
   for (const field of SUBJECT_FIELDS) {
+    if (imported && IMPORTED_LOCAL_FIELDS.includes(field)) continue;
     if (c[field] !== undefined && c[field] !== null) {
       out[field] = c[field];
     }
@@ -36,4 +42,4 @@ function sanitizeControlForResearch(control) {
   return out;
 }
 
-module.exports = { SUBJECT_FIELDS, sanitizeControlForResearch };
+module.exports = { SUBJECT_FIELDS, IMPORTED_LOCAL_FIELDS, sanitizeControlForResearch };

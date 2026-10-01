@@ -1,0 +1,224 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * Finds and validates ciso frameworks. A framework is one folder `<certKey>/` holding
+ * framework.json, ground-rules.md and one <tier>.<controlSetVersion>.structure.json per tier.
+ * See ADDING-A-CERTIFICATION.md for the format.
+ *
+ * Two roots, two trust levels:
+ *   bundled  plugins/ciso/frameworks/          plugin code; may carry flows/
+ *   project  <docs/ciso-dir>/frameworks/       data only; flows/ is an error
+ *
+ * Usage:
+ *   node frameworks.js list <docs/ciso-dir>       frameworks as JSON on stdout, errors on stderr;
+ *                                                 exit 1 only when a bundled framework is invalid
+ *   node frameworks.js validate <dir> [--bundled] errors on stderr and exit 1, or "ok"
+ *
+ * Stdlib only -- no npm dependencies.
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { STATE_ONLY_FIELDS } = require('../hitrust/lib/versioning/reconcile-state-version.js');
+
+const BUNDLED_ROOT = path.join(__dirname, '..', '..', 'frameworks');
+const KEY_RE = /^[a-z0-9-]+$/;
+const VERSION_RE = /^v[A-Za-z0-9.-]+$/;
+const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'imported'];
+const FORBIDDEN_IDS = ['__proto__', 'constructor', 'prototype'];
+const CONTROL_STRINGS = ['domain', 'domainKey', 'topicLabel', 'topicSummary'];
+const STRUCTURE_SUFFIX = '.structure.json';
+
+function isNonEmptyString(v) {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+function readJson(file, errors) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (err) {
+    errors.push(`${path.basename(file)}: not readable JSON (${err.message})`);
+    return null;
+  }
+}
+
+function validateStructure(file, origin, errors) {
+  const name = path.basename(file);
+  const s = readJson(file, errors);
+  if (!s || typeof s !== 'object' || Array.isArray(s)) {
+    if (s) errors.push(`${name}: must be a JSON object`);
+    return;
+  }
+  if (!VERSION_RE.test(String(s.controlSetVersion))) {
+    errors.push(`${name}: controlSetVersion "${s.controlSetVersion}" must match ${VERSION_RE}`);
+  }
+  if (name !== `${s.tier}.${s.controlSetVersion}${STRUCTURE_SUFFIX}`) {
+    errors.push(`${name}: filename must be <tier>.<controlSetVersion>${STRUCTURE_SUFFIX} from its own fields ("${s.tier}", "${s.controlSetVersion}")`);
+  }
+  if (!SOURCE_AUTHORITIES.includes(s.sourceAuthority)) {
+    errors.push(`${name}: sourceAuthority "${s.sourceAuthority}" must be one of ${SOURCE_AUTHORITIES.join(', ')}`);
+  } else if (origin === 'bundled' && s.sourceAuthority === 'imported') {
+    errors.push(`${name}: a bundled tier may not be "imported" -- licensed wording never ships with the plugin`);
+  }
+  if (typeof s.nonAuthoritative !== 'boolean') errors.push(`${name}: nonAuthoritative must be a boolean`);
+  if (!Array.isArray(s.controls) || s.controls.length === 0) {
+    errors.push(`${name}: controls must be a non-empty array`);
+    return;
+  }
+  const seen = new Set();
+  s.controls.forEach((c, i) => {
+    const where = `${name}: controls[${i}]`;
+    if (!c || typeof c !== 'object' || Array.isArray(c)) {
+      errors.push(`${where} must be an object`);
+      return;
+    }
+    if (!isNonEmptyString(c.id)) {
+      errors.push(`${where}: id must be a non-empty string`);
+    } else if (FORBIDDEN_IDS.includes(c.id)) {
+      errors.push(`${where}: id "${c.id}" is not allowed`);
+    } else if (seen.has(c.id)) {
+      errors.push(`${where}: duplicate id "${c.id}"`);
+    } else {
+      seen.add(c.id);
+    }
+    for (const field of CONTROL_STRINGS) {
+      if (!isNonEmptyString(c[field])) errors.push(`${where}: ${field} must be a non-empty string`);
+    }
+    for (const field of STATE_ONLY_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(c, field)) {
+        errors.push(`${where}: "${field}" is a field ciso state owns and may not appear in a structure file`);
+      }
+    }
+  });
+}
+
+// Returns [message]; empty means valid. `origin` is "bundled" or "project".
+function validateFramework(dir, origin) {
+  const errors = [];
+  const folder = path.basename(path.resolve(dir));
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [`${dir} is not a directory`];
+
+  const fwPath = path.join(dir, 'framework.json');
+  let fw = null;
+  if (!fs.existsSync(fwPath)) {
+    errors.push('framework.json is missing');
+  } else {
+    fw = readJson(fwPath, errors);
+    if (fw && (typeof fw !== 'object' || Array.isArray(fw))) {
+      errors.push('framework.json: must be a JSON object');
+      fw = null;
+    }
+  }
+  if (fw) {
+    if (!isNonEmptyString(fw.certKey) || !KEY_RE.test(fw.certKey)) {
+      errors.push(`framework.json: certKey "${fw.certKey}" must match ${KEY_RE}`);
+    } else if (fw.certKey !== folder) {
+      errors.push(`framework.json: certKey "${fw.certKey}" must equal the folder name "${folder}"`);
+    }
+    for (const field of ['displayName', 'summary']) {
+      if (!isNonEmptyString(fw[field])) errors.push(`framework.json: ${field} must be a non-empty string`);
+    }
+    if (!Array.isArray(fw.tiers) || fw.tiers.length === 0) {
+      errors.push('framework.json: tiers must be a non-empty array');
+      fw.tiers = [];
+    } else {
+      const seen = new Set();
+      for (const t of fw.tiers) {
+        if (typeof t !== 'string' || !KEY_RE.test(t)) errors.push(`framework.json: tier "${t}" must match ${KEY_RE}`);
+        else if (seen.has(t)) errors.push(`framework.json: duplicate tier "${t}"`);
+        seen.add(t);
+      }
+    }
+  }
+
+  const rulesPath = path.join(dir, 'ground-rules.md');
+  if (!fs.existsSync(rulesPath)) errors.push('ground-rules.md is missing');
+  else if (fs.readFileSync(rulesPath, 'utf8').trim().length === 0) errors.push('ground-rules.md is empty');
+
+  if (origin !== 'bundled' && fs.existsSync(path.join(dir, 'flows'))) {
+    errors.push('flows/ is not allowed in a project framework -- project frameworks are data, not instructions');
+  }
+
+  const structureFiles = fs.readdirSync(dir).filter((n) => n.endsWith(STRUCTURE_SUFFIX)).sort();
+  const declared = (fw && fw.tiers) || [];
+  const perTier = {};
+  for (const name of structureFiles) {
+    const tier = name.split('.')[0];
+    if (fw && !declared.includes(tier)) errors.push(`${name}: tier "${tier}" is not declared in framework.json`);
+    perTier[tier] = (perTier[tier] || 0) + 1;
+    validateStructure(path.join(dir, name), origin, errors);
+  }
+  for (const tier of declared) {
+    if (!perTier[tier]) errors.push(`tier "${tier}" is declared but has no ${tier}.<controlSetVersion>${STRUCTURE_SUFFIX}`);
+    else if (perTier[tier] > 1) errors.push(`tier "${tier}" has ${perTier[tier]} structure files; exactly one is allowed`);
+  }
+  return errors;
+}
+
+function subdirs(root) {
+  if (!root || !fs.existsSync(root)) return [];
+  return fs.readdirSync(root, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => path.join(root, e.name))
+    .sort();
+}
+
+function describe(dir, origin) {
+  const fw = JSON.parse(fs.readFileSync(path.join(dir, 'framework.json'), 'utf8'));
+  return { certKey: fw.certKey, displayName: fw.displayName, summary: fw.summary, tiers: fw.tiers, dir, origin };
+}
+
+// Bundled frameworks plus any under <docsCisoDir>/frameworks/. Invalid folders and certKey
+// clashes go to `errors` only, never to `frameworks`.
+function listFrameworks(docsCisoDir, bundledRoot) {
+  const frameworks = [];
+  const errors = [];
+  const bundled = new Map();
+  for (const dir of subdirs(bundledRoot || BUNDLED_ROOT)) {
+    // Claimed even when invalid, so a project folder can never stand in for a broken bundled one.
+    bundled.set(path.basename(dir), dir);
+    const msgs = validateFramework(dir, 'bundled');
+    if (msgs.length) msgs.forEach((message) => errors.push({ origin: 'bundled', dir, message }));
+    else frameworks.push(describe(dir, 'bundled'));
+  }
+  const projectRoot = docsCisoDir ? path.join(path.resolve(docsCisoDir), 'frameworks') : null;
+  for (const dir of subdirs(projectRoot)) {
+    const name = path.basename(dir);
+    if (bundled.has(name)) {
+      errors.push({ origin: 'project', dir, message: `certKey "${name}" clashes with the bundled framework at ${bundled.get(name)}; ${dir} is excluded` });
+      continue;
+    }
+    const msgs = validateFramework(dir, 'project');
+    if (msgs.length) msgs.forEach((message) => errors.push({ origin: 'project', dir, message }));
+    else frameworks.push(describe(dir, 'project'));
+  }
+  return { frameworks, errors };
+}
+
+module.exports = { listFrameworks, validateFramework, BUNDLED_ROOT, SOURCE_AUTHORITIES };
+
+function main(argv) {
+  const [cmd, target, flag] = argv;
+  if (cmd === 'list' && target) {
+    const { frameworks, errors } = listFrameworks(target);
+    for (const e of errors) console.error(`${e.origin} ${e.dir}: ${e.message}`);
+    console.log(JSON.stringify(frameworks, null, 2));
+    return errors.some((e) => e.origin === 'bundled') ? 1 : 0;
+  }
+  if (cmd === 'validate' && target) {
+    const errors = validateFramework(target, flag === '--bundled' ? 'bundled' : 'project');
+    if (errors.length) {
+      for (const message of errors) console.error(message);
+      return 1;
+    }
+    console.log('ok');
+    return 0;
+  }
+  console.error('Usage:\n  node frameworks.js list <docs/ciso-dir>\n  node frameworks.js validate <dir> [--bundled]');
+  return 1;
+}
+
+if (require.main === module) {
+  process.exitCode = main(process.argv.slice(2));
+}

@@ -1,0 +1,29 @@
+{
+  "tier": "core",
+  "controlSetVersion": "v1",
+  "sourceAuthority": "public-topic-level",
+  "nonAuthoritative": true,
+  "controls": [
+    {
+      "id": "EX-AC-1",
+      "domain": "Access control",
+      "domainKey": "AC",
+      "topicLabel": "Unique user accounts",
+      "topicSummary": "Each person signs in with an account of their own, never a shared one."
+    },
+    {
+      "id": "EX-AC-2",
+      "domain": "Access control",
+      "domainKey": "AC",
+      "topicLabel": "Access reviews",
+      "topicSummary": "Someone checks on a schedule that each account still needs the access it holds."
+    },
+    {
+      "id": "EX-LG-1",
+      "domain": "Logging",
+      "domainKey": "LG",
+      "topicLabel": "Security event logs",
+      "topicSummary": "Sign-ins and admin actions are recorded and kept long enough to investigate."
+    }
+  ]
+}

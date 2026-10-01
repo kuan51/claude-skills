@@ -230,10 +230,13 @@ test('registering an i1-shaped (topic-level) structure preserves domain/topicLab
   assert.deepEqual(session.domainsRemaining.sort(), ['Endpoint Protection', 'Information Protection Program']);
 });
 
-test('resolveStructurePath: bare tier names resolve to the bundled controls/ directory', () => {
+test('resolveStructurePath: bare tier names resolve to existing files in the bundled frameworks/hitrust/', () => {
   assert.equal(resolveStructurePath('e1'), STRUCTURE_FILE);
-  assert.ok(resolveStructurePath('i1').endsWith(path.join('controls', 'i1.v11.8.structure.json')));
-  assert.ok(resolveStructurePath('r2').endsWith(path.join('controls', 'r2.v11.8.structure.json')));
+  for (const tier of ['e1', 'i1', 'r2']) {
+    const resolved = resolveStructurePath(tier);
+    assert.ok(resolved.endsWith(path.join('frameworks', 'hitrust', `${tier}.v11.8.structure.json`)), resolved);
+    assert.ok(fs.existsSync(resolved), `${resolved} must exist`);
+  }
 });
 
 test('resolveStructurePath: no argument defaults to e1 (backward compatibility)', () => {
@@ -299,7 +302,7 @@ test('defaultControl seeds an r2 control with a null top-level status and all 5 
     topicLabel: 'x', topicSummary: 'y', citations: ['https://example.com'],
     applicabilityTier: 'universal', nonAuthoritative: true,
   };
-  const control = defaultControl(entry, 'public-topic-level', 'r2');
+  const control = defaultControl(entry, 'public-topic-level', 'r2', undefined, 'hitrust');
 
   assert.equal(control.assessment.status, null);
   assert.deepEqual(
@@ -321,7 +324,7 @@ test('defaultControl without tierKey (e1/i1) keeps the existing flat assessment 
 });
 
 test('registering each bundled CMMC tier backfills the file-level codeVerifiedBy onto every control', () => {
-  const cmmcControlsDir = path.join(__dirname, '..', '..', '..', 'cmmc', 'controls');
+  const cmmcControlsDir = path.join(__dirname, '..', '..', '..', '..', 'frameworks', 'cmmc');
   for (const tier of ['level1', 'level2', 'level3']) {
     const structure = loadStructure(path.join(cmmcControlsDir, `${tier}.v32cfr170.structure.json`));
     assert.ok(

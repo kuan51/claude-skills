@@ -32,7 +32,7 @@ authority difference below when i1 or r2 is chosen.
 
 **Before any verb touches control data, unconditionally:** if
 `certifications.hitrust.tiers.<tier>` already exists AND the plugin's bundled
-`controls/<tier>.v*.structure.json` has a newer `controlSetVersion` than what's recorded in state,
+`frameworks/hitrust/<tier>.v*.structure.json` has a newer `controlSetVersion` than what's recorded in state,
 **stop and send the user to `ciso:upgrade`.** Do not proceed with the verb they asked for.
 Interview and roadmap data may need reconciling against the new structure before any flow should
 touch it.

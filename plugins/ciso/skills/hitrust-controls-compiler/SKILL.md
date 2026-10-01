@@ -87,7 +87,7 @@ released.
    minority and that's fine.
 
 4. **Assemble the released files** (same structure for both tiers):
-   - `plugins/ciso/skills/hitrust/controls/<tier>.v<version>.structure.json`: `{ tier: "e1"|"i1",
+   - `plugins/ciso/frameworks/hitrust/<tier>.v<version>.structure.json`: `{ tier: "e1"|"i1",
      controlSetVersion, sourceAuthority: "public-topic-level", nonAuthoritative: true, compiledAt,
      coverageNote, controls: [...] }`. Each control: `{ id, domain, domainKey, topicLabel,
      topicSummary, citations, nonAuthoritative: true }`, plus `baselineOverlap` for i1 entries, plus
@@ -100,7 +100,7 @@ released.
    - `coverageNote` must state the actual released count plainly (never padded to match a publicly
      quoted target like "44" or "182" if honest research ends up elsewhere) and the actual
      `controlReference` coverage fraction achieved.
-   - `plugins/ciso/skills/hitrust/controls/r2.v<version>.structure.json` is **not part of this
+   - `plugins/ciso/frameworks/hitrust/r2.v<version>.structure.json` is **not part of this
      process** until a dedicated r2 pass exists. Do not write or modify it here.
 
 5. **Versioning.** If this run is an actual reaction to a new HITRUST framework version, never delete
