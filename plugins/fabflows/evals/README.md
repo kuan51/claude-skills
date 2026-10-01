@@ -355,10 +355,15 @@ A hypothesis about the skill's prose runs against a modified copy of the plugin 
 mkdir -p plugins/fabflows/evals/runs/snapshots/<variant>
 cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/<variant>/
 patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant> < plugins/fabflows/evals/snapshots/<variant>.patch
+cp -r plugins/fabflows/test plugins/fabflows/evals/runs/snapshots/<variant>/
+patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant> < plugins/fabflows/evals/snapshots/<second-variant>.patch
 node plugins/fabflows/evals/harness/run.js --iteration <n> --arms with_skill --plugin-dir plugins/fabflows/evals/runs/snapshots/<variant> --tasks 1,5,6 --confirm
 ```
 
 The recipe uses `patch`, not `git apply`: inside the repository `git apply` silently skips the paths.
+A second patch stacks on the first when its author made it against the first patch's tree. The
+second `patch` line applies it. One patch needs only the first line. The recipe copies `test/` so
+a patch can carry test cases.
 
 The description stays identical in a variant so that triggering is not a second variable.
 
