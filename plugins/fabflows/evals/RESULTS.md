@@ -8,7 +8,7 @@ under `docs/specs/` refer to that record.
 [#123](https://github.com/kuan51/claude-skills/issues/123) records iteration 1 of this one: the
 baseline against no skill and against superpowers. [#133](https://github.com/kuan51/claude-skills/issues/133) records iteration 2, the lean start.
 [#120](https://github.com/kuan51/claude-skills/issues/120) records iteration 3, the agent rules, which were not adopted.
-[#140](https://github.com/kuan51/claude-skills/issues/140) records iteration 4, the Haiku pre-flight, which was not adopted either. [#145](https://github.com/kuan51/claude-skills/issues/145) records iteration 5, the review-callees rule for the refuter, which was not adopted. [#146](https://github.com/kuan51/claude-skills/issues/146) records iteration 6, the rework permission, which was not adopted.
+[#140](https://github.com/kuan51/claude-skills/issues/140) records iteration 4, the Haiku pre-flight, which was not adopted either. [#145](https://github.com/kuan51/claude-skills/issues/145) records iteration 5, the review-callees rule for the refuter, which was not adopted. [#146](https://github.com/kuan51/claude-skills/issues/146) records iteration 6, the rework permission, which was not adopted. [#148](https://github.com/kuan51/claude-skills/issues/148) records iteration 7, the lead gate, which landed with both earlier patches in 0.14.0.
 
 ## Iteration 1: the baseline against no skill and superpowers
 
@@ -1197,3 +1197,135 @@ python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration
 - **Round 1's review brief keeps the looser must-fix definition**, while `refuter.md` carries the
   tight one in every round, so round-1 reviewers read two definitions.
 - **The snapshot's tree hash** is `170d6ab5…` in every `run.json`.
+
+## Iteration 7: lead gate
+
+Tracked in [#148](https://github.com/kuan51/claude-skills/issues/148). This iteration answers one
+question. When the build loop returns the builder's deviations as data matched to the must-fix
+that demanded each one, and the lead's gate says a matched fix still in the diff stands, does the
+lead keep the callee fix the loop made, and does the loop still finish on its own?
+
+The data is in `runs/iteration-7/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Prior
+
+Iteration 6 gave the builder permission to fix a real bug in code the change calls. The builders
+then fixed the planted `caret()` defect in 3 of 3 runs where the review named it, and the lead
+session reverted two of those fixes after the loop, citing the fixture spec's "`resolve` and
+`check` keep working exactly as they do now". The loop's result carried no deviation to the lead,
+and the gate in `skills/fabflows/SKILL.md` said nothing about one.
+
+### Setup
+
+- **The plugin.** fabflows 0.14.0 as it is on the branch for #148, with no snapshot patch: the
+  review-callees and rework-permission text from iterations 5 and 6 is in `agents/refuter.md`
+  and `workflows/build.js`, and the loop gains the lead-gate change.
+  - `workflows/build.js`: the builder's structured result has an optional `deviations` list
+    (round, index, sentence). The loop matches each entry to the must-fix item that builder was
+    sent, `rounds[round - 1].review.mustFix[index]`, copies the reviewer's own location and
+    problem, and marks anything else `matched: false`. `accepted` and every `escalate` carry
+    `deviations`, and the `rework-cap` `next` says a matched fix still in the diff stands.
+  - `skills/fabflows/SKILL.md`: the gate reads `deviations` as data. A matched entry whose fix is
+    still in `git diff <baseRef>..HEAD` stands, on ACCEPT because the reviewer accepted the diff
+    that contains it, on escalation because the finding decides; the lead proposes the spec
+    amendment to the user, drops the fix only on evidence the finding was wrong, and never
+    reverts on the spec's text alone. An unmatched entry is a spec departure to raise.
+- **Runs.** Task 8's `loop` arm only, lead claude-fable-5-1 at medium effort, one session at a
+  time, caps 120 turns, $15 list price and 30 minutes a run. Five runs under `lead-gate`, then
+  two under `lead-gate-rerun`: the account's session usage limit hit during `lead-gate` run 4,
+  whose third review never ran, and run 5, which ended at its first turn at $0 (HTTP 429, "You've
+  hit your session limit"). Neither measures the plugin, so the reruns replace them and the
+  iteration's five valid runs are `lead-gate` 1 to 3 and `lead-gate-rerun` 1 and 2. Iteration 6's
+  five runs are the comparison; no new control.
+- **Clean room.** As iterations 2 to 6.
+
+### Runs
+
+| Run | Cost | Turns | Time s | Hidden suite | Review rounds (must-fix items) | How the loop ended | Caret fix landed in | Named, by hand (round) | Lead after the loop |
+|---|---|---|---|---|---|---|---|---|---|
+| lead-gate 1 | $3.4857 | 18 | 671 | 9/9 | REWORK (2), REWORK (1), REWORK (2) | Rework cap, escalated | Round 2 | yes (1) | kept it, read `deviations` |
+| lead-gate 2 | $2.3413 | 14 | 420 | 9/9 | REWORK (3), ACCEPT | ACCEPT | Round 2 | yes (1) | kept it, read the library diff for "the two spec deviations" |
+| lead-gate 3 | $2.3456 | 15 | 458 | 7/9 | REWORK (2), ACCEPT | ACCEPT | never | no | nothing to keep |
+| lead-gate 4 | $2.0625 | 9 | 461 | 9/9 | REWORK (2), REWORK (1), review 3 failed | Usage limit; no result | Round 2 | yes (1) | never ran; not valid |
+| lead-gate 5 | $0.0000 | 1 | 0 | 4/9 | none | Usage limit at turn 1 | never | no | never ran; not valid |
+| rerun 1 | $3.5406 | 16 | 704 | 9/9 | REWORK (3), REWORK (1), ACCEPT | ACCEPT | Round 2 | yes (1) | kept it: "raising them below rather than reverting" |
+| rerun 2 | $3.0672 | 18 | 670 | 9/9 | REWORK (2), REWORK (1), ACCEPT | ACCEPT | Round 3 | yes (2) | kept it, read `deviations` from the result |
+
+### What the runs show
+
+- **No lead reverted a fix.** In the four valid runs where the loop fixed `caret()`, the lead kept
+  it 4 of 4, against 1 of 3 in iteration 6. `grep -il "git revert"` over the seven transcripts
+  finds nothing; the one "revert" in them is rerun 1's lead writing "The three library deviations
+  stay in the diff: the reviewer accepted the diff containing them, and the caret fix matches
+  standard semver, so I have no evidence the findings were wrong. I'm raising them below rather
+  than reverting." Every valid lead's transcript names `deviations` before its gate.
+- **Every deviation matched.** In each run where a builder reported deviations (lead-gate 1, 2,
+  4 and both reruns), every entry came back `matched: true` and cited "`resolve` and `check` keep
+  working exactly as they do now." No builder reported an unmatched entry.
+- **The review named the defect in 4 of 5 valid runs**, 3 of 4 in round 1 and rerun 2's in round
+  2, against 3 of 5 in iteration 6. lead-gate 3's two reviews raised input validation and
+  precision and never read `caret()`; its hidden suite stays at 7/9.
+- **The rework cap still bites.** lead-gate 1 fixed `caret()` in round 2 and still took three
+  REWORK verdicts: later reviews kept raising validation and precision items, as in iteration 6.
+  Its hidden suite passes 9/9 and only the "ends with ACCEPT" part of the bar fails.
+- **Cost.** $2.96 a valid run against $2.81 in iteration 6; 585 s against 568 s. The three-round
+  runs carry it: the two reruns and lead-gate 1 cost $3.07 to $3.54.
+
+### Verdict
+
+The change stays, since it is what #148 decided and the lead-side question it asked is answered:
+the lead kept the fix in 4 of 4. The bar fails: 3 of 5 valid runs pass it. Computed from
+`plugins/fabflows/evals/runs` with iteration 6's snippet, `I` set to `iteration-7`:
+
+```text
+== lead-gate
+run-1 | hidden: 9/9 true | verdicts: REWORK(2),REWORK(1),REWORK(2) | ended ACCEPT: false | finished: true | denied-none: true | BAR: FAIL
+run-2 | hidden: 9/9 true | verdicts: REWORK(3),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: pass
+run-3 | hidden: 7/9 false | verdicts: REWORK(2),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: FAIL
+run-4 | hidden: 9/9 true | verdicts: REWORK(2),REWORK(1) | ended ACCEPT: false | finished: true | denied-none: true | BAR: FAIL   (usage limit, not valid)
+run-5 | hidden: 4/9 false | verdicts: | ended ACCEPT: false | finished: true | denied-none: true | BAR: FAIL   (usage limit, not valid)
+== lead-gate-rerun
+run-1 | hidden: 9/9 true | verdicts: REWORK(3),REWORK(1),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: pass
+run-2 | hidden: 9/9 true | verdicts: REWORK(2),REWORK(1),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: pass
+bar passes 3/7 (3/5 valid)
+lead-gate runs 5 cost $10.2352 mean $2.0470 mean sec 402 mean turns 11.4
+lead-gate-rerun runs 2 cost $6.6078 mean $3.3039 mean sec 687 mean turns 17.0
+total runs 7 cost $16.8430
+```
+
+| Bar | Result |
+|---|---|
+| All 5 valid runs pass the hidden suite 9/9 | Fails: 4 of 5 (lead-gate 3 at 7/9, review never named `caret()`) |
+| All 5 end with ACCEPT | Fails: 4 of 5 (lead-gate 1 at the rework cap, fix in place) |
+| Every workflow finished, no tool call denied | Holds: 5 of 5 |
+
+The two remaining failures are the loop's, not the lead's: a review that never reads the callee,
+and later reviews that keep raising items beyond the one the first review named. They are the
+follow-up question, as #148's Out of scope says.
+
+### Cost of this iteration
+
+$16.8430 at list price for 7 runs; $14.7804 for the 5 valid ones ($2.9561 a run), against
+$2.8099 a run in iteration 6. Two runs were replaced, for the usage limit, not for their result.
+
+### Confounds
+
+- **Two runs died on the account's usage limit**, and their replacements ran eight hours later.
+  The reruns are the two longest and costliest runs, so the mean is read with that in mind.
+- **No same-day control.** Iteration 6 ran on the day before, on the snapshot of 0.13.12 plus
+  the two patches, not on 0.14.0.
+- **The named regex.** As before, the grader's "named" row also matches a validation finding
+  that cites `src/index.js`; the counts above are by hand.
+- **The lead reads its own skill.** The lead that kept the fix is the same model that reverted
+  it in iteration 6, reading the new gate text; the measurement is of the text, not the model.
+
+### Commands
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 7 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name lead-gate --repeats 5 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 7 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name lead-gate-rerun --repeats 2 --confirm
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-7
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-7 --skill-name fabflows)
+python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-7 <skill-creator> <abs>/runs/iteration-7/notes.json
+```

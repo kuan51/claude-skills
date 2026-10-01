@@ -266,13 +266,17 @@ Iteration 5 ([#145](https://github.com/kuan51/claude-skills/issues/145)) told th
 the code a diff calls is in scope and let it probe that code with one line. The build loop's
 review then named a planted defect in a callee the spec never mentions in 5 of 5 runs, against
 0 of 3 on master, but the rework left the defect in place in 4 of 5: the builders read the
-fixture's spec as forbidding the library change. The rule was not adopted, and the refuter and
-the build loop stay as they are.
+fixture's spec as forbidding the library change. The rule was not adopted then.
 Iteration 6 ([#146](https://github.com/kuan51/claude-skills/issues/146)) let the builder treat a
 reviewer's must-fix as permission to fix a bug in code the change calls. The builders then fixed
 every caret defect the review named, 3 of 3, but the lead session reverted two of those fixes
 after the loop, citing the fixture's spec, and two reviews never named the defect. The plugin's
-text does not change.
+text did not change then.
+Iteration 7 ([#148](https://github.com/kuan51/claude-skills/issues/148)) landed both patches in
+0.14.0 and made the loop return the builder's deviations matched to the must-fix that demanded
+each one, with a gate rule that a matched fix stands. The lead kept the caret fix in 4 of 4 runs
+where the loop made it, against 1 of 3 before; 3 of 5 runs passed the whole bar, the misses being
+a review that never read the callee and a run that hit the rework cap with the fix in place.
 
 ## Long sessions
 
