@@ -173,6 +173,9 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.16** -- the lead launches `fabflows:build` only after the user has read the
+  spec text and said yes, and plan mode defers every ticket write, commit and build launch, so
+  the approval at ExitPlanMode no longer stands in for reading the spec (#151).
 - **fabflows 0.13.13** -- iteration 6 measured a rework permission for the build loop (#146):
   a reviewer's must-fix lets the builder fix a real bug in code the change calls, even where the
   spec says that code keeps working as it does, later reviewers see what earlier rounds demanded,
@@ -335,6 +338,16 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.13.15** -- `annotate_benchmark.py` compares an arm's cost with without_skill
+  only over the evals both ran, as `summarize.js` does, so an arm that ran other tasks gets its
+  mean alone and `delta.cost_usd` agrees with the note (#130). The model line lists the task
+  runs' lead models and, apart from them, the agent runs' session models, found by task id in
+  `tasks.json`. A dollar difference prints its sign first (`+$0.23`), a zero base prints `n/a`,
+  and an eval directory with no task id in its name is skipped with a message rather than
+  aborting the run. Only eval tooling and its docs change.
+- **fabflows 0.13.14** -- each eval session gets its own temp directory under the run's
+  isolated directory, recorded in `run.json`, so parallel runs stop reading each other's
+  files from the shared `/tmp` (#129).
 - **data-analysis-review 0.2.2** -- closes the open 0.2.0 review findings (#115). An agent
   that returns nothing (an EDA role, the reconciler, or a cross-compare topic) no longer throws
   or vanishes: the run logs it and names it in a new `dropped` list on the result, which the

@@ -111,6 +111,11 @@ the diff against the spec and re-runs the tests; REWORK sends the must-fix list 
 builder, up to two rework rounds. Offer it, or launch it when the session opened with
 `using-fabflows`. It never merges, pushes, or reverts.
 
+Launch `fabflows:build` only after the user has read the spec text, whoever wrote it, and
+said yes. While plan mode is active, never run `ticket.js link`, edit a ticket, commit or
+launch `fabflows:build`, and the approval at ExitPlanMode is not that yes, and until
+then the spec goes in the plan file.
+
 Before starting: write the spec (the behaviour, how to check it, what is out of scope),
 or take the one `fabflows:brainstorming` wrote when the request arrived unshaped;
 confirm `git status --porcelain` prints nothing and `git rev-parse --abbrev-ref HEAD` prints

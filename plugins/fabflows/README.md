@@ -224,7 +224,8 @@ do reach Claude through the GitHub tools, the same accepted path as ticket bodie
 implements the spec on the checked-out feature branch and commits, a fresh `refuter`
 (Opus by default, matching the pin in `agents/refuter.md`) reviews the diff and re-runs the
 tests, and after two rework rounds the loop hands back to the lead. It never merges, pushes,
-or reverts. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
+or reverts. While plan mode is active the lead never links or edits a ticket, commits or
+launches the loop, and approving the plan is not reading the spec. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
 [DEC-0004](../../docs/decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md)
 records the original design and
 [DEC-0016](../../docs/decisions/DEC-0016-harden-the-fabflows-build-loop-denial-classification-reviewe.md)

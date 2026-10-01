@@ -263,7 +263,9 @@ task 7 arms is robust.
   artifacts into it. The model line lists every arm's session model, although the lead was
   claude-fable-5-1 in every task run. The dollar notes put the sign after the dollar sign
   (`$+0.23`). The agent arm's note compares it with without_skill, although those arms ran
-  different tasks. Use `cells.json` for the per-task, three-arm figures.
+  different tasks. [#130](https://github.com/kuan51/claude-skills/issues/130) fixed all three
+  in the script; this iteration's files were not regenerated. Use `cells.json` for the
+  per-task, three-arm figures.
 
 ### Regraded
 
