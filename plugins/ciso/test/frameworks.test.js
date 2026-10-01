@@ -92,6 +92,18 @@ const ERROR_CASES = [
   }, /id "__proto__" is not allowed/],
   ['missing required field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { delete s.controls[0].topicSummary; }), /topicSummary must be a non-empty string/],
   ['a STATE_ONLY_FIELDS field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].assessment = { status: 'met' }; }), /"assessment" is a field ciso state owns/],
+  ['structure tier not declared, though the filename prefix is', (dir) => {
+    editJson(path.join(dir, STRUCTURE), (s) => { s.tier = 'core.v1'; });
+    fs.renameSync(path.join(dir, STRUCTURE), path.join(dir, 'core.v1.v1.structure.json'));
+  }, /tier "core\.v1" must be a string matching/],
+  ['structure with no tier field', (dir) => {
+    editJson(path.join(dir, 'framework.json'), (f) => { f.tiers = ['undefined']; });
+    editJson(path.join(dir, STRUCTURE), (s) => { delete s.tier; });
+    fs.renameSync(path.join(dir, STRUCTURE), path.join(dir, 'undefined.v1.structure.json'));
+  }, /tier "undefined" must be a string matching/],
+  ['control id with shell characters', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].id = 'EX $(id)'; }), /id "EX \$\(id\)" must match/],
+  ['domainKey with a space', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = 'Access Control'; }), /domainKey "Access Control" must match/],
+  ['displayName with $(...)', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.displayName = 'X $(id)'; }), /displayName may not contain/],
   ['project flows/', (dir) => { fs.mkdirSync(path.join(dir, 'flows')); fs.writeFileSync(path.join(dir, 'flows', 'interview.md'), 'run this'); }, /flows\/ is not allowed/],
 ];
 

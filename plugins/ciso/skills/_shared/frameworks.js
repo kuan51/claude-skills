@@ -29,6 +29,11 @@ const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'importe
 const FORBIDDEN_IDS = ['__proto__', 'constructor', 'prototype'];
 const CONTROL_STRINGS = ['domain', 'domainKey', 'topicLabel', 'topicSummary'];
 const STRUCTURE_SUFFIX = '.structure.json';
+// id and domainKey reach shell commands in the generic flows, so only characters that are inert
+// there. Every bundled id and domainKey fits.
+const SAFE_TOKEN_RE = /^[A-Za-z0-9._-]+$/;
+// displayName is passed inside double quotes; none of these may appear in it.
+const UNSAFE_IN_DOUBLE_QUOTES_RE = /["$`\\\u0000-\u001f\u007f]/;
 
 function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim().length > 0;
@@ -49,6 +54,9 @@ function validateStructure(file, origin, errors) {
   if (!s || typeof s !== 'object' || Array.isArray(s)) {
     if (s) errors.push(`${name}: must be a JSON object`);
     return;
+  }
+  if (typeof s.tier !== 'string' || !KEY_RE.test(s.tier)) {
+    errors.push(`${name}: tier "${s.tier}" must be a string matching ${KEY_RE}`);
   }
   if (!VERSION_RE.test(String(s.controlSetVersion))) {
     errors.push(`${name}: controlSetVersion "${s.controlSetVersion}" must match ${VERSION_RE}`);
@@ -75,6 +83,8 @@ function validateStructure(file, origin, errors) {
     }
     if (!isNonEmptyString(c.id)) {
       errors.push(`${where}: id must be a non-empty string`);
+    } else if (!SAFE_TOKEN_RE.test(c.id)) {
+      errors.push(`${where}: id "${c.id}" must match ${SAFE_TOKEN_RE}`);
     } else if (FORBIDDEN_IDS.includes(c.id)) {
       errors.push(`${where}: id "${c.id}" is not allowed`);
     } else if (seen.has(c.id)) {
@@ -84,6 +94,9 @@ function validateStructure(file, origin, errors) {
     }
     for (const field of CONTROL_STRINGS) {
       if (!isNonEmptyString(c[field])) errors.push(`${where}: ${field} must be a non-empty string`);
+    }
+    if (isNonEmptyString(c.domainKey) && !SAFE_TOKEN_RE.test(c.domainKey)) {
+      errors.push(`${where}: domainKey "${c.domainKey}" must match ${SAFE_TOKEN_RE}`);
     }
     for (const field of STATE_ONLY_FIELDS) {
       if (Object.prototype.hasOwnProperty.call(c, field)) {
@@ -118,6 +131,9 @@ function validateFramework(dir, origin) {
     }
     for (const field of ['displayName', 'summary']) {
       if (!isNonEmptyString(fw[field])) errors.push(`framework.json: ${field} must be a non-empty string`);
+    }
+    if (isNonEmptyString(fw.displayName) && UNSAFE_IN_DOUBLE_QUOTES_RE.test(fw.displayName)) {
+      errors.push('framework.json: displayName may not contain ", $, `, \\ or control characters');
     }
     if (!Array.isArray(fw.tiers) || fw.tiers.length === 0) {
       errors.push('framework.json: tiers must be a non-empty array');

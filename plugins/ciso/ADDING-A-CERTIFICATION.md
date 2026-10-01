@@ -34,7 +34,7 @@ use it, so it stays valid. Copy it and edit from there.
 | Field | Required | Meaning |
 |---|---|---|
 | `certKey` | yes | Equals the folder name. Lowercase letters, digits and hyphens (`^[a-z0-9-]+$`). It becomes the key in `state.json` and the page name `cert-<certKey>.html`. It may not equal a bundled framework's `certKey`: a project folder that does is excluded, with an error naming both paths. |
-| `displayName` | yes | The name the dashboard and every verb show. |
+| `displayName` | yes | The name the dashboard and every verb show. No `"`, `$`, backtick or backslash. |
 | `summary` | yes | One or two sentences. The dashboard's card shows it before the framework is registered. |
 | `tiers` | yes | A non-empty array of tier keys, unique, same pattern as `certKey`. Most frameworks have one tier. |
 
@@ -61,9 +61,9 @@ Each control:
 
 | Field | Required | Meaning |
 |---|---|---|
-| `id` | yes | Unique in the tier. Not `__proto__`, `constructor` or `prototype`. |
+| `id` | yes | Unique in the tier. Letters, digits, `.`, `_` and `-` only. Not `__proto__`, `constructor` or `prototype`. |
 | `domain` | yes | The human name of the group the control belongs to. |
-| `domainKey` | yes | The grouping key the dashboard rolls up by and the interview works through. |
+| `domainKey` | yes | The grouping key the dashboard rolls up by and the interview works through. Letters, digits, `.`, `_` and `-` only. |
 | `topicLabel` | yes | A short name for the control. |
 | `topicSummary` | yes | What the control covers. |
 | anything else | no | Carried into `state.json` and shown on the dashboard, except a field ciso's state owns (`assessment`, `evidence`, `roadmap`, `statementText`, `statementSource`, `needsReview`), which is an error. |

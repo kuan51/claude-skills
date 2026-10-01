@@ -45,7 +45,7 @@ still active.
 6. For every control processed in this sub-batch, run:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json <certKey> <tier> <controlId> '<jsonPayload>'
+   node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json <certKey> <tier> '<controlId>' '<jsonPayload>'
    ```
 
    where `<jsonPayload>` is `{"status": "...", "justification": "...", "currentState": "...", "estimatedCloseness": "..."}`
@@ -64,7 +64,7 @@ still active.
 9. Once every control in the domain has been applied, run:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json <certKey> <tier> <domainKey>
+   node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/apply-assessment.js" <docs/ciso-dir>/state.json <certKey> <tier> '<domainKey>'
    ```
 
    (four arguments, not five: this marks the domain complete in the interview session).

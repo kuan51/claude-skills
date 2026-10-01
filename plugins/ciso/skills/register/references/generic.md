@@ -19,7 +19,9 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/register-tier.js" <docs/ciso-dir>
 ```
 
 `register-tier.js` lives under `skills/hitrust/lib/` for historical reasons but is
-certification-agnostic core. It takes the cert key and display name explicitly and a full
+certification-agnostic core. Copy `<displayName>` from the `list` entry exactly; `frameworks.js`
+rejects a display name holding `"`, `$`, a backtick or a backslash, so it is safe inside the double
+quotes. It takes the cert key and display name explicitly and a full
 structure-file path as its fourth argument, so no HITRUST behavior is involved. Safe to re-run: it
 only adds control ids that are missing, never touches an existing control's `assessment`/`roadmap`,
 and only creates the interview session if one doesn't already exist.
