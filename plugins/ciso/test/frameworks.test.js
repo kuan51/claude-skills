@@ -198,6 +198,29 @@ test('list: an invalid project framework is reported and skipped, and never fail
   assert.deepEqual(errors.map((e) => e.origin), ['project']);
 });
 
+test('list: a project frameworks/ that is not a folder is reported, and bundled frameworks still list', () => {
+  const docs = tmp();
+  fs.writeFileSync(path.join(docs, 'frameworks'), 'not a folder');
+  const { frameworks, errors } = listFrameworks(docs);
+  assert.ok(frameworks.some((f) => f.certKey === 'hitrust'), 'bundled frameworks must still list');
+  assert.ok(errors.some((e) => e.origin === 'project' && /not readable/.test(e.message)), JSON.stringify(errors));
+  const r = run('list', docs);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(JSON.parse(r.stdout).some((f) => f.certKey === 'hitrust'));
+});
+
+test('list: a symlinked project framework folder is listed like a real one', () => {
+  const docs = tmp();
+  const real = copyExample(tmp(), 'example');
+  fs.mkdirSync(path.join(docs, 'frameworks'));
+  fs.symlinkSync(real, path.join(docs, 'frameworks', 'example'), 'dir');
+  const { frameworks, errors } = listFrameworks(docs);
+  assert.deepEqual(errors, []);
+  const example = frameworks.find((f) => f.certKey === 'example');
+  assert.ok(example, 'the symlinked framework must be listed');
+  assert.equal(example.origin, 'project');
+});
+
 test('list: an unreadable project file is reported as an error, never thrown', () => {
   const docs = tmp();
   const dir = copyExample(path.join(docs, 'frameworks'));

@@ -194,11 +194,19 @@ function checkFramework(dir, origin) {
   return errors;
 }
 
+// Folders under `root`, following symlinks so a linked framework folder counts like a real one.
+// Throws when `root` exists but cannot be listed (a file, or no read permission).
 function subdirs(root) {
   if (!root || !fs.existsSync(root)) return [];
-  return fs.readdirSync(root, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => path.join(root, e.name))
+  return fs.readdirSync(root)
+    .map((name) => path.join(root, name))
+    .filter((p) => {
+      try {
+        return fs.statSync(p).isDirectory();
+      } catch {
+        return false; // a dangling symlink is not a framework folder
+      }
+    })
     .sort();
 }
 
@@ -221,7 +229,14 @@ function listFrameworks(docsCisoDir, bundledRoot) {
     else frameworks.push(describe(dir, 'bundled'));
   }
   const projectRoot = docsCisoDir ? path.join(path.resolve(docsCisoDir), 'frameworks') : null;
-  for (const dir of subdirs(projectRoot)) {
+  let projectDirs = [];
+  try {
+    projectDirs = subdirs(projectRoot);
+  } catch (err) {
+    // The project's own folder is the user's data: report it and keep the bundled frameworks.
+    errors.push({ origin: 'project', dir: projectRoot, message: `not readable (${err.message})` });
+  }
+  for (const dir of projectDirs) {
     const name = path.basename(dir);
     if (bundled.has(name)) {
       errors.push({ origin: 'project', dir, message: `certKey "${name}" clashes with the bundled framework at ${bundled.get(name)}; ${dir} is excluded` });
