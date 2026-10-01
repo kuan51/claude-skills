@@ -250,6 +250,9 @@ machine's credentials, so every session is locked out of them (`lockedEnv` in `h
   `GIT_CONFIG_VALUE_<n>`, `GIT_CONFIG_PARAMETERS`) is unset. git reads it whatever
   `GIT_CONFIG_NOSYSTEM` and `GIT_CONFIG_GLOBAL` say, so it could carry a credential helper.
 - The fixture's `origin` is `https://fixture.invalid/...`, a host that cannot resolve.
+- `TMPDIR`, `TMP` and `TEMP` point at a directory of the run's own, so parallel sessions never
+  share one (iteration 1's runs did, and one read another's output from `/tmp`). A session that
+  writes a literal `/tmp/...` path still can.
 
 When the harness runs inside another Claude Code session, as iteration 1 did in a cloud session,
 that session's variables would reach every test session and change its tools, skills, scratchpad,
