@@ -21,8 +21,8 @@ under-triggering and over-triggering are real failure modes.
 
 1. "Should we keep the free-delivery threshold at $50? Conversion is 3.1% today. What in the
    order data bears on that?"
-2. "Which customer segments would move retention most if we changed onboarding? Retention is
-   62% now."
+2. "We are deciding whether to change onboarding. Which customer segments retain differently
+   from the 62% we see now?"
 3. "Before we reprice, what does the sales data show about margin by channel compared with
    current margin?"
 

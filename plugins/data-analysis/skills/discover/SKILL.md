@@ -31,7 +31,7 @@ An interactive gating phase, then a `Workflow`-driven engine. The gating runs th
 
 3. **Confirm the slices.** Read only the first line of each delimited data file, or the data dictionary, and quote column names only, never a data value. Offer 2 to 4 dimensions the thesis implies (segment, period, cohort, any column the thesis names) in one multiSelect `AskUserQuestion`. The user may add others in the free-text answer. Give each confirmed slice a `key`, a `label` and a one-line `definition`. The confirmed list must hold 1 to `maxSlices` slices (4 unless the user names another value, which you then pass as `maxSlices`). Otherwise, ask again.
 
-4. **No fallback.** If `AskUserQuestion` is unavailable, denied, errors or returns nothing in step 2 or 3, stop and say the thesis or slices need confirmation. The thesis is inlined into every agent prompt and must never reach an agent unseen.
+4. **No fallback.** If `AskUserQuestion` is unavailable, denied, errors or returns nothing in step 2 or 3, stop and say the thesis or slices need confirmation. The thesis is inlined into every hunter and so-what prompt and must never reach an agent unseen.
 
 5. **Restate the plan:**
    - the thesis, with its decision, metric and baseline
