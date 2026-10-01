@@ -8,7 +8,7 @@ under `docs/specs/` refer to that record.
 [#123](https://github.com/kuan51/claude-skills/issues/123) records iteration 1 of this one: the
 baseline against no skill and against superpowers. [#133](https://github.com/kuan51/claude-skills/issues/133) records iteration 2, the lean start.
 [#120](https://github.com/kuan51/claude-skills/issues/120) records iteration 3, the agent rules, which were not adopted.
-[#140](https://github.com/kuan51/claude-skills/issues/140) records iteration 4, the Haiku pre-flight, which was not adopted either. [#145](https://github.com/kuan51/claude-skills/issues/145) records iteration 5, the review-callees rule for the refuter, which was not adopted. [#146](https://github.com/kuan51/claude-skills/issues/146) records iteration 6, the rework permission, which was not adopted. [#148](https://github.com/kuan51/claude-skills/issues/148) records iteration 7, the lead gate, which landed with both earlier patches in 0.14.0.
+[#140](https://github.com/kuan51/claude-skills/issues/140) records iteration 4, the Haiku pre-flight, which was not adopted either. [#145](https://github.com/kuan51/claude-skills/issues/145) records iteration 5, the review-callees rule for the refuter, which was not adopted. [#146](https://github.com/kuan51/claude-skills/issues/146) records iteration 6, the rework permission, which was not adopted. [#148](https://github.com/kuan51/claude-skills/issues/148) records iteration 7, the lead gate, which landed with both earlier patches in 0.14.0. [#154](https://github.com/kuan51/claude-skills/issues/154) records iteration 8, the case sweep and the rework-only later rounds, which landed in 0.15.0.
 
 ## Iteration 1: the baseline against no skill and superpowers
 
@@ -1330,4 +1330,122 @@ node plugins/fabflows/evals/harness/run.js --iteration 7 --tasks 8 --arms loop -
 node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-7
 (cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-7 --skill-name fabflows)
 python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-7 <skill-creator> <abs>/runs/iteration-7/notes.json
+```
+
+## Iteration 8: case sweep, rework-only later rounds
+
+Tracked in [#154](https://github.com/kuan51/claude-skills/issues/154). This iteration answers
+iteration 7's two misses. When the first review must list each callee's cases and probe one
+input per case, does it read `caret()` every time? And when a later review judges only the
+rework diff, does the loop stop raising new items until the rework cap?
+
+The data is in `runs/iteration-8/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Prior
+
+Iteration 7's lead kept the callee fix 4 of 4, but 2 of 5 valid runs failed the bar: lead-gate
+3's review never read `caret()` and stayed at 7/9, and lead-gate 1's later reviews kept raising
+validation and precision items until the rework cap, with the fix in place.
+
+### Setup
+
+- **The plugin.** fabflows 0.15.0 as it is on the branch for #154, with no snapshot patch.
+  - `agents/refuter.md` and `workflows/build.js`: in the first round, or when the brief says the
+    boundary is unknown, the reviewer lists each callee's cases from its own code, probes one
+    literal input per case with one line of the project's code, and quotes each probe and its
+    output; a case not probed is an open question. The report names the callees swept.
+  - `workflows/build.js`: the verdict gains an optional `head`, the commit the reviewer read. A
+    later round's brief gives `git diff <head>..HEAD`, lists the earlier must-fix items as
+    `round R, item I`, and asks for fixed, not fixed or regressed per item; must-fix there is an
+    earlier item still open, a regression or a real bug in the rework diff, or an uncommitted
+    path, and anything else is a note. A later round does not sweep callees.
+  - `skills/fabflows/SKILL.md`: the gate reads the notes in the final verdict's report, since a
+    later round records a finding outside the rework there.
+- **Runs.** Task 8's `loop` arm only, lead claude-fable-5-1 at medium effort, one session at a
+  time, caps 120 turns, $15 list price and 30 minutes a run. Five runs under `case-sweep`. None
+  hit the account's usage limit, so no rerun. Iteration 7's five valid runs are the comparison;
+  no new control.
+- **Clean room.** As iterations 2 to 7.
+
+### Runs
+
+| Run | Cost | Turns | Time s | Hidden suite | Review rounds (must-fix items) | How the loop ended | Round 1 listed `caret()` cases, probed `^0.M.P` | Deviations (item cited, matched) | Lead after the loop |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | $2.6804 | 17 | 442 | 9/9 | REWORK (3), ACCEPT | ACCEPT | yes: `^0.2.3` with 0.3.0 and 0.9.9 both `true (BUG)` | items 1, 2; both matched | kept it, proposed the amendment |
+| 2 | $2.4288 | 15 | 417 | 9/9 | REWORK (3), ACCEPT | ACCEPT | yes: `^0.2.3` gives 0.3.0 and 0.9.9 `true (WRONG)` | items 1, 3; both matched | kept it: "rather than reverting correct behaviour on the spec's wording alone" |
+| 3 | $2.3658 | 16 | 516 | 9/9 | REWORK (2), ACCEPT | ACCEPT | yes: `^0.2.3` with 0.9.0 and `^0.2.0` with 0.3.0 `TRUE (bug)` | item 1 twice, two sentences; both matched | kept it, named the two sentences crossed |
+| 4 | $1.9386 | 15 | 353 | 9/9 | REWORK (1), ACCEPT | ACCEPT | yes: `satisfies('0.3.0','^0.2.3')=true` | item 1; matched | kept it, re-ran the probe, recommended the amendment |
+| 5 | $2.2929 | 13 | 442 | 9/9 | REWORK (2), ACCEPT | ACCEPT | yes: `"0.3.0" "^0.2.3" => true` | item 1; matched | kept it, raised the amendment |
+
+### What the runs show
+
+- **Every first review read `caret()`.** Each round-1 report has a section naming the callees it
+  swept, lists `caret()`'s cases one by one, and quotes a `^0.M.P` probe with a wrong output,
+  5 of 5, against 4 of 5 in iteration 7. Each named the defect as must-fix item 1 at
+  `src/index.js:89`.
+- **Every loop ended ACCEPT in round 2.** No run reached the rework cap, against 1 of 5 in
+  iteration 7 and 2 of 5 in iteration 6. Each round-2 report runs `git diff <head>..HEAD` with
+  the sha the first review returned, marks each earlier item fixed, and files its new findings
+  as notes, none must-fix. No round-2 report swept callees.
+- **Every deviation matched.** Eight entries across the five runs, each citing the item number
+  shown in its block, each back as `matched: true`; three builders also reported a second
+  library item (run 1's `<*` wildcard, run 2's `Number()` precision) under the same spec
+  sentence. The lead read the field in every run and no transcript contains `git revert`;
+  each lead's closing message proposes the spec amendment or leaves it to the user.
+- **Reviewers wrote outside the repository.** Four of ten reviews report, on their first line,
+  that a probe loop's `2>/tmp/...` redirect created an empty file under `/tmp`, breaking their
+  own write-nothing rule, and that `git status --porcelain` stayed clean. Nothing in the
+  repository was written. Not measured by the bar; noted for a follow-up.
+- **Cost.** $2.34 a run against $2.96 for iteration 7's valid runs; 434 s against 585 s. Every
+  run took two rounds.
+
+### Verdict
+
+The change stays. The bar passes 5 of 5. Computed from `plugins/fabflows/evals/runs` with
+iteration 6's snippet, `I` set to `iteration-8`:
+
+```text
+== case-sweep
+run-1 | hidden: 9/9 true | verdicts: REWORK(3),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: pass
+run-2 | hidden: 9/9 true | verdicts: REWORK(3),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: pass
+run-3 | hidden: 9/9 true | verdicts: REWORK(2),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: pass
+run-4 | hidden: 9/9 true | verdicts: REWORK(1),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: pass
+run-5 | hidden: 9/9 true | verdicts: REWORK(2),ACCEPT(0) | ended ACCEPT: true | finished: true | denied-none: true | BAR: pass
+bar passes 5/5
+case-sweep runs 5 cost $11.7066 mean $2.3413 mean sec 434 mean turns 15.2
+total runs 5 cost $11.7066
+```
+
+| Bar | Result |
+|---|---|
+| All 5 runs pass the hidden suite 9/9 | Holds: 5 of 5 |
+| All 5 end with ACCEPT | Holds: 5 of 5, each in round 2 |
+| Every workflow finished, no tool call denied | Holds: 5 of 5 |
+| Round 1 listed `caret()`'s cases and quoted a `^0.M.P` probe (by hand) | Holds: 5 of 5 |
+| Every deviation cited the item number shown (by hand) | Holds: 8 of 8 entries, all matched |
+
+### Cost of this iteration
+
+$11.7066 at list price for 5 runs ($2.3413 a run), against $2.9561 a valid run in iteration 7.
+No run was replaced.
+
+### Confounds
+
+- **No same-day control.** Iteration 7 ran the day before on 0.14.0.
+- **One fixture.** Task 8 plants one defect in one callee; the sweep's cost on a change with
+  many callees is not measured here.
+- **The strict later round has a known gap**, accepted in #154: a real bug outside the rework
+  that round 1 missed is a note, never must-fix. Iteration 7's rerun 2 caught `caret()` in round
+  2; under this rule it would have been a note. In this iteration round 1 caught it every time.
+- **The named regex.** As before, the grader's "named" row also matches a validation finding
+  that cites `src/index.js`; the counts above are by hand.
+
+### Commands
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 8 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name case-sweep --repeats 5 --confirm
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-8
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-8 --skill-name fabflows)
+python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-8 <skill-creator> <abs>/runs/iteration-8/notes.json
 ```

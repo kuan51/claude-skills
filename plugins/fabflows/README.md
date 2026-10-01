@@ -281,6 +281,10 @@ Iteration 7 ([#148](https://github.com/kuan51/claude-skills/issues/148)) landed 
 each one, with a gate rule that a matched fix stands. The lead kept the caret fix in 4 of 4 runs
 where the loop made it, against 1 of 3 before; 3 of 5 runs passed the whole bar, the misses being
 a review that never read the callee and a run that hit the rework cap with the fix in place.
+Iteration 8 ([#154](https://github.com/kuan51/claude-skills/issues/154)) made the first review
+sweep each callee case by case and later reviews judge the rework only, in 0.15.0. All 5 runs
+passed the whole bar: every first review listed `caret()`'s cases and probed the `^0.M.P` one,
+every loop ended ACCEPT after one rework round, and no lead reverted the fix.
 
 ## Long sessions
 
