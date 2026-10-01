@@ -43,7 +43,8 @@ Always start here, every invocation:
 ## Only HITRUST supports this verb (e1 only)
 
 If the resolved framework has no `flows/import.md`, there is no import flow to follow. **Say so
-plainly and stop.** The reason is the same either way: SOC 2, ISO 27001 and CMMC are published as
+plainly and stop.** For a project framework, the reason is that import is not built for project
+frameworks yet. For a bundled one: SOC 2, ISO 27001 and CMMC are published as
 documents, not as per-org machine-readable exports. The user has nothing to import. The bundled set
 is what there is. Point the user at `ciso:interview`.
 

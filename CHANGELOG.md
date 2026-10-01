@@ -11,8 +11,8 @@ per-plugin history until entries are recorded here going forward.
 - **ciso 1.2.0** -- every framework is one data folder: a `framework.json`, a `ground-rules.md`
   (which replaces `invariants.md`) and one structure file per tier (#158). ciso loads them from
   the plugin's `frameworks/` and from a project's own `docs/ciso/frameworks/`, and validates each
-  with `frameworks.js`. The four bundled frameworks moved there unedited, so existing `state.json`
-  files need no migration. A project framework is data, not instructions: it may not carry flow
+  with `frameworks.js`. The four bundled frameworks' control files moved there unchanged, so existing
+  `state.json` files need no migration. A project framework is data, not instructions: it may not carry flow
   files, verbs follow the plugin's generic flows and ground rules for it, and a certKey that
   clashes with a bundled one is excluded. A control whose wording is `imported` never sends its
   label or summary to vendor research or task sync. HITRUST's r2 maturity shape no longer applies

@@ -9,7 +9,8 @@ wording, and your organization's real assessment data, are imported/generated pe
 only locally, gitignored by default. It stays on your machine, out of this repo.
 
 A project can also track a framework ciso doesn't ship: drop a framework folder into
-`docs/ciso/frameworks/<certKey>/` and every verb picks it up. See
+`docs/ciso/frameworks/<certKey>/` and every verb resolves it (`scope`, `import` and `upgrade` have
+no flow for one yet). See
 [ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
 
 Not installed yet? See the [repo root README](../../README.md) for how to add this marketplace
@@ -115,7 +116,7 @@ something you feed in from your own machine.
   this reason in reverse: its catalog is reachable, but PCI SSC's terms forbid derivative works.)
 - **Your organization's posture stays local, except what you sync to your own tracker.**
   Assessment status, your written justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
-  project data. Two flows contact the network. Background vendor research for gaps is sent *only* a
+  project data. Two flows send control data off the machine. Background vendor research for gaps is sent *only* a
   control's generic public subject (its topic label/code and domain), never your justifications or
   posture notes; a fail-closed allowlist in the research workflow enforces this. `ciso:sync-tasks`
   writes tickets to the Jira or Linear project you choose, and those tickets carry the control's

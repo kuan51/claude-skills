@@ -28,8 +28,9 @@ Tell the user, the first time the framework comes up in a session, what the tier
 
 - `public-topic-level`: a paraphrase compiled from public sources. Not the publisher's wording.
 - `publisher-verbatim`: the publisher's own wording, which the publisher permits copying.
-- `imported`: licensed wording held only in this project. It never leaves the machine: vendor
-  research and task sync send neither its `topicLabel` nor its `topicSummary`.
+- `imported`: licensed wording held only in this project. Its `topicLabel` and `topicSummary`
+  never leave the machine: vendor research and task sync send neither. Its id, codes and domain
+  still reach vendor research, as for any control.
 
 `nonAuthoritative: true` means the set is not a substitute for the publisher's own control set.
 Either way, send the user to the publisher and their assessor or auditor for exact scope and
