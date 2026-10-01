@@ -25,6 +25,16 @@ per-plugin history until entries are recorded here going forward.
   every synced control as changed on a HITRUST upgrade. The dashboard cards and register's list
   now run alphabetically (CMMC first) instead of HITRUST first. `ADDING-A-CERTIFICATION.md` now
   opens with how to write a project framework.
+- **data-analysis 1.2.0** -- `data-analysis:review` treats an extra reviewer's persona and a
+  skill guidance excerpt as untrusted, like the thesis (#111). EDA prompts wrap them in
+  `<persona>` and `<guidance>` tags and say they set what to look for, never how to work. An
+  extra keeps Bash only when its persona is exactly the shipped canned text for its key; every
+  other extra, including a deep-research persona, runs on a new `extra-reviewer-static` agent
+  with `Read, Grep, Glob`, and its findings are marked unverified. Step 5 shows each
+  deep-research persona in full with its sources before the user keeps or drops it. Review
+  strips wrapper tags from extra labels and cross-compare lines, and both skills refuse a path
+  holding `<`, `>` or a line break. Start a new session after upgrading, since agents load at
+  session start.
 - **data-analysis 1.1.0** -- `data-analysis:review` splits each notebook before the review
   (#110). A new script, `split-notebooks.js`, replaces every `.ipynb` in the sandbox copy with
   its code cells only, outputs emptied, and keeps the untouched notebook in a `conclusions/`
