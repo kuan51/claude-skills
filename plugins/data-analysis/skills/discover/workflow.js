@@ -8,7 +8,7 @@ export const meta = {
   ],
 }
 
-// The blocks from SCOPE_DISCIPLINE to assertSandboxed are byte-identical copies of
+// The blocks from SCOPE_DISCIPLINE to assertSandboxed, and drop, are byte-identical copies of
 // skills/review/workflow.js: Workflow scripts cannot import, so test/shared-blocks.test.js fails
 // if either copy drifts.
 
@@ -164,8 +164,8 @@ for (const slice of slices) {
 const THESIS_BLOCK = wrap('thesis', `${A.thesis == null ? '' : A.thesis}\nDecision: ${A.decision}\nMetric: ${A.metric}\nBaseline: ${A.baseline}`)
 const THESIS_LINE = `Business thesis and decision (confirmed with the project owner):\n${THESIS_BLOCK}`
 
-// An agent that returns nothing, or whose call rejects, is logged and named in `dropped`, never thrown on or silently
-// left out, so an empty report cannot read as data with no patterns.
+// An agent that returns nothing, or whose call rejects, is logged and named in `dropped`, never
+// thrown on or silently left out, so an empty report cannot read as data with no patterns.
 const dropped = []
 function drop(label) {
   dropped.push(label)
