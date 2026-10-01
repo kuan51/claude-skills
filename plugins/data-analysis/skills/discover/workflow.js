@@ -95,8 +95,13 @@ function assertSandboxed(paths, sandboxRoot, label) {
       throw new Error(`Refusing to run: ${label} holds a non-string path -- every path must be a string inside the sandbox root "${sandboxRoot}".`)
     }
     const norm = p.replace(/\\/g, '/').replace(/\/+$/, '')
-    if (norm.split('/').includes('..')) {
+    const segments = norm.split('/')
+    if (segments.includes('..')) {
       throw new Error(`Refusing to run: ${label} path "${p}" has a ".." segment -- the SKILL.md sandbox step must pass paths that stay inside the sandbox root "${sandboxRoot}".`)
+    }
+    const lead = norm.startsWith('//') ? 2 : 1
+    if (segments.some((s, i) => s === '.' || (s === '' && i >= lead))) {
+      throw new Error(`Refusing to run: ${label} path "${p}" has a "." or empty segment -- the SKILL.md sandbox step must pass plain paths inside the sandbox root "${sandboxRoot}".`)
     }
     if (norm !== root && !norm.startsWith(root + '/')) {
       throw new Error(`Refusing to run: ${label} path "${p}" is not inside the sandbox root "${sandboxRoot}" -- the SKILL.md sandbox step must rewrite every path into the sandbox copy before calling this workflow.`)

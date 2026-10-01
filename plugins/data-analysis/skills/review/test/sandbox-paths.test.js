@@ -19,6 +19,16 @@ test('normalizes Windows backslashes', () => {
   assert.equal(result, 'C:/tmp/sandbox-copy/data/sales.csv');
 });
 
+test('collapses a doubled slash, such as <sandbox-root>/project built from a root ending in a slash', () => {
+  const result = rewritePath('/home/user/project/data/sales.csv', '/home/user/project', '/tmp/sandbox-copy//project');
+  assert.equal(result, '/tmp/sandbox-copy/project/data/sales.csv');
+});
+
+test('keeps the leading pair of a Windows UNC path', () => {
+  const result = rewritePath('\\\\fs01\\proj\\a.csv', '\\\\fs01\\proj', '\\\\fs01\\scratch\\sb\\\\project');
+  assert.equal(result, '//fs01/scratch/sb/project/a.csv');
+});
+
 test('rewrites a batch of paths in order', () => {
   const result = rewritePaths(
     ['/home/user/project/a.csv', '/home/user/project/src/b.py'],

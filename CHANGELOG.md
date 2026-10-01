@@ -8,6 +8,15 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **data-analysis 1.1.0** -- `data-analysis:review` splits each notebook before the review
+  (#110). A new script, `split-notebooks.js`, replaces every `.ipynb` in the sandbox copy with
+  its code cells only, outputs emptied, and keeps the untouched notebook in a `conclusions/`
+  folder beside the copy, so blind reviewers no longer read a notebook's Markdown findings or
+  saved outputs. The engine now refuses a run that hands a blind role a conclusion file, a
+  folder holding one, or a path inside one, and every EDA prompt says notebooks hold code only.
+  The reproducibility auditor reports the values its re-runs produce instead of comparing them
+  with saved outputs. Both review's and discover's sandbox check now also refuse a path with a
+  `.` or empty segment.
 - **data-analysis 1.0.0** -- a second skill, `data-analysis:discover`, starts from a business
   decision, its metric and a baseline, and surfaces the patterns the raw data supports (#105).
   One pattern hunter cuts the data along each confirmed dimension, a reconciler flags patterns
