@@ -90,6 +90,7 @@ An interactive gating phase, then a `Workflow`-driven engine. The gating runs th
 
 - **Project files are never modified.** Agents see only the step 6 copy, and the engine refuses to dispatch any agent if a path falls outside it. None of the agent types has `Write`, `Edit` or `Agent`: `pattern-hunter` has `Read, Grep, Glob, Bash`, `findings-reconciler` and `so-what-auditor` have `Read` only.
 - **Hunters never see a prior conclusion.** The sandbox holds only data files and data docs, so code, notebooks and reports are not there to open.
+- **The project's CLAUDE.md is withheld.** `pattern-hunter` and `so-what-auditor` set `omitClaudeMd: true`, so the project's own instructions never reach them. Each hunter is told to start every Bash command with `cd <sandboxRoot> &&` and to read and write only inside the sandbox. That working-directory rule is an instruction in the prompt, not an enforced boundary.
 - **No causes from correlations.** Hunters report descriptive patterns only. The so-what auditor rates `diagnostic` only when the evidence rules out confounding, and the engine forces any candidate not verified by execution to `descriptive`.
 - **Capped and visible.** At most `maxSlices` hunters and `maxCandidates` so-what auditors run; candidates past the cap are listed in the report, never dropped silently.
 - **Single run.** Patterns are not re-run to check they recur, and the report says so.

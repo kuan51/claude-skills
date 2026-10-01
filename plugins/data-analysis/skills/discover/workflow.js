@@ -188,6 +188,7 @@ const huntResults = await parallel(
       THESIS_LINE,
       `Your slice (the one dimension to cut the data along): ${slice.label}\nDefinition: ${slice.definition}`,
       `Data files you may use, and ONLY these:\n${(A.dataPaths || []).map((p) => `- ${p}`).join('\n')}`,
+      `Working directory: your sandbox root is ${A.sandboxRoot}. Start every Bash command with \`cd ${A.sandboxRoot} &&\`, and read and write only inside it.`,
     ].join('\n\n'), {
       label: `hunt:${slice.key}`,
       phase: 'Pattern Hunt',

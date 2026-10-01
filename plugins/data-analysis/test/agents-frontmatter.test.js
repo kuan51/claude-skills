@@ -45,6 +45,13 @@ test('every expected agent file exists with its scoped tool set, and none can Wr
   }
 });
 
+test('pattern-hunter and so-what-auditor omit the project CLAUDE.md', () => {
+  for (const name of ['pattern-hunter', 'so-what-auditor']) {
+    const fields = parseFrontmatter(fs.readFileSync(path.join(AGENTS_DIR, `${name}.md`), 'utf8'));
+    assert.equal(fields.omitClaudeMd, 'true', `${name}.md must set omitClaudeMd: true`);
+  }
+});
+
 test('no extra agent files exist beyond the expected roster', () => {
   assert.equal(EXPECTED_NAMES.length, 9);
   const files = fs.readdirSync(AGENTS_DIR).filter((f) => f.endsWith('.md'));

@@ -109,6 +109,9 @@ whether to save the report before any analysis runs.
 - **Never modifies the project.** Agents see only a disposable copy holding the data files and
   data docs, and the engine refuses to run if any path lies outside it.
 - **Never sees a prior conclusion.** Code, notebooks and reports are left out of the copy.
+- **Withholds the project's CLAUDE.md.** The pattern hunters and the so-what auditor run without
+  it. Each hunter is told to work from the sandbox copy and to read and write only inside it. That
+  working-directory rule is an instruction, not an enforced boundary.
 - **No causes from correlations.** Patterns are descriptive; a candidate rises above that only
   when its evidence rules out confounding, and one not verified by execution stays descriptive.
 - **Single run, said so.** Patterns are not re-run to check they recur, and the report says to

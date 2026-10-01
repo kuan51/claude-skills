@@ -82,6 +82,8 @@ test('one opus pattern hunter per slice, each with the thesis block, its slice a
     assert.match(c.prompt, /^Evidence hygiene:/m);
     assert.ok(c.opts.schema.properties.findings.items.required.includes('business_impact'));
     assert.match(c.prompt, /`business_impact` is required/);
+    assert.ok(c.prompt.includes(`Start every Bash command with \`cd ${ROOT} &&\``), 'cd into the sandbox');
+    assert.ok(c.prompt.includes('read and write only inside it'));
   }
 });
 
