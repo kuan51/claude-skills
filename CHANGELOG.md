@@ -8,6 +8,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.15.0** -- the build loop's first review sweeps each function the diff calls by
+  its cases, probing one literal input per case and reporting an unprobed case as an open
+  question (#154). The reviewer's verdict gains `head`, the commit it read, and rounds 2 and 3
+  judge only the rework since that commit: an earlier must-fix still not fixed, a regression or
+  a real bug in that diff, or an uncommitted path. A new finding elsewhere is a note, so the
+  lead's gate now reads the final verdict's notes. A missing or invalid `head` makes the next
+  round judge the whole diff as round 1 does.
 - **fabflows 0.14.0** -- the build loop adopts the review-callees and rework-permission text
   measured in iterations 5 and 6 (#148). The builder's result gains an optional `deviations`
   list naming the spec sentence a must-fix fix crossed, and `fabflows:build` matches each entry

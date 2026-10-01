@@ -1,0 +1,213 @@
+[
+ {
+  "task": "review-catch",
+  "arm": "case-sweep",
+  "run": "run-1",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.15.0",
+   "treeSha256": "867ab452e4789bd8bc8efeb7d6fecfe3a9c3c83fc3ed6b700c21c3ee9f43910c"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 17,
+  "lead_out": 6716,
+  "lead_think": 770,
+  "lead_msgs": 12,
+  "lead_cache_read": 389660,
+  "lead_cache_write": 37847,
+  "first_ctx": 21964,
+  "final_ctx": 49782,
+  "worker_out": 38771,
+  "worker_in": 995768,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 2
+  },
+  "spawns": 4,
+  "cache_write_1h": 37847,
+  "cache_write_5m": 106878,
+  "skill_chars": 10856,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 2.6804021999999996,
+  "sec": 442.176,
+  "verification_runs": 1,
+  "hook_payloads": 68,
+  "tools": {
+   "Skill": 3,
+   "Read": 1,
+   "Bash": 7,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "case-sweep",
+  "run": "run-2",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.15.0",
+   "treeSha256": "867ab452e4789bd8bc8efeb7d6fecfe3a9c3c83fc3ed6b700c21c3ee9f43910c"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 15,
+  "lead_out": 5197,
+  "lead_think": 525,
+  "lead_msgs": 10,
+  "lead_cache_read": 295251,
+  "lead_cache_write": 35818,
+  "first_ctx": 21963,
+  "final_ctx": 47753,
+  "worker_out": 38050,
+  "worker_in": 867788,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 2
+  },
+  "spawns": 4,
+  "cache_write_1h": 35818,
+  "cache_write_5m": 92072,
+  "skill_chars": 10856,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 2.42881475,
+  "sec": 417.285,
+  "verification_runs": 1,
+  "hook_payloads": 72,
+  "tools": {
+   "Skill": 2,
+   "Read": 1,
+   "Bash": 7,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "case-sweep",
+  "run": "run-3",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.15.0",
+   "treeSha256": "867ab452e4789bd8bc8efeb7d6fecfe3a9c3c83fc3ed6b700c21c3ee9f43910c"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 16,
+  "lead_out": 5014,
+  "lead_think": 636,
+  "lead_msgs": 10,
+  "lead_cache_read": 294265,
+  "lead_cache_write": 32266,
+  "first_ctx": 21962,
+  "final_ctx": 44201,
+  "worker_out": 40098,
+  "worker_in": 789892,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 2
+  },
+  "spawns": 4,
+  "cache_write_1h": 32266,
+  "cache_write_5m": 90424,
+  "skill_chars": 10856,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 2.3658258500000002,
+  "sec": 515.517,
+  "verification_runs": 1,
+  "hook_payloads": 60,
+  "tools": {
+   "Skill": 3,
+   "Read": 2,
+   "Bash": 5,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "case-sweep",
+  "run": "run-4",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.15.0",
+   "treeSha256": "867ab452e4789bd8bc8efeb7d6fecfe3a9c3c83fc3ed6b700c21c3ee9f43910c"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 15,
+  "lead_out": 4777,
+  "lead_think": 275,
+  "lead_msgs": 9,
+  "lead_cache_read": 253030,
+  "lead_cache_write": 35886,
+  "first_ctx": 21963,
+  "final_ctx": 47821,
+  "worker_out": 26352,
+  "worker_in": 688927,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 2
+  },
+  "spawns": 4,
+  "cache_write_1h": 35886,
+  "cache_write_5m": 52498,
+  "skill_chars": 10856,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 1.9386045,
+  "sec": 353.232,
+  "verification_runs": 1,
+  "hook_payloads": 62,
+  "tools": {
+   "Skill": 2,
+   "Read": 2,
+   "Bash": 5,
+   "Workflow": 1,
+   "Grep": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "case-sweep",
+  "run": "run-5",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.15.0",
+   "treeSha256": "867ab452e4789bd8bc8efeb7d6fecfe3a9c3c83fc3ed6b700c21c3ee9f43910c"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 13,
+  "lead_out": 4664,
+  "lead_think": 302,
+  "lead_msgs": 9,
+  "lead_cache_read": 251738,
+  "lead_cache_write": 32619,
+  "first_ctx": 21961,
+  "final_ctx": 44554,
+  "worker_out": 36345,
+  "worker_in": 984115,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 2
+  },
+  "spawns": 4,
+  "cache_write_1h": 32619,
+  "cache_write_5m": 87224,
+  "skill_chars": 10856,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 2.292919499999999,
+  "sec": 441.984,
+  "verification_runs": 1,
+  "hook_payloads": 62,
+  "tools": {
+   "Skill": 2,
+   "Read": 1,
+   "Bash": 5,
+   "Workflow": 1
+  }
+ }
+]
