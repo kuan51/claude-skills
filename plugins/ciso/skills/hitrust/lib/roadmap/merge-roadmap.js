@@ -2,33 +2,44 @@
 
 const fs = require('fs');
 
-// Searches every certification and every tier within it for a control keyed by `controlId`.
-// Deliberately not hardcoded to `hitrust`/`e1` -- a control id could belong to any tier of any
-// certification the project has registered. Returns the control object by reference (so the
-// caller can mutate it in place) or null if it isn't found anywhere.
-function findControlById(state, controlId) {
+// Every control keyed by `controlId`, searching every certification and tier, or only the
+// `certKey`/`tierKey` given. Deliberately not hardcoded to `hitrust`/`e1` -- a control id could
+// belong to any tier of any certification the project has registered. Controls are returned by
+// reference, so the caller can mutate them in place.
+function matchingControls(state, controlId, certKey, tierKey) {
+  const matches = [];
   const certifications = (state && state.certifications) || {};
-  for (const certKey of Object.keys(certifications)) {
-    const tiers = (certifications[certKey] && certifications[certKey].tiers) || {};
-    for (const tierKey of Object.keys(tiers)) {
-      const controls = (tiers[tierKey] && tiers[tierKey].controls) || {};
-      if (Object.prototype.hasOwnProperty.call(controls, controlId)) {
-        return controls[controlId];
-      }
+  for (const ck of Object.keys(certifications)) {
+    if (certKey && ck !== certKey) continue;
+    const tiers = (certifications[ck] && certifications[ck].tiers) || {};
+    for (const tk of Object.keys(tiers)) {
+      if (tierKey && tk !== tierKey) continue;
+      const controls = (tiers[tk] && tiers[tk].controls) || {};
+      if (Object.prototype.hasOwnProperty.call(controls, controlId)) matches.push(controls[controlId]);
     }
   }
-  return null;
+  return matches;
 }
 
-// Merges a roadmap workflow's result -- { budgetTier, results: [{controlId, vendors,
-// recommendation, confidence}, ...] } -- onto each matching control's `roadmap` field, searching
-// across every certification/tier in `state`. Idempotent: re-running with the same result
+// The one control `controlId` names, or null if none does or more than one does. A project
+// framework's ids are unique only within a tier, so without certKey/tierKey an id can match
+// controls in several tiers, and guessing would write research onto the wrong one.
+function findControlById(state, controlId, certKey, tierKey) {
+  const matches = matchingControls(state, controlId, certKey, tierKey);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+// Merges a roadmap workflow's result -- { budgetTier, results: [{controlId, certKey, tierKey,
+// vendors, recommendation, confidence}, ...] } -- onto each matching control's `roadmap` field:
+// exactly the named tier's control when certKey/tierKey are present, else the one control with
+// that id across every certification/tier in `state`. Idempotent: re-running with the same result
 // overwrites `roadmap` cleanly each time (the field is replaced wholesale, never appended to), so
 // there's no duplication across repeated runs.
 //
 // A controlId that isn't found anywhere (e.g. removed by a version-upgrade reconciliation that
 // ran between the roadmap workflow and this merge) is collected into `notFound` instead of
-// throwing -- everything that DID match is still merged and written back.
+// throwing -- everything that DID match is still merged and written back. An id that matches more
+// than one control is collected into `ambiguous` the same way, never merged onto a guess.
 function mergeRoadmap(stateJsonPath, roadmapResult) {
   const state = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8'));
   const results = (roadmapResult && roadmapResult.results) || [];
@@ -43,14 +54,21 @@ function mergeRoadmap(stateJsonPath, roadmapResult) {
 
   let merged = 0;
   const notFound = [];
+  const ambiguous = [];
 
   for (const entry of results) {
-    const { controlId, vendors, recommendation, confidence } = entry || {};
-    const control = findControlById(state, controlId);
-    if (!control) {
-      notFound.push(controlId);
+    const { controlId, certKey, tierKey, vendors, recommendation } = entry || {};
+    const matches = matchingControls(state, controlId, certKey, tierKey);
+    if (matches.length !== 1) {
+      if (matches.length > 1) {
+        ambiguous.push(controlId);
+        console.error(`Warning: control "${controlId}" matches ${matches.length} controls in different tiers -- roadmap result not merged; it needs its certKey and tierKey.`);
+      } else {
+        notFound.push(controlId);
+      }
       continue;
     }
+    const control = matches[0];
 
     const vendorList = Array.isArray(vendors) ? vendors : [];
     control.roadmap = {
@@ -67,7 +85,7 @@ function mergeRoadmap(stateJsonPath, roadmapResult) {
   }
 
   fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
-  return { merged, notFound };
+  return { merged, notFound, ambiguous };
 }
 
 module.exports = { mergeRoadmap, findControlById };

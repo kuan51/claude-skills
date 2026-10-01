@@ -134,6 +134,10 @@ const rawResults = await parallel(
       agentType: 'ciso:vendor-researcher',
     }).then((result) => ({
       controlId: control.id,
+      // Passed through, never put in the prompt: merge-roadmap.js uses them to merge into exactly
+      // this tier's control, since a project framework's ids are unique only within a tier.
+      certKey: control.certKey,
+      tierKey: control.tierKey,
       vendors: result.vendors,
       recommendation: result.recommendation,
       confidence: result.confidence,

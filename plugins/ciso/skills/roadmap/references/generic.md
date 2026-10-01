@@ -14,8 +14,10 @@ interview, with findings merged in whenever it finishes.
    `args: { controls: [...], budgetTier }`. Build `controls` from every `gap`/`in_progress` control
    with `roadmap.status` still `not_started` or `researching`, **except** any ids already dispatched
    to a still-running background roadmap this session. Each entry is
-   `{ id, statementSource, relatedControlCode, topicLabel, topicSummary, domainKey, domain }`, with
-   absent fields left out.
+   `{ id, certKey, tierKey, statementSource, relatedControlCode, topicLabel, topicSummary, domainKey,
+   domain }`, with absent fields left out. `certKey` and `tierKey` say where the control lives in
+   `state.json`: `workflow.js` returns them with each result, and `merge-roadmap.js` merges into
+   exactly that control, because a project framework's ids are unique only within a tier.
 
    **Only the control's public subject goes in the payload: never the org's `justification` or
    in-progress notes.** When `statementSource` is `imported`, leave `topicLabel` and
