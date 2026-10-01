@@ -78,6 +78,7 @@ never by editing this file.
 | _waive | function | `plugins/docs-warden/skills/docs-warden/scripts/audit.py:1234` |
 | adr_files | function | `plugins/docs-warden/skills/docs-warden/scripts/_common.py:245` |
 | adr_status | function | `plugins/docs-warden/skills/docs-warden/scripts/_common.py:285` |
+| all_costs | function | `plugins/fabflows/evals/harness/annotate_benchmark.py:60` |
 | apply_overrides | function | `plugins/docs-warden/skills/ontological-documentation/scripts/domain_model.py:72` |
 | audit | function | `plugins/docs-warden/skills/docs-warden/scripts/audit.py:1200` |
 | build | function | `plugins/docs-warden/skills/ontological-documentation/scripts/domain_model.py:144` |
@@ -99,6 +100,7 @@ never by editing this file.
 | check_required_files | function | `plugins/docs-warden/skills/docs-warden/scripts/audit.py:211` |
 | check_standards | function | `plugins/docs-warden/skills/docs-warden/scripts/audit.py:1059` |
 | documented_in | function | `plugins/docs-warden/skills/ontological-documentation/scripts/domain_model.py:48` |
+| dollars | function | `plugins/fabflows/evals/harness/annotate_benchmark.py:74` |
 | extract | function | `plugins/docs-warden/skills/ontological-documentation/scripts/extract_concepts.py:325` |
 | git | function | `plugins/docs-warden/skills/docs-warden/scripts/_common.py:297` |
 | is_digest | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_compact.py:87` |
@@ -128,10 +130,11 @@ never by editing this file.
 | runlog_entries | function | `plugins/docs-warden/skills/docs-warden/scripts/freshness.py:45` |
 | runlog_shape_warnings | function | `plugins/docs-warden/skills/docs-warden/scripts/freshness.py:59` |
 | section | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_compact.py:39` |
+| shared_diff | function | `plugins/fabflows/evals/harness/annotate_benchmark.py:64` |
 | slugify | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_new.py:23` |
 | source_files | function | `plugins/docs-warden/skills/ontological-documentation/scripts/extract_concepts.py:314` |
 | split | function | `plugins/docs-warden/skills/docs-warden/scripts/adr_compact.py:95` |
-| stats | function | `plugins/fabflows/evals/harness/annotate_benchmark.py:42` |
+| stats | function | `plugins/fabflows/evals/harness/annotate_benchmark.py:51` |
 | strip_code | function | `plugins/docs-warden/skills/docs-warden/scripts/_common.py:333` |
 | test_REQ_FIX_001_rejects_empty_snapshot | function | `plugins/docs-warden/test/fixtures/repo-regulated/tests/test_pressure.py:13` |
 | test_REQ_FIX_003_rounds_to_one_decimal | function | `plugins/docs-warden/test/fixtures/repo-regulated/tests/test_pressure.py:18` |
