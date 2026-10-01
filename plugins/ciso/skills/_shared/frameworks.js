@@ -26,7 +26,6 @@ const BUNDLED_ROOT = path.join(__dirname, '..', '..', 'frameworks');
 const KEY_RE = /^[a-z0-9-]+$/;
 const VERSION_RE = /^v[A-Za-z0-9.-]+$/;
 const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'imported'];
-const FORBIDDEN_IDS = ['__proto__', 'constructor', 'prototype'];
 const CONTROL_STRINGS = ['domain', 'domainKey', 'topicLabel', 'topicSummary'];
 const STRUCTURE_SUFFIX = '.structure.json';
 // id and domainKey reach shell commands in the generic flows, so only characters that are inert
@@ -34,6 +33,12 @@ const STRUCTURE_SUFFIX = '.structure.json';
 const SAFE_TOKEN_RE = /^[A-Za-z0-9._-]+$/;
 // displayName is passed inside double quotes; none of these may appear in it.
 const UNSAFE_IN_DOUBLE_QUOTES_RE = /["$`\\\u0000-\u001f\u007f]/;
+
+// Keys become property names of plain objects downstream (state.json maps, dashboard grouping), so
+// any name Object.prototype already carries (constructor, toString, __proto__, ...) would collide.
+function isReservedKey(k) {
+  return k === 'prototype' || Object.prototype.hasOwnProperty.call(Object.prototype, k);
+}
 
 function isNonEmptyString(v) {
   return typeof v === 'string' && v.trim().length > 0;
@@ -57,7 +62,7 @@ function validateStructure(file, origin, errors) {
   }
   if (typeof s.tier !== 'string' || !KEY_RE.test(s.tier)) {
     errors.push(`${name}: tier "${s.tier}" must be a string matching ${KEY_RE}`);
-  } else if (FORBIDDEN_IDS.includes(s.tier)) {
+  } else if (isReservedKey(s.tier)) {
     errors.push(`${name}: tier "${s.tier}" is not allowed`);
   }
   if (!VERSION_RE.test(String(s.controlSetVersion))) {
@@ -87,7 +92,7 @@ function validateStructure(file, origin, errors) {
       errors.push(`${where}: id must be a non-empty string`);
     } else if (!SAFE_TOKEN_RE.test(c.id)) {
       errors.push(`${where}: id "${c.id}" must match ${SAFE_TOKEN_RE}`);
-    } else if (FORBIDDEN_IDS.includes(c.id)) {
+    } else if (isReservedKey(c.id)) {
       errors.push(`${where}: id "${c.id}" is not allowed`);
     } else if (seen.has(c.id)) {
       errors.push(`${where}: duplicate id "${c.id}"`);
@@ -99,7 +104,7 @@ function validateStructure(file, origin, errors) {
     }
     if (isNonEmptyString(c.domainKey) && !SAFE_TOKEN_RE.test(c.domainKey)) {
       errors.push(`${where}: domainKey "${c.domainKey}" must match ${SAFE_TOKEN_RE}`);
-    } else if (FORBIDDEN_IDS.includes(c.domainKey)) {
+    } else if (isReservedKey(c.domainKey)) {
       errors.push(`${where}: domainKey "${c.domainKey}" is not allowed`);
     }
     for (const field of STATE_ONLY_FIELDS) {
@@ -110,8 +115,18 @@ function validateStructure(file, origin, errors) {
   });
 }
 
-// Returns [message]; empty means valid. `origin` is "bundled" or "project".
+// Returns [message]; empty means valid. `origin` is "bundled" or "project". A file that exists but
+// cannot be read (a directory named ground-rules.md, a folder without read permission) is reported
+// as an error rather than thrown, so one broken project folder never stops a listing.
 function validateFramework(dir, origin) {
+  try {
+    return checkFramework(dir, origin);
+  } catch (err) {
+    return [`not readable (${err.message})`];
+  }
+}
+
+function checkFramework(dir, origin) {
   const errors = [];
   const folder = path.basename(path.resolve(dir));
   if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [`${dir} is not a directory`];
@@ -130,7 +145,7 @@ function validateFramework(dir, origin) {
   if (fw) {
     if (!isNonEmptyString(fw.certKey) || !KEY_RE.test(fw.certKey)) {
       errors.push(`framework.json: certKey "${fw.certKey}" must match ${KEY_RE}`);
-    } else if (FORBIDDEN_IDS.includes(fw.certKey)) {
+    } else if (isReservedKey(fw.certKey)) {
       errors.push(`framework.json: certKey "${fw.certKey}" is not allowed`);
     } else if (fw.certKey !== folder) {
       errors.push(`framework.json: certKey "${fw.certKey}" must equal the folder name "${folder}"`);
@@ -148,7 +163,7 @@ function validateFramework(dir, origin) {
       const seen = new Set();
       for (const t of fw.tiers) {
         if (typeof t !== 'string' || !KEY_RE.test(t)) errors.push(`framework.json: tier "${t}" must match ${KEY_RE}`);
-        else if (FORBIDDEN_IDS.includes(t)) errors.push(`framework.json: tier "${t}" is not allowed`);
+        else if (isReservedKey(t)) errors.push(`framework.json: tier "${t}" is not allowed`);
         else if (seen.has(t)) errors.push(`framework.json: duplicate tier "${t}"`);
         seen.add(t);
       }

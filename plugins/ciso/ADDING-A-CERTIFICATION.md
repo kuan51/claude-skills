@@ -61,9 +61,9 @@ Each control:
 
 | Field | Required | Meaning |
 |---|---|---|
-| `id` | yes | Unique in the tier. Letters, digits, `.`, `_` and `-` only. Not `__proto__`, `constructor` or `prototype`. |
+| `id` | yes | Unique in the tier. Letters, digits, `.`, `_` and `-` only. Not a name JavaScript objects already carry, such as `constructor`, `toString` or `__proto__`. |
 | `domain` | yes | The human name of the group the control belongs to. |
-| `domainKey` | yes | The grouping key the dashboard rolls up by and the interview works through. Letters, digits, `.`, `_` and `-` only. |
+| `domainKey` | yes | The grouping key the dashboard rolls up by and the interview works through. Same character and name rules as `id`. |
 | `topicLabel` | yes | A short name for the control. |
 | `topicSummary` | yes | What the control covers. |
 | anything else | no | Carried into `state.json` and shown on the dashboard, except a field ciso's state owns (`assessment`, `evidence`, `roadmap`, `statementText`, `statementSource`, `needsReview`), which is an error. |

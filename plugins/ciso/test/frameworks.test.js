@@ -105,6 +105,10 @@ const ERROR_CASES = [
   ['domainKey with a space', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = 'Access Control'; }), /domainKey "Access Control" must match/],
   ['domainKey constructor', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = 'constructor'; }), /domainKey "constructor" is not allowed/],
   ['domainKey __proto__', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = '__proto__'; }), /domainKey "__proto__" is not allowed/],
+  // Any name Object.prototype carries breaks the plain-object grouping in render-dashboard.js.
+  ['domainKey toString', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = 'toString'; }), /domainKey "toString" is not allowed/],
+  ['domainKey valueOf', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = 'valueOf'; }), /domainKey "valueOf" is not allowed/],
+  ['id hasOwnProperty', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].id = 'hasOwnProperty'; }), /id "hasOwnProperty" is not allowed/],
   ['certKey constructor', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.certKey = 'constructor'; }), /certKey "constructor" is not allowed/],
   ['declared tier constructor', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('constructor'); }), /tier "constructor" is not allowed/],
   ['declared tier constructor with no file', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('constructor'); }), /tier "constructor" is declared but has no/],
@@ -179,6 +183,19 @@ test('list: an invalid project framework is reported and skipped, and never fail
   const { frameworks, errors } = listFrameworks(docs);
   assert.ok(!frameworks.some((f) => f.certKey === 'example'));
   assert.deepEqual(errors.map((e) => e.origin), ['project']);
+});
+
+test('list: an unreadable project file is reported as an error, never thrown', () => {
+  const docs = tmp();
+  const dir = copyExample(path.join(docs, 'frameworks'));
+  fs.rmSync(path.join(dir, 'ground-rules.md'));
+  fs.mkdirSync(path.join(dir, 'ground-rules.md')); // exists, but reading it fails with EISDIR
+  const { frameworks, errors } = listFrameworks(docs);
+  assert.ok(!frameworks.some((f) => f.certKey === 'example'));
+  assert.ok(errors.some((e) => e.origin === 'project' && /not readable/.test(e.message)), JSON.stringify(errors));
+  const r = run('list', docs);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stderr, /^project .*example: .*not readable/m);
 });
 
 // The CLI's bundled root is fixed relative to the script, so lay out a throwaway plugin with the
