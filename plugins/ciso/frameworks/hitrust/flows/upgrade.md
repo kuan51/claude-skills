@@ -9,7 +9,7 @@ Read this when `ciso:upgrade` dispatches here, that is, the plugin's bundled `fr
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/versioning/diff-structure-versions.js" <old-structure-file> <new-structure-file>
    ```
 
-   to get an added/removed/modified/unchanged report (heuristic, not authoritative for topic-level tiers -- flag ambiguous cases for the user's judgment rather than trusting the classification blindly).
+   where `<old-structure-file>` is `${CLAUDE_PLUGIN_ROOT}/frameworks/hitrust/previous/<tier>.<old controlSetVersion>.structure.json` (the version `state.json` records for the tier) and `<new-structure-file>` is the tier's current `${CLAUDE_PLUGIN_ROOT}/frameworks/hitrust/<tier>.v*.structure.json`, to get an added/removed/modified/unchanged report (heuristic, not authoritative for topic-level tiers -- flag ambiguous cases for the user's judgment rather than trusting the classification blindly).
 3. Run:
 
    ```bash

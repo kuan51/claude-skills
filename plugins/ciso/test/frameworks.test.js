@@ -142,6 +142,19 @@ test('validate rejects: a bundled tier declared imported (and allows it in a pro
   assert.match(r.stderr, /a bundled tier may not be "imported"/);
 });
 
+// A version bump moves the old structure file into previous/ for the upgrade diff; a second file
+// for the tier there must not count against "exactly one per tier".
+test('a previous/ folder holding an older structure file leaves a bundled framework valid', () => {
+  const dir = copyExample();
+  fs.mkdirSync(path.join(dir, 'previous'));
+  const old = path.join(dir, 'previous', 'core.v0.structure.json');
+  fs.copyFileSync(path.join(dir, STRUCTURE), old);
+  editJson(old, (s) => { s.controlSetVersion = 'v0'; });
+  assert.deepEqual(validateFramework(dir, 'bundled'), []);
+  const r = run('validate', dir, '--bundled');
+  assert.equal(r.status, 0, r.stderr);
+});
+
 test('list returns the example fixture with origin "project", alongside the bundled frameworks', () => {
   const docs = tmp();
   copyExample(path.join(docs, 'frameworks'));

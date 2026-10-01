@@ -22,7 +22,8 @@ docs/ciso/frameworks/example/
   core.v1.structure.json       one per tier: the controls
 ```
 
-Any other file in the folder is ignored. A project framework may not have a `flows/` folder; see
+Any other file or subfolder is ignored, but a file ciso needs that exists and cannot be read is a
+validation error. A project framework may not have a `flows/` folder; see
 [Project frameworks are data](#project-frameworks-are-data).
 
 A complete minimal example lives at
@@ -328,7 +329,9 @@ few years and rots faster than twenty lines can be rewritten.
 1. **Include a control structure** as `<tier>.<controlSetVersion>.structure.json`, in the shape
    [Adding a project framework](#adding-a-project-framework) describes, with `citations` on each
    control (plus whatever else your framework needs, `register-tier.js` preserves unknown fields by
-   spread). `domainKey` is the grouping key the dashboard rolls up by.
+   spread). `domainKey` is the grouping key the dashboard rolls up by. Exactly one current file
+   per tier sits in the framework folder; when a new version of the standard replaces a tier, move
+   the old file into `previous/`, which validation ignores and the upgrade flow diffs against.
 2. **Register** it with `registerTier(statePath, structure, "<certKey>", "<Display Name>")`. This
    seeds every control's `assessment`/`roadmap` to the state.json contract and creates the interview
    session. No per-cert code.
