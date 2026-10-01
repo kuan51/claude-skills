@@ -221,3 +221,16 @@ test('no EDA or reconcile prompt contains a conclusion path', async () => {
     for (const p of baseArgs().conclusionPaths) assert.ok(!c.prompt.includes(p), `${c.opts.label} leaks ${p}`);
   }
 });
+
+test('every agentType is <plugin.json name>:<agent> with a matching agents/<agent>.md', async () => {
+  const pluginDir = path.join(__dirname, '..', '..', '..');
+  const { name } = JSON.parse(fs.readFileSync(path.join(pluginDir, '.claude-plugin', 'plugin.json'), 'utf8'));
+  const r = await run();
+  assert.ok(r.calls.length > 0);
+  for (const c of r.calls) {
+    const [prefix, agentName, ...rest] = c.opts.agentType.split(':');
+    assert.equal(prefix, name, c.opts.label);
+    assert.equal(rest.length, 0, c.opts.agentType);
+    assert.ok(fs.existsSync(path.join(pluginDir, 'agents', `${agentName}.md`)), `missing agents/${agentName}.md`);
+  }
+});

@@ -1,5 +1,5 @@
 ---
-name: data-analysis-review
+name: review
 description: Use when asked to independently review, audit, or sanity-check whether a data science project's stated conclusions actually hold up -- re-derives findings from its raw data and code from scratch, blind to the project's own report, then explicitly checks whether the report's claims match and lists what the data supports that the report never claimed. Use this instead of a generic exploratory-data-analysis or statistical-analysis skill whenever the ask is to verify or grade existing conclusions rather than to produce a first analysis.
 ---
 
@@ -42,13 +42,13 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
 
 5. **Confirm the reviewer roster.**
    - The 4 fixed roles (`data-quality-reviewer`, `statistical-methodologist`, `domain-alignment-reviewer`, `reproducibility-auditor`) are always included.
-   - Concatenate the project's README/docs text into a temp file and run `node "${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/lib/domain-signals.js" <temp-file>` to detect specialized-domain signals (`clinical`, `financial`, `fairness`, `time_series`, `causal`). `CLAUDE_PLUGIN_ROOT` is this plugin's own installed directory. Use it for every script invocation in this skill, since the current working directory is the project being reviewed, not the plugin.
+   - Concatenate the project's README/docs text into a temp file and run `node "${CLAUDE_PLUGIN_ROOT}/skills/review/lib/domain-signals.js" <temp-file>` to detect specialized-domain signals (`clinical`, `financial`, `fairness`, `time_series`, `causal`). `CLAUDE_PLUGIN_ROOT` is this plugin's own installed directory. Use it for every script invocation in this skill, since the current working directory is the project being reviewed, not the plugin.
    - If any signals are found, ask the user (`AskUserQuestion`) whether to add extra reviewer roles using either:
-     - **Canned personas** from `${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/references/extra-roles.md` (fast, no network), keyed by the same signal keys. Use each entry's `Label` and `Persona` verbatim.
+     - **Canned personas** from `${CLAUDE_PLUGIN_ROOT}/skills/review/references/extra-roles.md` (fast, no network), keyed by the same signal keys. Use each entry's `Label` and `Persona` verbatim.
      - **Deep-research-sourced personas**: call `Skill({skill: "deep-research", args: "<a specific question about review considerations/checklists for this project's detected domain>"})`. Turn the cited findings into a persona brief, and compose a short human-readable label for it. If the `deep-research` skill is not installed, say so and offer only the canned personas.
    - Confirm the final roster (fixed 4 + any chosen extras) via `AskUserQuestion` (multiSelect).
 
-6. **Confirm save preference.** Ask yes/no whether to save the final report, default path `docs/data-analysis-review/<YYYY-MM-DD>-review.md`, overridable. This question goes in the step 3 `AskUserQuestion` call, not a call of its own.
+6. **Confirm save preference.** Ask yes/no whether to save the final report, default path `docs/data-analysis/<YYYY-MM-DD>-review.md`, overridable. This question goes in the step 3 `AskUserQuestion` call, not a call of its own.
 
 7. **Start the analysis engine.** Restate the gathered plan:
    - confirmed thesis and goals
@@ -68,13 +68,13 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
    - Then rewrite every path destined for `args` (below) from the original project root to the copy root:
 
      ```bash
-     node "${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/lib/sandbox-paths.js" <project-root> <sandbox-root> <path1> [path2 ...]
+     node "${CLAUDE_PLUGIN_ROOT}/skills/review/lib/sandbox-paths.js" <project-root> <sandbox-root> <path1> [path2 ...]
      ```
 
      This prints the rewritten paths as a JSON array, in the same order given. Use the rewritten paths (never the originals) for every entry in `fixedRolePaths`, `extras[].paths`, and `conclusionPaths` below. The Workflow itself (step 9) will refuse to run if any path it receives isn't inside `sandboxRoot`, so a skipped or incomplete rewrite stops the run instead of silently reaching the original project.
    - Keep the temporary copy until after the report is presented (step 12), since findings' evidence may reference paths inside it. Then delete it.
 
-9. **Run the Workflow.** Read `${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/workflow.js` and pass its contents as the `script` parameter to the `Workflow` tool, with `args` set to:
+9. **Run the Workflow.** Read `${CLAUDE_PLUGIN_ROOT}/skills/review/workflow.js` and pass its contents as the `script` parameter to the `Workflow` tool, with `args` set to:
 
    ```js
    {
@@ -109,7 +109,7 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
     - Then run:
 
       ```bash
-      node "${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/lib/report-builder.js" "${CLAUDE_PLUGIN_ROOT}/skills/data-analysis-review/references/report-template.md" <path-to-result.json>
+      node "${CLAUDE_PLUGIN_ROOT}/skills/review/lib/report-builder.js" "${CLAUDE_PLUGIN_ROOT}/skills/review/references/report-template.md" <path-to-result.json>
       ```
 
 12. **Present the report** in the conversation. If the user opted in during step 6, write it to the confirmed path (the only write action this skill ever takes against the reviewed project). Do not also commit it. That's the user's call. Then delete the step-8 sandbox copy.

@@ -166,20 +166,21 @@ assertSandboxed(A.conclusionPaths, A.sandboxRoot, 'conclusionPaths')
 
 phase('Independent EDA')
 
-// Namespaced as 'data-analysis-review:<agent-name>' to match this plugin's own plugin.json
+// Namespaced as 'data-analysis:<agent-name>' to match this plugin's own plugin.json
 // "name" field, mirroring the pattern observed in 4 independently-installed plugins in this
 // environment (each plugin's agents resolve as '<that plugin's own name>:<agent-name>').
-// Confirmed by an installed copy of this plugin (0.1.2): its agents resolve as
-// 'data-analysis-review:<agent-name>'. If this plugin's agents ever resolve bare instead, a
+// The old name was confirmed by an installed copy (0.1.2): its agents resolved as
+// 'data-analysis-review:<agent-name>'. The new 'data-analysis:' prefix follows the same
+// observed pattern and is unconfirmed until the manual run. If they ever resolve bare instead, a
 // wrong guess here fails loudly (every agent() call throws "agent type not found", zero agents
 // dispatched) rather than silently misrouting -- this was evaluated and accepted as the better
 // failure mode versus a bare reference risking a same-named agent from an unrelated plugin.
 const roster = [
-  { key: 'data_quality', agentType: 'data-analysis-review:data-quality-reviewer', paths: A.fixedRolePaths.dataQuality, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.data_quality },
-  { key: 'statistical', agentType: 'data-analysis-review:statistical-methodologist', paths: A.fixedRolePaths.statistical, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.statistical },
-  { key: 'domain_alignment', agentType: 'data-analysis-review:domain-alignment-reviewer', paths: A.fixedRolePaths.domainAlignment, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.domain_alignment },
-  { key: 'reproducibility', agentType: 'data-analysis-review:reproducibility-auditor', paths: A.fixedRolePaths.reproducibility, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.reproducibility },
-  ...((A.extras || []).map((e) => ({ key: e.key, agentType: 'data-analysis-review:extra-reviewer', paths: e.paths, persona: e.persona, label: e.label }))),
+  { key: 'data_quality', agentType: 'data-analysis:data-quality-reviewer', paths: A.fixedRolePaths.dataQuality, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.data_quality },
+  { key: 'statistical', agentType: 'data-analysis:statistical-methodologist', paths: A.fixedRolePaths.statistical, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.statistical },
+  { key: 'domain_alignment', agentType: 'data-analysis:domain-alignment-reviewer', paths: A.fixedRolePaths.domainAlignment, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.domain_alignment },
+  { key: 'reproducibility', agentType: 'data-analysis:reproducibility-auditor', paths: A.fixedRolePaths.reproducibility, guidance: A.skillGuidanceExcerpts && A.skillGuidanceExcerpts.reproducibility },
+  ...((A.extras || []).map((e) => ({ key: e.key, agentType: 'data-analysis:extra-reviewer', paths: e.paths, persona: e.persona, label: e.label }))),
 ].map((role) => ({ ...role, label: role.label || ROLE_LABELS[role.key] || role.key }))
 
 // An agent that returns nothing (skipped, or dead after retries) is logged and named in
@@ -222,7 +223,7 @@ const reconcilePrompt = [
 const reconciled = (await agent(reconcilePrompt, {
   label: 'reconcile',
   phase: 'Reconcile',
-  agentType: 'data-analysis-review:findings-reconciler',
+  agentType: 'data-analysis:findings-reconciler',
   model: 'opus',
   schema: RECONCILE_SCHEMA,
 })) || drop('reconcile') || {}
@@ -259,7 +260,7 @@ const crossCompareResults = await parallel(
     return agent(prompt, {
       label: `cross-compare:${topic.topic}`,
       phase: 'Cross-Compare',
-      agentType: 'data-analysis-review:thesis-auditor',
+      agentType: 'data-analysis:thesis-auditor',
       model: 'opus',
       schema: CROSS_COMPARE_SCHEMA,
     }).then((result) => (result ? { ...result, reconciled_topic: topic.topic, evidence: topic.evidence, verified: topic.verified } : drop(`cross-compare:${topic.topic}`)))
