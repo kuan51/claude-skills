@@ -605,3 +605,24 @@ for (const [statementSource, tierAuthority, expectNote] of [
     assert.equal(drilldownsHtml.includes('a paraphrase, not the publisher'), expectNote);
   });
 }
+
+test('a certKey or tierKey holding " and < is escaped in every href and id it builds', () => {
+  // state.json is hand-editable, so its keys are untrusted text, not just validated framework keys.
+  const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
+  const tier = state.certifications.hitrust.tiers.e1;
+  state.certifications = { 'ev"il<cert': { displayName: 'Evil', activeTier: 't"<1', tiers: { 't"<1': tier } } };
+
+  const { overviewHtml, drilldownsHtml } = renderClientSide(state);
+  const key = 'ev&quot;il&lt;cert-t&quot;&lt;1';
+  assert.ok(overviewHtml.includes(`href="#cat-${key}-11"`), 'domain-bar href must be escaped');
+  assert.ok(overviewHtml.includes(`href="#section-${key}"`), 'jump-link href must be escaped');
+  assert.ok(drilldownsHtml.includes(`id="cat-${key}-11"`), 'category id must be escaped');
+  assert.ok(drilldownsHtml.includes(`id="section-${key}"`), 'section id must be escaped');
+
+  const index = renderIndexClientSide(state, TEST_CATALOG).overviewHtml;
+  assert.ok(index.includes('href="cert-ev-il-cert.html"'), 'index card href must be slugged');
+
+  for (const html of [overviewHtml, drilldownsHtml, index]) {
+    assert.ok(!html.includes('ev"il') && !html.includes('t"<'), 'no raw key may reach the markup');
+  }
+});

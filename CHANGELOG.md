@@ -398,6 +398,9 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **ciso 1.2.1** -- the dashboard escapes a certKey or tierKey from `state.json` in the
+  domain-bar link, the "Jump to details" link and the tier section id, as it already did for
+  the category id (#158). A hand-edited key holding a quote could break out of the attribute.
 - **data-analysis 1.1.1, ciso 1.1.5, docs-warden 0.7.3, fabflows 0.15.1** -- each plugin
   description is now 499 characters or fewer, under the 500-character limit that Claude
   desktop and the claude.ai web app enforce, which these four had gone over (#163). Only the
