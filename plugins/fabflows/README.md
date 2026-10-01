@@ -264,6 +264,11 @@ review then named a planted defect in a callee the spec never mentions in 5 of 5
 0 of 3 on master, but the rework left the defect in place in 4 of 5: the builders read the
 fixture's spec as forbidding the library change. The rule was not adopted, and the refuter and
 the build loop stay as they are.
+Iteration 6 ([#146](https://github.com/kuan51/claude-skills/issues/146)) let the builder treat a
+reviewer's must-fix as permission to fix a bug in code the change calls. The builders then fixed
+every caret defect the review named, 3 of 3, but the lead session reverted two of those fixes
+after the loop, citing the fixture's spec, and two reviews never named the defect. The plugin's
+text does not change.
 
 ## Long sessions
 
