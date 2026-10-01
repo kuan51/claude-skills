@@ -234,7 +234,10 @@ the old default. The reviewer reads code the diff calls, and a must-fix that nam
 there lets the builder fix it even where the spec says otherwise. The builder names each spec
 sentence it crossed in `deviations`, the loop matches each entry to the must-fix it cites, and
 the lead keeps a matched fix and proposes the spec amendment to the user rather than reverting
-it.
+it. The first review probes one input per case of each function the diff calls. Rounds 2 and 3
+judge only the rework since the commit the previous review read: an earlier must-fix still not
+fixed, a regression or a real bug in that rework diff, or uncommitted work. A new finding
+elsewhere is a note the lead reads.
 
 ## Measured performance
 
