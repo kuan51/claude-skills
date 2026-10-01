@@ -142,10 +142,23 @@ for (const k of ['decision', 'metric', 'baseline']) {
     throw new Error(`Refusing to run: args.${k} is missing or blank -- discover needs a decision, a metric and a baseline.`)
   }
 }
+if (!Array.isArray(A.dataPaths) || !A.dataPaths.length) {
+  throw new Error('Refusing to run: args.dataPaths must be a non-empty array of sandbox paths.')
+}
 assertSandboxed(A.dataPaths, A.sandboxRoot, 'dataPaths')
 const slices = Array.isArray(A.slices) ? A.slices : []
 if (!slices.length || slices.length > MAX_SLICES) {
   throw new Error(`Refusing to run: ${slices.length} slices given; discover needs 1 to ${MAX_SLICES} (maxSlices).`)
+}
+const sliceKeys = new Set()
+for (const slice of slices) {
+  for (const f of ['key', 'label', 'definition']) {
+    if (!slice || slice[f] == null || !String(slice[f]).trim()) {
+      throw new Error(`Refusing to run: every slice needs a non-blank ${f}.`)
+    }
+  }
+  if (sliceKeys.has(slice.key)) throw new Error(`Refusing to run: two slices share the key "${slice.key}".`)
+  sliceKeys.add(slice.key)
 }
 
 const THESIS_BLOCK = wrap('thesis', `${A.thesis == null ? '' : A.thesis}\nDecision: ${A.decision}\nMetric: ${A.metric}\nBaseline: ${A.baseline}`)

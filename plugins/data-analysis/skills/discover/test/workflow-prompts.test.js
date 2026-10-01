@@ -85,7 +85,7 @@ test('one opus pattern hunter per slice, each with the thesis block, its slice a
   }
 });
 
-test('refuses before any agent on a blank decision, metric or baseline, bad slices, or a path outside the sandbox', async () => {
+test('refuses before any agent on a blank decision, metric or baseline, bad slices or data paths, or a path outside the sandbox', async () => {
   for (const k of ['decision', 'metric', 'baseline']) {
     for (const bad of [undefined, '', '   ']) await refuses(baseArgs({ [k]: bad }));
   }
@@ -97,6 +97,13 @@ test('refuses before any agent on a blank decision, metric or baseline, bad slic
   await refuses(baseArgs({ dataPaths: [...DATA, '/home/me/proj/data/users.csv'] }));
   await refuses(baseArgs({ sandboxRoot: '' }));
   await refuses(baseArgs({ dataPaths: [[`${ROOT}/data/users.csv`]] }));
+  for (const bad of [undefined, [], `${ROOT}/data/users.csv`]) await refuses(baseArgs({ dataPaths: bad }));
+  const ok = baseArgs().slices;
+  for (const f of ['key', 'label', 'definition']) {
+    for (const bad of [undefined, '', '  ']) await refuses(baseArgs({ slices: [ok[0], { ...ok[1], [f]: bad }] }));
+  }
+  await refuses(baseArgs({ slices: [ok[0], null] }));
+  await refuses(baseArgs({ slices: [ok[0], { ...ok[1], key: ok[0].key }] }));
   await refuses(baseArgs({ dataPaths: [`${ROOT}/../other/users.csv`] }));
 });
 
