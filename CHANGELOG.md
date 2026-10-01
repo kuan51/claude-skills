@@ -18,6 +18,17 @@ per-plugin history until entries are recorded here going forward.
   label or summary to vendor research or task sync. HITRUST's r2 maturity shape no longer applies
   to another framework's tier named `r2`, and the dashboard stops calling CMMC's verbatim text a
   paraphrase. `ADDING-A-CERTIFICATION.md` now opens with how to write a project framework.
+- **data-analysis 1.0.0** -- a second skill, `data-analysis:discover`, starts from a business
+  decision, its metric and a baseline, and surfaces the patterns the raw data supports (#105).
+  One pattern hunter cuts the data along each confirmed dimension, a reconciler flags patterns
+  that reverse across dimensions, and a skeptic rates each candidate for materiality against
+  the baseline and for the claim level its evidence supports, never a cause. Its sandbox holds
+  only data files and data docs, and its report states that the patterns were found in a
+  single run. After review, its hunters and so-what auditor run without the project's
+  CLAUDE.md, each hunter is told to work only inside the sandbox and checks its patterns for
+  reversals within the other slices, an unverified candidate's rationale says why it stays
+  descriptive, a failed agent is named in the report, and malformed inputs are refused before
+  any agent runs.
 - **fabflows 0.15.0** -- the build loop's first review sweeps each function the diff calls by
   its cases, probing one literal input per case and reporting an unprobed case as an open
   question (#154). The reviewer's verdict gains `head`, the commit it read, and rounds 2 and 3
@@ -190,6 +201,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **data-analysis 1.0.0 (breaking)** -- `data-analysis-review` is renamed `data-analysis`, and
+  its skill is now `data-analysis:review`, so the plugin can host a second skill (#105). Run
+  `/plugin uninstall data-analysis-review`, then `/plugin install data-analysis`. Review's
+  default report folder moves to `docs/data-analysis/`. Both skills now refuse a non-string
+  path or a path with a `..` segment, and strip thesis and evidence tags that carry
+  attributes.
 - **fabflows 0.13.16** -- the lead launches `fabflows:build` only after the user has read the
   spec text and said yes, and plan mode defers every ticket write, commit and build launch, so
   the approval at ExitPlanMode no longer stands in for reading the spec (#151).

@@ -56,7 +56,7 @@ for (see `SKILL.md`'s "When NOT to use" section):
 ## How to use this
 
 Run each should-trigger query 1-3 times in a fresh session (installed-skill list may
-vary run to run) and confirm `data-analysis-review` is selected. Run each
+vary run to run) and confirm `data-analysis:review` is selected. Run each
 should-not-trigger query the same way and confirm it is not selected. A
 should-trigger query that doesn't select this skill, or a should-not-trigger query that
 does, is a signal the `description` field needs revision: tighten the "when to use"
