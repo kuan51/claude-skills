@@ -64,7 +64,7 @@ function parseNotebook(file) {
   return { bytes, code: JSON.stringify(out, null, 1) + '\n' };
 }
 
-function collect(projectDir, realProject, dir, rel, found, links) {
+function collect(realProject, dir, rel, found, links) {
   let entries;
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -77,7 +77,7 @@ function collect(projectDir, realProject, dir, rel, found, links) {
     const abs = path.join(dir, e.name);
     const relPath = rel ? `${rel}/${e.name}` : e.name;
     if (e.isDirectory()) {
-      collect(projectDir, realProject, abs, relPath, found, links);
+      collect(realProject, abs, relPath, found, links);
     } else if (e.isSymbolicLink()) {
       links.push(abs);
       let target = null;
@@ -128,7 +128,7 @@ function splitNotebooks(projectRoot, sandboxRoot) {
 
   const found = [];
   const links = [];
-  collect(projectDir, realpath(projectDir), projectDir, '', found, links);
+  collect(realpath(projectDir), projectDir, '', found, links);
 
   for (const nb of found) {
     const full = path.join(conclusionsDir, ...nb.rel.split('/'));
