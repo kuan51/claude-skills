@@ -35,7 +35,7 @@ use it, so it stays valid. Copy it and edit from there.
 
 | Field | Required | Meaning |
 |---|---|---|
-| `certKey` | yes | Equals the folder name. Lowercase letters, digits and hyphens (`^[a-z0-9-]+$`). It becomes the key in `state.json` and the page name `cert-<certKey>.html`. It may not equal a bundled framework's `certKey`: a project folder that does is excluded, with an error naming both paths. |
+| `certKey` | yes | Equals the folder name. Lowercase letters and digits, in groups joined by single hyphens (`^[a-z0-9]+(-[a-z0-9]+)*$`), so no leading, trailing or doubled hyphen. It becomes the key in `state.json` and the page name `cert-<certKey>.html`. It may not equal a bundled framework's `certKey`: a project folder that does is excluded, with an error naming both paths. |
 | `displayName` | yes | The name the dashboard and every verb show. No `"`, `$`, backtick or backslash. |
 | `summary` | yes | One or two sentences. The dashboard's card shows it before the framework is registered. |
 | `tiers` | yes | A non-empty array of tier keys, unique, same pattern as `certKey`. Most frameworks have one tier. |
@@ -54,7 +54,7 @@ must match the file's own `tier` and `controlSetVersion`.
 | Field | Required | Meaning |
 |---|---|---|
 | `tier` | yes | One of the `tiers` in `framework.json`. |
-| `controlSetVersion` | yes | The version of the standard, matching `^v[A-Za-z0-9.-]+$`, such as `v1` or `v2022`. |
+| `controlSetVersion` | yes | The version of the standard, a string matching `^v[A-Za-z0-9.-]+$`, such as `v1` or `v2022`. |
 | `sourceAuthority` | yes | What the wording in this file is. See the table below. |
 | `nonAuthoritative` | yes | `true` when this file is not a substitute for the publisher's own control set. |
 | `controls` | yes | A non-empty array of controls. |
@@ -343,8 +343,8 @@ few years and rots faster than twenty lines can be rewritten.
 5. **Describe yourself in `framework.json`**: `{ certKey, displayName, summary, tiers }`. The meta
    index (`dashboard.html`) renders a card from this, including for a project that hasn't
    registered you yet, where the card shows your `summary` and tells the user to run
-   `ciso:register`. `certKey` must equal your folder name under `frameworks/` and be `[a-z0-9-]`
-   only; `test/frameworks.test.js` runs `validate --bundled` on every bundled framework, which
+   `ciso:register`. `certKey` must equal your folder name under `frameworks/` and match
+   `^[a-z0-9]+(-[a-z0-9]+)*$`; `test/frameworks.test.js` runs `validate --bundled` on every bundled framework, which
    enforces both directions (every structure file is a declared tier, and every declared tier has
    exactly one file).
 6. **Render** with `render-dashboard.js`, it discovers your certification/tiers/domains

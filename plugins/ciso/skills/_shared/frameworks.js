@@ -23,7 +23,9 @@ const path = require('path');
 const { STATE_ONLY_FIELDS } = require('../hitrust/lib/versioning/reconcile-state-version.js');
 
 const BUNDLED_ROOT = path.join(__dirname, '..', '..', 'frameworks');
-const KEY_RE = /^[a-z0-9-]+$/;
+// No leading, trailing or doubled hyphen: render-dashboard.js's certPageSlug trims edge hyphens, so
+// `hitrust-` would otherwise share cert-hitrust.html with `hitrust`.
+const KEY_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const VERSION_RE = /^v[A-Za-z0-9.-]+$/;
 const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'imported'];
 const CONTROL_STRINGS = ['domain', 'domainKey', 'topicLabel', 'topicSummary'];
@@ -65,8 +67,8 @@ function validateStructure(file, origin, errors) {
   } else if (isReservedKey(s.tier)) {
     errors.push(`${name}: tier "${s.tier}" is not allowed`);
   }
-  if (!VERSION_RE.test(String(s.controlSetVersion))) {
-    errors.push(`${name}: controlSetVersion "${s.controlSetVersion}" must match ${VERSION_RE}`);
+  if (typeof s.controlSetVersion !== 'string' || !VERSION_RE.test(s.controlSetVersion)) {
+    errors.push(`${name}: controlSetVersion "${s.controlSetVersion}" must be a string matching ${VERSION_RE}`);
   }
   if (name !== `${s.tier}.${s.controlSetVersion}${STRUCTURE_SUFFIX}`) {
     errors.push(`${name}: filename must be <tier>.<controlSetVersion>${STRUCTURE_SUFFIX} from its own fields ("${s.tier}", "${s.controlSetVersion}")`);

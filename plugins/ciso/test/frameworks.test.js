@@ -93,6 +93,12 @@ const ERROR_CASES = [
   ['missing required field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { delete s.controls[0].topicSummary; }), /topicSummary must be a non-empty string/],
   ['a STATE_ONLY_FIELDS field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].assessment = { status: 'met' }; }), /"assessment" is a field ciso state owns/],
   ['a tracker field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].tracker = { system: 'jira', id: 'SEC-1', status: 'open' }; }), /"tracker" is a field ciso state owns/],
+  // certPageSlug trims edge hyphens, so "example-" would share cert-example.html with "example".
+  ['certKey with a trailing hyphen', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.certKey = 'example-'; }), /certKey "example-" must match/],
+  ['declared tier with a leading hyphen', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('-x'); }), /tier "-x" must match/],
+  ['declared tier with a doubled hyphen', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('a--b'); }), /tier "a--b" must match/],
+  // String(["v1"]) is "v1": without a type check an array passed both the pattern and the filename check.
+  ['non-string controlSetVersion', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controlSetVersion = ['v1']; }), /controlSetVersion "v1" must be a string matching/],
   ['structure tier not declared, though the filename prefix is', (dir) => {
     editJson(path.join(dir, STRUCTURE), (s) => { s.tier = 'core.v1'; });
     fs.renameSync(path.join(dir, STRUCTURE), path.join(dir, 'core.v1.v1.structure.json'));
