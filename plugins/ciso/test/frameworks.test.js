@@ -256,7 +256,8 @@ test('list: an unreadable project file is reported as an error, never thrown', (
 
 // The CLI's bundled root is fixed relative to the script, so lay out a throwaway plugin with the
 // same relative paths and one broken bundled framework.
-test('list exits 1 when a bundled framework is invalid', () => {
+// The listing scripts alone, in a fresh plugin folder with no frameworks/ of its own.
+function scriptsOnlyPlugin() {
   const plugin = tmp();
   for (const rel of [
     'skills/_shared/frameworks.js',
@@ -266,9 +267,24 @@ test('list exits 1 when a bundled framework is invalid', () => {
     fs.mkdirSync(path.dirname(path.join(plugin, rel)), { recursive: true });
     fs.copyFileSync(path.join(PLUGIN_ROOT, rel), path.join(plugin, rel));
   }
+  return plugin;
+}
+
+test('list exits 1 when a bundled framework is invalid', () => {
+  const plugin = scriptsOnlyPlugin();
   const broken = copyExample(path.join(plugin, 'frameworks'));
   fs.rmSync(path.join(broken, 'ground-rules.md'));
   const r = spawnSync(process.execPath, [path.join(plugin, 'skills/_shared/frameworks.js'), 'list', tmp()], { encoding: 'utf8' });
   assert.equal(r.status, 1);
   assert.match(r.stderr, /^bundled .*example: ground-rules\.md is missing$/m);
+});
+
+// A missing or empty bundled frameworks/ is a broken install, never "no frameworks".
+test('list exits 1 when no bundled framework is found', () => {
+  const plugin = scriptsOnlyPlugin();
+  const r = spawnSync(process.execPath, [path.join(plugin, 'skills/_shared/frameworks.js'), 'list', tmp()], { encoding: 'utf8' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /^bundled .*frameworks: no bundled framework found/m);
+  fs.mkdirSync(path.join(plugin, 'frameworks'));
+  assert.equal(spawnSync(process.execPath, [path.join(plugin, 'skills/_shared/frameworks.js'), 'list', tmp()]).status, 1);
 });

@@ -13,6 +13,7 @@
  * Usage:
  *   node frameworks.js list <docs/ciso-dir>       frameworks as JSON on stdout, errors on stderr;
  *                                                 exit 1 only when a bundled framework is invalid
+ *                                                 or none is found
  *   node frameworks.js validate <dir> [--bundled] errors on stderr and exit 1, or "ok"
  *
  * Stdlib only -- no npm dependencies.
@@ -240,7 +241,14 @@ function listFrameworks(docsCisoDir, bundledRoot) {
   const frameworks = [];
   const errors = [];
   const bundled = new Map();
-  for (const dir of subdirs(bundledRoot || BUNDLED_ROOT)) {
+  const root = bundledRoot || BUNDLED_ROOT;
+  const bundledDirs = subdirs(root);
+  // No bundled framework at all is a broken install (a partial copy, a renamed folder), never an
+  // empty catalog: report it so `list` exits 1 and the dashboard throws.
+  if (bundledDirs.length === 0) {
+    errors.push({ origin: 'bundled', dir: root, message: 'no bundled framework found -- the ciso install is incomplete' });
+  }
+  for (const dir of bundledDirs) {
     // Claimed even when invalid, so a project folder can never stand in for a broken bundled one.
     bundled.set(path.basename(dir), dir);
     const msgs = validateFramework(dir, 'bundled');
