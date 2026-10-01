@@ -202,6 +202,22 @@ test('reconcileStateVersion: modified control gets needsReview=true, updated fie
   assert.deepEqual(b.roadmap, { budgetTier: null, vendorResearch: [], recommendation: null, status: 'not_started' });
 });
 
+// sync-tasks writes `tracker` onto a control once its ticket exists. It is state, not structure:
+// left out of STATE_ONLY_FIELDS it made every synced control diff as modified on upgrade.
+test('reconcileStateVersion: a synced control (with a tracker) is left unchanged', () => {
+  const initial = buildInitialState();
+  initial.certifications.hitrust.tiers.e1.controls['CTRL-A'].tracker = {
+    system: 'jira', id: 'SEC-1', url: 'https://example.invalid/SEC-1', status: 'open', syncedAt: '2026-01-03T00:00:00.000Z',
+  };
+  const stateJsonPath = makeTempState(initial);
+  const result = reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);
+
+  const a = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8')).certifications.hitrust.tiers.e1.controls['CTRL-A'];
+  assert.equal(a.needsReview, undefined);
+  assert.equal(a.tracker.id, 'SEC-1');
+  assert.equal(result.needsReview, 1); // CTRL-B only
+});
+
 test('reconcileStateVersion: added control is seeded with correct not_assessed defaults', () => {
   const stateJsonPath = makeTempState(buildInitialState());
   reconcileStateVersion(stateJsonPath, 'hitrust', 'e1', NEW_STRUCTURE);

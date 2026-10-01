@@ -12,8 +12,10 @@ const { diffStructureVersions } = require('./diff-structure-versions.js');
 // `evidence` belongs here for the same reason `assessment` does: register-tier.js seeds it, a bare
 // structure entry never carries it, and isDeepStrictEqual([], undefined) is false -- so omitting it
 // makes EVERY carried-forward control diff as modified and flags the whole tier needsReview,
-// destroying the one signal this reconcile exists to produce.
-const STATE_ONLY_FIELDS = ['assessment', 'evidence', 'roadmap', 'statementText', 'statementSource', 'needsReview'];
+// destroying the one signal this reconcile exists to produce. `tracker` (written by sync-tasks)
+// belongs here too, and frameworks.js refuses every field on this list in a structure file, so a
+// framework file can never pre-seed the ticket sync-tasks would comment on or close.
+const STATE_ONLY_FIELDS = ['assessment', 'evidence', 'roadmap', 'statementText', 'statementSource', 'needsReview', 'tracker'];
 
 // r2's five PRISMA maturity dimensions. Duplicated locally, per this file's own established
 // precedent of re-implementing register-tier.js's default shape independently (see the comment

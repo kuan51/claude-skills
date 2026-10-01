@@ -92,6 +92,7 @@ const ERROR_CASES = [
   }, /id "__proto__" is not allowed/],
   ['missing required field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { delete s.controls[0].topicSummary; }), /topicSummary must be a non-empty string/],
   ['a STATE_ONLY_FIELDS field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].assessment = { status: 'met' }; }), /"assessment" is a field ciso state owns/],
+  ['a tracker field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].tracker = { system: 'jira', id: 'SEC-1', status: 'open' }; }), /"tracker" is a field ciso state owns/],
   ['structure tier not declared, though the filename prefix is', (dir) => {
     editJson(path.join(dir, STRUCTURE), (s) => { s.tier = 'core.v1'; });
     fs.renameSync(path.join(dir, STRUCTURE), path.join(dir, 'core.v1.v1.structure.json'));
