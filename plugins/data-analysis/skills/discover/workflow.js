@@ -252,7 +252,7 @@ const soWhatResults = await parallel(
     }).catch(() => null).then((result) => {
       if (!result) return drop(`so-what:${topic.topic}`)
       // An unconditional rule the workflow can enforce is enforced here, not left to the auditor.
-      const claim = topic.verified ? {} : { claim_level: 'descriptive' }
+      const claim = topic.verified ? {} : { claim_level: 'descriptive', rationale: ['Not verified by execution, so held at descriptive.', result.rationale].filter(Boolean).join(' ') }
       return { ...result, candidate_topic: topic.topic, finding: topic.finding, evidence: topic.evidence, verified: topic.verified, ...claim }
     })
   )

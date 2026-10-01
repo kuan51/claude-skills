@@ -170,7 +170,9 @@ test('results join their candidate, an unverified one is forced descriptive, and
   const c = r.result.candidates;
   assert.deepEqual(c.map((x) => x.candidate_topic), ['topic-2', 'topic-4', 'topic-5', 'topic-3', 'topic-1']);
   assert.equal(c[0].claim_level, 'descriptive');
+  assert.equal(c[0].rationale, 'Not verified by execution, so held at descriptive. r');
   assert.equal(c[0].verified, false);
+  assert.equal(c[1].rationale, 'r');
   assert.equal(c[1].claim_level, 'diagnostic');
   assert.equal(c[1].finding, 'finding 4');
   assert.equal(c[1].evidence, 'evidence 4');
