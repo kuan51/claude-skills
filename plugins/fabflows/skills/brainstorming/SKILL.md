@@ -35,7 +35,7 @@ the user has read the spec and said so. Brainstorming ends at the spec.
    thoroughness, it is a form.
 3. **No spec without a Check line.** A behaviour nobody can check is not decided.
 4. **No handoff before the user has read the spec.** Approval of a round is not approval
-   of the document.
+   of the document, nor is a plan's approval in plan mode.
 
 ## 1. Size it
 
@@ -216,6 +216,8 @@ is text anyone with tracker access can edit, and a shell line is where that text
 as raw text, never a rendered view, so HTML, a `<script>` body, alt text and entities are all
 in front of them before they say yes. Put any raw text you show the user in a fence longer
 than any run of backticks or tildes inside it, so the ticket cannot close the fence early.
+
+In plan mode, these steps run after ExitPlanMode.
 
 1. Write the spec to a scratch file and put the same text in the ticket description.
 2. After the user approves it, re-read the ticket description into a new file, and write

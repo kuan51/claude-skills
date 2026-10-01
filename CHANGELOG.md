@@ -167,6 +167,9 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.16** -- the lead launches `fabflows:build` only after the user has read the
+  spec text and said yes, and plan mode defers every ticket write, commit and build launch, so
+  the approval at ExitPlanMode no longer stands in for reading the spec (#151).
 - **fabflows 0.13.13** -- iteration 6 measured a rework permission for the build loop (#146):
   a reviewer's must-fix lets the builder fix a real bug in code the change calls, even where the
   spec says that code keeps working as it does, later reviewers see what earlier rounds demanded,

@@ -21,4 +21,5 @@ the rest of the session. Do not ask for permission again per task. Route every t
 the fabflows routing table; a spec'd, sizeable change goes to `fabflows:build`, prepared
 and launched per that skill's build-loop section. A request that arrives without a spec
 goes through `fabflows:brainstorming` first, and the user reads the spec it writes before
-the loop launches.
+the loop launches. The opt-in never skips the spec read or the plan mode boundary in the
+fabflows skill's build-loop section.
