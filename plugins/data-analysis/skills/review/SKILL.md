@@ -25,7 +25,7 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
 
 2. **Review project hierarchy.** Explore the current working directory: docs, source, notebooks, data files. Build two lists:
    - **Raw inputs**: data files, source code, notebooks, business/requirements docs.
-   - **The project's own conclusions**: README claims and final notebook cells. Summary reports and decks count too, and anything else that states what the project concluded.
+   - **The project's own conclusions**: README claims and notebooks. Summary reports and decks count too, and anything else that states what the project concluded.
 
    A `.ipynb` notebook goes on both lists: raw inputs (its code) and conclusions (its Markdown and saved outputs). Step 8 splits it so each side gets only its part.
 
@@ -81,7 +81,7 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
      node "${CLAUDE_PLUGIN_ROOT}/skills/review/lib/sandbox-paths.js" <project-root> <sandbox-root>/project <path1> [path2 ...]
      ```
 
-     This prints the rewritten paths as a JSON array, in the same order given. Use the rewritten paths (never the originals) for every entry in `fixedRolePaths`, `extras[].paths`, and `conclusionPaths` below. For each `.ipynb` on the conclusions list, or inside a folder on it, `conclusionPaths` gets its `full` path from the split output, and blind role lists keep the rewritten path, which now holds the code-only copy. The Workflow itself (step 9) will refuse to run if any path it receives isn't inside `sandboxRoot`, or if a blind role's path overlaps a conclusion path, so a skipped or incomplete rewrite stops the run instead of silently reaching the original project or a conclusion.
+     This prints the rewritten paths as a JSON array, in the same order given. Use the rewritten paths (never the originals) for every entry in `fixedRolePaths`, `extras[].paths`, and `conclusionPaths` below. For each `.ipynb` on the conclusions list, or inside a folder on it, `conclusionPaths` gets its `full` path from the split output in place of its rewritten path, and blind role lists keep the rewritten path, which now holds the code-only copy. The Workflow itself (step 9) will refuse to run if any path it receives isn't inside `sandboxRoot`, or if a blind role's path overlaps a conclusion path, so a skipped or incomplete rewrite stops the run instead of silently reaching the original project or a conclusion.
    - Keep `<sandbox-root>` until after the report is presented (step 12), since findings' evidence may reference paths inside it. Then delete it.
 
 9. **Run the Workflow.** Read `${CLAUDE_PLUGIN_ROOT}/skills/review/workflow.js` and pass its contents as the `script` parameter to the `Workflow` tool, with `args` set to:
@@ -91,7 +91,7 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
      thesis: "<confirmed thesis and goals text>",
      thesisShape: "<'vague' or 'decision-shaped', from step 3; absent or any other value means decision-shaped>",
      maxTopics: 12, // positive integer cap on cross-compare auditors; absent or invalid means 12
-     sandboxRoot: "<sandbox-root> from step 8, which holds project/ (the copy) and conclusions/ (untouched notebooks)>",
+     sandboxRoot: "<sandbox-root> from step 8, which holds project/ (the copy) and conclusions/ (untouched notebooks)",
      fixedRolePaths: {
        dataQuality: [/* raw data file paths from step 2 */],
        statistical: [/* raw data + code paths */],
