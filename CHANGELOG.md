@@ -371,6 +371,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **data-analysis 1.1.1, ciso 1.1.5, docs-warden 0.7.3, fabflows 0.15.1** -- each plugin
+  description is now 499 characters or fewer, under the 500-character limit that Claude
+  desktop and the claude.ai web app enforce, which these four had gone over (#163). Only the
+  wording is shorter. Details cut from a description are still in that plugin's README.
+  `test/marketplace-consistency.test.js` now fails on a description over 499 characters, and
+  the `docs` CI job runs `test/*.test.js` on every pull request.
 - **fabflows 0.13.15** -- `annotate_benchmark.py` compares an arm's cost with without_skill
   only over the evals both ran, as `summarize.js` does, so an arm that ran other tasks gets its
   mean alone and `delta.cost_usd` agrees with the note (#130). The model line lists the task

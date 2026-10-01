@@ -69,6 +69,17 @@ test('marketplace.json and each plugin.json agree on name, version and descripti
   }
 });
 
+// Claude desktop and claude.ai refuse a plugin description over 500 characters (#163). The
+// drift check above keeps plugin.json equal to this, so checking the marketplace covers both.
+test('every plugin description fits the marketplace limit', () => {
+  for (const entry of marketplace.plugins) {
+    assert.ok(
+      (entry.description || '').length <= 499,
+      `${entry.name}: description is ${entry.description.length} characters; the marketplace allows at most 499 here`
+    );
+  }
+});
+
 test('every plugin directory is registered in the marketplace', () => {
   const registered = new Set(
     marketplace.plugins.map((e) => path.basename(e.source.replace(/^\.\//, '')))

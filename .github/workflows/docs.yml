@@ -1,5 +1,6 @@
 # Lints and audits the documentation on every pull request: markdownlint,
-# the fabflows prompt security rules guard, docs-warden's audit (which also
+# the fabflows prompt security rules guard, the marketplace manifest tests
+# (test/*.test.js), docs-warden's audit (which also
 # checks that generated documents are current), then Vale on the changed
 # files, as .pre-commit-config.yaml runs it, then self-tests of the
 # vale-warn-gate script and the Prompting style, then a report of every
@@ -49,6 +50,11 @@ jobs:
       - name: fabflows prompt security rules
         if: ${{ !cancelled() }}
         run: node --test plugins/fabflows/test/required-rules.test.js
+      # plugin.json and marketplace.json agree, and every plugin description stays
+      # at 499 characters or fewer: Claude desktop and claude.ai refuse over 500 (#163).
+      - name: marketplace manifests
+        if: ${{ !cancelled() }}
+        run: node --test test/*.test.js
       # Before Vale is installed or synced, on purpose. With no vale on PATH,
       # audit's lint row skips its repo-wide Vale run (the step below lints
       # the changed files), and `vale sync` has not yet put untracked package

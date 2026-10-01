@@ -17,7 +17,8 @@ documentation correction.
 - Plugins are self-contained under their own `plugins/<name>/` directory.
   Unrelated plugins should not share files (see [CLAUDE.md](CLAUDE.md)).
 - A plugin's `version` in `plugin.json` and its `marketplace.json` entry must
-  agree; `test/marketplace-consistency.test.js` enforces this.
+  agree, and its description must be 499 characters or fewer;
+  `test/marketplace-consistency.test.js` enforces both, in CI too.
 - Commit messages follow Conventional Commits: `type(scope): subject`.
 - No secrets in the diff.
 
