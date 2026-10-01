@@ -1224,8 +1224,8 @@ and the gate in `skills/fabflows/SKILL.md` said nothing about one.
   review-callees and rework-permission text from iterations 5 and 6 is in `agents/refuter.md`
   and `workflows/build.js`, and the loop gains the lead-gate change.
   - `workflows/build.js`: the builder's structured result has an optional `deviations` list
-    (round, index, sentence). The loop matches each entry to the must-fix item that builder was
-    sent, `rounds[round - 1].review.mustFix[index]`, copies the reviewer's own location and
+    (round, item, sentence). The loop matches each entry to the must-fix item that builder was
+    sent, `rounds[round - 1].review.mustFix[item - 1]`, copies the reviewer's own location and
     problem, and marks anything else `matched: false`. `accepted` and every `escalate` carry
     `deviations`, and the `rework-cap` `next` says a matched fix still in the diff stands.
   - `skills/fabflows/SKILL.md`: the gate reads `deviations` as data. A matched entry whose fix is

@@ -11,7 +11,7 @@ per-plugin history until entries are recorded here going forward.
 - **fabflows 0.14.0** -- the build loop adopts the review-callees and rework-permission text
   measured in iterations 5 and 6 (#148). The builder's result gains an optional `deviations`
   list naming the spec sentence a must-fix fix crossed, and `fabflows:build` matches each entry
-  to the must-fix it cites and returns `deviations` on every outcome. The lead's gate keeps a
+  to the must-fix it cites and returns `deviations` on `accepted` and every escalation. The lead's gate keeps a
   matched fix still in the diff and proposes the spec amendment to the user rather than
   reverting it on the spec's text alone.
 - **data-analysis-review 0.2.1** -- the report builder fills every template token in one
