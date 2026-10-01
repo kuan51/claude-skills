@@ -16,8 +16,9 @@ Tickets are created via the pre-installed `mcp__atlassian__*` (JIRA/Confluence) 
 
 ## Ticket hierarchy
 
-"r2" in this skill and its references means HITRUST's r2, the only tier with PRISMA maturity
-dimensions. Another framework's tier named `r2` is flat and syncs like any other tier.
+"r2" in this skill and its references means a control recorded with PRISMA maturity dimensions.
+ciso seeds that shape only for HITRUST's r2; another framework's tier named `r2` is flat and syncs
+like any other tier.
 
 - **Epic** = the certification (such as "HITRUST 2026"), created once per certification, remembered in `state.json`.
 - **Tier grouping** (e1/i1/r2):

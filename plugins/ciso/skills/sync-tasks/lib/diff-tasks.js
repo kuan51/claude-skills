@@ -103,8 +103,9 @@ function classifyState(stateJsonPath, certKey, tierKey) {
 
   const results = { creates: [], updates: [], closes: [], reopens: [] };
   for (const [controlId, control] of Object.entries(tier.controls)) {
-    // Only HITRUST's r2 has the PRISMA maturity shape; another framework's tier named r2 is flat.
-    const classified = certKey === 'hitrust' && tierKey === 'r2'
+    // By the control's recorded shape, as apply-assessment.js and the dashboard decide it: only
+    // HITRUST's r2 is seeded with the maturity shape, and a flat tier named r2 stays flat.
+    const classified = control.assessment && control.assessment.maturity
       ? classifyR2Control(controlId, control)
       : classifyFlatControl(controlId, control);
     if (!classified) continue;

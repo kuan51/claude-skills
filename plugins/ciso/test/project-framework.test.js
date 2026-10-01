@@ -68,6 +68,31 @@ test('a flat acme/r2 tier registers, assesses, syncs, reconciles and renders wit
   assert.equal(rollups.acme.r2.maturityDepthPercent, null);
 });
 
+// Before 1.2.0 any tier named r2 was seeded with the maturity shape. Such a control must keep
+// being handled as one everywhere -- assessed per dimension, completed by its Implemented
+// dimension, synced as r2 -- because the dashboard already reads it by its shape.
+test('a maturity-shaped acme/r2 control left by an older version is assessed and synced as r2', () => {
+  const dir = docsDir();
+  const statePath = path.join(dir, 'state.json');
+  registerTier(statePath, ACME_R2, 'hitrust', 'HITRUST CSF'); // seeds the maturity shape
+  const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+  state.certifications.acme = { ...state.certifications.hitrust, displayName: 'Acme' };
+  delete state.certifications.hitrust;
+  state.interviewSessions.forEach((s) => { s.certification = 'acme'; });
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+
+  applyAssessment(statePath, 'acme', 'r2', 'A-1', { dimension: 'implemented', status: 'gap' });
+  applyAssessment(statePath, 'acme', 'r2', 'A-2', { dimension: 'implemented', status: 'met', justification: 'Quarterly review ticket.' });
+  const a1 = JSON.parse(fs.readFileSync(statePath, 'utf8')).certifications.acme.tiers.r2.controls['A-1'];
+  assert.equal(a1.assessment.maturity.implemented.status, 'gap');
+  assert.ok(!('justification' in a1.assessment), 'no flat assessment written beside the maturity shape');
+
+  assert.equal(markCategoryComplete(statePath, 'acme', 'r2', 'AC').status, 'completed');
+
+  const tasks = classifyState(statePath, 'acme', 'r2');
+  assert.deepEqual(tasks.creates, [{ controlId: 'A-1', action: 'create', dimensionActions: { implemented: 'create' } }]);
+});
+
 test('HITRUST r2 still gets the maturity shape', () => {
   const dir = docsDir();
   const statePath = path.join(dir, 'state.json');
