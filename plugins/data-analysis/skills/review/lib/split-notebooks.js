@@ -42,7 +42,12 @@ function holdsNotebook(dir) {
 }
 
 function parseNotebook(file) {
-  const bytes = fs.readFileSync(file);
+  let bytes;
+  try {
+    bytes = fs.readFileSync(file);
+  } catch {
+    refuse('cannot read notebook', file);
+  }
   let nb;
   try {
     nb = JSON.parse(bytes.toString('utf8'));
@@ -60,7 +65,13 @@ function parseNotebook(file) {
 }
 
 function collect(projectDir, realProject, dir, rel, found, links) {
-  const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    refuse('cannot read folder', dir);
+  }
+  entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   for (const e of entries) {
     if (e.name === '.git') continue;
     const abs = path.join(dir, e.name);
@@ -92,7 +103,10 @@ function collect(projectDir, realProject, dir, rel, found, links) {
 function splitNotebooks(projectRoot, sandboxRoot) {
   const realProjectRoot = realpath(projectRoot);
   const realSandbox = realpath(sandboxRoot);
-  if (inside(realProjectRoot, realSandbox) || inside(realSandbox, realProjectRoot)) {
+  // Compared ignoring case: on a case-insensitive file system two spellings name one folder,
+  // and ignoring case only ever refuses more.
+  const [p, s] = [realProjectRoot.toLowerCase(), realSandbox.toLowerCase()];
+  if (inside(p, s) || inside(s, p)) {
     refuse(`project root and sandbox root overlap (${projectRoot})`, sandboxRoot);
   }
   const projectDir = path.join(sandboxRoot, 'project');

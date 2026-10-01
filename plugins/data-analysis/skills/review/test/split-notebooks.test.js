@@ -239,3 +239,34 @@ test('a sandbox root given with a trailing slash yields code paths that match sa
   assert.equal(entry.code, rewritePath(path.join(real, 'nb', 'a.ipynb'), real, `${sb}//project`));
 });
 
+test('refuses project and sandbox roots that overlap once letter case is ignored', () => {
+  const base = tmp();
+  fs.mkdirSync(path.join(base, 'Proj'));
+  fs.mkdirSync(path.join(base, 'proj', 'sb', 'project'), { recursive: true });
+  assert.throws(() => splitNotebooks(path.join(base, 'Proj'), path.join(base, 'proj', 'sb')), /overlap.*Nothing was written/);
+});
+
+test('an unreadable folder or notebook in the copy is a refusal that names it and writes nothing', (t) => {
+  const { real, sb, proj } = layout({ 'a.ipynb': NB_TEXT, 'locked/b.ipynb': NB_TEXT });
+  const locked = path.join(proj, 'locked');
+  const eacces = (p) => Object.assign(new Error(`EACCES: permission denied, '${p}'`), { code: 'EACCES' });
+  const before = snapshot(sb);
+  const readdir = fs.readdirSync;
+  t.mock.method(fs, 'readdirSync', (p, ...rest) => {
+    if (p === locked) throw eacces(p);
+    return readdir(p, ...rest);
+  });
+  assert.throws(() => splitNotebooks(real, sb), (e) => e.message.includes(locked) && /Nothing was written/.test(e.message));
+  t.mock.restoreAll();
+  assert.deepEqual(snapshot(sb), before);
+
+  const nb = path.join(proj, 'a.ipynb');
+  const readFile = fs.readFileSync;
+  t.mock.method(fs, 'readFileSync', (p, ...rest) => {
+    if (p === nb) throw eacces(p);
+    return readFile(p, ...rest);
+  });
+  assert.throws(() => splitNotebooks(real, sb), (e) => e.message.includes(nb) && /Nothing was written/.test(e.message));
+  t.mock.restoreAll();
+  assert.deepEqual(snapshot(sb), before);
+});
