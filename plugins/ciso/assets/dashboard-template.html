@@ -862,7 +862,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       for (const prefix of domainKeys) {
         const d = rollupSafe.byDomain[prefix];
         const label = d.domainName || ('Category ' + prefix);
-        html += '<a class="domain-bar-link" href="#cat-' + certKey + '-' + tierKey + '-' + slugify(prefix) + '">';
+        html += '<a class="domain-bar-link" href="' + esc('#cat-' + certKey + '-' + tierKey + '-' + slugify(prefix)) + '">';
         html += '<div class="gauge"><div class="gauge-label"><span>' + esc(label) + '</span><b>' + d.compliancePercent + '%</b></div>';
         html += '<div class="gauge-track"><div class="gauge-fill compliance" style="width:' + d.compliancePercent + '%"></div></div></div>';
         html += '</a>';
@@ -880,7 +880,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       html += '<div class="session-chip">Interview not started</div>';
     }
 
-    html += '<a class="jump-link" href="#section-' + certKey + '-' + tierKey + '">Jump to details &rarr;</a>';
+    html += '<a class="jump-link" href="' + esc('#section-' + certKey + '-' + tierKey) + '">Jump to details &rarr;</a>';
     html += '</div>';
     return html;
   }
@@ -1052,7 +1052,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       const byDomain = groupBy(controls, function (c) { return (c && (c.domainKey || c.legacyCategoryPrefix || c.domain)) || 'unknown'; });
       const domainKeys = Object.keys(byDomain).sort();
 
-      drilldownHtml += '<section class="cert-section" id="section-' + certKey + '-' + tierKey + '">';
+      drilldownHtml += '<section class="cert-section" id="' + esc('section-' + certKey + '-' + tierKey) + '">';
       drilldownHtml += '<h2>' + esc(displayName) + ' &mdash; ' + esc(tierKey) + ' details</h2>';
       for (const prefix of domainKeys) {
         const domainRollup = rollup && rollup.byDomain ? rollup.byDomain[prefix] : null;
