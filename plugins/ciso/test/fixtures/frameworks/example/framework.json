@@ -1,0 +1,6 @@
+{
+  "certKey": "example",
+  "displayName": "Example Framework",
+  "summary": "A minimal, made-up framework showing every required file and field. Not a real control set.",
+  "tiers": ["core"]
+}

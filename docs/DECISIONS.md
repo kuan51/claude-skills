@@ -6,6 +6,7 @@ Why this repository is the way it is. Newest first.
 
 | ID | Title | Status | Date | Supersedes | Superseded by |
 |----|-------|--------|------|------------|---------------|
+| [DEC-0024](decisions/DEC-0024-frameworks-are-folders-from-two-roots-project-ones-are-data.md) | Frameworks are folders from two roots; project ones are data and imported wording stays local | proposed | 2026-10-01 | - | - |
 | [DEC-0023](decisions/DEC-0023-ask-the-user-in-the-lead-before-a-package-install-deny-it-in.md) | Ask the user in the lead before a package install, deny it in workers | accepted | 2026-09-24 | DEC-0002 | - |
 | [DEC-0022](decisions/DEC-0022-benchmark-plugins-with-claude-plugin-eval-not-a-ported-harne.md) | Benchmark plugins with claude plugin eval, not a ported harness | proposed | 2026-09-19 | - | - |
 | [DEC-0021](decisions/DEC-0021-a-regulation-that-incorporates-a-standard-by-reference-binds.md) | A regulation that incorporates a standard by reference binds the cited edition | proposed | 2026-09-22 | - | - |

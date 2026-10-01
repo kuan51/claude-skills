@@ -25,12 +25,14 @@ assessment already done.
    registered certification. If several are registered and the user did not narrow it, **audit all
    of them** and group the report by certification: readiness is naturally a whole-programme
    question.
-4. **Read `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/invariants.md` and follow it.**
+4. **Resolve the framework, then read its ground rules.** Follow
+   `${CLAUDE_PLUGIN_ROOT}/skills/_shared/resolve-framework.md` for each certification audited.
+   Where it says to stop, stop for that certification only.
    Mandatory. It carries the content-authority statements, which matter here more than anywhere:
    a readiness report is exactly the moment a user is most likely to mistake this tracking data for
    an authoritative control set.
 
-This verb has no per-certification `references/audit.md`, aside from one supplement below.
+This verb has no per-framework `flows/audit.md`, aside from one supplement below.
 
 ## The checks
 
@@ -59,7 +61,7 @@ and the specific verb that fixes it.
    readiness defect exactly, but it is the work queue. → `ciso:roadmap`, or `ciso:sync-tasks` to get
    them into a tracker.
 
-For **r2**, run checks 1-6 against the Implemented dimension, and flag any control
+For **HITRUST r2**, run checks 1-6 against the Implemented dimension, and flag any control
 where `managed` or `measured` is claimed with a thinner justification than `implemented`: higher
 maturity claimed on weaker ground than the tier below it.
 
@@ -72,8 +74,8 @@ only when someone typed it in. Judging on `recordedAt` alone flags every control
 work predates the period, systematically the foundational controls (MFA, encryption, access review).
 
 **A control whose only evidence postdates the start of the period is not `met` for that period**:
-it is `in_progress` with a start date. Report these separately and prominently; the invariants file
-calls this the most common way a self-assessment overstates readiness, and it is invisible
+it is `in_progress` with a start date. Report these separately and prominently; the ground rules
+call this the most common way a self-assessment overstates readiness, and it is invisible
 unless something goes looking.
 
 Where a record has no `occurredAt` and its `recordedAt` falls inside the period, say the date is
@@ -83,7 +85,7 @@ Offer to re-attach it with `ciso:evidence` and a real `occurredAt`.
 ## ISO 27001: Also produce the Statement of Applicability
 
 When `certKey` is `iso27001`, also **read and follow
-`${CLAUDE_PLUGIN_ROOT}/skills/iso27001/references/soa.md`** and include its output in the report.
+`${CLAUDE_PLUGIN_ROOT}/frameworks/iso27001/flows/soa.md`** and include its output in the report.
 The SoA is a reading of data already recorded (the include/exclude decision and justification for
 all 93 Annex A controls), and it is what a Stage 1 auditor asks for first. That reference is
 deliberately read-only and refuses to write an SoA document into `docs/ciso/`. Honour that.

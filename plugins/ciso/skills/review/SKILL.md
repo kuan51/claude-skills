@@ -26,10 +26,11 @@ behind at audit.
 3. **Resolve the certification** from `state.certifications`: the one the user named, else the only
    registered certification. If several are registered, ask, or, if the user wants breadth, review
    against all of them and group the findings by certification.
-4. **Read `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/invariants.md` and follow it.**
+4. **Resolve the framework, then read its ground rules.** Follow
+   `${CLAUDE_PLUGIN_ROOT}/skills/_shared/resolve-framework.md`.
    Mandatory. This verb has no step 5. It has no per-certification reference file and needs
    none, because it reads the org's assessment data rather than certification mechanics. But the
-   invariants still bind: SOC 2's Type II rule decides whether a mid-period change can
+   ground rules still bind: SOC 2's Type II rule decides whether a mid-period change can
    support a `met` claim at all.
 
 ## Getting the diff

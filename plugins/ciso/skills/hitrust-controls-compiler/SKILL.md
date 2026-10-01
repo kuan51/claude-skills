@@ -87,7 +87,7 @@ released.
    minority and that's fine.
 
 4. **Assemble the released files** (same structure for both tiers):
-   - `plugins/ciso/skills/hitrust/controls/<tier>.v<version>.structure.json`: `{ tier: "e1"|"i1",
+   - `plugins/ciso/frameworks/hitrust/<tier>.v<version>.structure.json`: `{ tier: "e1"|"i1",
      controlSetVersion, sourceAuthority: "public-topic-level", nonAuthoritative: true, compiledAt,
      coverageNote, controls: [...] }`. Each control: `{ id, domain, domainKey, topicLabel,
      topicSummary, citations, nonAuthoritative: true }`, plus `baselineOverlap` for i1 entries, plus
@@ -100,14 +100,17 @@ released.
    - `coverageNote` must state the actual released count plainly (never padded to match a publicly
      quoted target like "44" or "182" if honest research ends up elsewhere) and the actual
      `controlReference` coverage fraction achieved.
-   - `plugins/ciso/skills/hitrust/controls/r2.v<version>.structure.json` is **not part of this
+   - `plugins/ciso/frameworks/hitrust/r2.v<version>.structure.json` is **not part of this
      process** until a dedicated r2 pass exists. Do not write or modify it here.
 
 5. **Versioning.** If this run is an actual reaction to a new HITRUST framework version, never delete
-   a prior version's structure files in the same change that introduces new ones. Keep at least the
-   immediately-prior version on disk so a project whose `state.json` still references the old
+   a prior version's structure files in the same change that introduces new ones. Move at least the
+   immediately-prior version into `plugins/ciso/frameworks/hitrust/previous/`, keeping its filename.
+   The framework folder itself holds exactly one current file per tier, or validation fails and
+   bundled HITRUST stops loading; `previous/` is ignored by validation. That keeps the old file on
+   disk so a project whose `state.json` still references the old
    `controlSetVersion` isn't orphaned mid-upgrade (see `plugins/ciso/skills/hitrust/lib/versioning/`
-   for the org-side reconciliation this enables). Prune old versions only after at least one
+   for the org-side reconciliation this enables). Prune old versions from `previous/` only after at least one
    subsequent release cycle. If instead this run is only a sourcing-methodology fix at the SAME
    framework version (public research replacing a licensed-export-derived file, with no new HITRUST
    release involved), replace the existing file in place under its existing filename/version.

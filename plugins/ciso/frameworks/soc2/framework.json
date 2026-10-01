@@ -1,0 +1,8 @@
+{
+  "certKey": "soc2",
+  "displayName": "SOC 2 Type II",
+  "summary": "AICPA attestation report — the artifact US enterprise buyers ask for. Tracked against the 2017 Trust Services Criteria: 33 mandatory Common Criteria (CC1–CC9) plus the opt-in Availability, Confidentiality, Processing Integrity and Privacy categories.",
+  "tiers": [
+    "type2"
+  ]
+}

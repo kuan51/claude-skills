@@ -1,0 +1,10 @@
+{
+  "certKey": "cmmc",
+  "displayName": "CMMC",
+  "summary": "The US Department of Defense certification required to hold contracts involving FCI or CUI, per 32 CFR Part 170. Three independent tiers: level1 (15 basic safeguarding requirements, self-assessed), level2 (all 110 NIST SP 800-171 R2 requirements, C3PAO-assessed) and level3 (24 enhanced requirements from NIST SP 800-172, DIBCAC-assessed, and it presupposes level2). The only module whose requirement text ships verbatim — US Government works carry no copyright — and the only one that deliberately tracks a withdrawn NIST revision, because that is the one the regulation binds.",
+  "tiers": [
+    "level1",
+    "level2",
+    "level3"
+  ]
+}

@@ -27,18 +27,20 @@ Always start here, every invocation:
 3. **Resolve the certification** from `state.certifications`: the one the user named, else the only
    registered certification, else `AskUserQuestion` over the registered ones. If the certification
    the user wants is not registered at all, send them to `ciso:register` and stop.
-4. **Read `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/invariants.md` and follow it.**
-   Mandatory, before step 5. It carries the assessment gate ("met" needs a real justification), the
-   content-authority statements, and, for HITRUST, the unconditional pending-version-upgrade
+4. **Resolve the framework, then read its ground rules.** Follow
+   `${CLAUDE_PLUGIN_ROOT}/skills/_shared/resolve-framework.md`.
+   Mandatory, before step 5. The ground rules carry the assessment gate ("met" needs a real
+   justification), the content-authority statements, and, for HITRUST, the unconditional pending-version-upgrade
    check that must happen before any flow touches control data.
-5. **Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/interview.md`.**
+5. **Follow the flow.** A bundled framework's `<dir>/flows/interview.md` when present, else
+   `${CLAUDE_PLUGIN_ROOT}/skills/interview/references/generic.md`.
 
 Every certification supports this verb.
 
 ## Two per-certification bindings
 
 - **HITRUST r2 reads a second file.** After `interview.md`, also read and follow
-  `${CLAUDE_PLUGIN_ROOT}/skills/hitrust/references/r2-maturity.md`. r2 scores five PRISMA maturity
+  `${CLAUDE_PLUGIN_ROOT}/frameworks/hitrust/flows/r2-maturity.md`. r2 scores five PRISMA maturity
   dimensions per control rather than one status, and that reference holds the depth pass.
   e1 and i1 are Implemented-only and read `interview.md` alone.
 - **ISO 27001 assesses clauses before Annex A.** Clause 6.1.3 is what selects the Annex A controls,

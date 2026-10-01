@@ -43,8 +43,9 @@ implying the attachment did it.
    registered certification, else `AskUserQuestion`. One artifact often supports controls across
    several certifications: a logging PR is plausibly HITRUST, SOC 2 CC7.2 and ISO A.8.15 at once.
    Offer to attach it to each rather than making the user run this three times.
-4. **Read `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/invariants.md` and follow it.**
-   Mandatory. No step 5, this verb has no per-certification reference file. The invariants still
+4. **Resolve the framework, then read its ground rules.** Follow
+   `${CLAUDE_PLUGIN_ROOT}/skills/_shared/resolve-framework.md`.
+   Mandatory. No step 5, this verb has no per-framework flow. The ground rules still
    bind, and for SOC 2 one of them is directly relevant here: for a Type II, an artifact dated
    after `scope.observationPeriodStart` supports the control from that date forward, not across the
    period.

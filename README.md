@@ -20,7 +20,7 @@ repository docs honest, and route work from an expensive lead model to cheaper w
 | Plugin | What it does |
 | --- | --- |
 | [data-analysis](plugins/data-analysis/) | Re-derives a data science project's findings from its raw data and code, then checks its stated conclusions, or surfaces the patterns in its data that bear on a business decision. |
-| [ciso](plugins/ciso/) | Tracks work toward HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC in local HTML dashboards. |
+| [ciso](plugins/ciso/) | Tracks work toward HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022, CMMC or your own framework in local HTML dashboards. |
 | [docs-warden](plugins/docs-warden/) | Scaffolds and audits a repository's documents and keeps its decision records append-only. |
 | [fabflows](plugins/fabflows/) | Routes work from an expensive lead model to tool-scoped workers and makes the lead re-verify what they report. |
 
@@ -66,7 +66,8 @@ first session.
     only write to the reviewed project is an optional report file, and only if you opt in.
 - **[ciso](plugins/ciso/)**: tracks work toward security certifications alongside the
   development work that satisfies them.
-  - **Certifications.** HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC.
+  - **Certifications.** HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC bundled, plus
+    any framework a project defines itself as a folder under `docs/ciso/frameworks/`.
   - **Verbs.** Register a control set, run the assessment interview, review a PR for control
     impact, attach a merged PR or CI run as evidence, and audit how ready you actually are.
   - **Dashboards.** Local HTML pages: an index across every certification, plus one page for

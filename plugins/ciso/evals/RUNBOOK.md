@@ -73,6 +73,7 @@ directly with every existing verb, and the verbs already share vocabulary. Re-ru
 then, not just the new verb's queries. The regression to look for is an existing verb losing
 queries it used to win.
 
-Adding a *certification* is not that case, and does not on its own require a re-run: a certification
-module doesn't include a skill of its own (see ADDING-A-CERTIFICATION.md), so it doesn't add any
-trigger space. Re-run only if it changed a verb's description.
+Adding a *framework* is not that case, and does not on its own require a re-run: a framework
+folder under `frameworks/` (or a project's `docs/ciso/frameworks/`) doesn't include a skill of its
+own (see ADDING-A-CERTIFICATION.md), so it doesn't add any trigger space. Re-run only if it changed
+a verb's description.

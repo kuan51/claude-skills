@@ -1,6 +1,6 @@
 ---
 name: register
-description: Use when adding a security certification -- HITRUST CSF, SOC 2, ISO/IEC 27001, or CMMC -- to ciso tracking for the first time, loading its control set into docs/ciso/state.json so the controls can then be assessed. This is the setup step that comes before any assessment; use ciso:interview to actually assess the controls it registers.
+description: Use when adding a security certification -- HITRUST CSF, SOC 2, ISO/IEC 27001, CMMC, or a framework the project defines itself under docs/ciso/frameworks/ -- to ciso tracking for the first time, loading its control set into docs/ciso/state.json so the controls can then be assessed. This is the setup step that comes before any assessment; use ciso:interview to actually assess the controls it registers.
 allowed-tools: Read, Bash, AskUserQuestion
 ---
 
@@ -13,9 +13,10 @@ certification entry and its tier so every later verb has something to work again
 existing controls and assessments are never touched, only ids missing from state get added.
 
 This is a **dispatching verb**. It resolves which certification the user means and then follows
-that certification module's own `register.md`. The mechanics differ per certification. HITRUST picks
-one of three nested tiers, e1 ⊂ i1 ⊂ r2; CMMC picks one of three independent tiers, where
-`level3` requires `level2` also be registered and met. SOC 2 and ISO 27001 each have exactly one.
+that framework's own register flow, or the generic one. The mechanics differ per certification.
+HITRUST picks one of three nested tiers, e1 ⊂ i1 ⊂ r2; CMMC picks one of three independent tiers,
+where `level3` requires `level2` also be registered and met. SOC 2 and ISO 27001 each have exactly
+one.
 
 ## Routing
 
@@ -25,19 +26,22 @@ Always start here, every invocation:
    first; if that's not obviously the right project, ask the user.
 2. **Read `<docs/ciso>/state.json`. If it doesn't exist, tell the user to run `ciso:init` first and
    stop.** Do not scaffold it yourself.
-3. **Resolve the certification.** Unlike every other verb, register works on certifications that
-   are not in state yet, so resolve against the bundled catalog at
-   `${CLAUDE_PLUGIN_ROOT}/assets/certifications.json` rather than against `state.certifications`:
+3. **Resolve the framework, then read its ground rules.** Follow
+   `${CLAUDE_PLUGIN_ROOT}/skills/_shared/resolve-framework.md`. Unlike every other verb, register
+   works on certifications that are not in state yet, so it picks from every framework the listing
+   returns rather than from `state.certifications`. The user should see the listing's stderr
+   lines: each is a framework folder that was excluded.
    - The user named one (or said "HITRUST," "SOC 2," "ISO 27001," "27001," "CMMC") → use it.
-   - Otherwise `AskUserQuestion` with the catalog's entries, showing each `summary` so the choice is
-     informed. Mention which are already registered. Re-registering is safe but usually means the
-     user wanted a different verb.
-4. **Read `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/invariants.md` and follow it.**
-   Mandatory, before step 5. Registering a non-authoritative control set without saying so is the
-   failure this step prevents.
-5. **Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/register.md`.**
+   - Otherwise `AskUserQuestion` with every framework `list` returned, each labelled **bundled** or
+     **project** and showing its `summary` so the choice is informed. Mention which are already
+     registered. Re-registering is safe but usually means the user wanted a different verb.
 
-Every certification supports this verb.
+   Mandatory, before step 4. Registering a non-authoritative control set without saying so is the
+   failure the ground rules prevent.
+4. **Follow the flow.** A bundled framework's `<dir>/flows/register.md` when present, else
+   `${CLAUDE_PLUGIN_ROOT}/skills/register/references/generic.md`.
+
+Every framework supports this verb.
 
 ## After registering
 
@@ -50,3 +54,4 @@ Re-render the dashboard, then point the user at the natural next step:
 - **ISO 27001** → `ciso:interview`.
 - **CMMC** → `ciso:interview` directly. CMMC has no scope step; the level chosen at registration
   is the scope.
+- **A project framework** → `ciso:interview`.

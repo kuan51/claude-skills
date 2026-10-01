@@ -23,19 +23,24 @@ Always start here, every invocation:
    stop.** Do not scaffold it yourself.
 3. **Resolve the certification** from `state.certifications`: the one the user named, else the only
    registered certification, else `AskUserQuestion` over the registered ones.
-4. **Read `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/invariants.md` and follow it.**
+4. **Resolve the framework, then read its ground rules.** Follow
+   `${CLAUDE_PLUGIN_ROOT}/skills/_shared/resolve-framework.md`.
    Mandatory, before step 5.
-5. **Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/roadmap.md`.**
+5. **Follow the flow.** A bundled framework's `<dir>/flows/roadmap.md` when present, else
+   `${CLAUDE_PLUGIN_ROOT}/skills/roadmap/references/generic.md`.
 
 Every certification supports this verb.
 
 ## The one invariant that matters most here
 
-**An org's posture never leaves the project.** This is the plugin's only outbound flow, and the only control
+**An org's posture never reaches vendor research.** This is the plugin's web-research flow (sync-tasks also
+sends data out, to the org's own tracker), and the only control
 fields permitted to reach a web-searching agent are the control's *public subject*:
 `relatedControlCode`, `relatedControlName`, `legacyCategoryPrefix`, `topicLabel`, `topicSummary`,
 `domain`, `domainKey`. Justifications, in-progress notes, and evidence records never leave the
-project. The allowlist in `lib/roadmap/sanitize-control.js` is fail-closed and enforces this
+project. For a control whose `statementSource` is `imported`, or missing, only its codes go (`id`,
+`relatedControlCode`, `legacyCategoryPrefix`, `domainKey`, each a plain token): its wording, names
+and domains included, is licensed. The allowlist in `lib/roadmap/sanitize-control.js` is fail-closed and enforces this
 mechanically. Do not bypass it.
 
 ## After the research

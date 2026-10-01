@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const STRUCTURE_PATH = path.join(
-  __dirname, '..', 'skills', 'soc2', 'controls', 'type2.v2017tsc.structure.json'
+  __dirname, '..', 'frameworks', 'soc2', 'type2.v2017tsc.structure.json'
 );
 const structure = JSON.parse(fs.readFileSync(STRUCTURE_PATH, 'utf8'));
 

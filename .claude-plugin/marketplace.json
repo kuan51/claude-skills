@@ -16,8 +16,8 @@
     },
     {
       "name": "ciso",
-      "description": "Organizes work toward security certifications (HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC) alongside the development work that satisfies them: register, interview, review a PR, attach evidence, audit readiness, all tracked in local HTML dashboards. Ships structural control metadata, plus verbatim requirement text only where the publisher's work carries no copyright (CMMC); licensed requirement wording is imported per-org at runtime and never stored in this repo.",
-      "version": "1.1.5",
+      "description": "Organizes work toward security certifications (HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022, CMMC or your own framework) alongside the development work that satisfies them: register, interview, review a PR, attach evidence, audit readiness, all tracked in local HTML dashboards. Ships structural control metadata, plus verbatim requirement text only where the publisher's work carries no copyright (CMMC); licensed requirement wording is imported per-org at runtime and never stored in this repo.",
+      "version": "1.2.0",
       "source": "./plugins/ciso",
       "author": {
         "name": "claude-skills"

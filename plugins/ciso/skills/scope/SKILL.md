@@ -29,15 +29,16 @@ Always start here, every invocation:
    stop.** Do not scaffold it yourself.
 3. **Resolve the certification** from `state.certifications`: the one the user named, else the only
    registered certification, else `AskUserQuestion` over the registered ones.
-4. **Read `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/invariants.md` and follow it.**
+4. **Resolve the framework, then read its ground rules.** Follow
+   `${CLAUDE_PLUGIN_ROOT}/skills/_shared/resolve-framework.md`.
    Mandatory, before step 5.
-5. **Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/<certKey>/references/scope.md`.**
+5. **Read and follow `<dir>/flows/scope.md`** for a bundled framework that has one.
 
 ## Only SOC 2 supports this verb
 
-If the resolved certification is not SOC 2, there is no `references/scope.md` to read. **Say so
+If the resolved framework has no `flows/scope.md`, there is no scope flow to follow. **Say so
 plainly and stop.** Do not improvise a scoping conversation, and do not write anything to
-`state.json`. The invariants file you just read explains why that certification has no scope step;
+`state.json`. The ground rules you just read explain why that certification has no scope step;
 give the user that reason and send them to `ciso:interview`.
 
 ## After recording scope

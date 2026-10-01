@@ -5,7 +5,8 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { registerTier, computeDomains, defaultControl, loadStructure, resolveStructurePath, STRUCTURE_FILE } = require('../register-tier.js');
+const { spawnSync } = require('child_process');
+const { registerTier, computeDomains, defaultControl, loadStructure, resolveStructurePath, currentStructureFile, STRUCTURE_FILE } = require('../register-tier.js');
 
 function makeTempState(initial) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hitrust-register-test-'));
@@ -230,10 +231,14 @@ test('registering an i1-shaped (topic-level) structure preserves domain/topicLab
   assert.deepEqual(session.domainsRemaining.sort(), ['Endpoint Protection', 'Information Protection Program']);
 });
 
-test('resolveStructurePath: bare tier names resolve to the bundled controls/ directory', () => {
+test('resolveStructurePath: bare tier names resolve to existing files in the bundled frameworks/hitrust/', () => {
   assert.equal(resolveStructurePath('e1'), STRUCTURE_FILE);
-  assert.ok(resolveStructurePath('i1').endsWith(path.join('controls', 'i1.v11.8.structure.json')));
-  assert.ok(resolveStructurePath('r2').endsWith(path.join('controls', 'r2.v11.8.structure.json')));
+  for (const tier of ['e1', 'i1', 'r2']) {
+    const resolved = resolveStructurePath(tier);
+    assert.equal(path.dirname(resolved), path.join(__dirname, '..', '..', '..', '..', 'frameworks', 'hitrust'));
+    assert.match(path.basename(resolved), new RegExp(`^${tier}\\.v[^/]+\\.structure\\.json$`));
+    assert.ok(fs.existsSync(resolved), `${resolved} must exist`);
+  }
 });
 
 test('resolveStructurePath: no argument defaults to e1 (backward compatibility)', () => {
@@ -243,6 +248,31 @@ test('resolveStructurePath: no argument defaults to e1 (backward compatibility)'
 test('resolveStructurePath: anything else is treated as a direct path to a structure file', () => {
   const resolved = resolveStructurePath('/some/custom/dir/my-structure.json');
   assert.equal(resolved, path.resolve('/some/custom/dir/my-structure.json'));
+  assert.equal(resolveStructurePath('/some/custom/dir/my-structure.json', 'acme'), resolved);
+});
+
+// Bare tiers are HITRUST's. Another framework may also call a tier r2, and before this guard
+// `register-tier.js <dir> acme "Acme" r2` silently seeded HITRUST's r2 controls under acme.
+test('resolveStructurePath: a bare tier, or none, is refused for any certKey but hitrust', () => {
+  assert.throws(() => resolveStructurePath('r2', 'acme'), /certKey "acme".*structure file's path/);
+  assert.throws(() => resolveStructurePath(undefined, 'acme'), /certKey "acme".*structure file's path/);
+  const dir = path.dirname(makeTempState());
+  fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify({ certifications: {}, interviewSessions: [] }));
+  const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'register-tier.js'), dir, 'acme', 'Acme', 'r2'], { encoding: 'utf8' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /structure file's path/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8')).certifications, {});
+});
+
+// The compiler moves the prior version into previous/ at a version bump, so the lookup must find
+// whatever single current file the folder holds, never a hard-coded version.
+test('currentStructureFile: finds the one current file and ignores previous/', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hitrust-current-'));
+  fs.writeFileSync(path.join(dir, 'e1.v12.structure.json'), '{}');
+  fs.mkdirSync(path.join(dir, 'previous'));
+  fs.writeFileSync(path.join(dir, 'previous', 'e1.v11.8.structure.json'), '{}');
+  assert.equal(currentStructureFile('e1', dir), path.join(dir, 'e1.v12.structure.json'));
+  assert.equal(fs.existsSync(currentStructureFile('i1', dir)), false);
 });
 
 test('registerTier is parameterized by certKey/certDisplayName -- a second certification lands independently of hitrust', () => {
@@ -299,7 +329,7 @@ test('defaultControl seeds an r2 control with a null top-level status and all 5 
     topicLabel: 'x', topicSummary: 'y', citations: ['https://example.com'],
     applicabilityTier: 'universal', nonAuthoritative: true,
   };
-  const control = defaultControl(entry, 'public-topic-level', 'r2');
+  const control = defaultControl(entry, 'public-topic-level', 'r2', undefined, 'hitrust');
 
   assert.equal(control.assessment.status, null);
   assert.deepEqual(
@@ -321,7 +351,7 @@ test('defaultControl without tierKey (e1/i1) keeps the existing flat assessment 
 });
 
 test('registering each bundled CMMC tier backfills the file-level codeVerifiedBy onto every control', () => {
-  const cmmcControlsDir = path.join(__dirname, '..', '..', '..', 'cmmc', 'controls');
+  const cmmcControlsDir = path.join(__dirname, '..', '..', '..', '..', 'frameworks', 'cmmc');
   for (const tier of ['level1', 'level2', 'level3']) {
     const structure = loadStructure(path.join(cmmcControlsDir, `${tier}.v32cfr170.structure.json`));
     assert.ok(

@@ -312,7 +312,7 @@ const R2_CTRL_B = {
 function seedR2State(stateJsonPath, controlDefs) {
   const controls = {};
   for (const def of controlDefs) {
-    controls[def.id] = defaultControl(def, 'public-topic-level', 'r2');
+    controls[def.id] = defaultControl(def, 'public-topic-level', 'r2', undefined, 'hitrust');
   }
   const state = {
     certifications: {

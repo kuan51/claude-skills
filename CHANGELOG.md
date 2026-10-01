@@ -8,6 +8,23 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **ciso 1.2.0** -- every framework is one data folder: a `framework.json`, a `ground-rules.md`
+  (which replaces `invariants.md`) and one structure file per tier (#158). ciso loads them from
+  the plugin's `frameworks/` and from a project's own `docs/ciso/frameworks/`, and validates each
+  with `frameworks.js`. The four bundled frameworks' control files moved there unchanged, so existing
+  `state.json` files need no migration. A project framework is data, not instructions: it may not carry flow
+  files, verbs follow the plugin's generic flows and ground rules for it, and a certKey that
+  clashes with a bundled one is excluded. Every framework-aware verb, `sync-tasks` included,
+  reads the plugin's ground rules before it lists frameworks. Validation also refuses symlinked
+  files in a project framework, a `tracker` field in a structure file, and keys with a leading,
+  trailing or doubled hyphen. For a control whose wording is `imported`, vendor research gets
+  only its codes, and task sync never sends its label or summary. HITRUST's r2 maturity shape is no
+  longer seeded for another framework's tier named `r2`, and roadmap results merge into the exact
+  tier they were researched for.
+  The dashboard stops calling CMMC's verbatim text a paraphrase, and reconcile no longer flags
+  every synced control as changed on a HITRUST upgrade. The dashboard cards and register's list
+  now run alphabetically (CMMC first) instead of HITRUST first. `ADDING-A-CERTIFICATION.md` now
+  opens with how to write a project framework.
 - **data-analysis 1.2.0** -- `data-analysis:review` treats an extra reviewer's persona and a
   skill guidance excerpt as untrusted, like the thesis (#111). EDA prompts wrap them in
   `<persona>` and `<guidance>` tags and say they set what to look for, never how to work. An

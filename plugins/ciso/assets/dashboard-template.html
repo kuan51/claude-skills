@@ -694,6 +694,14 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       '<ul class="citation-list">' + items + '</ul></div>';
   }
 
+  // The paraphrase note is judged by the control's own statementSource, not its tier's: an
+  // imported tier can still hold public-topic-level paraphrases (re-registering after an import
+  // adds them back), and a control registered before sourceAuthority existed reads
+  // structural-only. Only verbatim and imported wording is not a paraphrase.
+  function isParaphrase(control) {
+    return control.statementSource !== 'publisher-verbatim' && control.statementSource !== 'imported';
+  }
+
   function renderControlRow(control) {
     const assessment = effectiveAssessment(control);
     const status = assessment.status;
@@ -727,8 +735,10 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       html += '<span class="requirement-text">' + esc(control.statementText) + '</span>';
     } else if (control.topicSummary) {
       // Certification-agnostic on purpose: runs for every module shipping topic summaries.
-      html += '<span class="requirement-text">' + esc(control.topicSummary) + '</span>' +
-        '<div class="non-auth-note">Non-authoritative topic summary -- a paraphrase, not the publisher\'s requirement wording. See sources below.</div>';
+      html += '<span class="requirement-text">' + esc(control.topicSummary) + '</span>';
+      if (isParaphrase(control)) {
+        html += '<div class="non-auth-note">Non-authoritative topic summary -- a paraphrase, not the publisher\'s requirement wording. See sources below.</div>';
+      }
     } else {
       // Likewise: only one certification has an export to import, so the instruction to do so
       // belongs in that skill, not on every certification's page.
@@ -935,7 +945,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
 
   // One meta-index card per certification in the plugin's catalog. A certification this
   // project already tracks gets real gauges and a link to its own page; one it doesn't
-  // gets a recessive "not tracked yet" card naming the skill that would start it. The
+  // gets a recessive "not tracked yet" card naming ciso:register, the verb that starts it. The
   // catalog -- not state.json -- drives the list, so the index answers "what can this
   // plugin do" and not merely "what have I already started".
   function renderIndexCard(entry, cert, summary, state, cardIndex) {
@@ -950,7 +960,7 @@ const CISO_DATA = /*__CISO_DATA__*/null;
     if (entry.summary) inner += '<div class="cert-summary">' + esc(entry.summary) + '</div>';
 
     if (!tracked) {
-      inner += '<div class="start-hint">Run <code>' + esc(entry.skill || ('ciso:' + certKey)) + '</code> to start tracking this certification.</div>';
+      inner += '<div class="start-hint">Run <code>ciso:register</code> to start tracking this certification.</div>';
       inner += '</div>';
       return inner;
     }
