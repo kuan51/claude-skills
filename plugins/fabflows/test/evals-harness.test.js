@@ -376,6 +376,9 @@ test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus 
   fs.mkdirSync(path.join(creator, 'scripts'), { recursive: true });
   fs.writeFileSync(path.join(creator, 'scripts', 'aggregate_benchmark.py'), 'def generate_markdown(b):\n    return "configs: " + ",".join(b["run_summary"])\n');
   const iterDir = path.join(root, 'iteration-1');
+  // The script's own tasks.json, so the test does not depend on the harness's task ids.
+  const tasksPath = path.join(root, 'tasks.json');
+  fs.writeFileSync(tasksPath, JSON.stringify({ tasks: [{ id: 1 }, { id: 2 }, { id: 7 }, { id: 10, agent: 'explorer' }] }));
   const cost = (evalDir, arm, run, c, model = 'claude-fable-5-1') => {
     const dir = path.join(iterDir, evalDir, arm, run);
     fs.mkdirSync(dir, { recursive: true });
@@ -391,6 +394,8 @@ test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus 
   cost('eval-1-a', 'superpowers', 'run-1', 1.2);
   // Task 10 is an agent task: no lead, and no eval shared with without_skill.
   cost('eval-10-x', 'agent', 'run-1', 0.03, 'claude-haiku-4-5-20251001');
+  // A directory with no task id in its name is skipped, not fatal.
+  cost('eval-x-stray', 'with_skill', 'run-1', 99);
   const s = (pr, sec, tok) => ({ pass_rate: { mean: pr }, time_seconds: { mean: sec }, tokens: { mean: tok } });
   // The aggregator's shape: configurations sorted by name, the delta taken from the first two.
   fs.writeFileSync(path.join(iterDir, 'benchmark.json'), JSON.stringify({
@@ -399,8 +404,9 @@ test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus 
     notes: [],
   }));
 
-  const r = spawnSync('python', [path.join(EVALS, 'harness', 'annotate_benchmark.py'), iterDir, creator], { encoding: 'utf8', env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' } });
+  const r = spawnSync('python', [path.join(EVALS, 'harness', 'annotate_benchmark.py'), iterDir, creator], { encoding: 'utf8', env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1', FABFLOWS_TASKS: tasksPath } });
   assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stderr, /skipped .*eval-x-stray/);
   const b = JSON.parse(fs.readFileSync(path.join(iterDir, 'benchmark.json'), 'utf8'));
   assert.deepEqual(Object.keys(b.run_summary), ['with_skill', 'without_skill', 'agent', 'superpowers', 'delta']);
   assert.deepEqual(b.run_summary.delta, { pass_rate: '+0.30', time_seconds: '+10.0', tokens: '+100', cost_usd: '+1.00' });

@@ -18,6 +18,8 @@ an `agent` field in tasks.json, found by the id in the eval directory's name) ha
 session model is listed under agents, not lead.
 """
 import json
+import os
+import re
 import statistics
 import sys
 from pathlib import Path
@@ -28,7 +30,9 @@ from scripts.aggregate_benchmark import generate_markdown  # noqa: E402
 
 path = iteration / "benchmark.json"
 b = json.loads(path.read_text(encoding="utf-8"))
-tasks = json.loads((Path(__file__).resolve().parent.parent / "tasks.json").read_text(encoding="utf-8"))["tasks"]
+# FABFLOWS_TASKS overrides the harness's tasks.json, so a test can supply its own.
+tasks_path = Path(os.environ.get("FABFLOWS_TASKS") or Path(__file__).resolve().parent.parent / "tasks.json")
+tasks = json.loads(tasks_path.read_text(encoding="utf-8"))["tasks"]
 agent_ids = {t["id"] for t in tasks if t.get("agent")}
 
 runs = {}
@@ -37,7 +41,11 @@ lead_models = set()
 agent_models = set()
 for m in iteration.glob("eval-*/*/run-*/metrics.json"):
     arm = m.parent.parent.name
-    eval_id = int(m.parent.parent.parent.name.split("-")[1])
+    found = re.match(r"eval-(\d+)-", m.parent.parent.parent.name)
+    if not found:
+        print(f"skipped {m}: no task id in the eval directory's name", file=sys.stderr)
+        continue
+    eval_id = int(found.group(1))
     runs[arm] = runs.get(arm, 0) + 1
     data = json.loads(m.read_text(encoding="utf-8"))
     cost = data.get("result", {}).get("total_cost_usd")
@@ -62,13 +70,15 @@ def all_costs(arm):
 
 
 def shared_diff(arm):
-    """(difference, percent) of arm's mean against without_skill over the evals both ran, or None."""
+    """(difference, percent or None) of arm's mean against without_skill over the evals both ran, or None."""
+    if arm == "without_skill":
+        return None
     shared = costs.get(arm, {}).keys() & costs.get("without_skill", {}).keys()
-    if arm == "without_skill" or not shared:
+    if not shared:
         return None
     mine = statistics.mean(c for e in shared for c in costs[arm][e])
     base = statistics.mean(c for e in shared for c in costs["without_skill"][e])
-    return mine - base, (mine - base) / base * 100 if base else 0.0
+    return mine - base, (mine - base) / base * 100 if base else None
 
 
 def dollars(d):
@@ -80,12 +90,14 @@ summary = b["run_summary"]
 configs = [k for k in summary if k != "delta"]
 order = [c for c in ("with_skill", "without_skill") if c in configs] + [c for c in configs if c not in ("with_skill", "without_skill")]
 for c in order:
-    if all_costs(c):
-        summary[c]["cost_usd"] = stats(all_costs(c))
+    xs = all_costs(c)
+    if xs:
+        summary[c]["cost_usd"] = stats(xs)
+diffs = {c: shared_diff(c) for c in order}  # one figure feeds both the delta and the notes
 if "with_skill" in summary and "without_skill" in summary:
     ws, wo = summary["with_skill"], summary["without_skill"]
     mean = lambda s, k: s.get(k, {}).get("mean", 0)  # noqa: E731
-    diff = shared_diff("with_skill")
+    diff = diffs["with_skill"]
     summary["delta"] = {
         "pass_rate": f"{mean(ws, 'pass_rate') - mean(wo, 'pass_rate'):+.2f}",
         "time_seconds": f"{mean(ws, 'time_seconds') - mean(wo, 'time_seconds'):+.1f}",
@@ -107,8 +119,9 @@ for c in order:
     cm = summary[c].get("cost_usd", {}).get("mean")
     if cm is None:
         continue
-    diff = shared_diff(c)
-    vs = f", {dollars(diff[0])} ({diff[1]:+.0f}%) against without_skill" if diff else ""
+    diff = diffs[c]
+    pct = f"{diff[1]:+.0f}%" if diff and diff[1] is not None else "n/a"
+    vs = f", {dollars(diff[0])} ({pct}) against without_skill" if diff else ""
     notes.append(f"Cost: {c} mean ${cm:.2f} per run{vs}")
 b["notes"] = notes
 
