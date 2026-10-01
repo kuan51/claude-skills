@@ -260,3 +260,25 @@ test('{{CANDIDATES}} prints a placeholder when candidates is empty or absent', (
   assert.equal(buildReport('{{CANDIDATES}}', { candidates: [] }), '_No candidate patterns found._');
   assert.equal(buildReport('{{CANDIDATES}}', {}), '_No candidate patterns found._');
 });
+
+test("renders discover's template from a full result with nothing unfilled and the Repeatability text kept", () => {
+  const template = fs.readFileSync(path.join(__dirname, '..', '..', 'discover', 'references', 'report-template.md'), 'utf8');
+  const out = buildReport(template, {
+    projectName: 'Churn Discovery',
+    reviewDate: '2026-10-01',
+    thesis: 'Decide whether to cut the repeat discount. Metric: churn. Baseline: 4%.',
+    scope: ['Slices: region, tenure.', 'Agents: 2 hunters, 1 reconciler, 2 so-what.'],
+    executiveSummary: ['Region north churns most.', 'High materiality, descriptive.', 'Re-run on Q3 data.'],
+    eda: [{ key: 'region', label: 'Region', findings: [{ severity: 'high', claim: 'c', evidence: 'e', required_execution: true, verified: true, business_impact: 'b' }] }],
+    reconciled: [{ topic: 't', finding: 'f', evidence: 'e', verified: true, severity: 'high' }],
+    disagreements: [{ topic: 't', description: 'reverses by tenure', roles_involved: ['region', 'tenure'] }],
+    candidates: [CANDIDATE(1), CANDIDATE(2, { materiality: 'none', verified: false })],
+    overCap: [{ topic: 'o', severity: 'low', finding: 'f', evidence: 'e', verified: false }],
+    dropped: [],
+    recommendations: ['Collect tenure for new accounts.'],
+  });
+  assert.ok(!/undefined|null|\{\{/.test(out), out);
+  assert.ok(section(out, 'Candidates (most material first)').includes('### 1. pattern-1 — materiality high, descriptive (verified)'));
+  assert.ok(section(out, 'Reconciliation Notes').includes('Over the topic cap, not taken further'));
+  assert.ok(section(out, 'Repeatability').includes('Single run: these patterns were not re-run to check they recur. Treat each as a lead to confirm with its To settle check.'));
+});

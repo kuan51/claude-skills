@@ -14,3 +14,12 @@ test('SKILL.md exists with valid frontmatter', () => {
   assert.ok(fields.description, 'SKILL.md is missing a description field');
   assert.ok(fields.description.startsWith('Use when'), 'description must start with "Use when" per SDO convention');
 });
+
+test('discover SKILL.md exists with valid frontmatter', () => {
+  const skillPath = path.join(__dirname, '..', 'skills', 'discover', 'SKILL.md');
+  assert.ok(fs.existsSync(skillPath), 'missing skills/discover/SKILL.md');
+  const fields = parseFrontmatter(fs.readFileSync(skillPath, 'utf8'));
+  assert.equal(fields.name, 'discover');
+  assert.ok(fields.description, 'SKILL.md is missing a description field');
+  assert.ok(fields.description.startsWith('Use when'), 'description must start with "Use when" per SDO convention');
+});
