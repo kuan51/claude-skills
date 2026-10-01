@@ -122,10 +122,15 @@ function validateStructure(file, origin, errors) {
 // cannot be read (a directory named ground-rules.md, a folder without read permission) is reported
 // as an error rather than thrown, so one broken project folder never stops a listing.
 function validateFramework(dir, origin) {
+  return inspectFramework(dir, origin).errors;
+}
+
+// { errors, fw }, where fw is the parsed framework.json, so a listing reads it only once.
+function inspectFramework(dir, origin) {
   try {
     return checkFramework(dir, origin);
   } catch (err) {
-    return [`not readable (${err.message})`];
+    return { errors: [`not readable (${err.message})`], fw: null };
   }
 }
 
@@ -143,7 +148,7 @@ function isLink(p) {
 function checkFramework(dir, origin) {
   const errors = [];
   const folder = path.basename(path.resolve(dir));
-  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [`${dir} is not a directory`];
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return { errors: [`${dir} is not a directory`], fw: null };
   const linked = (p) => origin !== 'bundled' && isLink(p);
   const linkError = (name) => `${name} may not be a symlink in a project framework`;
 
@@ -211,7 +216,7 @@ function checkFramework(dir, origin) {
     if (!perTier[tier]) errors.push(`tier "${tier}" is declared but has no ${tier}.<controlSetVersion>${STRUCTURE_SUFFIX}`);
     else if (perTier[tier] > 1) errors.push(`tier "${tier}" has ${perTier[tier]} structure files; exactly one is allowed`);
   }
-  return errors;
+  return { errors, fw };
 }
 
 // Folders under `root`, following symlinks so a linked framework folder counts like a real one.
@@ -230,8 +235,7 @@ function subdirs(root) {
     .sort();
 }
 
-function describe(dir, origin) {
-  const fw = JSON.parse(fs.readFileSync(path.join(dir, 'framework.json'), 'utf8'));
+function describe(dir, origin, fw) {
   return { certKey: fw.certKey, displayName: fw.displayName, summary: fw.summary, tiers: fw.tiers, dir, origin };
 }
 
@@ -251,9 +255,9 @@ function listFrameworks(docsCisoDir, bundledRoot) {
   for (const dir of bundledDirs) {
     // Claimed even when invalid, so a project folder can never stand in for a broken bundled one.
     bundled.set(path.basename(dir), dir);
-    const msgs = validateFramework(dir, 'bundled');
+    const { errors: msgs, fw } = inspectFramework(dir, 'bundled');
     if (msgs.length) msgs.forEach((message) => errors.push({ origin: 'bundled', dir, message }));
-    else frameworks.push(describe(dir, 'bundled'));
+    else frameworks.push(describe(dir, 'bundled', fw));
   }
   const projectRoot = docsCisoDir ? path.join(path.resolve(docsCisoDir), 'frameworks') : null;
   let projectDirs = [];
@@ -269,9 +273,9 @@ function listFrameworks(docsCisoDir, bundledRoot) {
       errors.push({ origin: 'project', dir, message: `certKey "${name}" clashes with the bundled framework at ${bundled.get(name)}; ${dir} is excluded` });
       continue;
     }
-    const msgs = validateFramework(dir, 'project');
+    const { errors: msgs, fw } = inspectFramework(dir, 'project');
     if (msgs.length) msgs.forEach((message) => errors.push({ origin: 'project', dir, message }));
-    else frameworks.push(describe(dir, 'project'));
+    else frameworks.push(describe(dir, 'project', fw));
   }
   return { frameworks, errors };
 }
