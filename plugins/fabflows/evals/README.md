@@ -50,9 +50,11 @@ The aggregator sorts configurations by name and takes the first two as its delta
 three arms gives superpowers minus with_skill. `annotate_benchmark.py` puts with_skill and
 without_skill first and sets the delta to with_skill minus without_skill. It adds cost stats
 (mean, stddev, min, max of `total_cost_usd`) to each configuration's summary, and one note per
-configuration with its mean cost and its difference from without_skill: the viewer's Benchmark
-tab shows the notes list but not the cost stats. It also counts each configuration's own runs
-and fixes the model names the aggregator hardcodes, and attaches analyst notes:
+configuration with its mean cost and its difference from without_skill over the evals both ran
+(an arm that shares none gets its mean alone): the viewer's Benchmark tab shows the notes list
+but not the cost stats. It also counts each configuration's own runs, replaces the model names
+the aggregator hardcodes with the lead models of the task runs and, apart from them, the
+session models of the agent runs, and attaches analyst notes:
 
 ```bash
 node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-<n>

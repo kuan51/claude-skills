@@ -363,7 +363,7 @@ test('summarize.js leaves out a cell with metrics.json but no grading.json, and 
   assert.equal(rows[0].arm, 'with_skill');
 });
 
-test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus without_skill, and adds dollars and true run counts', (t) => {
+test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus without_skill over shared evals, adds dollars, true run counts, and lists agent models apart from the lead', (t) => {
   const py = spawnSync('python', ['--version'], { encoding: 'utf8' });
   if (py.error || py.status !== 0) {
     t.skip('python is not on PATH');
@@ -376,38 +376,44 @@ test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus 
   fs.mkdirSync(path.join(creator, 'scripts'), { recursive: true });
   fs.writeFileSync(path.join(creator, 'scripts', 'aggregate_benchmark.py'), 'def generate_markdown(b):\n    return "configs: " + ",".join(b["run_summary"])\n');
   const iterDir = path.join(root, 'iteration-1');
-  const cost = (evalDir, arm, run, c) => {
+  const cost = (evalDir, arm, run, c, model = 'claude-fable-5-1') => {
     const dir = path.join(iterDir, evalDir, arm, run);
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'metrics.json'), JSON.stringify({ lead: { model: 'claude-fable-5-1' }, result: { total_cost_usd: c } }));
+    fs.writeFileSync(path.join(dir, 'metrics.json'), JSON.stringify({ lead: { model }, result: { total_cost_usd: c } }));
   };
   cost('eval-1-a', 'with_skill', 'run-1', 1.5);
   cost('eval-1-a', 'with_skill', 'run-2', 2.5);
   cost('eval-2-b', 'with_skill', 'run-1', 2.0);
+  // An eval without_skill never ran: it counts in with_skill's mean, not in its difference.
+  cost('eval-7-d', 'with_skill', 'run-1', 10.0);
   cost('eval-1-a', 'without_skill', 'run-1', 1.0);
   cost('eval-2-b', 'without_skill', 'run-1', 1.0);
   cost('eval-1-a', 'superpowers', 'run-1', 1.2);
+  // Task 10 is an agent task: no lead, and no eval shared with without_skill.
+  cost('eval-10-x', 'agent', 'run-1', 0.03, 'claude-haiku-4-5-20251001');
   const s = (pr, sec, tok) => ({ pass_rate: { mean: pr }, time_seconds: { mean: sec }, tokens: { mean: tok } });
   // The aggregator's shape: configurations sorted by name, the delta taken from the first two.
   fs.writeFileSync(path.join(iterDir, 'benchmark.json'), JSON.stringify({
     metadata: { runs_per_configuration: 3 },
-    run_summary: { superpowers: s(0.5, 10, 100), with_skill: s(0.9, 30, 300), without_skill: s(0.6, 20, 200), delta: { pass_rate: '-0.40', time_seconds: '-20.0', tokens: '-200' } },
+    run_summary: { agent: s(1, 5, 50), superpowers: s(0.5, 10, 100), with_skill: s(0.9, 30, 300), without_skill: s(0.6, 20, 200), delta: { pass_rate: '-0.40', time_seconds: '-20.0', tokens: '-200' } },
     notes: [],
   }));
 
   const r = spawnSync('python', [path.join(EVALS, 'harness', 'annotate_benchmark.py'), iterDir, creator], { encoding: 'utf8', env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' } });
   assert.equal(r.status, 0, r.stderr);
   const b = JSON.parse(fs.readFileSync(path.join(iterDir, 'benchmark.json'), 'utf8'));
-  assert.deepEqual(Object.keys(b.run_summary), ['with_skill', 'without_skill', 'superpowers', 'delta']);
+  assert.deepEqual(Object.keys(b.run_summary), ['with_skill', 'without_skill', 'agent', 'superpowers', 'delta']);
   assert.deepEqual(b.run_summary.delta, { pass_rate: '+0.30', time_seconds: '+10.0', tokens: '+100', cost_usd: '+1.00' });
-  assert.deepEqual(b.run_summary.with_skill.cost_usd, { mean: 2, stddev: 0.5, min: 1.5, max: 2.5 });
+  assert.deepEqual(b.run_summary.with_skill.cost_usd, { mean: 4, stddev: 4.0208, min: 1.5, max: 10 });
   assert.deepEqual(b.run_summary.without_skill.cost_usd, { mean: 1, stddev: 0, min: 1, max: 1 });
   assert.deepEqual(b.run_summary.superpowers.cost_usd, { mean: 1.2, stddev: 0, min: 1.2, max: 1.2 });
   assert.deepEqual(b.notes, [
-    'Cost: with_skill mean $2.00 per run, $+1.00 (+100%) against without_skill',
+    'Cost: with_skill mean $4.00 per run, +$1.00 (+100%) against without_skill',
     'Cost: without_skill mean $1.00 per run',
-    'Cost: superpowers mean $1.20 per run, $+0.20 (+20%) against without_skill',
+    'Cost: agent mean $0.03 per run',
+    'Cost: superpowers mean $1.20 per run, +$0.20 (+20%) against without_skill',
   ]);
-  assert.equal(b.metadata.runs_per_configuration, 'with_skill 3, without_skill 2, superpowers 1');
-  assert.equal(fs.readFileSync(path.join(iterDir, 'benchmark.md'), 'utf8').trimEnd(), 'configs: with_skill,without_skill,superpowers,delta');
+  assert.equal(b.metadata.runs_per_configuration, 'with_skill 4, without_skill 2, agent 1, superpowers 1');
+  assert.equal(b.metadata.executor_model, 'lead claude-fable-5-1; agents claude-haiku-4-5-20251001; workers per agent pins');
+  assert.equal(fs.readFileSync(path.join(iterDir, 'benchmark.md'), 'utf8').trimEnd(), 'configs: with_skill,without_skill,agent,superpowers,delta');
 });
