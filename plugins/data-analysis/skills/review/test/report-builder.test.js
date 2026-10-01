@@ -185,7 +185,7 @@ test('prints each new section placeholder when empty', () => {
   const out = buildReport(REAL_TEMPLATE, { crossCompare: [] });
   assert.ok(section(out, 'Cross-Comparison').includes('_No topic the project addresses was cross-compared._'));
   assert.ok(section(out, "Independent findings the project's report does not address").includes('_No independent finding went unaddressed by the project._'));
-  assert.ok(!section(out, 'Reconciliation Notes').includes('over the topic cap'));
+  assert.ok(!section(out, 'Reconciliation Notes').includes('Over the topic cap'));
 });
 
 test('renders a 0.1.2-shaped result through the real template with no undefined or null', () => {
