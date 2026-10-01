@@ -232,3 +232,10 @@ test('a link in the copy that resolves into conclusions/ once the split has writ
   }
 });
 
+test('a sandbox root given with a trailing slash yields code paths that match sandbox-paths.js output', () => {
+  const { rewritePath } = require('../lib/sandbox-paths.js');
+  const { real, sb } = layout({ 'nb/a.ipynb': NB_TEXT });
+  const [entry] = splitNotebooks(real, `${sb}/`);
+  assert.equal(entry.code, rewritePath(path.join(real, 'nb', 'a.ipynb'), real, `${sb}//project`));
+});
+

@@ -170,7 +170,8 @@ function assertSandboxed(paths, sandboxRoot, label) {
     if (segments.includes('..')) {
       throw new Error(`Refusing to run: ${label} path "${p}" has a ".." segment -- the SKILL.md sandbox step must pass paths that stay inside the sandbox root "${sandboxRoot}".`)
     }
-    if (segments.some((s, i) => s === '.' || (s === '' && i > 0))) {
+    const lead = norm.startsWith('//') ? 2 : 1
+    if (segments.some((s, i) => s === '.' || (s === '' && i >= lead))) {
       throw new Error(`Refusing to run: ${label} path "${p}" has a "." or empty segment -- the SKILL.md sandbox step must pass plain paths inside the sandbox root "${sandboxRoot}".`)
     }
     if (norm !== root && !norm.startsWith(root + '/')) {

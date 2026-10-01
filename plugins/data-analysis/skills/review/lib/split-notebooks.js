@@ -8,6 +8,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { normalize } = require('./sandbox-paths.js');
 
 const isNotebook = (name) => name.toLowerCase().endsWith('.ipynb');
 
@@ -141,7 +142,7 @@ function splitNotebooks(projectRoot, sandboxRoot) {
     }
   }
 
-  const root = String(sandboxRoot).replace(/\\/g, '/').replace(/\/+$/, '');
+  const root = normalize(sandboxRoot);
   return found
     .map((nb) => ({ code: `${root}/project/${nb.rel}`, full: `${root}/conclusions/${nb.rel}` }))
     .sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));

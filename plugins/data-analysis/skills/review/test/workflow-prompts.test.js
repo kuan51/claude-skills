@@ -262,6 +262,22 @@ test('refuses before any agent on a . or empty segment', async () => {
   await refuses(baseArgs({ conclusionPaths: [`${ROOT}/reports/./final.md`] }), 'conclusionPaths', `${ROOT}/reports/./final.md`);
 });
 
+test('a Windows UNC sandbox root runs, and a doubled slash after its leading pair still refuses', async () => {
+  const unc = '\\\\fs01\\scratch\\sb';
+  const p = (rel) => `${unc}\\project\\${rel}`;
+  const r = await run({
+    args: baseArgs({
+      sandboxRoot: unc,
+      fixedRolePaths: { dataQuality: [p('data\\users.csv')], statistical: [p('nb\\a.ipynb')], domainAlignment: [], reproducibility: [p('nb\\a.ipynb')] },
+      extras: [],
+      conclusionPaths: [`${unc}\\conclusions\\nb\\a.ipynb`],
+    }),
+  });
+  assert.equal(r.eda.length, 4);
+  const fixed = { dataQuality: ['//fs01/scratch//sb/project/data/users.csv'], statistical: [], domainAlignment: [], reproducibility: [] };
+  await refuses(baseArgs({ sandboxRoot: '//fs01/scratch/sb', fixedRolePaths: fixed, extras: [], conclusionPaths: [] }), 'fixedRolePaths.dataQuality', '//fs01/scratch//sb/project/data/users.csv');
+});
+
 test('refuses before any agent when a blind path equals, contains or sits inside a conclusion path', async () => {
   const fixed = baseArgs().fixedRolePaths;
   const blind = (key, p) => ({ fixedRolePaths: { ...fixed, [key]: [...fixed[key], p] } });
