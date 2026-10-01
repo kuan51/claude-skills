@@ -229,7 +229,11 @@ or reverts. The [skill](skills/fabflows/SKILL.md) carries the preconditions and 
 records the original design and
 [DEC-0016](../../docs/decisions/DEC-0016-harden-the-fabflows-build-loop-denial-classification-reviewe.md)
 records why the reviewer moved off the lead's tier. Pass `reviewerModel: 'fable'` to restore
-the old default.
+the old default. The reviewer reads code the diff calls, and a must-fix that names a real bug
+there lets the builder fix it even where the spec says otherwise. The builder names each spec
+sentence it crossed in `deviations`, the loop matches each entry to the must-fix it cites, and
+the lead keeps a matched fix and proposes the spec amendment to the user rather than reverting
+it.
 
 ## Measured performance
 

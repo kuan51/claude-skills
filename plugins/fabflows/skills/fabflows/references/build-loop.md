@@ -5,6 +5,8 @@ the whole instruction for its outcome: act on that. The builder's commits are al
 branch in every case, and the loop never merges, pushes, or reverts: those stay with you and the
 user.
 
+A `matched` entry in the result's `deviations` whose fix is still in the diff stands: propose the spec amendment to the user, and never revert it on the spec's text alone.
+
 Read this file for the one case the result cannot carry: **a workflow error in place of a
 result**, say a token budget running out, which makes the next `agent()` call throw. The builder
 may already have committed, so read `git log <baseRef>..HEAD`. To carry on, relaunch in a new

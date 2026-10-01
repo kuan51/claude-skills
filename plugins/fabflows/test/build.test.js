@@ -120,6 +120,38 @@ test('the first review carries no earlier must-fix fence', async () => {
   assert.match(calls[3].prompt, /or it is a real bug: a wrong result on an input the code's domain has, not a difference from another library or a stricter standard; everything else is a note\./);
 });
 
+test('the builder schema and the rework brief carry the deviations field', async () => {
+  const { calls } = await run(ARGS, [built, rework, built, accept]);
+  const items = calls[0].opts.schema.properties.deviations.items;
+  assert.deepEqual(items.required, ['round', 'index', 'sentence']);
+  assert.ok(!calls[0].opts.schema.required.includes('deviations'), 'deviations is optional');
+  assert.match(calls[2].prompt, /in the deviations field of the structured result, with round 1/);
+  assert.doesNotMatch(calls[0].prompt, /deviations field/);
+});
+
+test('a deviation that cites the must-fix it was sent comes back matched with its location and problem', async () => {
+  const dev = { round: 1, index: 0, sentence: 'The library keeps working as it does.' };
+  const { result } = await run(ARGS, [built, rework, { ...built, deviations: [dev] }, accept]);
+  assert.equal(result.status, 'accepted');
+  assert.deepEqual(result.deviations, [
+    { ...dev, location: 'src/cli.js:10', problem: 'flag is parsed but ignored', matched: true },
+  ]);
+  const none = await run(ARGS, [built, accept]);
+  assert.deepEqual(none.result.deviations, []);
+});
+
+test('a round-1 or out-of-range deviation comes back unmatched', async () => {
+  const s = 'The library keeps working as it does.';
+  // Round 1 had no must-fix to cite, even though review 1 later raised one at that index.
+  const early = await run(ARGS, [{ ...built, deviations: [{ round: 1, index: 0, sentence: s }] }, rework, built, accept]);
+  assert.deepEqual(early.result.deviations, [{ round: 1, index: 0, sentence: s, location: null, problem: null, matched: false }]);
+  for (const d of [{ round: 1, index: 1 }, { round: 1, index: -1 }, { round: 2, index: 0 }, { round: 0, index: 0 }, { round: '1', index: 0 }]) {
+    const { result } = await run(ARGS, [built, rework, { ...built, deviations: [{ ...d, sentence: s }] }, accept]);
+    assert.equal(result.deviations.length, 1);
+    assert.equal(result.deviations[0].matched, false, JSON.stringify(d));
+  }
+});
+
 test('escalates at the rework cap instead of looping', async () => {
   const rework2 = { ...rework, mustFix: [{ ...rework.mustFix[0], location: 'src/cli.js:20' }] };
   const { result, calls } = await run(ARGS, [built, rework, built, rework2, built, rework]);
@@ -293,6 +325,7 @@ test('every escalation carries status, baseRef, the last verdict, and what to do
     assert.equal(result.reason, reason);
     assert.equal(result.baseRef, 'abc1234', `${reason} must carry baseRef`);
     assert.ok('verdict' in result, `${reason} must carry verdict`);
+    assert.ok(Array.isArray(result.deviations), `${reason} must carry deviations`);
     assert.equal(result.verdict ? result.verdict.verdict : null, last, `${reason} last verdict`);
     assert.ok(typeof result.next === 'string' && result.next.trim().length > 20, `${reason} must carry an actionable next`);
     nexts.set(reason, result.next);
