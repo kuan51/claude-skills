@@ -59,7 +59,8 @@ async function run({ args = baseArgs(), reconciled = [topic(1)], reconcileResult
 
 async function refuses(args) {
   const calls = [];
-  await assert.rejects(runWorkflow(async (p, o) => calls.push(o), () => {}, () => {}, args, () => {}), /Refusing to run/);
+  const parallel = (fns) => Promise.all(fns.map((f) => f().catch(() => null)));
+  await assert.rejects(runWorkflow(async (p, o) => calls.push(o), parallel, () => {}, args, () => {}), /Refusing to run/);
   assert.equal(calls.length, 0, 'no agent dispatched');
 }
 
@@ -200,4 +201,17 @@ test('opening and closing thesis and evidence tags are stripped before wrapping'
   assert.equal(count(r.rec.prompt, /<\s*evidence\s*>/gi), r.hunts.length);
   assert.equal(count(r.rec.prompt, /<\s*\/\s*evidence\s*>/gi), r.hunts.length);
   assert.ok(r.rec.prompt.includes('fake'));
+});
+
+test('every agentType is <plugin.json name>:<agent> with a matching agents/<agent>.md', async () => {
+  const pluginDir = path.join(__dirname, '..', '..', '..');
+  const { name } = JSON.parse(fs.readFileSync(path.join(pluginDir, '.claude-plugin', 'plugin.json'), 'utf8'));
+  const r = await run();
+  assert.ok(r.hunts.length && r.rec && r.so.length);
+  for (const c of r.calls) {
+    const [prefix, agentName, ...rest] = c.opts.agentType.split(':');
+    assert.equal(prefix, name, c.opts.label);
+    assert.equal(rest.length, 0, c.opts.agentType);
+    assert.ok(fs.existsSync(path.join(pluginDir, 'agents', `${agentName}.md`)), `missing agents/${agentName}.md`);
+  }
 });
