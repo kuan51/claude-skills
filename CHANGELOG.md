@@ -167,6 +167,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.13.13** -- iteration 6 measured a rework permission for the build loop (#146):
+  a reviewer's must-fix lets the builder fix a real bug in code the change calls, even where the
+  spec says that code keeps working as it does, later reviewers see what earlier rounds demanded,
+  and the must-fix definition narrows to a wrong result on an input the code's domain has. On
+  task 8 the builders fixed every caret defect the review named, 3 of 3, but the lead reverted two
+  of those fixes after the loop, citing the fixture's spec, and two reviews never named the
+  defect. The plugin adopts nothing: the measured text is `evals/snapshots/rework-permission.patch`,
+  stacked on `review-callees.patch`, and the evals README recipe now shows how a patch stacks.
 - **fabflows 0.13.12** -- iteration 5 measured a rule for the refuter (#145): the code a diff
   calls is in scope, and one line of the project's own code may probe it. On task 8, whose
   fixture carries a defect in a callee the spec never names, the build loop's review named the
