@@ -120,6 +120,15 @@ test('refuses before any agent on a blank decision, metric or baseline, bad slic
   await refuses(baseArgs({ slices: [ok[0], null] }));
   await refuses(baseArgs({ slices: [ok[0], { ...ok[1], key: ok[0].key }] }));
   await refuses(baseArgs({ dataPaths: [`${ROOT}/../other/users.csv`] }));
+  await refuses(baseArgs({ dataPaths: [`${ROOT}/./data/users.csv`] }));
+  await refuses(baseArgs({ dataPaths: [`${ROOT}//data/users.csv`] }));
+});
+
+test('a Windows UNC sandbox root runs, and a doubled slash after its leading pair still refuses', async () => {
+  const unc = '\\\\fs01\\scratch\\sb';
+  const r = await run({ args: baseArgs({ sandboxRoot: unc, dataPaths: [`${unc}\\data\\users.csv`] }) });
+  assert.equal(r.hunts.length, 2);
+  await refuses(baseArgs({ sandboxRoot: '//fs01/scratch/sb', dataPaths: ['//fs01/scratch//sb/data/users.csv'] }));
 });
 
 test('maxSlices defaults to 4 and maxCandidates to 8 when absent or invalid', async () => {

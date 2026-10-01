@@ -30,7 +30,9 @@ node --test "test/*.test.js"
 The fabflows ticket and PR flows also have an offline bats suite: `bats plugins/fabflows/test/pm`.
 
 `test/marketplace-consistency.test.js` fails if the two manifests disagree on version or name, if a
-registered plugin's `source` path doesn't exist, or if a plugin under `plugins/` isn't registered.
+registered plugin's `source` path doesn't exist, if a plugin under `plugins/` isn't registered, or
+if a plugin description is over 499 characters (Claude desktop and claude.ai refuse over 500). CI
+runs it on every pull request.
 
 ## When to bump
 
@@ -112,7 +114,7 @@ Rules that bite here:
   (`.github/workflows/docs.yml`), from the checkout's own copy of the scripts, so a PR is
   checked by its own version of docs-warden. Vale lints only the Markdown files the PR changes, as pre-commit does.
   lychee is not in CI: it runs from the pre-commit hook, or from `audit.py` when it is on PATH.
-  `freshness.py` still runs only by hand. CI also runs
+  `freshness.py` still runs only by hand. CI also runs the root tests (`test/*.test.js`),
   `plugins/fabflows/test/required-rules.test.js`, the self-test of
   `plugins/fabflows/evals/prose/vale-warn-gate.sh`, and the self-test of the `Prompting` style
   (`test_prompting_style.sh`). A last step prints every `Prompting` suggestion in the fabflows
