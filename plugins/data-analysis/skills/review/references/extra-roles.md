@@ -1,6 +1,6 @@
 # Canned Extra Reviewer Personas
 
-Use these when the user opts for fast, static extra roles (rather than a `deep-research` pass) during gating step 5. Each entry's `Label` and `Persona` become `args.extras[].label` / `args.extras[].persona` in the `Workflow` call (Task 5), run through the shared `extra-reviewer` agent type (Task 4).
+Use these when the user opts for fast, static extra roles (rather than a `deep-research` pass) during gating step 5. Each entry's `Label` and `Persona` become `args.extras[].label` / `args.extras[].persona` in the `Workflow` call (Task 5). Copy the persona text after the `> ` marker exactly: an extra runs on `extra-reviewer`, with Bash, only when its persona matches the text here for its key, and `workflow.js` keeps a copy that a test holds equal to this file. Any other persona runs on `extra-reviewer-static`, without Bash.
 
 ## fairness
 
