@@ -149,16 +149,16 @@ function categoryKeyFor(c) {
   return (c && (c.domainKey || c.legacyCategoryPrefix || c.domain)) || 'unknown';
 }
 
-// A control counts as "touched" for domain-completion purposes once its Implemented dimension (r2)
-// or its single flat status (e1/i1) has been assessed, or the whole control is marked
-// not_applicable. Deepening r2's other 4 dimensions is opt-in progress that never blocks a domain
-// from completing -- see the r2 maturity architecture design spec.
 // True when a control carries the r2 PRISMA maturity shape. Every writer and classifier decides
 // r2 handling by this, the same test the dashboard's rollups use.
 function hasMaturity(control) {
   return !!(control && control.assessment && control.assessment.maturity);
 }
 
+// A control counts as "touched" for domain-completion purposes once its Implemented dimension (r2)
+// or its single flat status (e1/i1) has been assessed, or the whole control is marked
+// not_applicable. Deepening r2's other 4 dimensions is opt-in progress that never blocks a domain
+// from completing -- see the r2 maturity architecture design spec.
 function isControlTouched(control, isR2) {
   if (isR2) {
     if (control.assessment && control.assessment.status === 'not_applicable') return true;
