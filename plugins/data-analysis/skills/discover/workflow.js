@@ -42,7 +42,7 @@ function strip(text) {
   let prev
   do {
     prev = s
-    s = s.replace(/<\s*\/?\s*(thesis|evidence)\b[^>]*>/gi, '')
+    s = s.replace(/<\s*\/?\s*(thesis|evidence|persona|guidance)\b[^>]*>/gi, '')
   } while (s !== prev)
   return s
 }
@@ -93,6 +93,9 @@ function assertSandboxed(paths, sandboxRoot, label) {
   for (const p of paths || []) {
     if (typeof p !== 'string') {
       throw new Error(`Refusing to run: ${label} holds a non-string path -- every path must be a string inside the sandbox root "${sandboxRoot}".`)
+    }
+    if (/[<>\r\n]/.test(p)) {
+      throw new Error(`Refusing to run: ${label} path "${p}" holds "<", ">" or a line break -- a path must not carry a tag or a new line into a prompt.`)
     }
     const norm = p.replace(/\\/g, '/').replace(/\/+$/, '')
     const segments = norm.split('/')
