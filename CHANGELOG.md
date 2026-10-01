@@ -371,7 +371,7 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
-- **data-analysis 1.0.1, ciso 1.1.5, docs-warden 0.7.3, fabflows 0.15.1** -- each plugin
+- **data-analysis 1.1.1, ciso 1.1.5, docs-warden 0.7.3, fabflows 0.15.1** -- each plugin
   description is now 499 characters or fewer, under the 500-character limit that Claude
   desktop and the claude.ai web app enforce, which these four had gone over (#163). Only the
   wording is shorter. Details cut from a description are still in that plugin's README.
