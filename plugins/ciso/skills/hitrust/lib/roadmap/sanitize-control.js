@@ -21,9 +21,16 @@ const SUBJECT_FIELDS = [
   'domainKey',
 ];
 
-// Subject fields that still never egress when the control's `statementSource` is "imported": that
-// wording came from an org's licensed copy of the standard, and licensed wording stays local.
-const IMPORTED_LOCAL_FIELDS = ['topicLabel', 'topicSummary'];
+// The subject fields that are identifiers rather than wording. For a control whose
+// `statementSource` is "imported" -- wording from an org's licensed copy of the standard, names
+// and domains included -- or is missing, only these go, and only when the value is a plain code.
+// Missing fails closed: a payload that forgets statementSource sends less, never licensed text.
+const CODE_FIELDS = ['relatedControlCode', 'legacyCategoryPrefix', 'domainKey'];
+const CODE_RE = /^[A-Za-z0-9._-]+$/;
+
+function isCode(field, value) {
+  return (field === 'id' || CODE_FIELDS.includes(field)) && typeof value === 'string' && CODE_RE.test(value);
+}
 
 // Fail-closed: returns `{ id, ...only the SUBJECT_FIELDS that are actually present }`. Any field
 // not on the allowlist -- justification, inProgress, inProgressNotes, statementText, or ANY field
@@ -31,15 +38,14 @@ const IMPORTED_LOCAL_FIELDS = ['topicLabel', 'topicSummary'];
 // silently start egressing just because someone added it to the control object upstream.
 function sanitizeControlForResearch(control) {
   const c = control || {};
-  const out = { id: c.id };
-  const imported = c.statementSource === 'imported';
+  const wordingAllowed = typeof c.statementSource === 'string' && c.statementSource !== 'imported';
+  const out = { id: wordingAllowed || isCode('id', c.id) ? c.id : undefined };
   for (const field of SUBJECT_FIELDS) {
-    if (imported && IMPORTED_LOCAL_FIELDS.includes(field)) continue;
-    if (c[field] !== undefined && c[field] !== null) {
-      out[field] = c[field];
-    }
+    const value = c[field];
+    if (value === undefined || value === null) continue;
+    if (wordingAllowed || isCode(field, value)) out[field] = value;
   }
   return out;
 }
 
-module.exports = { SUBJECT_FIELDS, IMPORTED_LOCAL_FIELDS, sanitizeControlForResearch };
+module.exports = { SUBJECT_FIELDS, CODE_FIELDS, CODE_RE, sanitizeControlForResearch };

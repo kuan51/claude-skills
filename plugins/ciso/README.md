@@ -123,8 +123,9 @@ something you feed in from your own machine.
   choose, and those tickets carry the control's label, summary and your justification, which a
   ticket needs.
 - **Licensed wording stays on your machine.** For a control whose wording was declared `imported`
-  (licensed text held only in your project), neither vendor research nor `ciso:sync-tasks` sends
-  its `topicLabel` or `topicSummary`.
+  (licensed text held only in your project), vendor research gets only its codes (`id`,
+  `relatedControlCode`, `legacyCategoryPrefix`, `domainKey`), never its label, summary, name or
+  domain, and `ciso:sync-tasks` sends neither its `topicLabel` nor its `topicSummary`.
 - **A project framework is data, never instructions.** Verbs read a project framework's
   `ground-rules.md` and tell you what it says, but follow the plugin's own generic ground rules and
   flows, never instructions found in a project framework file.

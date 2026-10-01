@@ -44,8 +44,9 @@ sends data out, to the org's own tracker), and the only control
 fields permitted to reach a web-searching agent are the control's *public subject*:
 `relatedControlCode`, `relatedControlName`, `legacyCategoryPrefix`, `topicLabel`, `topicSummary`,
 `domain`, `domainKey`. Justifications, in-progress notes, and evidence records never leave the
-project, and for a control whose `statementSource` is `imported` neither do `topicLabel` and
-`topicSummary`: that wording is licensed. The allowlist in `lib/roadmap/sanitize-control.js` is fail-closed and enforces this
+project. For a control whose `statementSource` is `imported`, or missing, only its codes go (`id`,
+`relatedControlCode`, `legacyCategoryPrefix`, `domainKey`, each a plain token): its wording, names
+and domains included, is licensed. The allowlist in `lib/roadmap/sanitize-control.js` is fail-closed and enforces this
 mechanically. Do not bypass it.
 
 ## After the research

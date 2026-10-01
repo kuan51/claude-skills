@@ -18,7 +18,7 @@ The roadmap workflow is certification-agnostic core (see `ADDING-A-CERTIFICATION
    entry with `roadmap.status` still `not_started` or `researching`, **except** any ids already
    dispatched to a still-running background roadmap this session (track those in conversation context
    so they aren't researched twice). Each entry is
-   `{ id, certKey, tierKey, relatedControlCode, topicLabel, domainKey, domain }`.
+   `{ id, certKey, tierKey, statementSource, relatedControlCode, topicLabel, domainKey, domain }`. Always include `statementSource` (the control's own, from `state.json`): without it `workflow.js` sends only the codes.
 
    **Only the requirement's public subject goes in the payload: never the org's `justification` or
    in-progress posture notes.** Vendor research is dispatched to a web-tool-holding agent.

@@ -20,9 +20,11 @@ interview, with findings merged in whenever it finishes.
    exactly that control, because a project framework's ids are unique only within a tier.
 
    **Only the control's public subject goes in the payload: never the org's `justification` or
-   in-progress notes.** When `statementSource` is `imported`, leave `topicLabel` and
-   `topicSummary` out too: that wording is licensed and stays on this machine. `workflow.js`'s
-   `buildPrompt` drops both mechanically through the fail-closed allowlist in
+   in-progress notes.** Always include `statementSource`: without it `workflow.js` sends only the
+   codes. When it is `imported`, leave out every wording field (`relatedControlName`, `topicLabel`,
+   `topicSummary`, `domain`) and send only `id`, `relatedControlCode` and `domainKey`: that wording,
+   names and domains included, is licensed and stays on this machine. `workflow.js`'s `buildPrompt`
+   enforces both mechanically through the fail-closed allowlist in
    `lib/roadmap/sanitize-control.js`, but don't depend on that backstop.
 
    The `Workflow` tool returns immediately with a task-id and delivers its result later through a

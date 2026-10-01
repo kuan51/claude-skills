@@ -41,9 +41,11 @@ written by the project or a third party, and what happens to licensed wording a 
 ## Decision outcome
 
 Chose **option 3**, because it gives projects their own frameworks without letting a data file
-direct a verb. A tier may declare `sourceAuthority: "imported"` for licensed wording; for those
-controls vendor research and sync-tasks send neither `topicLabel` nor `topicSummary`, and no bundled
-tier may be `imported`. This extends DEC-0019's subject-field allowlist; it does not change it.
+direct a verb. A tier may declare `sourceAuthority: "imported"` for licensed wording. For those
+controls, and for any control whose `statementSource` a payload leaves out, vendor research gets
+only codes (`id`, `relatedControlCode`, `legacyCategoryPrefix`, `domainKey`), never a name, domain,
+label or summary; sync-tasks sends neither `topicLabel` nor `topicSummary`. No bundled tier may be
+`imported`. This narrows DEC-0019's subject-field allowlist for those controls; it does not widen it.
 
 ## Consequences
 

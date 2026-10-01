@@ -87,8 +87,14 @@ const SUBJECT_FIELDS = [
 ]
 
 // Inlined from sanitize-control.js the same way: for a control whose `statementSource` is
-// "imported", these subject fields hold licensed wording and stay local.
-const IMPORTED_LOCAL_FIELDS = ['topicLabel', 'topicSummary']
+// "imported" (licensed wording, names and domains included) or is missing, only these identifier
+// fields go, and only when the value is a plain code. Missing fails closed.
+const CODE_FIELDS = ['relatedControlCode', 'legacyCategoryPrefix', 'domainKey']
+const CODE_RE = /^[A-Za-z0-9._-]+$/
+
+function isCode(field, value) {
+  return (field === 'id' || CODE_FIELDS.includes(field)) && typeof value === 'string' && CODE_RE.test(value)
+}
 
 // Builds the research prompt from ONLY the control's subject fields (see SUBJECT_FIELDS) -- the
 // public "what this control is about" metadata a vendor researcher needs. Field names vary by tier
@@ -98,14 +104,16 @@ const IMPORTED_LOCAL_FIELDS = ['topicLabel', 'topicSummary']
 function buildPrompt(control) {
   const c = control || {}
   const descriptiveFields = {}
-  const imported = c.statementSource === 'imported'
+  const wordingAllowed = typeof c.statementSource === 'string' && c.statementSource !== 'imported'
   for (const field of SUBJECT_FIELDS) {
-    if (imported && IMPORTED_LOCAL_FIELDS.includes(field)) continue
-    if (c[field] !== undefined && c[field] !== null) descriptiveFields[field] = c[field]
+    const value = c[field]
+    if (value === undefined || value === null) continue
+    if (wordingAllowed || isCode(field, value)) descriptiveFields[field] = value
   }
+  const id = wordingAllowed || isCode('id', c.id) ? c.id : '(withheld)'
   return [
     'You are researching budget-appropriate vendor, SaaS, and open-source solutions for a single security-certification control gap.',
-    `Control id: ${c.id}`,
+    `Control id: ${id}`,
     `Everything else known about this control (field names vary by certification/tier -- use whatever is present):\n${JSON.stringify(descriptiveFields, null, 2)}`,
     budgetGuidanceText,
     SOURCING_DISCIPLINE,
