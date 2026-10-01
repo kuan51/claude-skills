@@ -37,14 +37,18 @@ const FINDING_ITEM_SCHEMA = {
 
 // Reviewed content is untrusted: every opening and closing wrapper tag is stripped, repeatedly,
 // so nothing inside the data or a finding can close the wrapper early or open a second one.
-function wrap(tag, text) {
+function strip(text) {
   let s = text == null ? '' : String(text)
   let prev
   do {
     prev = s
-    s = s.replace(/<\s*\/?\s*(thesis|evidence)\s*>/gi, '')
+    s = s.replace(/<\s*\/?\s*(thesis|evidence)\b[^>]*>/gi, '')
   } while (s !== prev)
-  return `<${tag}>\n${s}\n</${tag}>`
+  return s
+}
+
+function wrap(tag, text) {
+  return `<${tag}>\n${strip(text)}\n</${tag}>`
 }
 
 const RECONCILE_SCHEMA = {

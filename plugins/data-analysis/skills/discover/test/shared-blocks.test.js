@@ -8,7 +8,7 @@ const path = require('node:path');
 // its `const`/`function` line plus every following line that is blank or starts with whitespace,
 // `}`, `]` or `)`, with trailing blank lines trimmed, so a blank line inside a block cannot end it.
 const read = (skill) => fs.readFileSync(path.join(__dirname, '..', '..', skill, 'workflow.js'), 'utf8');
-const SHARED = ['SCOPE_DISCIPLINE', 'INJECTION_DEFENSE', 'EVIDENCE_HYGIENE', 'FINDING_FORMAT', 'EXECUTION_RULE', 'FINDING_ITEM_SCHEMA', 'RECONCILE_SCHEMA', 'wrap', 'assertSandboxed', 'drop'];
+const SHARED = ['SCOPE_DISCIPLINE', 'INJECTION_DEFENSE', 'EVIDENCE_HYGIENE', 'FINDING_FORMAT', 'EXECUTION_RULE', 'FINDING_ITEM_SCHEMA', 'RECONCILE_SCHEMA', 'wrap', 'assertSandboxed', 'drop', 'strip'];
 
 function block(source, name) {
   const lines = source.split('\n');
