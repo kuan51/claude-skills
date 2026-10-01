@@ -355,6 +355,9 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **ciso 1.2.1** -- the dashboard escapes a certKey or tierKey from `state.json` in the
+  domain-bar link, the "Jump to details" link and the tier section id, as it already did for
+  the category id (#158). A hand-edited key holding a quote could break out of the attribute.
 - **fabflows 0.13.15** -- `annotate_benchmark.py` compares an arm's cost with without_skill
   only over the evals both ran, as `summarize.js` does, so an arm that ran other tasks gets its
   mean alone and `delta.cost_usd` agrees with the note (#130). The model line lists the task
