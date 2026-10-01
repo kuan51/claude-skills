@@ -18,9 +18,9 @@ Return, all required:
 
 - `topic`: the candidate's topic.
 - `business_impact`: the decision affected and why this pattern matters to it, or the words "none identified" when there is none.
-- `materiality`: `high`, `medium`, `low` or `none`, judged against the baseline: how far acting on this pattern could move the metric relative to the do-nothing or current-practice value.
-- `claim_level`: `descriptive`, `diagnostic`, `predictive` or `prescriptive`, the highest level the evidence supports. Rate `diagnostic` only when the evidence carries a design that rules out confounding: randomised assignment, a natural experiment, or a stated control for each named confounder. Never rate `diagnostic` from a correlation alone.
-- `rationale`: why this materiality and claim level.
+- `materiality`: `high`, `medium`, `low` or `none`, judged against the baseline: the observed gap between the pattern and the do-nothing or current-practice value, as it bears on the decision. It is not the effect acting on the pattern might have. A pattern whose interval includes the baseline, or whose group is too small to judge, is `low` or `none`.
+- `claim_level`: `descriptive`, `diagnostic`, `predictive` or `prescriptive`, the highest level the evidence supports. Rate above `descriptive` only when the evidence carries a design that rules out confounding: randomised assignment, a natural experiment, or a stated control for each named confounder. Never rate above `descriptive` from a correlation alone.
+- `rationale`: why this materiality and claim level. When the interval includes the baseline or the group is too small to judge, cite the interval.
 - `to_settle`: the next check that would confirm or refute the pattern. It names a test, data or re-run, never a business action, which stays the reader's call.
 
 A candidate that was not verified by execution is `descriptive`, whatever its evidence suggests, and its rationale says the computation was not confirmed.
