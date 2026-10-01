@@ -129,8 +129,8 @@ const FIXTURE_REMOTE = 'https://fixture.invalid/bench/fixture.git';
 // endings) still applies. `dir` is emptied first.
 // A launching Claude Code session's own variables (tools, skills, scratchpad, messaging socket,
 // effort) are removed too, and so is git configuration passed in the environment, which git
-// reads whatever GIT_CONFIG_NOSYSTEM and GIT_CONFIG_GLOBAL say. `droppedEnv` lists the removed
-// names, sorted, never values.
+// reads whatever GIT_CONFIG_NOSYSTEM and GIT_CONFIG_GLOBAL say. The temp directory is the run's
+// own, so parallel cells never share one. `droppedEnv` lists the removed names, sorted, never values.
 // Exact CLAUDE_ names the CLI reads for login, provider or network (a prefix would keep session variables too).
 const KEEP_ENV = [
   'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CODE_OAUTH_REFRESH_TOKEN', 'CLAUDE_CODE_OAUTH_SCOPES', 'CLAUDE_CONFIG_DIR',
@@ -149,8 +149,11 @@ function lockedEnv(baseEnv, dir) {
   fs.mkdirSync(ghConfigDir, { recursive: true });
   const gitGlobal = path.join(dir, 'gitconfig');
   fs.writeFileSync(gitGlobal, '');
+  // A temp directory of the run's own, so parallel cells never share one (TMP and TEMP for Windows).
+  const tmpDir = path.join(dir, 'tmp');
+  fs.mkdirSync(tmpDir);
   const env = { ...baseEnv };
-  const set = { GH_CONFIG_DIR: ghConfigDir, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitGlobal, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'false' };
+  const set = { GH_CONFIG_DIR: ghConfigDir, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitGlobal, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'false', TMPDIR: tmpDir, TMP: tmpDir, TEMP: tmpDir };
   const drop = new Set(['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', 'GIT_ASKPASS', 'SSH_ASKPASS', ...Object.keys(set), ...SESSION_ENV]);
   const byPrefix = (u) => ((u.startsWith('CLAUDE_') || u.startsWith('CCR_')) && !KEEP_ENV.includes(u)) || /^GIT_CONFIG_(KEY|VALUE)_/.test(u);
   const droppedEnv = Object.keys(env).filter((k) => drop.has(k.toUpperCase()) || byPrefix(k.toUpperCase())).sort();
@@ -619,7 +622,7 @@ function runCell(a, cell, settingsPath, spawnSession = spawn) {
   // on waiting for background work in print mode.
   Object.assign(env, { FABFLOWS_PROBE: probePath, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0' });
   at('fixture', () => prepareFixture(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || []));
-  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, droppedEnv, plugin: (a.pluginRecords || {})[cell.config] || null, startedAt: new Date().toISOString() });
+  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, TMPDIR: env.TMPDIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, droppedEnv, plugin: (a.pluginRecords || {})[cell.config] || null, startedAt: new Date().toISOString() });
 
   const caps = capsFor(cell.task);
   return new Promise((resolve, reject) => {

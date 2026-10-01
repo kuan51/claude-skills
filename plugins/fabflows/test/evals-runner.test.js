@@ -213,6 +213,23 @@ test('a session does not inherit the launching session\'s variables, keeps its l
   for (const v of Object.values(fake)) assert.equal(record.includes(v), false, 'run.json holds no value of a removed or kept name');
 });
 
+test('each session gets a temp directory of its own, under its run\'s -iso directory, and run.json records it', async () => {
+  const a = baseArgs({ parallel: 2 });
+  const cells = run.buildCells({ tasks: [1], arms: ['without_skill'], repeats: 2 });
+  const seen = [];
+  const { spawnSession } = standIn('error', (opts) => seen.push(opts.env));
+  await run.runAll(a, cells, spawnSession);
+  assert.equal(seen.length, 2);
+  const dirs = seen.map((env) => env.TMPDIR);
+  assert.notEqual(dirs[0], dirs[1], 'two cells share a temp directory');
+  for (const env of seen) {
+    assert.deepEqual([env.TMP, env.TEMP], [env.TMPDIR, env.TMPDIR]);
+    assert.ok(fs.statSync(env.TMPDIR).isDirectory(), `${env.TMPDIR} is not a directory`);
+    assert.ok(path.dirname(env.TMPDIR).endsWith('-iso'), `${env.TMPDIR} is not under the run's -iso directory`);
+  }
+  assert.ok(cells.some((c) => readJson(path.join(run.runDirFor(a, c), 'run.json')).env.TMPDIR === dirs[0]), 'run.json does not record the TMPDIR');
+});
+
 function writeManifest(dir, manifest) {
   fs.mkdirSync(path.join(dir, '.claude-plugin'), { recursive: true });
   fs.writeFileSync(path.join(dir, '.claude-plugin', 'plugin.json'), JSON.stringify(manifest));

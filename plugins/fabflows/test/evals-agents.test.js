@@ -255,7 +255,7 @@ test('lockedEnv and isolatedLaunch remove a parent session\'s variables and env-
   const kept = ['ANTHROPIC_BASE_URL', 'AWS_REGION', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CODE_PROXY_RESOLVES_HOSTS', 'CLAUDE_CODE_USE_BEDROCK'];
   const parent = Object.fromEntries([...removed, ...kept].map((k) => [k, 'fake']));
   parent.PATH = fakeBin;
-  const lockout = ['GH_CONFIG_DIR', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_SSH_COMMAND', 'GIT_TERMINAL_PROMPT'];
+  const lockout = ['GH_CONFIG_DIR', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_SSH_COMMAND', 'GIT_TERMINAL_PROMPT', 'TEMP', 'TMP', 'TMPDIR'];
   const sorted = (xs) => [...xs].sort();
 
   const locked = run.lockedEnv(parent, path.join(tmp('lock-'), 'x'));
