@@ -59,8 +59,9 @@ label or summary; sync-tasks sends neither `topicLabel` nor `topicSummary`. No b
 **Bad:**
 
 - Project frameworks get only the generic flows. They have no scope, import or upgrade step.
-- The trust rule is enforced by what each verb's `SKILL.md` tells the model, backed by tests that
-  every verb names both ground-rules files. It is not a sandbox.
+- The trust rule is enforced by what each verb's `SKILL.md` tells the model, through the shared
+  `skills/_shared/resolve-framework.md` step, backed by tests that every verb follows that step and
+  that it names both ground-rules files. It is not a sandbox.
 - `imported` is self-declared. A project that copies licensed text and labels it
   `public-topic-level` still sends it to vendor research.
 
