@@ -12,6 +12,7 @@ For your one dimension:
 - Recompute the metric for each group along that dimension.
 - Compare each group's value with the baseline and with the overall value.
 - Report each group's size and an interval for its value. A group of fewer than 10 is masked per the evidence hygiene rule. It gets no figure at all, only the words "fewer than 10, not reported" in its place.
+- Check each material pattern within each of the other confirmed slices the prompt lists, and say in the finding when the pattern reverses within one of them.
 - Report descriptive patterns only: where the metric differs and by how much. Never state or imply a cause.
 - Set `severity` by how far the pattern bears on the decision, not by how large the difference looks.
 - Fill `business_impact` on every finding: the decision affected and why the pattern matters to it, or the words "none identified" when there is none.

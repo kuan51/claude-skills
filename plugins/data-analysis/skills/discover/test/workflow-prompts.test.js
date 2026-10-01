@@ -87,6 +87,19 @@ test('one opus pattern hunter per slice, each with the thesis block, its slice a
   }
 });
 
+test('each hunter lists the other confirmed slices to check for reversals, or none with one slice', async () => {
+  const r = await run();
+  const [region, cohort] = baseArgs().slices;
+  const others = (c) => c.prompt.slice(c.prompt.indexOf('Other confirmed slices:')).split('\n\n')[0];
+  assert.ok(r.hunts[0].prompt.includes(`Your slice (the one dimension to cut the data along): ${region.label}\nDefinition: ${region.definition}`));
+  assert.match(others(r.hunts[0]), /reverses within one/);
+  assert.ok(others(r.hunts[0]).includes(`- ${cohort.label}: ${cohort.definition}`));
+  assert.ok(!others(r.hunts[0]).includes(region.label));
+  assert.ok(others(r.hunts[1]).includes(`- ${region.label}: ${region.definition}`));
+  const one = await run({ args: baseArgs({ slices: [region] }) });
+  assert.ok(others(one.hunts[0]).endsWith('\nnone'), others(one.hunts[0]));
+});
+
 test('refuses before any agent on a blank decision, metric or baseline, bad slices or data paths, or a path outside the sandbox', async () => {
   for (const k of ['decision', 'metric', 'baseline']) {
     for (const bad of [undefined, '', '   ']) await refuses(baseArgs({ [k]: bad }));
@@ -127,6 +140,8 @@ test('reconcile prompt carries the cap and reversal rule, findings in evidence t
   assert.equal(r.rec.opts.model, 'opus');
   assert.ok(r.rec.prompt.includes('maxCandidates is 5'));
   assert.match(r.rec.prompt, /holds along one dimension and reverses along another/);
+  assert.match(r.rec.prompt, /A finding that reports a reversal goes in `disagreements` too, and the merged topic's `finding` keeps the reversal\./);
+  assert.ok(!r.rec.prompt.includes('for example, a group above the baseline'));
   assert.match(r.rec.prompt, /Never merge a high-severity finding with an unrelated finding/);
   assert.match(r.rec.prompt, /conflicting `business_impact` values/);
   assert.match(r.rec.prompt, /`verified: true` only when every finding it merges is verified/);

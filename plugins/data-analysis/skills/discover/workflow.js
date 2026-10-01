@@ -187,6 +187,7 @@ const huntResults = await parallel(
       HUNT_BUSINESS_IMPACT,
       THESIS_LINE,
       `Your slice (the one dimension to cut the data along): ${slice.label}\nDefinition: ${slice.definition}`,
+      `Other confirmed slices: check each material pattern you find within each of these, and say in the finding when it reverses within one.\n${slices.filter((o) => o !== slice).map((o) => `- ${o.label}: ${o.definition}`).join('\n') || 'none'}`,
       `Data files you may use, and ONLY these:\n${(A.dataPaths || []).map((p) => `- ${p}`).join('\n')}`,
       `Working directory: your sandbox root is ${A.sandboxRoot}. Start every Bash command with \`cd ${A.sandboxRoot} &&\`, and read and write only inside it.`,
     ].join('\n\n'), {
@@ -207,7 +208,7 @@ const reconcilePrompt = [
   EVIDENCE_HYGIENE,
   `You are reconciling candidate patterns from ${validHunts.length} pattern hunters. Each cut the same data along one dimension; none of them saw each other's work.`,
   `Candidate cap: maxCandidates is ${MAX_CANDIDATES}; at most ${MAX_CANDIDATES} reconciled topics go on to the so-what audit. Set \`severity\` (\`low\`, \`medium\` or \`high\`) on each reconciled topic: the highest severity among the findings it merges. Merge lower-severity findings to fit within the cap where you can. Never merge a high-severity finding with an unrelated finding to meet the cap; related findings, such as the same pattern seen along two dimensions, still merge. When merging forced unrelated findings together, say so in \`disagreements\`.`,
-  'Reversal: a pattern that holds along one dimension and reverses along another (for example, a group above the baseline overall but below it within each segment) goes in `disagreements`, naming both dimensions in `roles_involved`.',
+  "Reversal: a pattern that holds along one dimension and reverses along another goes in `disagreements`, naming both dimensions in `roles_involved`. A finding that reports a reversal goes in `disagreements` too, and the merged topic's `finding` keeps the reversal.",
   "Merged topics: keep any claim level (descriptive, diagnostic, predictive, prescriptive) a merged finding names in the topic's `finding`. Carry `business_impact`; when merged findings give conflicting `business_impact` values, merge them into one line and record the conflict in `disagreements`. A merged topic is `verified: true` only when every finding it merges is verified; otherwise it is `verified: false` and its `finding` says which part is unconfirmed.",
   ...validHunts.map((r) => `### ${r.label}\n${wrap('evidence', JSON.stringify(r.findings))}`),
 ].join('\n\n')
