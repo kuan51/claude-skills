@@ -24,7 +24,9 @@ docs/ciso/frameworks/example/
 ```
 
 Any other file or subfolder is ignored, but a file ciso needs that exists and cannot be read is a
-validation error. A project framework may not have a `flows/` folder; see
+validation error. These files must be real files, not symlinks: ciso reads them and shows you what
+they say, so a link could point it at any file on your machine. The folder itself may be a
+symlink. A project framework may not have a `flows/` folder; see
 [Project frameworks are data](#project-frameworks-are-data).
 
 A complete minimal example lives at

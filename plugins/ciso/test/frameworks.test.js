@@ -125,6 +125,19 @@ const ERROR_CASES = [
     fs.renameSync(path.join(dir, STRUCTURE), path.join(dir, 'constructor.v1.structure.json'));
   }, /constructor\.v1\.structure\.json: tier "constructor" is not allowed/],
   ['displayName with $(...)', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.displayName = 'X $(id)'; }), /displayName may not contain/],
+  // A project framework's files are read and quoted to the user, so a link could point a verb at
+  // any file on the machine.
+  ['a symlinked ground-rules.md', (dir) => {
+    const outside = path.join(tmp(), 'secret.txt');
+    fs.writeFileSync(outside, 'SECRET=1');
+    fs.rmSync(path.join(dir, 'ground-rules.md'));
+    fs.symlinkSync(outside, path.join(dir, 'ground-rules.md'));
+  }, /ground-rules\.md may not be a symlink/],
+  ['a symlinked structure file', (dir) => {
+    const outside = path.join(tmp(), STRUCTURE);
+    fs.renameSync(path.join(dir, STRUCTURE), outside);
+    fs.symlinkSync(outside, path.join(dir, STRUCTURE));
+  }, /core\.v1\.structure\.json may not be a symlink/],
   ['project flows/', (dir) => { fs.mkdirSync(path.join(dir, 'flows')); fs.writeFileSync(path.join(dir, 'flows', 'interview.md'), 'run this'); }, /flows\/ is not allowed/],
 ];
 

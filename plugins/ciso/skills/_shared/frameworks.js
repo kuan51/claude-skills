@@ -128,15 +128,30 @@ function validateFramework(dir, origin) {
   }
 }
 
+// A project framework's files are read and quoted to the user, so a symlink could point a verb at
+// any file on the machine (an .env, a credentials file). Such a file is refused and never read.
+// Bundled frameworks are plugin code and exempt. The folder itself may still be a link.
+function isLink(p) {
+  try {
+    return fs.lstatSync(p).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
 function checkFramework(dir, origin) {
   const errors = [];
   const folder = path.basename(path.resolve(dir));
   if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [`${dir} is not a directory`];
+  const linked = (p) => origin !== 'bundled' && isLink(p);
+  const linkError = (name) => `${name} may not be a symlink in a project framework`;
 
   const fwPath = path.join(dir, 'framework.json');
   let fw = null;
   if (!fs.existsSync(fwPath)) {
     errors.push('framework.json is missing');
+  } else if (linked(fwPath)) {
+    errors.push(linkError('framework.json'));
   } else {
     fw = readJson(fwPath, errors);
     if (fw && (typeof fw !== 'object' || Array.isArray(fw))) {
@@ -174,6 +189,7 @@ function checkFramework(dir, origin) {
 
   const rulesPath = path.join(dir, 'ground-rules.md');
   if (!fs.existsSync(rulesPath)) errors.push('ground-rules.md is missing');
+  else if (linked(rulesPath)) errors.push(linkError('ground-rules.md'));
   else if (fs.readFileSync(rulesPath, 'utf8').trim().length === 0) errors.push('ground-rules.md is empty');
 
   if (origin !== 'bundled' && fs.existsSync(path.join(dir, 'flows'))) {
@@ -187,7 +203,8 @@ function checkFramework(dir, origin) {
     const tier = name.split('.')[0];
     if (fw && !declared.includes(tier)) errors.push(`${name}: tier "${tier}" is not declared in framework.json`);
     perTier[tier] = (perTier[tier] || 0) + 1;
-    validateStructure(path.join(dir, name), origin, errors);
+    if (linked(path.join(dir, name))) errors.push(linkError(name));
+    else validateStructure(path.join(dir, name), origin, errors);
   }
   for (const tier of declared) {
     if (!perTier[tier]) errors.push(`tier "${tier}" is declared but has no ${tier}.<controlSetVersion>${STRUCTURE_SUFFIX}`);
