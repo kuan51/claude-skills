@@ -8,6 +8,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **data-analysis 1.0.0** -- a second skill, `data-analysis:discover`, starts from a business
+  decision, its metric and a baseline, and surfaces the patterns the raw data supports (#105).
+  One pattern hunter cuts the data along each confirmed dimension, a reconciler flags patterns
+  that reverse across dimensions, and a skeptic rates each candidate for materiality against
+  the baseline and for the claim level its evidence supports, never a cause. Its sandbox holds
+  only data files and data docs, and its report states that the patterns were found in a
+  single run.
 - **fabflows 0.15.0** -- the build loop's first review sweeps each function the diff calls by
   its cases, probing one literal input per case and reporting an unprobed case as an open
   question (#154). The reviewer's verdict gains `head`, the commit it read, and rounds 2 and 3

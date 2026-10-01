@@ -19,7 +19,7 @@ repository docs honest, and route work from an expensive lead model to cheaper w
 
 | Plugin | What it does |
 | --- | --- |
-| [data-analysis](plugins/data-analysis/) | Re-derives a data science project's findings from its raw data and code, then checks its stated conclusions. |
+| [data-analysis](plugins/data-analysis/) | Re-derives a data science project's findings from its raw data and code, then checks its stated conclusions; or surfaces the patterns in its data that bear on a business decision. |
 | [ciso](plugins/ciso/) | Tracks work toward HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC in local HTML dashboards. |
 | [docs-warden](plugins/docs-warden/) | Scaffolds and audits a repository's documents and keeps its decision records append-only. |
 | [fabflows](plugins/fabflows/) | Routes work from an expensive lead model to tool-scoped workers and makes the lead re-verify what they report. |
@@ -52,12 +52,16 @@ first session.
 
 - **[data-analysis](plugins/data-analysis/)**: an independent check of whether a
   data science project's stated conclusions hold up, and a list of what the data supports that
-  the project never claimed.
+  the project never claimed; or, when there is a decision to inform, the patterns its data
+  supports.
   - **Blind review.** Specialist reviewers for data quality, statistics, domain alignment and
     reproducibility, plus optional extras, re-derive findings from the raw data and code before
     they see what the project claims.
   - **Claim check.** Their findings are then compared with the project's own conclusions, one
     topic at a time.
+  - **Decision-led discovery.** `discover` starts from a decision, its metric and a baseline,
+    cuts the data along a few confirmed dimensions, and rates each pattern for materiality
+    without claiming a cause.
   - **Works on a copy.** All analysis, including code execution, runs on a disposable copy. The
     only write to the reviewed project is an optional report file, and only if you opt in.
 - **[ciso](plugins/ciso/)**: tracks work toward security certifications alongside the
