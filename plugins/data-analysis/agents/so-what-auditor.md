@@ -16,7 +16,7 @@ You get no files. Judge only the evidence you are given, and invent no figure.
 Return, all required:
 
 - `topic`: the candidate's topic.
-- `business_impact`: the decision affected and why this pattern matters to it, or "none identified".
+- `business_impact`: the decision affected and why this pattern matters to it, or the words "none identified" when there is none.
 - `materiality`: `high`, `medium`, `low` or `none`, judged against the baseline: how far acting on this pattern could move the metric relative to the do-nothing or current-practice value.
 - `claim_level`: `descriptive`, `diagnostic`, `predictive` or `prescriptive`, the highest level the evidence supports. Rate `diagnostic` only when the evidence carries a design that rules out confounding: randomised assignment, a natural experiment, or a stated control for each named confounder. Never rate `diagnostic` from a correlation alone.
 - `rationale`: why this materiality and claim level.

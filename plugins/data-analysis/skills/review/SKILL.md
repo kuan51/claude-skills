@@ -13,7 +13,7 @@ Performs an empirical, objective review of a data science project in the current
 
 - The user wants you to fix, refactor, or build on the project. This skill only reviews, it never edits the target project.
 - The user wants a one-off quick question answered about the data. This skill's full gating + multi-agent flow is overkill for that. Just answer directly.
-- There is no conclusion to check, but a decision to inform. Use `data-analysis:discover`.
+- You have a decision to inform but no conclusion to check. Use `data-analysis:discover`.
 
 ## Process
 

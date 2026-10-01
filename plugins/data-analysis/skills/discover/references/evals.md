@@ -19,7 +19,7 @@ under-triggering and over-triggering are real failure modes.
 
 ### Implicit
 
-1. "Should we keep the free-shipping threshold at $50? Conversion is 3.1% today. What in the
+1. "Should we keep the free-delivery threshold at $50? Conversion is 3.1% today. What in the
    order data bears on that?"
 2. "Which customer segments would move retention most if we changed onboarding? Retention is
    62% now."
