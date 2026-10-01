@@ -22,8 +22,9 @@ interview, with findings merged in whenever it finishes.
    **Only the control's public subject goes in the payload: never the org's `justification` or
    in-progress notes.** Always include `statementSource`: without it `workflow.js` sends only the
    codes. When it is `imported`, leave out every wording field (`relatedControlName`, `topicLabel`,
-   `topicSummary`, `domain`) and send only `id`, `relatedControlCode` and `domainKey`: that wording,
-   names and domains included, is licensed and stays on this machine. `workflow.js`'s `buildPrompt`
+   `topicSummary`, `domain`): that wording, names and domains included, is licensed and stays on
+   this machine. The entry still carries `id`, `certKey`, `tierKey`, `statementSource`,
+   `relatedControlCode` and `domainKey`. `workflow.js`'s `buildPrompt`
    enforces both mechanically through the fail-closed allowlist in
    `lib/roadmap/sanitize-control.js`, but don't depend on that backstop.
 
