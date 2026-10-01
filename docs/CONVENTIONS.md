@@ -85,7 +85,7 @@ own harness under `evals/harness/`. Its `brainstorming` evals are in
 [#122](https://github.com/kuan51/claude-skills/issues/122) and not yet re-measured. `ciso` and
 `data-analysis` have trigger-accuracy
 lists run by hand: `evals/trigger-corpus.json` (procedure in `evals/RUNBOOK.md`)
-and `skills/review/references/evals.md`. [EVALS.md](EVALS.md)
+and `skills/review/references/evals.md` plus `skills/discover/references/evals.md`. [EVALS.md](EVALS.md)
 compares each plugin with no skill wherever that has been measured, and points
 to the full results.
 

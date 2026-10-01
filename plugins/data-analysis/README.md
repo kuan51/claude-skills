@@ -4,7 +4,7 @@ Two skills for a data science project. `review` empirically reviews it: independ
 re-derives findings from its raw data and code (blind to what the project itself claims), then
 checks whether those claims actually hold up. `discover` starts from a business decision and
 surfaces the patterns its data supports; see [Discover](#discover). Neither modifies the
-project. See [Guarantees](#guarantees).
+project. See [Guarantees](#guarantees) and [Discover guarantees](#discover-guarantees).
 
 Not installed yet? See the [repo root README](../../README.md) for how to add this marketplace
 and install the plugin.
@@ -27,6 +27,7 @@ Upgrading from `data-analysis-review`? Version 1.0.0 renames the plugin. Run
   the project it's reviewing.
 - You have a quick, one-off question about the data. This skill's full gating-and-review flow
   is overkill for that; just ask directly instead.
+- There is no conclusion to check, only a decision to inform. Use [discover](#discover).
 
 ## Quickstart
 

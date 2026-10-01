@@ -35,8 +35,9 @@ disagrees with them.
   [plugins/ciso/evals/trigger-corpus.json](../plugins/ciso/evals/trigger-corpus.json), with its
   procedure in [plugins/ciso/evals/RUNBOOK.md](../plugins/ciso/evals/RUNBOOK.md). No result
   recorded.
-- **data-analysis.** A trigger list run by hand,
-  [references/evals.md](../plugins/data-analysis/skills/review/references/evals.md).
+- **data-analysis.** A trigger list run by hand for each skill:
+  [review](../plugins/data-analysis/skills/review/references/evals.md) and
+  [discover](../plugins/data-analysis/skills/discover/references/evals.md).
   No result recorded.
 - **fabflows' `ticket`, `trace` and `fabflows-setup` skills.** Only in fabflows' own trigger
   list run by hand,
