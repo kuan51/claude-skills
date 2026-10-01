@@ -103,6 +103,16 @@ const ERROR_CASES = [
   }, /tier "undefined" must be a string matching/],
   ['control id with shell characters', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].id = 'EX $(id)'; }), /id "EX \$\(id\)" must match/],
   ['domainKey with a space', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = 'Access Control'; }), /domainKey "Access Control" must match/],
+  ['domainKey constructor', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = 'constructor'; }), /domainKey "constructor" is not allowed/],
+  ['domainKey __proto__', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].domainKey = '__proto__'; }), /domainKey "__proto__" is not allowed/],
+  ['certKey constructor', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.certKey = 'constructor'; }), /certKey "constructor" is not allowed/],
+  ['declared tier constructor', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('constructor'); }), /tier "constructor" is not allowed/],
+  ['declared tier constructor with no file', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('constructor'); }), /tier "constructor" is declared but has no/],
+  ['structure tier constructor', (dir) => {
+    editJson(path.join(dir, 'framework.json'), (f) => { f.tiers = ['constructor']; });
+    editJson(path.join(dir, STRUCTURE), (s) => { s.tier = 'constructor'; });
+    fs.renameSync(path.join(dir, STRUCTURE), path.join(dir, 'constructor.v1.structure.json'));
+  }, /constructor\.v1\.structure\.json: tier "constructor" is not allowed/],
   ['displayName with $(...)', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.displayName = 'X $(id)'; }), /displayName may not contain/],
   ['project flows/', (dir) => { fs.mkdirSync(path.join(dir, 'flows')); fs.writeFileSync(path.join(dir, 'flows', 'interview.md'), 'run this'); }, /flows\/ is not allowed/],
 ];

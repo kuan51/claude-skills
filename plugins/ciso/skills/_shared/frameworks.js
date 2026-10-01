@@ -57,6 +57,8 @@ function validateStructure(file, origin, errors) {
   }
   if (typeof s.tier !== 'string' || !KEY_RE.test(s.tier)) {
     errors.push(`${name}: tier "${s.tier}" must be a string matching ${KEY_RE}`);
+  } else if (FORBIDDEN_IDS.includes(s.tier)) {
+    errors.push(`${name}: tier "${s.tier}" is not allowed`);
   }
   if (!VERSION_RE.test(String(s.controlSetVersion))) {
     errors.push(`${name}: controlSetVersion "${s.controlSetVersion}" must match ${VERSION_RE}`);
@@ -97,6 +99,8 @@ function validateStructure(file, origin, errors) {
     }
     if (isNonEmptyString(c.domainKey) && !SAFE_TOKEN_RE.test(c.domainKey)) {
       errors.push(`${where}: domainKey "${c.domainKey}" must match ${SAFE_TOKEN_RE}`);
+    } else if (FORBIDDEN_IDS.includes(c.domainKey)) {
+      errors.push(`${where}: domainKey "${c.domainKey}" is not allowed`);
     }
     for (const field of STATE_ONLY_FIELDS) {
       if (Object.prototype.hasOwnProperty.call(c, field)) {
@@ -126,6 +130,8 @@ function validateFramework(dir, origin) {
   if (fw) {
     if (!isNonEmptyString(fw.certKey) || !KEY_RE.test(fw.certKey)) {
       errors.push(`framework.json: certKey "${fw.certKey}" must match ${KEY_RE}`);
+    } else if (FORBIDDEN_IDS.includes(fw.certKey)) {
+      errors.push(`framework.json: certKey "${fw.certKey}" is not allowed`);
     } else if (fw.certKey !== folder) {
       errors.push(`framework.json: certKey "${fw.certKey}" must equal the folder name "${folder}"`);
     }
@@ -142,6 +148,7 @@ function validateFramework(dir, origin) {
       const seen = new Set();
       for (const t of fw.tiers) {
         if (typeof t !== 'string' || !KEY_RE.test(t)) errors.push(`framework.json: tier "${t}" must match ${KEY_RE}`);
+        else if (FORBIDDEN_IDS.includes(t)) errors.push(`framework.json: tier "${t}" is not allowed`);
         else if (seen.has(t)) errors.push(`framework.json: duplicate tier "${t}"`);
         seen.add(t);
       }
@@ -158,7 +165,7 @@ function validateFramework(dir, origin) {
 
   const structureFiles = fs.readdirSync(dir).filter((n) => n.endsWith(STRUCTURE_SUFFIX)).sort();
   const declared = (fw && fw.tiers) || [];
-  const perTier = {};
+  const perTier = Object.create(null);
   for (const name of structureFiles) {
     const tier = name.split('.')[0];
     if (fw && !declared.includes(tier)) errors.push(`${name}: tier "${tier}" is not declared in framework.json`);
