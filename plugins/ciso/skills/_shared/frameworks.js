@@ -13,6 +13,7 @@
  * Usage:
  *   node frameworks.js list <docs/ciso-dir>       frameworks as JSON on stdout, errors on stderr;
  *                                                 exit 1 only when a bundled framework is invalid
+ *                                                 or none is found
  *   node frameworks.js validate <dir> [--bundled] errors on stderr and exit 1, or "ok"
  *
  * Stdlib only -- no npm dependencies.
@@ -23,7 +24,9 @@ const path = require('path');
 const { STATE_ONLY_FIELDS } = require('../hitrust/lib/versioning/reconcile-state-version.js');
 
 const BUNDLED_ROOT = path.join(__dirname, '..', '..', 'frameworks');
-const KEY_RE = /^[a-z0-9-]+$/;
+// No leading, trailing or doubled hyphen: render-dashboard.js's certPageSlug trims edge hyphens, so
+// `hitrust-` would otherwise share cert-hitrust.html with `hitrust`.
+const KEY_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const VERSION_RE = /^v[A-Za-z0-9.-]+$/;
 const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'imported'];
 const CONTROL_STRINGS = ['domain', 'domainKey', 'topicLabel', 'topicSummary'];
@@ -65,8 +68,8 @@ function validateStructure(file, origin, errors) {
   } else if (isReservedKey(s.tier)) {
     errors.push(`${name}: tier "${s.tier}" is not allowed`);
   }
-  if (!VERSION_RE.test(String(s.controlSetVersion))) {
-    errors.push(`${name}: controlSetVersion "${s.controlSetVersion}" must match ${VERSION_RE}`);
+  if (typeof s.controlSetVersion !== 'string' || !VERSION_RE.test(s.controlSetVersion)) {
+    errors.push(`${name}: controlSetVersion "${s.controlSetVersion}" must be a string matching ${VERSION_RE}`);
   }
   if (name !== `${s.tier}.${s.controlSetVersion}${STRUCTURE_SUFFIX}`) {
     errors.push(`${name}: filename must be <tier>.<controlSetVersion>${STRUCTURE_SUFFIX} from its own fields ("${s.tier}", "${s.controlSetVersion}")`);
@@ -119,22 +122,42 @@ function validateStructure(file, origin, errors) {
 // cannot be read (a directory named ground-rules.md, a folder without read permission) is reported
 // as an error rather than thrown, so one broken project folder never stops a listing.
 function validateFramework(dir, origin) {
+  return inspectFramework(dir, origin).errors;
+}
+
+// { errors, fw }, where fw is the parsed framework.json, so a listing reads it only once.
+function inspectFramework(dir, origin) {
   try {
     return checkFramework(dir, origin);
   } catch (err) {
-    return [`not readable (${err.message})`];
+    return { errors: [`not readable (${err.message})`], fw: null };
+  }
+}
+
+// A project framework's files are read and quoted to the user, so a symlink could point a verb at
+// any file on the machine (an .env, a credentials file). Such a file is refused and never read.
+// Bundled frameworks are plugin code and exempt. The folder itself may still be a link.
+function isLink(p) {
+  try {
+    return fs.lstatSync(p).isSymbolicLink();
+  } catch {
+    return false;
   }
 }
 
 function checkFramework(dir, origin) {
   const errors = [];
   const folder = path.basename(path.resolve(dir));
-  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [`${dir} is not a directory`];
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return { errors: [`${dir} is not a directory`], fw: null };
+  const linked = (p) => origin !== 'bundled' && isLink(p);
+  const linkError = (name) => `${name} may not be a symlink in a project framework`;
 
   const fwPath = path.join(dir, 'framework.json');
   let fw = null;
   if (!fs.existsSync(fwPath)) {
     errors.push('framework.json is missing');
+  } else if (linked(fwPath)) {
+    errors.push(linkError('framework.json'));
   } else {
     fw = readJson(fwPath, errors);
     if (fw && (typeof fw !== 'object' || Array.isArray(fw))) {
@@ -172,6 +195,7 @@ function checkFramework(dir, origin) {
 
   const rulesPath = path.join(dir, 'ground-rules.md');
   if (!fs.existsSync(rulesPath)) errors.push('ground-rules.md is missing');
+  else if (linked(rulesPath)) errors.push(linkError('ground-rules.md'));
   else if (fs.readFileSync(rulesPath, 'utf8').trim().length === 0) errors.push('ground-rules.md is empty');
 
   if (origin !== 'bundled' && fs.existsSync(path.join(dir, 'flows'))) {
@@ -185,25 +209,33 @@ function checkFramework(dir, origin) {
     const tier = name.split('.')[0];
     if (fw && !declared.includes(tier)) errors.push(`${name}: tier "${tier}" is not declared in framework.json`);
     perTier[tier] = (perTier[tier] || 0) + 1;
-    validateStructure(path.join(dir, name), origin, errors);
+    if (linked(path.join(dir, name))) errors.push(linkError(name));
+    else validateStructure(path.join(dir, name), origin, errors);
   }
   for (const tier of declared) {
     if (!perTier[tier]) errors.push(`tier "${tier}" is declared but has no ${tier}.<controlSetVersion>${STRUCTURE_SUFFIX}`);
     else if (perTier[tier] > 1) errors.push(`tier "${tier}" has ${perTier[tier]} structure files; exactly one is allowed`);
   }
-  return errors;
+  return { errors, fw };
 }
 
+// Folders under `root`, following symlinks so a linked framework folder counts like a real one.
+// Throws when `root` exists but cannot be listed (a file, or no read permission).
 function subdirs(root) {
   if (!root || !fs.existsSync(root)) return [];
-  return fs.readdirSync(root, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => path.join(root, e.name))
+  return fs.readdirSync(root)
+    .map((name) => path.join(root, name))
+    .filter((p) => {
+      try {
+        return fs.statSync(p).isDirectory();
+      } catch {
+        return false; // a dangling symlink is not a framework folder
+      }
+    })
     .sort();
 }
 
-function describe(dir, origin) {
-  const fw = JSON.parse(fs.readFileSync(path.join(dir, 'framework.json'), 'utf8'));
+function describe(dir, origin, fw) {
   return { certKey: fw.certKey, displayName: fw.displayName, summary: fw.summary, tiers: fw.tiers, dir, origin };
 }
 
@@ -213,23 +245,37 @@ function listFrameworks(docsCisoDir, bundledRoot) {
   const frameworks = [];
   const errors = [];
   const bundled = new Map();
-  for (const dir of subdirs(bundledRoot || BUNDLED_ROOT)) {
+  const root = bundledRoot || BUNDLED_ROOT;
+  const bundledDirs = subdirs(root);
+  // No bundled framework at all is a broken install (a partial copy, a renamed folder), never an
+  // empty catalog: report it so `list` exits 1 and the dashboard throws.
+  if (bundledDirs.length === 0) {
+    errors.push({ origin: 'bundled', dir: root, message: 'no bundled framework found -- the ciso install is incomplete' });
+  }
+  for (const dir of bundledDirs) {
     // Claimed even when invalid, so a project folder can never stand in for a broken bundled one.
     bundled.set(path.basename(dir), dir);
-    const msgs = validateFramework(dir, 'bundled');
+    const { errors: msgs, fw } = inspectFramework(dir, 'bundled');
     if (msgs.length) msgs.forEach((message) => errors.push({ origin: 'bundled', dir, message }));
-    else frameworks.push(describe(dir, 'bundled'));
+    else frameworks.push(describe(dir, 'bundled', fw));
   }
   const projectRoot = docsCisoDir ? path.join(path.resolve(docsCisoDir), 'frameworks') : null;
-  for (const dir of subdirs(projectRoot)) {
+  let projectDirs = [];
+  try {
+    projectDirs = subdirs(projectRoot);
+  } catch (err) {
+    // The project's own folder is the user's data: report it and keep the bundled frameworks.
+    errors.push({ origin: 'project', dir: projectRoot, message: `not readable (${err.message})` });
+  }
+  for (const dir of projectDirs) {
     const name = path.basename(dir);
     if (bundled.has(name)) {
       errors.push({ origin: 'project', dir, message: `certKey "${name}" clashes with the bundled framework at ${bundled.get(name)}; ${dir} is excluded` });
       continue;
     }
-    const msgs = validateFramework(dir, 'project');
+    const { errors: msgs, fw } = inspectFramework(dir, 'project');
     if (msgs.length) msgs.forEach((message) => errors.push({ origin: 'project', dir, message }));
-    else frameworks.push(describe(dir, 'project'));
+    else frameworks.push(describe(dir, 'project', fw));
   }
   return { frameworks, errors };
 }

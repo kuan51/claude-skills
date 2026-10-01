@@ -1,4 +1,4 @@
-# Interview: generic flow
+# Generic interview flow
 
 Read this when `ciso:interview` resolves a framework with no `flows/interview.md` of its own, which
 is every project framework. The core discipline lives in `generic-ground-rules.md`, which the verb

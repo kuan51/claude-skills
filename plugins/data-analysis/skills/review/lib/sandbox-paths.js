@@ -1,7 +1,9 @@
 'use strict';
 
+// Forward slashes, doubled slashes collapsed (a UNC root keeps its leading `//`), no trailing slash.
 function normalize(p) {
-  return String(p).replace(/\\/g, '/').replace(/\/+$/, '');
+  const s = String(p).replace(/\\/g, '/');
+  return (s.startsWith('//') ? '/' : '') + s.replace(/\/{2,}/g, '/').replace(/\/+$/, '');
 }
 
 function rewritePath(originalPath, projectRoot, sandboxRoot) {
@@ -18,7 +20,7 @@ function rewritePaths(paths, projectRoot, sandboxRoot) {
   return (paths || []).map((p) => rewritePath(p, projectRoot, sandboxRoot));
 }
 
-module.exports = { rewritePath, rewritePaths };
+module.exports = { normalize, rewritePath, rewritePaths };
 
 if (require.main === module) {
   const [projectRoot, sandboxRoot, ...paths] = process.argv.slice(2);

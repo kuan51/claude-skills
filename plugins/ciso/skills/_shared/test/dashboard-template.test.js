@@ -585,16 +585,21 @@ test('index view: unregistered bundled and project cards both name ciso:register
   assert.ok(overviewHtml.includes('Example Framework'));
 });
 
-for (const [sourceAuthority, expectNote] of [
-  ['public-topic-level', true],
-  ['publisher-verbatim', false],
-  ['imported', false],
+// Judged per control, not per tier: re-registering bundled HITRUST e1 after an import puts
+// public-topic-level paraphrases into a tier recorded as imported, and a control registered before
+// sourceAuthority existed is recorded as structural-only.
+for (const [statementSource, tierAuthority, expectNote] of [
+  ['public-topic-level', 'public-topic-level', true],
+  ['public-topic-level', 'imported', true],
+  ['structural-only', 'structural-only', true],
+  ['publisher-verbatim', 'publisher-verbatim', false],
+  ['imported', 'imported', false],
 ]) {
-  test(`the "a paraphrase" note ${expectNote ? 'appears' : 'does not appear'} under topicSummary for a ${sourceAuthority} tier`, () => {
+  test(`the "a paraphrase" note ${expectNote ? 'appears' : 'does not appear'} for a ${statementSource} control (tier: ${tierAuthority})`, () => {
     const state = baseState({
-      c1: makeControl({ id: 'X-1', topicLabel: 'Label', topicSummary: 'The summary text.' }),
+      c1: makeControl({ id: 'X-1', topicLabel: 'Label', topicSummary: 'The summary text.', statementSource }),
     });
-    state.certifications.hitrust.tiers.e1.sourceAuthority = sourceAuthority;
+    state.certifications.hitrust.tiers.e1.sourceAuthority = tierAuthority;
     const { drilldownsHtml } = renderClientSide(state);
     assert.ok(drilldownsHtml.includes('The summary text.'));
     assert.equal(drilldownsHtml.includes('a paraphrase, not the publisher'), expectNote);

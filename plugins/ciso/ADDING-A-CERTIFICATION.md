@@ -3,11 +3,12 @@
 A ciso framework is one folder of data. ciso loads frameworks from two places:
 
 - **Bundled**, in `plugins/ciso/frameworks/<certKey>/`: HITRUST, SOC 2, ISO 27001 and CMMC. These
-  ship with the plugin and are plugin code. See
+  come with the plugin and are plugin code. See
   [Contributing a bundled framework](#contributing-a-bundled-framework).
 - **Project**, in your project's `docs/ciso/frameworks/<certKey>/`: anything else you want to
-  track. It lives inside the gitignored tracking folder, next to `state.json`, and nothing about
-  it leaves your machine.
+  track. It lives inside the gitignored tracking folder, next to `state.json`, so its files are
+  never committed. Its control subjects still reach vendor research and `ciso:sync-tasks` as the
+  plugin README describes, unless the tier is `imported`, whose labels and summaries stay local.
 
 Most people want the second. It needs no change to the plugin.
 
@@ -23,7 +24,9 @@ docs/ciso/frameworks/example/
 ```
 
 Any other file or subfolder is ignored, but a file ciso needs that exists and cannot be read is a
-validation error. A project framework may not have a `flows/` folder; see
+validation error. These files must be real files, not symlinks: ciso reads them and shows you what
+they say, so a link could point it at any file on your machine. The folder itself may be a
+symlink. A project framework may not have a `flows/` folder; see
 [Project frameworks are data](#project-frameworks-are-data).
 
 A complete minimal example lives at
@@ -34,7 +37,7 @@ use it, so it stays valid. Copy it and edit from there.
 
 | Field | Required | Meaning |
 |---|---|---|
-| `certKey` | yes | Equals the folder name. Lowercase letters, digits and hyphens (`^[a-z0-9-]+$`). It becomes the key in `state.json` and the page name `cert-<certKey>.html`. It may not equal a bundled framework's `certKey`: a project folder that does is excluded, with an error naming both paths. |
+| `certKey` | yes | Equals the folder name. Lowercase letters and digits, in groups joined by single hyphens (`^[a-z0-9]+(-[a-z0-9]+)*$`), so no leading, trailing or doubled hyphen. It becomes the key in `state.json` and the page name `cert-<certKey>.html`. It may not equal a bundled framework's `certKey`: a project folder that does is excluded, with an error naming both paths. |
 | `displayName` | yes | The name the dashboard and every verb show. No `"`, `$`, backtick or backslash. |
 | `summary` | yes | One or two sentences. The dashboard's card shows it before the framework is registered. |
 | `tiers` | yes | A non-empty array of tier keys, unique, same pattern as `certKey`. Most frameworks have one tier. |
@@ -53,7 +56,7 @@ must match the file's own `tier` and `controlSetVersion`.
 | Field | Required | Meaning |
 |---|---|---|
 | `tier` | yes | One of the `tiers` in `framework.json`. |
-| `controlSetVersion` | yes | The version of the standard, matching `^v[A-Za-z0-9.-]+$`, such as `v1` or `v2022`. |
+| `controlSetVersion` | yes | The version of the standard, a string matching `^v[A-Za-z0-9.-]+$`, such as `v1` or `v2022`. |
 | `sourceAuthority` | yes | What the wording in this file is. See the table below. |
 | `nonAuthoritative` | yes | `true` when this file is not a substitute for the publisher's own control set. |
 | `controls` | yes | A non-empty array of controls. |
@@ -67,15 +70,15 @@ Each control:
 | `domainKey` | yes | The grouping key the dashboard rolls up by and the interview works through. Same character and name rules as `id`. |
 | `topicLabel` | yes | A short name for the control. |
 | `topicSummary` | yes | What the control covers. |
-| anything else | no | Carried into `state.json` and shown on the dashboard, except a field ciso's state owns (`assessment`, `evidence`, `roadmap`, `statementText`, `statementSource`, `needsReview`), which is an error. |
+| anything else | no | Carried into `state.json` and shown on the dashboard, except a field ciso's state owns (`assessment`, `evidence`, `roadmap`, `statementText`, `statementSource`, `needsReview`, `tracker`), which is an error. |
 
 What each `sourceAuthority` value makes ciso do:
 
 | `sourceAuthority` | Use it when | Dashboard | Vendor research and task sync |
 |---|---|---|---|
-| `public-topic-level` | You wrote every label and summary yourself from public sources. | A "non-authoritative" banner on the tier, and a "a paraphrase" note under each `topicSummary`. | Send `topicLabel` and `topicSummary`. |
-| `publisher-verbatim` | The wording is the publisher's own, and the publisher permits copying it (US Government works, for instance). | No banner, no paraphrase note. | Send `topicLabel` and `topicSummary`. |
-| `imported` | The file holds licensed wording, copied from your organization's own licensed copy of the standard. Never allowed in a bundled framework. | No banner, no paraphrase note. | Send **neither** `topicLabel` nor `topicSummary`: licensed wording stays on your machine. |
+| `public-topic-level` | You wrote every label and summary yourself from public sources. | A "non-authoritative" banner on the tier, and a "a paraphrase" note under each `topicSummary`. | Send the control's subject, wording included. |
+| `publisher-verbatim` | The wording is the publisher's own, and the publisher permits copying it (US Government works, for instance). | No banner, no paraphrase note. | Send the control's subject, wording included. |
+| `imported` | The file holds licensed wording, copied from your organization's own licensed copy of the standard. Never allowed in a bundled framework. | No banner, no paraphrase note. | Vendor research gets **only codes**: `id`, `relatedControlCode`, `legacyCategoryPrefix` and `domainKey`, each a plain token. Task sync sends neither `topicLabel` nor `topicSummary`. Licensed wording, names and domains included, stays on your machine. |
 
 ### Check it
 
@@ -90,7 +93,7 @@ out. Then run `ciso:register`: the framework is on its list, labelled **project*
 
 ### Project frameworks are data
 
-Every verb has unrestricted Bash, and a project framework may have come from anyone. So ciso treats
+Every verb has unrestricted Bash, and a project framework may have come from anyone, so ciso treats
 it as data, never as instructions:
 
 - Verbs follow the plugin's own
@@ -114,7 +117,7 @@ copyright. Before you write a structure file for one:
 - **Share no run of 8 or more words with the source.** That is the check that a paraphrase is one.
 - **Declare `imported` when the file holds licensed wording.** If you copied your organization's
   licensed text in, say so, and ciso keeps it off the network.
-- **Name your sources honestly.** `codeVerifiedBy` means the identifier was read out of the
+- **Name your sources exactly.** `codeVerifiedBy` means the identifier was read out of the
   publisher's own document. `codeCorroboratedBy` means it was reconstructed from independent
   secondary sources. Never put secondary URLs in `codeVerifiedBy`.
 - **Say what the set is not.** `ground-rules.md` must tell the user what the control set does not
@@ -123,8 +126,8 @@ copyright. Before you write a structure file for one:
 ## Contributing a bundled framework
 
 A bundled framework is the same folder, in `plugins/ciso/frameworks/<certKey>/`, plus whatever
-plugin code its flows need. It is held to a higher bar than a project framework: it ships to every
-user, so its sourcing has to survive scrutiny. `validate --bundled` checks it, and a bundled tier may
+plugin code its flows need. It is held to a higher bar than a project framework: every user installs
+it, so its sourcing has to survive scrutiny. `validate --bundled` checks it, and a bundled tier may
 not be `imported`. Everything below is the sourcing doctrine for one.
 
 `ciso` is built as **generic tracking core + one framework per certification** (bundled today:
@@ -342,8 +345,8 @@ few years and rots faster than twenty lines can be rewritten.
 5. **Describe yourself in `framework.json`**: `{ certKey, displayName, summary, tiers }`. The meta
    index (`dashboard.html`) renders a card from this, including for a project that hasn't
    registered you yet, where the card shows your `summary` and tells the user to run
-   `ciso:register`. `certKey` must equal your folder name under `frameworks/` and be `[a-z0-9-]`
-   only; `test/frameworks.test.js` runs `validate --bundled` on every bundled framework, which
+   `ciso:register`. `certKey` must equal your folder name under `frameworks/` and match
+   `^[a-z0-9]+(-[a-z0-9]+)*$`; `test/frameworks.test.js` runs `validate --bundled` on every bundled framework, which
    enforces both directions (every structure file is a declared tier, and every declared tier has
    exactly one file).
 6. **Render** with `render-dashboard.js`, it discovers your certification/tiers/domains

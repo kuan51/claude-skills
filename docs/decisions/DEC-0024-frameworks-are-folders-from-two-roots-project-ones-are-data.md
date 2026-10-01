@@ -27,12 +27,12 @@ written by the project or a third party, and what happens to licensed wording a 
 
 ## Considered options
 
-1. **Keep frameworks plugin-only** — no new trust question, but a project still cannot track a
-   framework ciso does not ship.
-2. **One folder format, loaded from the plugin and from the project, with both treated the same**
-   — simplest loader, but a project's `ground-rules.md` and `flows/` would direct verbs exactly as
+1. **Keep frameworks plugin-only.** No new trust question, but a project still cannot track a
+   framework ciso does not bundle.
+2. **One folder format, loaded from the plugin and from the project, with both treated the same.**
+   The simplest loader, but a project's `ground-rules.md` and `flows/` would direct verbs exactly as
    bundled ones do.
-3. **One folder format from two roots with two trust levels** — bundled folders are plugin code;
+3. **One folder format from two roots with two trust levels.** Bundled folders are plugin code;
    project folders, under the gitignored `docs/ciso/frameworks/`, are data. A project may not ship
    `flows/`; verbs follow the plugin's `generic-ground-rules.md` and generic flows, report the
    project's `ground-rules.md` to the user, and never act on instructions in it. A project folder
@@ -41,9 +41,11 @@ written by the project or a third party, and what happens to licensed wording a 
 ## Decision outcome
 
 Chose **option 3**, because it gives projects their own frameworks without letting a data file
-direct a verb. A tier may declare `sourceAuthority: "imported"` for licensed wording; for those
-controls vendor research and sync-tasks send neither `topicLabel` nor `topicSummary`, and no bundled
-tier may be `imported`. This extends DEC-0019's subject-field allowlist; it does not change it.
+direct a verb. A tier may declare `sourceAuthority: "imported"` for licensed wording. For those
+controls, and for any control whose `statementSource` a payload leaves out, vendor research gets
+only codes (`id`, `relatedControlCode`, `legacyCategoryPrefix`, `domainKey`), never a name, domain,
+label or summary; sync-tasks sends neither `topicLabel` nor `topicSummary`. No bundled tier may be
+`imported`. This narrows DEC-0019's subject-field allowlist for those controls; it does not widen it.
 
 ## Consequences
 
@@ -57,8 +59,9 @@ tier may be `imported`. This extends DEC-0019's subject-field allowlist; it does
 **Bad:**
 
 - Project frameworks get only the generic flows. They have no scope, import or upgrade step.
-- The trust rule is enforced by what each verb's `SKILL.md` tells the model, backed by tests that
-  every verb names both ground-rules files. It is not a sandbox.
+- The trust rule is enforced by what each verb's `SKILL.md` tells the model, through the shared
+  `skills/_shared/resolve-framework.md` step, backed by tests that every verb follows that step and
+  that it names both ground-rules files. It is not a sandbox.
 - `imported` is self-declared. A project that copies licensed text and labels it
   `public-topic-level` still sends it to vendor research.
 

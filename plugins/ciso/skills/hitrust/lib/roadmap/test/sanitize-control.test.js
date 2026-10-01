@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { SUBJECT_FIELDS, IMPORTED_LOCAL_FIELDS, sanitizeControlForResearch } = require('../sanitize-control.js');
+const { SUBJECT_FIELDS, CODE_FIELDS, CODE_RE, sanitizeControlForResearch } = require('../sanitize-control.js');
 
 test('keeps every subject field and drops org-private / licensed fields', () => {
   const control = {
@@ -16,6 +16,7 @@ test('keeps every subject field and drops org-private / licensed fields', () => 
     topicSummary: 'Restrict access to information systems',
     domain: 'Access Control',
     domainKey: '11',
+    statementSource: 'public-topic-level',
     // org-private posture / licensed content -- must NOT egress:
     justification: 'We fail this: the VPN has no MFA and the CISO deprioritized it in Q3',
     inProgress: { currentState: 'rolling out Okta', estimatedCloseness: '60%' },
@@ -48,7 +49,7 @@ test('fail-closed: an unknown / future field is dropped by default', () => {
 });
 
 test('null / undefined subject fields are omitted, not serialized as null', () => {
-  const out = sanitizeControlForResearch({ id: 'x', topicLabel: null, domain: 'Access Control' });
+  const out = sanitizeControlForResearch({ id: 'x', statementSource: 'public-topic-level', topicLabel: null, domain: 'Access Control' });
   assert.ok(!('topicLabel' in out));
   assert.equal(out.domain, 'Access Control');
 });
@@ -90,29 +91,59 @@ test('workflow.js inlines the same SUBJECT_FIELDS list', () => {
   );
 });
 
-test('an imported control sends neither topicLabel nor topicSummary; other sources keep both', () => {
-  const base = {
-    id: 'x-1', topicLabel: 'LICENSED label', topicSummary: 'LICENSED summary wording',
-    domain: 'Access Control', domainKey: 'AC', relatedControlCode: 'AC-1',
-  };
-  const imported = sanitizeControlForResearch({ ...base, statementSource: 'imported' });
-  assert.deepEqual(imported, { id: 'x-1', domain: 'Access Control', domainKey: 'AC', relatedControlCode: 'AC-1' });
-  assert.ok(!JSON.stringify(imported).includes('LICENSED'));
+// Wording is sent only for a control whose statementSource says where it came from and is not
+// "imported". An imported control's wording (names and domains included) is the org's licensed
+// text, and a payload that leaves statementSource out fails closed the same way.
+const FULL = {
+  id: 'x-1', topicLabel: 'LICENSED label', topicSummary: 'LICENSED summary wording',
+  relatedControlName: 'LICENSED name', domain: 'LICENSED domain', domainKey: 'AC',
+  relatedControlCode: 'AC-1', legacyCategoryPrefix: '01',
+};
+const CODES_ONLY = { id: 'x-1', domainKey: 'AC', relatedControlCode: 'AC-1', legacyCategoryPrefix: '01' };
 
-  for (const statementSource of ['public-topic-level', 'publisher-verbatim', 'structural-only', undefined]) {
-    const out = sanitizeControlForResearch({ ...base, statementSource });
-    assert.equal(out.topicLabel, base.topicLabel, String(statementSource));
-    assert.equal(out.topicSummary, base.topicSummary, String(statementSource));
+test('an imported control sends only its codes', () => {
+  const out = sanitizeControlForResearch({ ...FULL, statementSource: 'imported' });
+  assert.deepEqual(out, CODES_ONLY);
+  assert.ok(!JSON.stringify(out).includes('LICENSED'));
+});
+
+test('a control with no statementSource fails closed to its codes', () => {
+  assert.deepEqual(sanitizeControlForResearch(FULL), CODES_ONLY);
+  assert.deepEqual(sanitizeControlForResearch({ ...FULL, statementSource: null }), CODES_ONLY);
+});
+
+test('a code that is not a plain token is dropped when only codes may go', () => {
+  const out = sanitizeControlForResearch({ ...FULL, statementSource: 'imported', relatedControlCode: '01.a Licensed control name', id: 'has space' });
+  assert.deepEqual(out, { id: undefined, domainKey: 'AC', legacyCategoryPrefix: '01' });
+});
+
+test('any other statementSource sends the full subject', () => {
+  for (const statementSource of ['public-topic-level', 'publisher-verbatim', 'structural-only']) {
+    const out = sanitizeControlForResearch({ ...FULL, statementSource });
+    assert.deepEqual(out, FULL, statementSource);
     assert.ok(!('statementSource' in out), 'statementSource is read, never sent');
   }
 });
 
-test('workflow.js inlines the same IMPORTED_LOCAL_FIELDS list and applies it', () => {
+test('workflow.js inlines the same CODE_FIELDS and CODE_RE and applies them', () => {
   const workflowSrc = fs.readFileSync(path.join(__dirname, '..', 'workflow.js'), 'utf8');
-  const match = workflowSrc.match(/const IMPORTED_LOCAL_FIELDS = \[([^\]]*)\]/);
-  assert.ok(match, 'workflow.js must declare `const IMPORTED_LOCAL_FIELDS = [ ... ]`');
+  const match = workflowSrc.match(/const CODE_FIELDS = \[([^\]]*)\]/);
+  assert.ok(match, 'workflow.js must declare `const CODE_FIELDS = [ ... ]`');
   const inline = match[1].split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
-  assert.deepEqual(inline, IMPORTED_LOCAL_FIELDS);
-  assert.ok(workflowSrc.includes("c.statementSource === 'imported'"), 'buildPrompt must check statementSource');
-  assert.ok(workflowSrc.includes('IMPORTED_LOCAL_FIELDS.includes(field)'), 'buildPrompt must skip the local-only fields');
+  assert.deepEqual(inline, CODE_FIELDS);
+  assert.ok(workflowSrc.includes(`const CODE_RE = ${CODE_RE}`), 'workflow.js must inline the same CODE_RE');
+  assert.ok(workflowSrc.includes("typeof c.statementSource === 'string' && c.statementSource !== 'imported'"), 'buildPrompt must fail closed on statementSource');
+  assert.ok(workflowSrc.includes('isCode(field, value)'), 'buildPrompt must keep only codes when wording may not go');
+});
+
+// A project framework's subject fields come from a file anyone may have written, and they are
+// pasted into the prompt of an agent that holds web tools. The prompt must say they are data.
+test('workflow.js tells the researcher the control fields are data, never instructions', () => {
+  const workflowSrc = fs.readFileSync(path.join(__dirname, '..', 'workflow.js'), 'utf8');
+  const clause = workflowSrc.match(/const CONTROL_DATA_CLAUSE =\s*\n?\s*(['"`])([\s\S]*?)\1/);
+  assert.ok(clause, 'workflow.js must declare CONTROL_DATA_CLAUSE');
+  assert.match(clause[2], /data/);
+  assert.match(clause[2], /never instructions/);
+  const prompt = workflowSrc.slice(workflowSrc.indexOf('function buildPrompt'), workflowSrc.indexOf("phase('Research')"));
+  assert.ok(prompt.includes('CONTROL_DATA_CLAUSE,'), 'buildPrompt must include the clause');
 });

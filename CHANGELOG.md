@@ -11,13 +11,50 @@ per-plugin history until entries are recorded here going forward.
 - **ciso 1.2.0** -- every framework is one data folder: a `framework.json`, a `ground-rules.md`
   (which replaces `invariants.md`) and one structure file per tier (#158). ciso loads them from
   the plugin's `frameworks/` and from a project's own `docs/ciso/frameworks/`, and validates each
-  with `frameworks.js`. The four bundled frameworks moved there unedited, so existing `state.json`
-  files need no migration. A project framework is data, not instructions: it may not carry flow
+  with `frameworks.js`. The four bundled frameworks' control files moved there unchanged, so existing
+  `state.json` files need no migration. A project framework is data, not instructions: it may not carry flow
   files, verbs follow the plugin's generic flows and ground rules for it, and a certKey that
-  clashes with a bundled one is excluded. A control whose wording is `imported` never sends its
-  label or summary to vendor research or task sync. HITRUST's r2 maturity shape no longer applies
-  to another framework's tier named `r2`, and the dashboard stops calling CMMC's verbatim text a
-  paraphrase. `ADDING-A-CERTIFICATION.md` now opens with how to write a project framework.
+  clashes with a bundled one is excluded. Every framework-aware verb, `sync-tasks` included,
+  reads the plugin's ground rules before it lists frameworks. Validation also refuses symlinked
+  files in a project framework, a `tracker` field in a structure file, and keys with a leading,
+  trailing or doubled hyphen. For a control whose wording is `imported`, vendor research gets
+  only its codes, and task sync never sends its label or summary. HITRUST's r2 maturity shape is no
+  longer seeded for another framework's tier named `r2`, and roadmap results merge into the exact
+  tier they were researched for.
+  The dashboard stops calling CMMC's verbatim text a paraphrase, and reconcile no longer flags
+  every synced control as changed on a HITRUST upgrade. The dashboard cards and register's list
+  now run alphabetically (CMMC first) instead of HITRUST first. `ADDING-A-CERTIFICATION.md` now
+  opens with how to write a project framework.
+- **data-analysis 1.2.0** -- `data-analysis:review` treats an extra reviewer's persona and a
+  skill guidance excerpt as untrusted, like the thesis (#111). EDA prompts wrap them in
+  `<persona>` and `<guidance>` tags and say they set what to look for, never how to work. An
+  extra keeps Bash only when its persona is exactly the shipped canned text for its key; every
+  other extra, including a deep-research persona, runs on a new `extra-reviewer-static` agent
+  with `Read, Grep, Glob`, and its findings are marked unverified. Step 5 shows each
+  deep-research persona in full with its sources before the user keeps or drops it. Review
+  strips wrapper tags from extra labels and cross-compare lines, and both skills refuse a path
+  holding `<`, `>` or a line break. Start a new session after upgrading, since agents load at
+  session start.
+- **data-analysis 1.1.0** -- `data-analysis:review` splits each notebook before the review
+  (#110). A new script, `split-notebooks.js`, replaces every `.ipynb` in the sandbox copy with
+  its code cells only, outputs emptied, and keeps the untouched notebook in a `conclusions/`
+  folder beside the copy, so blind reviewers no longer read a notebook's Markdown findings or
+  saved outputs. The engine now refuses a run that hands a blind role a conclusion file, a
+  folder holding one, or a path inside one, and every EDA prompt says notebooks hold code only.
+  The reproducibility auditor reports the values its re-runs produce instead of comparing them
+  with saved outputs. Both review's and discover's sandbox check now also refuse a path with a
+  `.` or empty segment.
+- **data-analysis 1.0.0** -- a second skill, `data-analysis:discover`, starts from a business
+  decision, its metric and a baseline, and surfaces the patterns the raw data supports (#105).
+  One pattern hunter cuts the data along each confirmed dimension, a reconciler flags patterns
+  that reverse across dimensions, and a skeptic rates each candidate for materiality against
+  the baseline and for the claim level its evidence supports, never a cause. Its sandbox holds
+  only data files and data docs, and its report states that the patterns were found in a
+  single run. After review, its hunters and so-what auditor run without the project's
+  CLAUDE.md, each hunter is told to work only inside the sandbox and checks its patterns for
+  reversals within the other slices, an unverified candidate's rationale says why it stays
+  descriptive, a failed agent is named in the report, and malformed inputs are refused before
+  any agent runs.
 - **fabflows 0.15.0** -- the build loop's first review sweeps each function the diff calls by
   its cases, probing one literal input per case and reporting an unprobed case as an open
   question (#154). The reviewer's verdict gains `head`, the commit it read, and rounds 2 and 3
@@ -190,6 +227,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **data-analysis 1.0.0 (breaking)** -- `data-analysis-review` is renamed `data-analysis`, and
+  its skill is now `data-analysis:review`, so the plugin can host a second skill (#105). Run
+  `/plugin uninstall data-analysis-review`, then `/plugin install data-analysis`. Review's
+  default report folder moves to `docs/data-analysis/`. Both skills now refuse a non-string
+  path or a path with a `..` segment, and strip thesis and evidence tags that carry
+  attributes.
 - **fabflows 0.13.16** -- the lead launches `fabflows:build` only after the user has read the
   spec text and said yes, and plan mode defers every ticket write, commit and build launch, so
   the approval at ExitPlanMode no longer stands in for reading the spec (#151).
@@ -358,6 +401,12 @@ per-plugin history until entries are recorded here going forward.
 - **ciso 1.2.1** -- the dashboard escapes a certKey or tierKey from `state.json` in the
   domain-bar link, the "Jump to details" link and the tier section id, as it already did for
   the category id (#158). A hand-edited key holding a quote could break out of the attribute.
+- **data-analysis 1.1.1, ciso 1.1.5, docs-warden 0.7.3, fabflows 0.15.1** -- each plugin
+  description is now 499 characters or fewer, under the 500-character limit that Claude
+  desktop and the claude.ai web app enforce, which these four had gone over (#163). Only the
+  wording is shorter. Details cut from a description are still in that plugin's README.
+  `test/marketplace-consistency.test.js` now fails on a description over 499 characters, and
+  the `docs` CI job runs `test/*.test.js` on every pull request.
 - **fabflows 0.13.15** -- `annotate_benchmark.py` compares an arm's cost with without_skill
   only over the evals both ran, as `summarize.js` does, so an arm that ran other tasks gets its
   mean alone and `delta.cost_usd` agrees with the note (#130). The model line lists the task

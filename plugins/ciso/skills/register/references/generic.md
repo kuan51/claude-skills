@@ -1,4 +1,4 @@
-# Register: generic flow
+# Generic register flow
 
 Read this when `ciso:register` resolves a framework with no `flows/register.md` of its own, which is
 every project framework. `<dir>`, `<certKey>`, `<displayName>` and `tiers` come from the framework's

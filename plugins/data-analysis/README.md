@@ -1,11 +1,17 @@
-# data-analysis-review
+# data-analysis
 
-Empirically reviews a data science project: independently re-derives findings from its raw
-data and code (blind to what the project itself claims), then checks whether those claims
-actually hold up. Never modifies the project you're reviewing. See [Guarantees](#guarantees).
+`review` empirically reviews a data science project: it independently
+re-derives findings from its raw data and code (blind to what the project itself claims), then
+checks whether those claims actually hold up. `discover` starts from a business decision and
+surfaces the patterns its data supports, as [Discover](#discover) describes. Neither modifies the
+project. See [Guarantees](#guarantees) and [Discover guarantees](#discover-guarantees).
 
 Not installed yet? See the [repo root README](../../README.md) for how to add this marketplace
 and install the plugin.
+
+Upgrading from `data-analysis-review`? Version 1.0.0 renames the plugin. Run
+`/plugin uninstall data-analysis-review`, then `/plugin install data-analysis`. The skill is now
+`data-analysis:review`, and its default report folder moves to `docs/data-analysis/`.
 
 ## When to use it
 
@@ -21,6 +27,7 @@ and install the plugin.
   the project it's reviewing.
 - You have a quick, one-off question about the data. This skill's full gating-and-review flow
   is overkill for that; just ask directly instead.
+- You have a decision to inform but no conclusion to check. Use [discover](#discover).
 
 ## Quickstart
 
@@ -64,10 +71,54 @@ whether to save the report before any analysis runs.
   if any path it is given lies outside that copy. The only possible write to your actual project is
   one optional report file, and only if you opt in.
 - **Genuinely independent.** The reviewers never see the project's own conclusions until after
-  their own findings are locked in.
+  their own findings are locked in. Each notebook is split first: the reviewers get only its code
+  cells, and the untouched notebook is kept outside their copy of the project. The engine refuses
+  to run if a reviewer would be handed a conclusion file or a folder holding one, and a linked
+  folder outside the copy that holds a notebook stops the run. The README and any reports are
+  still in the copy, so only the instruction to use just the files given keeps a reviewer that
+  can run commands from opening them.
 - **Real verification, not just reading.** Reviewers execute code against the raw data where
   possible to recompute claims themselves. Each finding carries a `verified` flag that is true
   only when the command ran and its output is in the evidence; the report tags anything else as
-  unverified so you can see which findings are empirically backed.
+  unverified so you can see which findings are empirically backed. An extra reviewer built from
+  web research cannot run commands, so its findings are always unverified.
 - **Same rigor whoever calls it.** The review agents are pinned to Opus, so the report's quality
   does not depend on the model your session happens to be running.
+
+## Discover
+
+### When to use discover
+
+- You have a decision to make, the metric that informs it, and a baseline (the do-nothing or
+  current-practice value), and want to know what the raw data says that bears on it.
+- Use `review` instead when the project already states a conclusion you want checked, and a
+  first-pass EDA skill when there is no decision yet.
+
+### Discover quickstart
+
+1. `cd` into the project that holds the data.
+2. Ask, e.g.: *"We need to decide whether to cut the repeat discount. What in this data bears
+   on it, against today's 4% churn?"*
+3. Claude lists the data files and data docs, then confirms the thesis (offering one rewrite if
+   it lacks the decision, the metric or the baseline, and stopping if it still does) and whether
+   to save the report.
+4. It reads only the column names and offers 2 to 4 dimensions to cut the data along; you pick
+   them and may add your own.
+5. One pattern hunter per dimension works on a copy holding only the data files and data docs.
+   A reconciler merges their patterns and flags any that reverse across dimensions, and a
+   skeptic rates up to 8 candidates for materiality against the baseline.
+6. You get a report with the candidates ranked most material first, each with its evidence, the
+   decision it affects, why it got its rating, and the next check that would settle it.
+
+### Discover guarantees
+
+- **Never modifies the project.** Agents see only a disposable copy holding the data files and
+  data docs, and the engine refuses to run if any path lies outside it.
+- **Never sees a prior conclusion.** Code, notebooks and reports are left out of the copy.
+- **Withholds the project's CLAUDE.md.** The pattern hunters and the so-what auditor run without
+  it. Each hunter is told to work from the sandbox copy and to read and write only inside it. That
+  working-directory rule is an instruction, not an enforced boundary.
+- **No causes from correlations.** Patterns are descriptive; a candidate rises above that only
+  when its evidence rules out confounding, and one not verified by execution stays descriptive.
+- **Single run, said so.** Patterns are not re-run to check they recur, and the report says to
+  treat each as a lead.

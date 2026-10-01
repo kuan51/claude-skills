@@ -7,7 +7,7 @@ The roadmap workflow is certification-agnostic core (see `ADDING-A-CERTIFICATION
 1. **Budget tier.** Check `state.organization.budgetTier`:
    - If already set, tell the user "using your saved default: `<tier>`" and offer (`AskUserQuestion`) to keep it or change it for this run.
    - If not set, ask (`AskUserQuestion`): open source/freeware, small business, enterprise, or startup-that-might-scale. It is saved as the new default automatically once the workflow runs.
-2. **Launch, fire-and-forget.** Run the `Workflow` tool with the contents of `${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/roadmap/workflow.js` as `script`, passing `args: { controls: [...], budgetTier }` where `controls` is built from every `gap`/`in_progress` entry with `roadmap.status` still `not_started` or `researching`, **except** any ids already dispatched to a still-running background roadmap this session (track those in conversation context so they aren't researched twice). Each entry is `{ id, relatedControlCode, topicLabel, domainKey, domain }`.
+2. **Launch, fire-and-forget.** Run the `Workflow` tool with the contents of `${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/roadmap/workflow.js` as `script`, passing `args: { controls: [...], budgetTier }` where `controls` is built from every `gap`/`in_progress` entry with `roadmap.status` still `not_started` or `researching`, **except** any ids already dispatched to a still-running background roadmap this session (track those in conversation context so they aren't researched twice). Each entry is `{ id, certKey, tierKey, statementSource, relatedControlCode, topicLabel, domainKey, domain }`. Always include `statementSource` (the control's own, from `state.json`): without it `workflow.js` sends only the codes.
 
    **Only the requirement's public subject goes in the payload: never the org's `justification` or in-progress posture notes.** Vendor research is dispatched to a web-tool-holding agent. `workflow.js`'s `buildPrompt` mechanically drops anything outside a fail-closed subject allowlist (`lib/roadmap/sanitize-control.js`), but don't depend on that backstop: never put justification or in-progress text in the payload to begin with.
 
@@ -18,7 +18,7 @@ The roadmap workflow is certification-agnostic core (see `ADDING-A-CERTIFICATION
    node "${CLAUDE_PLUGIN_ROOT}/skills/hitrust/lib/roadmap/merge-roadmap.js" <docs/ciso-dir>/state.json <result.json path>
    ```
 
-   `merge-roadmap.js` is keyed by control id and works across any certification. Then clear those ids from your in-flight set.
+   `merge-roadmap.js` merges each result into the control its `certKey`, `tierKey` and id name, and works across any certification. Then clear those ids from your in-flight set.
 4. Regenerate the dashboard, then present a **brief, non-blocking** summary: call out any `confidence: "low"` or empty-vendor results as needing manual follow-up, not silently accepted.
 
 ## Two ISO-specific caveats worth passing on

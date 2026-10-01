@@ -4,7 +4,17 @@ const fs = require('fs');
 const path = require('path');
 
 const HITRUST_DIR = path.join(__dirname, '..', '..', '..', 'frameworks', 'hitrust');
-const STRUCTURE_FILE = path.join(HITRUST_DIR, 'e1.v11.8.structure.json');
+
+// The one current <tier>.<controlSetVersion>.structure.json in `dir`. Earlier versions live in
+// previous/, which this never looks into, so a version bump needs no code change here. When there
+// is no such file the returned path doesn't exist, and the CLI reports it.
+function currentStructureFile(tier, dir = HITRUST_DIR) {
+  const names = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+  const name = names.find((n) => n.startsWith(`${tier}.v`) && n.endsWith('.structure.json'));
+  return path.join(dir, name || `${tier}.structure.json`);
+}
+
+const STRUCTURE_FILE = currentStructureFile('e1');
 
 function loadStructure(structureFilePath) {
   const raw = fs.readFileSync(structureFilePath || STRUCTURE_FILE, 'utf8');
@@ -164,21 +174,25 @@ function registerTier(stateJsonPath, structure, certKey, certDisplayName) {
   return { tier: tierKey, added, totalControls: Object.keys(tier.controls).length, isNewTier };
 }
 
-// Resolves the CLI's optional second argument to a structure file path. Accepts either a bare
-// tier name ("e1", "i1", "r2" -- looked up as <tier>.v11.8.structure.json in the bundled
+// Resolves the CLI's optional tier argument to a structure file path. Accepts either a bare
+// tier name ("e1", "i1", "r2" -- the current file for that tier in the bundled
 // frameworks/hitrust/ folder) or a full/relative path to a structure JSON file directly
 // (so a maintainer testing a not-yet-bundled structure file, e.g. during a version-upgrade
 // rehearsal, doesn't need to place it under frameworks/hitrust/ first). Defaults to e1 for backward
-// compatibility with existing callers that only ever pass <target-dir>.
-function resolveStructurePath(tierArg) {
-  if (!tierArg) return STRUCTURE_FILE;
-  if (/^(e1|i1|r2)$/.test(tierArg)) {
-    return path.join(HITRUST_DIR, `${tierArg}.v11.8.structure.json`);
+// compatibility with existing callers that only ever pass <target-dir>. A bare tier and the
+// default are HITRUST's alone: another framework may also have a tier called r2, so for any other
+// certKey they are refused rather than silently registering HITRUST's controls under it.
+function resolveStructurePath(tierArg, certKey = 'hitrust') {
+  if (!tierArg || /^(e1|i1|r2)$/.test(tierArg)) {
+    if (certKey !== 'hitrust') {
+      throw new Error(`A bare tier name, or none, means a bundled HITRUST tier. For certKey "${certKey}", pass the structure file's path.`);
+    }
+    return currentStructureFile(tierArg || 'e1');
   }
   return path.resolve(tierArg);
 }
 
-module.exports = { registerTier, defaultControl, computeDomains, loadStructure, resolveStructurePath, STRUCTURE_FILE };
+module.exports = { registerTier, defaultControl, computeDomains, loadStructure, resolveStructurePath, currentStructureFile, STRUCTURE_FILE };
 
 if (require.main === module) {
   const [targetDir, certKey, certDisplayName, tierArg] = process.argv.slice(2);
@@ -191,7 +205,13 @@ if (require.main === module) {
     console.error(`No state.json found at ${stateJsonPath} -- run ciso:init first.`);
     process.exit(1);
   }
-  const structurePath = resolveStructurePath(tierArg);
+  let structurePath;
+  try {
+    structurePath = resolveStructurePath(tierArg, certKey);
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
   if (!fs.existsSync(structurePath)) {
     console.error(`No structure file found at ${structurePath}`);
     process.exit(1);

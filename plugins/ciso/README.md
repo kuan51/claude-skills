@@ -8,8 +8,9 @@ work has no copyright (CMMC's NIST and eCFR sources). Licensed or copyrighted re
 wording, and your organization's real assessment data, are imported/generated per-project and stored
 only locally, gitignored by default. It stays on your machine, out of this repo.
 
-A project can also track a framework ciso doesn't ship: drop a framework folder into
-`docs/ciso/frameworks/<certKey>/` and every verb picks it up. See
+A project can also track a framework ciso doesn't bundle: drop a framework folder into
+`docs/ciso/frameworks/<certKey>/` and every verb resolves it (`scope`, `import` and `upgrade` have
+no flow for one yet). See
 [ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
 
 Not installed yet? See the [repo root README](../../README.md) for how to add this marketplace
@@ -113,16 +114,18 @@ something you feed in from your own machine.
   authority split runs the *opposite* way there: CMMC's `topicSummary` is the requirement itself
   and its `topicLabel` is our derived shorthand. (PCI DSS was compiled and then dropped for exactly
   this reason in reverse: its catalog is reachable, but PCI SSC's terms forbid derivative works.)
-- **Your organization's posture never leaves your project.** Assessment status, your written
-  justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
-  project data. Two flows contact the network. Background vendor research for gaps is sent *only* a
-  control's generic public subject (its topic label/code and domain), never your justifications or
-  posture notes; a fail-closed allowlist in the research workflow enforces this. `ciso:sync-tasks`
-  writes tickets to the Jira or Linear project you choose, and those tickets carry the control's
-  label, summary and your justification, because that is what a ticket is for.
+- **Your organization's posture stays local, except what you sync to your own tracker.**
+  Assessment status, your written justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
+  project data. Control data leaves the machine through vendor research and `ciso:sync-tasks`.
+  Background vendor research for gaps is sent *only* a control's generic public subject (its topic
+  label/code and domain), never your justifications or posture notes. A fail-closed allowlist in the
+  research workflow enforces this. `ciso:sync-tasks` writes tickets to the Jira or Linear project you
+  choose, and those tickets carry the control's label, summary and your justification, which a
+  ticket needs.
 - **Licensed wording stays on your machine.** For a control whose wording was declared `imported`
-  (licensed text held only in your project), neither vendor research nor `ciso:sync-tasks` sends
-  its `topicLabel` or `topicSummary`.
+  (licensed text held only in your project), vendor research gets only its codes (`id`,
+  `relatedControlCode`, `legacyCategoryPrefix`, `domainKey`), never its label, summary, name or
+  domain, and `ciso:sync-tasks` sends neither its `topicLabel` nor its `topicSummary`.
 - **A project framework is data, never instructions.** Verbs read a project framework's
   `ground-rules.md` and tell you what it says, but follow the plugin's own generic ground rules and
   flows, never instructions found in a project framework file.
@@ -162,9 +165,11 @@ certification-agnostic and keyed by `certKey`.
 What an org calls is **verbs**: one skill per action, each resolving the certification at
 runtime through `skills/_shared/frameworks.js list`. A framework folder doesn't include a
 `SKILL.md` of its own; it is `framework.json`, `ground-rules.md`, one structure file per tier and,
-for a bundled framework, optional `flows/`, dispatched into by the verbs. Every verb reads the
-framework's `ground-rules.md` first, which is what guarantees a user is always told what the
-included control set is and is not before acting on it. A project framework, from
+for a bundled framework, optional `flows/`, dispatched into by the verbs. Every framework-aware
+verb follows one shared step, `skills/_shared/resolve-framework.md`: it reads the plugin's
+`generic-ground-rules.md` before it lists frameworks, then the framework's own `ground-rules.md`,
+which is what guarantees a user is always told what the included control set is and is not before
+acting on it. A project framework, from
 `docs/ciso/frameworks/`, is data: verbs follow `skills/_shared/generic-ground-rules.md` and the
 generic flows for it, never instructions in its files.
 

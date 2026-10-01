@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 const { mergeRoadmap, findControlById } = require('../merge-roadmap.js');
 
 const MERGE_ROADMAP_SCRIPT = path.join(__dirname, '..', 'merge-roadmap.js');
@@ -314,4 +314,58 @@ test('CLI entry point: exits non-zero when the result file is not valid JSON', (
   fs.writeFileSync(resultJsonPath, 'not valid json');
 
   assert.throws(() => execFileSync('node', [MERGE_ROADMAP_SCRIPT, stateJsonPath, resultJsonPath], { encoding: 'utf8' }));
+});
+
+// A project framework's ids need only be unique within a tier, so two tiers can both hold A-1.
+function twoTiersSharingAnId() {
+  const state = makeFixtureState();
+  state.certifications.acme = {
+    displayName: 'Acme',
+    activeTier: 'basic',
+    tiers: {
+      basic: { controlSetVersion: 'v1', sourceAuthority: 'public-topic-level', controls: { 'A-1': baseControl({ id: 'A-1' }) }, archivedControls: {} },
+      advanced: { controlSetVersion: 'v1', sourceAuthority: 'public-topic-level', controls: { 'A-1': baseControl({ id: 'A-1' }) }, archivedControls: {} },
+    },
+  };
+  return state;
+}
+
+const VENDOR = [{ name: 'Example Vendor Co', fitNotes: 'Fits.', sourceUrls: ['https://example.com/vendor-a'] }];
+
+test('a result naming its certKey and tierKey merges into exactly that control', () => {
+  const stateJsonPath = makeTempState(twoTiersSharingAnId());
+  const result = mergeRoadmap(stateJsonPath, {
+    budgetTier: 'enterprise',
+    results: [{ controlId: 'A-1', certKey: 'acme', tierKey: 'advanced', vendors: VENDOR, recommendation: 'Adopt it.', confidence: 'high' }],
+  });
+  assert.equal(result.merged, 1);
+  const tiers = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8')).certifications.acme.tiers;
+  assert.equal(tiers.advanced.controls['A-1'].roadmap.status, 'complete');
+  assert.equal(tiers.basic.controls['A-1'].roadmap.status, 'not_started');
+});
+
+test('a result without certKey and tierKey whose id matches more than one control is not merged', () => {
+  const stateJsonPath = makeTempState(twoTiersSharingAnId());
+  const resultJsonPath = path.join(path.dirname(stateJsonPath), 'result.json');
+  fs.writeFileSync(resultJsonPath, JSON.stringify({
+    budgetTier: 'enterprise',
+    results: [{ controlId: 'A-1', vendors: VENDOR, recommendation: 'Adopt it.', confidence: 'high' }],
+  }));
+  const r = spawnSync('node', [MERGE_ROADMAP_SCRIPT, stateJsonPath, resultJsonPath], { encoding: 'utf8' });
+  assert.equal(r.status, 0);
+  const summary = JSON.parse(r.stdout);
+  assert.equal(summary.merged, 0);
+  assert.deepEqual(summary.ambiguous, ['A-1']);
+  assert.match(r.stderr, /"A-1" matches 2 controls/);
+  const tiers = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8')).certifications.acme.tiers;
+  assert.equal(tiers.basic.controls['A-1'].roadmap.status, 'not_started');
+  assert.equal(tiers.advanced.controls['A-1'].roadmap.status, 'not_started');
+});
+
+// workflow.js is a Workflow-tool script that cannot be required, so pin by source that it hands
+// back the keys the merge above depends on.
+test('workflow.js returns certKey and tierKey with each result', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'workflow.js'), 'utf8');
+  assert.ok(src.includes('certKey: control.certKey'));
+  assert.ok(src.includes('tierKey: control.tierKey'));
 });

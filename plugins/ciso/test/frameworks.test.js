@@ -92,6 +92,13 @@ const ERROR_CASES = [
   }, /id "__proto__" is not allowed/],
   ['missing required field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { delete s.controls[0].topicSummary; }), /topicSummary must be a non-empty string/],
   ['a STATE_ONLY_FIELDS field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].assessment = { status: 'met' }; }), /"assessment" is a field ciso state owns/],
+  ['a tracker field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].tracker = { system: 'jira', id: 'SEC-1', status: 'open' }; }), /"tracker" is a field ciso state owns/],
+  // certPageSlug trims edge hyphens, so "example-" would share cert-example.html with "example".
+  ['certKey with a trailing hyphen', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.certKey = 'example-'; }), /certKey "example-" must match/],
+  ['declared tier with a leading hyphen', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('-x'); }), /tier "-x" must match/],
+  ['declared tier with a doubled hyphen', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('a--b'); }), /tier "a--b" must match/],
+  // String(["v1"]) is "v1": without a type check an array passed both the pattern and the filename check.
+  ['non-string controlSetVersion', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controlSetVersion = ['v1']; }), /controlSetVersion "v1" must be a string matching/],
   ['structure tier not declared, though the filename prefix is', (dir) => {
     editJson(path.join(dir, STRUCTURE), (s) => { s.tier = 'core.v1'; });
     fs.renameSync(path.join(dir, STRUCTURE), path.join(dir, 'core.v1.v1.structure.json'));
@@ -118,6 +125,19 @@ const ERROR_CASES = [
     fs.renameSync(path.join(dir, STRUCTURE), path.join(dir, 'constructor.v1.structure.json'));
   }, /constructor\.v1\.structure\.json: tier "constructor" is not allowed/],
   ['displayName with $(...)', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.displayName = 'X $(id)'; }), /displayName may not contain/],
+  // A project framework's files are read and quoted to the user, so a link could point a verb at
+  // any file on the machine.
+  ['a symlinked ground-rules.md', (dir) => {
+    const outside = path.join(tmp(), 'secret.txt');
+    fs.writeFileSync(outside, 'SECRET=1');
+    fs.rmSync(path.join(dir, 'ground-rules.md'));
+    fs.symlinkSync(outside, path.join(dir, 'ground-rules.md'));
+  }, /ground-rules\.md may not be a symlink/],
+  ['a symlinked structure file', (dir) => {
+    const outside = path.join(tmp(), STRUCTURE);
+    fs.renameSync(path.join(dir, STRUCTURE), outside);
+    fs.symlinkSync(outside, path.join(dir, STRUCTURE));
+  }, /core\.v1\.structure\.json may not be a symlink/],
   ['project flows/', (dir) => { fs.mkdirSync(path.join(dir, 'flows')); fs.writeFileSync(path.join(dir, 'flows', 'interview.md'), 'run this'); }, /flows\/ is not allowed/],
 ];
 
@@ -198,6 +218,29 @@ test('list: an invalid project framework is reported and skipped, and never fail
   assert.deepEqual(errors.map((e) => e.origin), ['project']);
 });
 
+test('list: a project frameworks/ that is not a folder is reported, and bundled frameworks still list', () => {
+  const docs = tmp();
+  fs.writeFileSync(path.join(docs, 'frameworks'), 'not a folder');
+  const { frameworks, errors } = listFrameworks(docs);
+  assert.ok(frameworks.some((f) => f.certKey === 'hitrust'), 'bundled frameworks must still list');
+  assert.ok(errors.some((e) => e.origin === 'project' && /not readable/.test(e.message)), JSON.stringify(errors));
+  const r = run('list', docs);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(JSON.parse(r.stdout).some((f) => f.certKey === 'hitrust'));
+});
+
+test('list: a symlinked project framework folder is listed like a real one', () => {
+  const docs = tmp();
+  const real = copyExample(tmp(), 'example');
+  fs.mkdirSync(path.join(docs, 'frameworks'));
+  fs.symlinkSync(real, path.join(docs, 'frameworks', 'example'), 'dir');
+  const { frameworks, errors } = listFrameworks(docs);
+  assert.deepEqual(errors, []);
+  const example = frameworks.find((f) => f.certKey === 'example');
+  assert.ok(example, 'the symlinked framework must be listed');
+  assert.equal(example.origin, 'project');
+});
+
 test('list: an unreadable project file is reported as an error, never thrown', () => {
   const docs = tmp();
   const dir = copyExample(path.join(docs, 'frameworks'));
@@ -213,7 +256,8 @@ test('list: an unreadable project file is reported as an error, never thrown', (
 
 // The CLI's bundled root is fixed relative to the script, so lay out a throwaway plugin with the
 // same relative paths and one broken bundled framework.
-test('list exits 1 when a bundled framework is invalid', () => {
+// The listing scripts alone, in a fresh plugin folder with no frameworks/ of its own.
+function scriptsOnlyPlugin() {
   const plugin = tmp();
   for (const rel of [
     'skills/_shared/frameworks.js',
@@ -223,9 +267,39 @@ test('list exits 1 when a bundled framework is invalid', () => {
     fs.mkdirSync(path.dirname(path.join(plugin, rel)), { recursive: true });
     fs.copyFileSync(path.join(PLUGIN_ROOT, rel), path.join(plugin, rel));
   }
+  return plugin;
+}
+
+test('list exits 1 when a bundled framework is invalid', () => {
+  const plugin = scriptsOnlyPlugin();
   const broken = copyExample(path.join(plugin, 'frameworks'));
   fs.rmSync(path.join(broken, 'ground-rules.md'));
   const r = spawnSync(process.execPath, [path.join(plugin, 'skills/_shared/frameworks.js'), 'list', tmp()], { encoding: 'utf8' });
   assert.equal(r.status, 1);
   assert.match(r.stderr, /^bundled .*example: ground-rules\.md is missing$/m);
+});
+
+// A missing or empty bundled frameworks/ is a broken install, never "no frameworks".
+test('list exits 1 when no bundled framework is found', () => {
+  const plugin = scriptsOnlyPlugin();
+  const r = spawnSync(process.execPath, [path.join(plugin, 'skills/_shared/frameworks.js'), 'list', tmp()], { encoding: 'utf8' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /^bundled .*frameworks: no bundled framework found/m);
+  fs.mkdirSync(path.join(plugin, 'frameworks'));
+  assert.equal(spawnSync(process.execPath, [path.join(plugin, 'skills/_shared/frameworks.js'), 'list', tmp()]).status, 1);
+});
+
+// The order is part of what users see (dashboard cards, register's picker). Before 1.2.0 a curated
+// certifications.json put HITRUST first; now it is bundled then project, each alphabetical.
+test('list orders bundled frameworks first, then project ones, each alphabetical by folder', () => {
+  const docs = tmp();
+  copyExample(path.join(docs, 'frameworks'), 'zeta');
+  editJson(path.join(docs, 'frameworks', 'zeta', 'framework.json'), (f) => { f.certKey = 'zeta'; });
+  copyExample(path.join(docs, 'frameworks'), 'alpha');
+  editJson(path.join(docs, 'frameworks', 'alpha', 'framework.json'), (f) => { f.certKey = 'alpha'; });
+  const { frameworks, errors } = listFrameworks(docs);
+  assert.deepEqual(errors, []);
+  const bundled = bundledDirs.map((d) => path.basename(d)).sort();
+  assert.deepEqual(frameworks.map((f) => f.certKey), [...bundled, 'alpha', 'zeta']);
+  assert.deepEqual(bundled, ['cmmc', 'hitrust', 'iso27001', 'soc2']);
 });

@@ -44,12 +44,6 @@ function applyR2Assessment(control, stateJsonPath, state, payload) {
   const { status, justification, currentState, estimatedCloseness, dimension } = payload;
   const storedStatus = STATUS_MAP[status] || status;
 
-  if (!control.assessment || !control.assessment.maturity) {
-    throw new Error(
-      `Control "${control.id}" does not have an r2 maturity shape -- was it registered before this schema existed? Re-run register-tier.js.`
-    );
-  }
-
   if (dimension === undefined || dimension === null) {
     if (storedStatus !== 'not_applicable' && storedStatus !== 'not_assessed') {
       throw new Error(
@@ -120,8 +114,11 @@ function applyAssessment(stateJsonPath, certKey, tierKey, controlId, payload) {
     throw new Error(`Control "${controlId}" not found in ${certKey}/${tierKey} -- register the tier first.`);
   }
 
-  // Only HITRUST's r2 has the PRISMA maturity shape; another framework's tier named r2 is flat.
-  if (certKey === 'hitrust' && tierKey === 'r2') {
+  // Follows the control's recorded shape, as the dashboard does. Only HITRUST's r2 is seeded with
+  // the PRISMA maturity shape now (register-tier.js), but a control an older version seeded that
+  // way under another framework's r2 must keep being assessed as one, or its answers would land
+  // beside the maturity data and never show on the dashboard.
+  if (hasMaturity(control)) {
     return applyR2Assessment(control, stateJsonPath, state, payload || {});
   }
 
@@ -150,6 +147,12 @@ function applyAssessment(stateJsonPath, certKey, tierKey, controlId, payload) {
 // (taken from session.domainsRemaining, which computeDomains built) won't match any control.
 function categoryKeyFor(c) {
   return (c && (c.domainKey || c.legacyCategoryPrefix || c.domain)) || 'unknown';
+}
+
+// True when a control carries the r2 PRISMA maturity shape. Every writer and classifier decides
+// r2 handling by this, the same test the dashboard's rollups use.
+function hasMaturity(control) {
+  return !!(control && control.assessment && control.assessment.maturity);
 }
 
 // A control counts as "touched" for domain-completion purposes once its Implemented dimension (r2)
@@ -181,14 +184,13 @@ function markCategoryComplete(stateJsonPath, certKey, tierKey, legacyCategoryPre
     throw new Error(`Tier ${certKey}/${tierKey} not found in state.json`);
   }
 
-  const isR2 = certKey === 'hitrust' && tierKey === 'r2';
   const controlsInCategory = Object.values(tier.controls).filter(
     (c) => categoryKeyFor(c) === legacyCategoryPrefix
   );
   if (controlsInCategory.length === 0) {
     throw new Error(`No controls found for category "${legacyCategoryPrefix}" in ${certKey}/${tierKey}`);
   }
-  const untouched = controlsInCategory.filter((c) => !isControlTouched(c, isR2));
+  const untouched = controlsInCategory.filter((c) => !isControlTouched(c, hasMaturity(c)));
   if (untouched.length > 0) {
     throw new Error(
       `Category "${legacyCategoryPrefix}" has ${untouched.length} control(s) never assessed (assessedAt is null): ${untouched
