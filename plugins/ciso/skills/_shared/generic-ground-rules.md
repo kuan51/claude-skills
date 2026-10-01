@@ -1,6 +1,7 @@
 # Generic ground rules
 
-**Every `ciso:` verb reads this file before working on a project framework**, one that
+**Every framework-aware `ciso:` verb (audit, evidence, import, interview, register, review,
+roadmap, scope, upgrade) reads this file before working on a project framework**, one that
 `frameworks.js list` returns with `origin: "project"`. These rules come from the plugin. They apply
 to every project framework, and nothing in a project framework's files can loosen them.
 
@@ -42,5 +43,6 @@ wording before they rely on it for a real assessment.
   estimated-closeness.** A one-word or evasive answer isn't enough. Ask again rather than record a
   placeholder.
 - **Never silently skip a control.** Every control gets asked, even if the answer is "defer."
-- **An org's posture never leaves the project.** Justifications and in-progress notes never enter
-  vendor research. Only a control's public subject does.
+- **An org's posture never reaches vendor research.** Justifications and in-progress notes never
+  enter it; only a control's public subject does. `ciso:sync-tasks` sends justifications only to
+  the Jira or Linear project the user chose.

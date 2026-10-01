@@ -67,7 +67,7 @@ and the specific verb that fixes it.
    readiness defect exactly, but it is the work queue. → `ciso:roadmap`, or `ciso:sync-tasks` to get
    them into a tracker.
 
-For **r2**, run checks 1-6 against the Implemented dimension, and flag any control
+For **HITRUST r2**, run checks 1-6 against the Implemented dimension, and flag any control
 where `managed` or `measured` is claimed with a thinner justification than `implemented`: higher
 maturity claimed on weaker ground than the tier below it.
 

@@ -6,8 +6,9 @@ A ciso framework is one folder of data. ciso loads frameworks from two places:
   ship with the plugin and are plugin code. See
   [Contributing a bundled framework](#contributing-a-bundled-framework).
 - **Project**, in your project's `docs/ciso/frameworks/<certKey>/`: anything else you want to
-  track. It lives inside the gitignored tracking folder, next to `state.json`, and nothing about
-  it leaves your machine.
+  track. It lives inside the gitignored tracking folder, next to `state.json`, so its files are
+  never committed. Its control subjects still reach vendor research and `ciso:sync-tasks` as the
+  plugin README describes, unless the tier is `imported`, whose labels and summaries stay local.
 
 Most people want the second. It needs no change to the plugin.
 

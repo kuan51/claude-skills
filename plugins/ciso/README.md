@@ -113,8 +113,8 @@ something you feed in from your own machine.
   authority split runs the *opposite* way there: CMMC's `topicSummary` is the requirement itself
   and its `topicLabel` is our derived shorthand. (PCI DSS was compiled and then dropped for exactly
   this reason in reverse: its catalog is reachable, but PCI SSC's terms forbid derivative works.)
-- **Your organization's posture never leaves your project.** Assessment status, your written
-  justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
+- **Your organization's posture stays local, except what you sync to your own tracker.**
+  Assessment status, your written justifications, in-progress notes, and vendor picks are stored only in your local, gitignored
   project data. Two flows contact the network. Background vendor research for gaps is sent *only* a
   control's generic public subject (its topic label/code and domain), never your justifications or
   posture notes; a fail-closed allowlist in the research workflow enforces this. `ciso:sync-tasks`
