@@ -72,8 +72,12 @@ function renderOverCap(overCap) {
 }
 
 // Discover's so-what results, in the order given (the workflow sorts them by materiality).
-function renderCandidates(candidates) {
-  if (!candidates || !candidates.length) return '_No candidate patterns found._';
+// With none, a non-empty `dropped` is named so an empty section cannot read as no patterns.
+function renderCandidates(candidates, dropped) {
+  if (!candidates || !candidates.length) {
+    if (dropped && dropped.length) return `_No candidate was rated: ${dropped.join(', ')} returned nothing._`;
+    return '_No candidate patterns found._';
+  }
   return candidates
     .map((c, i) => {
       const lines = [
@@ -132,7 +136,7 @@ function buildReport(templateText, data) {
     '{{DISAGREEMENTS}}': renderDisagreements(data.disagreements) + renderOverCap(data.overCap),
     '{{CROSS_COMPARE}}': renderCrossCompare(data.crossCompare),
     '{{UNADDRESSED}}': renderUnaddressed(data.crossCompare),
-    '{{CANDIDATES}}': renderCandidates(data.candidates),
+    '{{CANDIDATES}}': renderCandidates(data.candidates, data.dropped),
     '{{VERDICT_ACCURACY}}': data.verdictAccuracy || '',
     '{{VERDICT_COHESIVENESS}}': data.verdictCohesiveness || '',
     '{{VERDICT_RATIONALE}}': data.verdictRationale || '',

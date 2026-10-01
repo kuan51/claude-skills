@@ -259,6 +259,18 @@ test('{{CANDIDATES}} renders each candidate in the given order with its fields a
 test('{{CANDIDATES}} prints a placeholder when candidates is empty or absent', () => {
   assert.equal(buildReport('{{CANDIDATES}}', { candidates: [] }), '_No candidate patterns found._');
   assert.equal(buildReport('{{CANDIDATES}}', {}), '_No candidate patterns found._');
+  assert.equal(buildReport('{{CANDIDATES}}', { candidates: [], dropped: [] }), '_No candidate patterns found._');
+});
+
+test('{{CANDIDATES}} names the dropped agents when no candidate was rated', () => {
+  assert.equal(buildReport('{{CANDIDATES}}', { candidates: [], dropped: ['hunt:region', 'reconcile'] }), '_No candidate was rated: hunt:region, reconcile returned nothing._');
+  assert.ok(!buildReport('{{CANDIDATES}}', { candidates: [CANDIDATE(1)], dropped: ['so-what:x'] }).includes('No candidate was rated'));
+});
+
+test("discover's template with no candidates and a dropped reconciler shows the dropped line", () => {
+  const template = fs.readFileSync(path.join(__dirname, '..', '..', 'discover', 'references', 'report-template.md'), 'utf8');
+  const out = buildReport(template, { candidates: [], dropped: ['reconcile'] });
+  assert.ok(section(out, 'Candidates (most material first)').includes('_No candidate was rated: reconcile returned nothing._'), out);
 });
 
 test("renders discover's template from a full result with nothing unfilled and the Repeatability text kept", () => {

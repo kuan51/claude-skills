@@ -164,7 +164,7 @@ for (const slice of slices) {
 const THESIS_BLOCK = wrap('thesis', `${A.thesis == null ? '' : A.thesis}\nDecision: ${A.decision}\nMetric: ${A.metric}\nBaseline: ${A.baseline}`)
 const THESIS_LINE = `Business thesis and decision (confirmed with the project owner):\n${THESIS_BLOCK}`
 
-// An agent that returns nothing is logged and named in `dropped`, never thrown on or silently
+// An agent that returns nothing, or whose call rejects, is logged and named in `dropped`, never thrown on or silently
 // left out, so an empty report cannot read as data with no patterns.
 const dropped = []
 function drop(label) {
@@ -194,7 +194,7 @@ const huntResults = await parallel(
       agentType: 'data-analysis:pattern-hunter',
       model: 'opus',
       schema: HUNT_FINDINGS_SCHEMA,
-    }).then((result) => (result ? { key: slice.key, label: slice.label, findings: result.findings } : drop(`hunt:${slice.key}`)))
+    }).catch(() => null).then((result) => (result ? { key: slice.key, label: slice.label, findings: result.findings } : drop(`hunt:${slice.key}`)))
   )
 )
 
@@ -249,7 +249,7 @@ const soWhatResults = await parallel(
       agentType: 'data-analysis:so-what-auditor',
       model: 'opus',
       schema: SO_WHAT_SCHEMA,
-    }).then((result) => {
+    }).catch(() => null).then((result) => {
       if (!result) return drop(`so-what:${topic.topic}`)
       // An unconditional rule the workflow can enforce is enforced here, not left to the auditor.
       const claim = topic.verified ? {} : { claim_level: 'descriptive' }

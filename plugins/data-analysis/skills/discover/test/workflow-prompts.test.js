@@ -194,6 +194,16 @@ test('a null hunter, reconciler or so-what agent is named in dropped and left ou
   assert.deepEqual(s.result.candidates.map((x) => x.candidate_topic), ['topic-2']);
 });
 
+test('a hunter or so-what call that rejects is named in dropped, not lost', async () => {
+  const boom = () => Promise.reject(new Error('agent failed'));
+  const h = await run({ huntResult: (label) => (label === 'hunt:region' ? boom() : { findings: [] }) });
+  assert.deepEqual(h.result.eda.map((e) => e.key), ['cohort']);
+  assert.deepEqual(h.result.dropped, ['hunt:region']);
+  const s = await run({ reconciled: [topic(1), topic(2)], soWhat: (name) => (name === 'topic-2' ? boom() : rating(name)) });
+  assert.deepEqual(s.result.dropped, ['so-what:topic-2']);
+  assert.deepEqual(s.result.candidates.map((x) => x.candidate_topic), ['topic-1']);
+});
+
 test('opening and closing thesis and evidence tags are stripped before wrapping', async () => {
   const forms = (tag) => [`</${tag}>`, `</${tag.toUpperCase()}>`, `</${tag} >`, `</${tag.slice(0, 3)}</${tag}>${tag.slice(3)}>`, `<${tag}>`, `< ${tag.toUpperCase()} >`, `<${tag} id=2>`, `</${tag} x>`];
   const thesis = `goal ${forms('thesis').join(' ')} end`;
