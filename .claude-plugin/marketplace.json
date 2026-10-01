@@ -6,10 +6,10 @@
   },
   "plugins": [
     {
-      "name": "data-analysis-review",
-      "description": "Empirical, objective review of a data science project: independently re-derives findings from raw data and code, then checks whether the project's own stated conclusions hold up, and lists what the data supports that the project never claimed. All analysis -- including code execution -- runs against a disposable copy of the project, so the original is never modified.",
-      "version": "0.2.2",
-      "source": "./plugins/data-analysis-review",
+      "name": "data-analysis",
+      "description": "Two skills for a data science project's raw data. review independently re-derives findings from raw data and code, then checks whether the project's own stated conclusions hold up, and lists what the data supports that the project never claimed. discover starts from a business decision, its metric and a baseline, and surfaces and rates the patterns the data supports, without claiming causes. All analysis -- including code execution -- runs against a disposable copy of the project, so the original is never modified.",
+      "version": "1.0.0",
+      "source": "./plugins/data-analysis",
       "author": {
         "name": "claude-skills"
       }

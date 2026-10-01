@@ -58,10 +58,10 @@ Root-level manifest consistency: `node --test "test/*.test.js"`.
 Each plugin has its own tests: run them before merging any change to that
 plugin.
 
-- `ciso` and `data-analysis-review` keep tests beside their skill code as well
+- `ciso` and `data-analysis` keep tests beside their skill code as well
   as under `test/`, so run each with a recursive glob:
   `node --test "plugins/ciso/**/*.test.js"` and
-  `node --test "plugins/data-analysis-review/**/*.test.js"`.
+  `node --test "plugins/data-analysis/**/*.test.js"`.
 - `docs-warden`'s Python scripts are checked with
   `python3 plugins/docs-warden/test/test_scripts.py` (assert-based, no framework).
 - `fabflows`'s suite covers its hook as well as its manifests:
@@ -83,9 +83,9 @@ one suite in that format (DEC-0022). `fabflows`'s benchmark predates it and keep
 own harness under `evals/harness/`. Its `brainstorming` evals are in
 `skills/brainstorming/evals/evals.json`, with their results reset in
 [#122](https://github.com/kuan51/claude-skills/issues/122) and not yet re-measured. `ciso` and
-`data-analysis-review` have trigger-accuracy
+`data-analysis` have trigger-accuracy
 lists run by hand: `evals/trigger-corpus.json` (procedure in `evals/RUNBOOK.md`)
-and `skills/data-analysis-review/references/evals.md`. [EVALS.md](EVALS.md)
+and `skills/review/references/evals.md` plus `skills/discover/references/evals.md`. [EVALS.md](EVALS.md)
 compares each plugin with no skill wherever that has been measured, and points
 to the full results.
 

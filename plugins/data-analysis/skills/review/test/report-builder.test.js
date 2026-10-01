@@ -119,7 +119,7 @@ test('renders overCap under Reconciliation Notes, including an entry without sev
     ],
   });
   const notes = section(out, 'Reconciliation Notes');
-  assert.ok(notes.includes('Not cross-compared, over the topic cap'));
+  assert.ok(notes.includes('**Over the topic cap, not taken further:**'));
   assert.ok(notes.includes('- **[low]** **Late topic**: Minor drift. (verified)'));
   assert.ok(notes.includes('- **Unlabelled topic**: Something. (unverified)'));
   assert.ok(!notes.includes('undefined'));
@@ -185,7 +185,7 @@ test('prints each new section placeholder when empty', () => {
   const out = buildReport(REAL_TEMPLATE, { crossCompare: [] });
   assert.ok(section(out, 'Cross-Comparison').includes('_No topic the project addresses was cross-compared._'));
   assert.ok(section(out, "Independent findings the project's report does not address").includes('_No independent finding went unaddressed by the project._'));
-  assert.ok(!section(out, 'Reconciliation Notes').includes('over the topic cap'));
+  assert.ok(!section(out, 'Reconciliation Notes').includes('Over the topic cap'));
 });
 
 test('renders a 0.1.2-shaped result through the real template with no undefined or null', () => {
@@ -224,4 +224,73 @@ test('recommendations and scope given as arrays render as bullet lists', () => {
   assert.ok(section(out, 'Scope & Method').includes('- Four roles.\n- No skills.'));
   assert.ok(section(out, 'Recommendations').includes('- Add a holdout.\n- Pin pandas.'));
   assert.ok(!out.includes('Add a holdout.,Pin'));
+});
+
+const CANDIDATE = (n, extra = {}) => ({
+  candidate_topic: `pattern-${n}`,
+  finding: `finding ${n}`,
+  evidence: `evidence ${n}`,
+  verified: true,
+  business_impact: `impact ${n}`,
+  materiality: 'high',
+  claim_level: 'descriptive',
+  rationale: `rationale ${n}`,
+  to_settle: `check ${n}`,
+  ...extra,
+});
+
+test('{{CANDIDATES}} renders each candidate in the given order with its fields and verified tag', () => {
+  const out = buildReport('{{CANDIDATES}}', {
+    candidates: [CANDIDATE(2), CANDIDATE(1, { materiality: 'low', claim_level: 'diagnostic', verified: false })],
+  });
+  const first = out.indexOf('### 1. pattern-2 — materiality high, descriptive (verified)');
+  const second = out.indexOf('### 2. pattern-1 — materiality low, diagnostic (unverified)');
+  assert.ok(first >= 0 && second > first, out);
+  const block = out.slice(first, second);
+  const fields = ['- **Finding:** finding 2', '- **Evidence:** evidence 2', '- **Decision affected / materiality:** impact 2', '- **Why this rating:** rationale 2', '- **To settle:** check 2'];
+  let at = 0;
+  for (const f of fields) {
+    const i = block.indexOf(f, at);
+    assert.ok(i > at, `${f} in order`);
+    at = i;
+  }
+});
+
+test('{{CANDIDATES}} prints a placeholder when candidates is empty or absent', () => {
+  assert.equal(buildReport('{{CANDIDATES}}', { candidates: [] }), '_No candidate patterns found._');
+  assert.equal(buildReport('{{CANDIDATES}}', {}), '_No candidate patterns found._');
+  assert.equal(buildReport('{{CANDIDATES}}', { candidates: [], dropped: [] }), '_No candidate patterns found._');
+});
+
+test('{{CANDIDATES}} names the dropped agents when no candidate was rated', () => {
+  assert.equal(buildReport('{{CANDIDATES}}', { candidates: [], dropped: ['hunt:region', 'reconcile'] }), '_No candidate was rated: hunt:region, reconcile returned nothing._');
+  assert.ok(!buildReport('{{CANDIDATES}}', { candidates: [CANDIDATE(1)], dropped: ['so-what:x'] }).includes('No candidate was rated'));
+});
+
+test("discover's template with no candidates and a dropped reconciler shows the dropped line", () => {
+  const template = fs.readFileSync(path.join(__dirname, '..', '..', 'discover', 'references', 'report-template.md'), 'utf8');
+  const out = buildReport(template, { candidates: [], dropped: ['reconcile'] });
+  assert.ok(section(out, 'Candidates (most material first)').includes('_No candidate was rated: reconcile returned nothing._'), out);
+});
+
+test("renders discover's template from a full result with nothing unfilled and the Repeatability text kept", () => {
+  const template = fs.readFileSync(path.join(__dirname, '..', '..', 'discover', 'references', 'report-template.md'), 'utf8');
+  const out = buildReport(template, {
+    projectName: 'Churn Discovery',
+    reviewDate: '2026-10-01',
+    thesis: 'Decide whether to cut the repeat discount. Metric: churn. Baseline: 4%.',
+    scope: ['Slices: region, tenure.', 'Agents: 2 hunters, 1 reconciler, 2 so-what.'],
+    executiveSummary: ['Region north churns most.', 'High materiality, descriptive.', 'Re-run on Q3 data.'],
+    eda: [{ key: 'region', label: 'Region', findings: [{ severity: 'high', claim: 'c', evidence: 'e', required_execution: true, verified: true, business_impact: 'b' }] }],
+    reconciled: [{ topic: 't', finding: 'f', evidence: 'e', verified: true, severity: 'high' }],
+    disagreements: [{ topic: 't', description: 'reverses by tenure', roles_involved: ['region', 'tenure'] }],
+    candidates: [CANDIDATE(1), CANDIDATE(2, { materiality: 'none', verified: false })],
+    overCap: [{ topic: 'o', severity: 'low', finding: 'f', evidence: 'e', verified: false }],
+    dropped: [],
+    recommendations: ['Collect tenure for new accounts.'],
+  });
+  assert.ok(!/undefined|null|\{\{/.test(out), out);
+  assert.ok(section(out, 'Candidates (most material first)').includes('### 1. pattern-1 — materiality high, descriptive (verified)'));
+  assert.ok(section(out, 'Reconciliation Notes').includes('Over the topic cap, not taken further'));
+  assert.ok(section(out, 'Repeatability').includes('Single run: these patterns were not re-run to check they recur. Treat each as a lead to confirm with its To settle check.'));
 });
