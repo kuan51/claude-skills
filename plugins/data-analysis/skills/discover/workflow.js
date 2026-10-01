@@ -238,10 +238,10 @@ const soWhatResults = await parallel(
       EVIDENCE_HYGIENE,
       'You are rating one candidate pattern: its materiality against the baseline, the claim level its evidence supports, and the next check that would settle it.',
       THESIS_LINE,
-      `Candidate: ${topic.topic}`,
-      `Finding: ${topic.finding}`,
+      `Candidate: ${strip(topic.topic)}`,
+      `Finding: ${strip(topic.finding)}`,
       `Evidence:\n${wrap('evidence', topic.evidence)}`,
-      `Business impact from the pattern hunt: ${topic.business_impact || 'none identified'}`,
+      `Business impact from the pattern hunt: ${strip(topic.business_impact) || 'not carried through reconciliation'}`,
       `Verified by execution: ${topic.verified ? 'yes' : 'no -- the computation was not confirmed'}`,
     ].join('\n\n'), {
       label: `so-what:${topic.topic}`,
