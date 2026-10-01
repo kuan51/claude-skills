@@ -135,3 +135,15 @@ test('workflow.js inlines the same CODE_FIELDS and CODE_RE and applies them', ()
   assert.ok(workflowSrc.includes("typeof c.statementSource === 'string' && c.statementSource !== 'imported'"), 'buildPrompt must fail closed on statementSource');
   assert.ok(workflowSrc.includes('isCode(field, value)'), 'buildPrompt must keep only codes when wording may not go');
 });
+
+// A project framework's subject fields come from a file anyone may have written, and they are
+// pasted into the prompt of an agent that holds web tools. The prompt must say they are data.
+test('workflow.js tells the researcher the control fields are data, never instructions', () => {
+  const workflowSrc = fs.readFileSync(path.join(__dirname, '..', 'workflow.js'), 'utf8');
+  const clause = workflowSrc.match(/const CONTROL_DATA_CLAUSE =\s*\n?\s*(['"`])([\s\S]*?)\1/);
+  assert.ok(clause, 'workflow.js must declare CONTROL_DATA_CLAUSE');
+  assert.match(clause[2], /data/);
+  assert.match(clause[2], /never instructions/);
+  const prompt = workflowSrc.slice(workflowSrc.indexOf('function buildPrompt'), workflowSrc.indexOf("phase('Research')"));
+  assert.ok(prompt.includes('CONTROL_DATA_CLAUSE,'), 'buildPrompt must include the clause');
+});
