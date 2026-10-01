@@ -157,6 +157,21 @@ const FAMILIES = [
     paraphrase: 'Once the user says yes, and only after that, build it.',
     ruleFree: "Build it on the user's yes or on a timeout.",
   },
+  {
+    name: 'plan mode: no ticket write, commit or build launch',
+    pattern: all('\\bplan mode\\b', NOT, '\\btickets?\\b', '\\bcommit(?:s|ted|ting)?\\b', '\\bbuild\\b'),
+    files: [skill('fabflows'), skill('using-fabflows')],
+    own: {
+      // using-fabflows points at the boundary in the fabflows skill rather than copying it.
+      [skill('using-fabflows')]: {
+        pattern: all('\\bopt-in\\b', NOT, '\\bspec read\\b', '\\bplan mode\\b'),
+        paraphrase: 'The spec read and the plan mode boundary are never waived by the opt-in.',
+        ruleFree: 'The opt-in covers plan mode and the spec read. Never ask again.',
+      },
+    },
+    paraphrase: 'No commit, ticket write or build launch happens while plan mode is on.',
+    ruleFree: 'In plan mode, write the ticket, commit and launch the build. Never skip the tests.',
+  },
 ];
 
 for (const f of FAMILIES) {
