@@ -235,15 +235,80 @@ test('every agentType is <plugin.json name>:<agent> with a matching agents/<agen
   }
 });
 
+const parallelAll = (fns) => Promise.all(fns.map((f) => f().catch(() => null)));
+
+// Refuses before a single agent is dispatched, with a message naming every given string.
+async function refuses(args, ...names) {
+  const calls = [];
+  await assert.rejects(runWorkflow(async (p, o) => calls.push(o), parallelAll, () => {}, args, () => {}), (err) => {
+    assert.match(err.message, /^Refusing to run/);
+    for (const n of names) assert.ok(err.message.includes(n), `message names ${n}: ${err.message}`);
+    return true;
+  });
+  assert.equal(calls.length, 0, 'no agent dispatched');
+}
+
 test('refuses before any agent on a non-string path or a path with a .. segment', async () => {
-  const parallel = (fns) => Promise.all(fns.map((f) => f().catch(() => null)));
-  async function refuses(args) {
-    const calls = [];
-    await assert.rejects(runWorkflow(async (p, o) => calls.push(o), parallel, () => {}, args, () => {}), /Refusing to run/);
-    assert.equal(calls.length, 0, 'no agent dispatched');
-  }
   const fixed = baseArgs().fixedRolePaths;
-  await refuses(baseArgs({ fixedRolePaths: { ...fixed, dataQuality: [[`${ROOT}/data/users.csv`]] } }));
-  await refuses(baseArgs({ fixedRolePaths: { ...fixed, statistical: [`${ROOT}/../other/users.csv`] } }));
-  await refuses(baseArgs({ conclusionPaths: [`${ROOT}/reports/../../etc/passwd`] }));
+  await refuses(baseArgs({ fixedRolePaths: { ...fixed, dataQuality: [[`${ROOT}/data/users.csv`]] } }), 'fixedRolePaths.dataQuality');
+  await refuses(baseArgs({ fixedRolePaths: { ...fixed, statistical: [`${ROOT}/../other/users.csv`] } }), 'fixedRolePaths.statistical', `${ROOT}/../other/users.csv`);
+  await refuses(baseArgs({ conclusionPaths: [`${ROOT}/reports/../../etc/passwd`] }), 'conclusionPaths', `${ROOT}/reports/../../etc/passwd`);
+});
+
+test('refuses before any agent on a . or empty segment', async () => {
+  const fixed = baseArgs().fixedRolePaths;
+  await refuses(baseArgs({ fixedRolePaths: { ...fixed, dataQuality: [`${ROOT}/./README.md`] } }), 'fixedRolePaths.dataQuality', `${ROOT}/./README.md`);
+  await refuses(baseArgs({ fixedRolePaths: { ...fixed, statistical: [`${ROOT}//reports/final.md`] } }), 'fixedRolePaths.statistical', `${ROOT}//reports/final.md`);
+  await refuses(baseArgs({ conclusionPaths: [`${ROOT}/reports/./final.md`] }), 'conclusionPaths', `${ROOT}/reports/./final.md`);
+});
+
+test('a Windows UNC sandbox root runs, and a doubled slash after its leading pair still refuses', async () => {
+  const unc = '\\\\fs01\\scratch\\sb';
+  const p = (rel) => `${unc}\\project\\${rel}`;
+  const r = await run({
+    args: baseArgs({
+      sandboxRoot: unc,
+      fixedRolePaths: { dataQuality: [p('data\\users.csv')], statistical: [p('nb\\a.ipynb')], domainAlignment: [], reproducibility: [p('nb\\a.ipynb')] },
+      extras: [],
+      conclusionPaths: [`${unc}\\conclusions\\nb\\a.ipynb`],
+    }),
+  });
+  assert.equal(r.eda.length, 4);
+  const fixed = { dataQuality: ['//fs01/scratch//sb/project/data/users.csv'], statistical: [], domainAlignment: [], reproducibility: [] };
+  await refuses(baseArgs({ sandboxRoot: '//fs01/scratch/sb', fixedRolePaths: fixed, extras: [], conclusionPaths: [] }), 'fixedRolePaths.dataQuality', '//fs01/scratch//sb/project/data/users.csv');
+});
+
+test('refuses before any agent when a blind path equals, contains or sits inside a conclusion path', async () => {
+  const fixed = baseArgs().fixedRolePaths;
+  const blind = (key, p) => ({ fixedRolePaths: { ...fixed, [key]: [...fixed[key], p] } });
+  await refuses(baseArgs(blind('dataQuality', `${ROOT}/README.md`)), 'fixedRolePaths.dataQuality', `${ROOT}/README.md`);
+  await refuses(baseArgs(blind('statistical', `${ROOT}/reports`)), 'fixedRolePaths.statistical', `${ROOT}/reports`, `${ROOT}/reports/final.md`);
+  await refuses(baseArgs({ ...blind('reproducibility', `${ROOT}/reports/x.csv`), conclusionPaths: [`${ROOT}/reports`] }), 'fixedRolePaths.reproducibility', `${ROOT}/reports/x.csv`, `${ROOT}/reports`);
+  await refuses(baseArgs({ extras: [{ key: 'fairness', label: 'F', paths: [`${ROOT}/data/users.csv`, `${ROOT}/README.md`], persona: 'p' }] }), 'extras.fairness', `${ROOT}/README.md`);
+  await refuses(baseArgs({ ...blind('domainAlignment', ROOT), conclusionPaths: [] }), 'fixedRolePaths.domainAlignment', ROOT, `${ROOT}/conclusions`);
+  await refuses(baseArgs(blind('dataQuality', `${ROOT}/conclusions/x.ipynb`)), 'fixedRolePaths.dataQuality', `${ROOT}/conclusions/x.ipynb`, `${ROOT}/conclusions`);
+  await refuses(baseArgs(blind('statistical', `${ROOT}/readme.MD`)), 'fixedRolePaths.statistical', `${ROOT}/readme.MD`, `${ROOT}/README.md`);
+});
+
+test('a split notebook runs with its code copy blind and its full copy as the conclusion; a name-prefix sibling does not refuse', async () => {
+  const sb = '/sandbox/root';
+  const r = await run({
+    args: baseArgs({
+      sandboxRoot: sb,
+      fixedRolePaths: { dataQuality: [`${sb}/project/data`], statistical: [`${sb}/project/nb/a.ipynb`], domainAlignment: [], reproducibility: [`${sb}/project/nb/a.ipynb`] },
+      extras: [],
+      conclusionPaths: [`${sb}/conclusions/nb/a.ipynb`, `${sb}/project/data2/x.csv`],
+    }),
+  });
+  assert.equal(r.eda.length, 4);
+  assert.equal(r.cross.length, 1);
+});
+
+test('the notebook note appears in every EDA prompt and in no reconcile or cross-compare prompt', async () => {
+  const note = "A `.ipynb` file you are given holds only its code cells: its outputs and Markdown cells were removed before the review, so an empty `outputs` list is expected and is not a finding. Cite a notebook cell by its `id`, or by its `execution_count` when it has no `id`, never by its position.";
+  const r = await run({ reconciled: [topic(1), topic(2)] });
+  assert.equal(r.eda.length, 5);
+  for (const c of r.eda) assert.ok(c.prompt.includes(note), c.opts.label);
+  assert.ok(r.cross.length > 0);
+  for (const c of [r.rec, ...r.cross]) assert.ok(!c.prompt.includes('.ipynb'), c.opts.label);
 });

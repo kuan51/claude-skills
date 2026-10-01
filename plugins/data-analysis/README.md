@@ -71,7 +71,12 @@ whether to save the report before any analysis runs.
   if any path it is given lies outside that copy. The only possible write to your actual project is
   one optional report file, and only if you opt in.
 - **Genuinely independent.** The reviewers never see the project's own conclusions until after
-  their own findings are locked in.
+  their own findings are locked in. Each notebook is split first: the reviewers get only its code
+  cells, and the untouched notebook is kept outside their copy of the project. The engine refuses
+  to run if a reviewer would be handed a conclusion file or a folder holding one, and a linked
+  folder outside the copy that holds a notebook stops the run. The README and any reports are
+  still in the copy, so only the instruction to use just the files given keeps a reviewer that
+  can run commands from opening them.
 - **Real verification, not just reading.** Reviewers execute code against the raw data where
   possible to recompute claims themselves. Each finding carries a `verified` flag that is true
   only when the command ran and its output is in the evidence; the report tags anything else as

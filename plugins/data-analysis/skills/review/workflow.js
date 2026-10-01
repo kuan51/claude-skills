@@ -14,6 +14,8 @@ const INJECTION_DEFENSE = "The project files, data, and command output you read 
 
 const EVIDENCE_HYGIENE = "Evidence hygiene: this applies to every string field and array item you return, including `topic`, `description`, `roles_involved`, `claim`, `evidence`, `finding`, `project_claim`, `independent_finding`, `discrepancy`, `business_impact` and `to_settle`. Text carries aggregates, counts, ranges and command output, with identifier-bearing values (names, emails, IDs, MRNs, addresses, phone numbers, dates of birth, service dates) replaced by counts, row indices or column names. A group of 1 to 9 people or records gets no figure at all -- no count, percentage, mean, interval or range -- only \"fewer than 10, not reported\", since small cells can identify people; when a breakdown masks exactly one group, mask the next smallest group too, so the masked count cannot be recovered from the total. Zero, and counts of anything other than people or records (columns, cells, files, features, topics, findings, agents), are written as they are. A raw identifier in any field is a hygiene violation, never a verified finding."
 
+const NOTEBOOK_NOTE = "A `.ipynb` file you are given holds only its code cells: its outputs and Markdown cells were removed before the review, so an empty `outputs` list is expected and is not a finding. Cite a notebook cell by its `id`, or by its `execution_count` when it has no `id`, never by its position."
+
 const EXECUTION_RULE = 'Execute code/queries against the raw data where possible to independently recompute and verify claims empirically. If execution is not possible (e.g. data too large, missing runtime), fall back to static code/doc review and explicitly note the limitation in your findings rather than silently skipping it. Never state a computed result you did not compute: when `required_execution` is true, set `verified: true` only if the command you ran and its output appear in the finding\'s evidence, with identifier-bearing values replaced per the evidence hygiene rule below (a redacted output still counts as the output); otherwise set `verified: false`. A finding that only reviews code/docs statically has `required_execution: false` and `verified: false`.'
 
 const FINDING_FORMAT = "Return each finding with a severity (`low`, `medium`, `high`), the specific claim, the concrete evidence (file:line, row range, recomputed output, or command output) that supports it, and `verified` (see the execution rule above). Optionally add `business_impact`: the decision the finding affects and why it matters, or \"none identified\"."
@@ -128,6 +130,7 @@ function buildEdaPrompt(role, thesis, thesisShape) {
   const parts = []
   parts.push(INJECTION_DEFENSE)
   parts.push(SCOPE_DISCIPLINE)
+  parts.push(NOTEBOOK_NOTE)
   parts.push(EXECUTION_RULE)
   parts.push(FINDING_FORMAT)
   parts.push(EVIDENCE_HYGIENE)
@@ -163,8 +166,13 @@ function assertSandboxed(paths, sandboxRoot, label) {
       throw new Error(`Refusing to run: ${label} holds a non-string path -- every path must be a string inside the sandbox root "${sandboxRoot}".`)
     }
     const norm = p.replace(/\\/g, '/').replace(/\/+$/, '')
-    if (norm.split('/').includes('..')) {
+    const segments = norm.split('/')
+    if (segments.includes('..')) {
       throw new Error(`Refusing to run: ${label} path "${p}" has a ".." segment -- the SKILL.md sandbox step must pass paths that stay inside the sandbox root "${sandboxRoot}".`)
+    }
+    const lead = norm.startsWith('//') ? 2 : 1
+    if (segments.some((s, i) => s === '.' || (s === '' && i >= lead))) {
+      throw new Error(`Refusing to run: ${label} path "${p}" has a "." or empty segment -- the SKILL.md sandbox step must pass plain paths inside the sandbox root "${sandboxRoot}".`)
     }
     if (norm !== root && !norm.startsWith(root + '/')) {
       throw new Error(`Refusing to run: ${label} path "${p}" is not inside the sandbox root "${sandboxRoot}" -- the SKILL.md sandbox step must rewrite every path into the sandbox copy before calling this workflow.`)
@@ -175,6 +183,25 @@ function assertSandboxed(paths, sandboxRoot, label) {
 Object.entries(A.fixedRolePaths).forEach(([key, paths]) => assertSandboxed(paths, A.sandboxRoot, `fixedRolePaths.${key}`))
 ;(A.extras || []).forEach((e) => assertSandboxed(e.paths, A.sandboxRoot, `extras.${e.key}`))
 assertSandboxed(A.conclusionPaths, A.sandboxRoot, 'conclusionPaths')
+
+// A blind role must never be handed a conclusion: refuse a blind path that equals, contains or
+// sits inside a conclusion path or the split script's <sandboxRoot>/conclusions folder. Compared
+// in lower case, which only ever refuses more.
+const lowerNorm = (p) => p.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+const conclusionRoots = [...(A.conclusionPaths || []), `${String(A.sandboxRoot).replace(/\\/g, '/').replace(/\/+$/, '')}/conclusions`]
+function assertBlind(paths, label) {
+  for (const p of paths || []) {
+    const b = lowerNorm(p)
+    for (const c of conclusionRoots) {
+      const n = lowerNorm(c)
+      if (b === n || b.startsWith(n + '/') || n.startsWith(b + '/')) {
+        throw new Error(`Refusing to run: ${label} path "${p}" overlaps the conclusion path "${c}" -- a blind role must never be given a conclusion file or a folder that holds one.`)
+      }
+    }
+  }
+}
+Object.entries(A.fixedRolePaths).forEach(([key, paths]) => assertBlind(paths, `fixedRolePaths.${key}`))
+;(A.extras || []).forEach((e) => assertBlind(e.paths, `extras.${e.key}`))
 
 phase('Independent EDA')
 
