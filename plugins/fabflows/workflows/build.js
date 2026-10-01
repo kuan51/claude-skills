@@ -153,7 +153,7 @@ function reviewBrief(round) {
   // comes from a reviewer, so it is used only when it looks like one; otherwise the boundary is
   // unknown and this round judges the whole diff as round 1 does.
   const prev = rounds.length ? rounds[rounds.length - 1].review : null
-  const head = prev && typeof prev.head === 'string' && /^[0-9a-f]{7,40}$/.test(prev.head) ? prev.head : null
+  const head = prev && typeof prev.head === 'string' && /^[0-9a-f]{7,40}$/.test(prev.head.trim()) ? prev.head.trim() : null
   const sweep = !head
   const scope = round === 1
     ? ''

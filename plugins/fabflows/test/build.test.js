@@ -133,7 +133,8 @@ const PER_ITEM = /say in the report whether it is fixed, not fixed, or regressed
 test('round 1 sweeps callees by their cases; rounds 2 and 3 judge only the rework since the previous head', async () => {
   const h1 = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
   const h2 = 'deadbee';
-  const { calls } = await run(ARGS, [built, { ...rework, head: h1 }, built, { ...rework, head: h2 }, built, accept]);
+  // A reviewer that pastes `git log -1 --format=%H` output leaves a newline on it: still a head.
+  const { calls } = await run(ARGS, [built, { ...rework, head: `${h1}\n` }, built, { ...rework, head: h2 }, built, accept]);
   const [r1, r2, r3] = [calls[1].prompt, calls[3].prompt, calls[5].prompt];
   assert.match(r1, SWEEP);
   assert.match(r1, /The report names the callees you swept and the cases you probed\./);
