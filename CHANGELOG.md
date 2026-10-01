@@ -180,6 +180,10 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **data-analysis 1.0.0 (breaking)** -- `data-analysis-review` is renamed `data-analysis`, and
+  its skill is now `data-analysis:review`, so the plugin can host a second skill (#105). Run
+  `/plugin uninstall data-analysis-review`, then `/plugin install data-analysis`. Review's
+  default report folder moves to `docs/data-analysis/`.
 - **fabflows 0.13.16** -- the lead launches `fabflows:build` only after the user has read the
   spec text and said yes, and plan mode defers every ticket write, commit and build launch, so
   the approval at ExitPlanMode no longer stands in for reading the spec (#151).

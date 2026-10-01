@@ -19,7 +19,7 @@ repository docs honest, and route work from an expensive lead model to cheaper w
 
 | Plugin | What it does |
 | --- | --- |
-| [data-analysis-review](plugins/data-analysis-review/) | Re-derives a data science project's findings from its raw data and code, then checks its stated conclusions. |
+| [data-analysis](plugins/data-analysis/) | Re-derives a data science project's findings from its raw data and code, then checks its stated conclusions. |
 | [ciso](plugins/ciso/) | Tracks work toward HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC in local HTML dashboards. |
 | [docs-warden](plugins/docs-warden/) | Scaffolds and audits a repository's documents and keeps its decision records append-only. |
 | [fabflows](plugins/fabflows/) | Routes work from an expensive lead model to tool-scoped workers and makes the lead re-verify what they report. |
@@ -35,7 +35,7 @@ Add this repo as a marketplace, then install whichever plugins you want:
 
 ```text
 /plugin marketplace add kuan51/claude-skills
-/plugin install data-analysis-review
+/plugin install data-analysis
 /plugin install ciso
 /plugin install docs-warden
 /plugin install fabflows
@@ -50,7 +50,7 @@ first session.
 
 ## What each plugin does
 
-- **[data-analysis-review](plugins/data-analysis-review/)**: an independent check of whether a
+- **[data-analysis](plugins/data-analysis/)**: an independent check of whether a
   data science project's stated conclusions hold up, and a list of what the data supports that
   the project never claimed.
   - **Blind review.** Specialist reviewers for data quality, statistics, domain alignment and
@@ -113,7 +113,7 @@ Each plugin is self-contained under its own directory in `plugins/`, with its ow
 `.claude-plugin/plugin.json`. To add one:
 
 1. Create `plugins/<plugin-name>/.claude-plugin/plugin.json` (see
-   `plugins/data-analysis-review/.claude-plugin/plugin.json` for the format).
+   `plugins/data-analysis/.claude-plugin/plugin.json` for the format).
 2. Add the plugin's own `skills/`, `agents/`, `commands/`, etc. under `plugins/<plugin-name>/`.
 3. Register it in the root `.claude-plugin/marketplace.json`'s `plugins` array, with
    `"source": "./plugins/<plugin-name>"`, and a `version` matching the one in its `plugin.json`.

@@ -1,4 +1,4 @@
-# data-analysis-review
+# data-analysis
 
 Empirically reviews a data science project: independently re-derives findings from its raw
 data and code (blind to what the project itself claims), then checks whether those claims
@@ -6,6 +6,10 @@ actually hold up. Never modifies the project you're reviewing. See [Guarantees](
 
 Not installed yet? See the [repo root README](../../README.md) for how to add this marketplace
 and install the plugin.
+
+Upgrading from `data-analysis-review`? Version 1.0.0 renames the plugin. Run
+`/plugin uninstall data-analysis-review`, then `/plugin install data-analysis`. The skill is now
+`data-analysis:review`, and its default report folder moves to `docs/data-analysis/`.
 
 ## When to use it
 

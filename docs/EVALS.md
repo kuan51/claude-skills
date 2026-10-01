@@ -21,7 +21,7 @@ disagrees with them.
 | fabflows `brainstorming` | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | none yet | `plugins/fabflows/skills/brainstorming/evals/evals.json` (no results yet) |
 | docs-warden | Not measured | Not measured | none | see below |
 | ciso | Not measured | Not measured | none | see below |
-| data-analysis-review | Not measured | Not measured | none | see below |
+| data-analysis | Not measured | Not measured | none | see below |
 
 `RESULTS.md` is [plugins/fabflows/evals/RESULTS.md](../plugins/fabflows/evals/RESULTS.md).
 
@@ -35,8 +35,8 @@ disagrees with them.
   [plugins/ciso/evals/trigger-corpus.json](../plugins/ciso/evals/trigger-corpus.json), with its
   procedure in [plugins/ciso/evals/RUNBOOK.md](../plugins/ciso/evals/RUNBOOK.md). No result
   recorded.
-- **data-analysis-review.** A trigger list run by hand,
-  [references/evals.md](../plugins/data-analysis-review/skills/data-analysis-review/references/evals.md).
+- **data-analysis.** A trigger list run by hand,
+  [references/evals.md](../plugins/data-analysis/skills/review/references/evals.md).
   No result recorded.
 - **fabflows' `ticket`, `trace` and `fabflows-setup` skills.** Only in fabflows' own trigger
   list run by hand,

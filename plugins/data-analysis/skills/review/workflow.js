@@ -169,9 +169,9 @@ phase('Independent EDA')
 // Namespaced as 'data-analysis:<agent-name>' to match this plugin's own plugin.json
 // "name" field, mirroring the pattern observed in 4 independently-installed plugins in this
 // environment (each plugin's agents resolve as '<that plugin's own name>:<agent-name>').
-// The old name was confirmed by an installed copy (0.1.2): its agents resolved as
-// 'data-analysis-review:<agent-name>'. The new 'data-analysis:' prefix follows the same
-// observed pattern and is unconfirmed until the manual run. If they ever resolve bare instead, a
+// An installed copy under the plugin's previous name (0.1.2) confirmed that pattern. The
+// 'data-analysis:' prefix follows the same observed pattern and is unconfirmed until the
+// manual run. If they ever resolve bare instead, a
 // wrong guess here fails loudly (every agent() call throws "agent type not found", zero agents
 // dispatched) rather than silently misrouting -- this was evaluated and accepted as the better
 // failure mode versus a bare reference risking a same-named agent from an unrelated plugin.
