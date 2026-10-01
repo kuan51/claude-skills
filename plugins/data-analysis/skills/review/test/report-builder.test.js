@@ -119,7 +119,7 @@ test('renders overCap under Reconciliation Notes, including an entry without sev
     ],
   });
   const notes = section(out, 'Reconciliation Notes');
-  assert.ok(notes.includes('Not cross-compared, over the topic cap'));
+  assert.ok(notes.includes('**Over the topic cap, not taken further:**'));
   assert.ok(notes.includes('- **[low]** **Late topic**: Minor drift. (verified)'));
   assert.ok(notes.includes('- **Unlabelled topic**: Something. (unverified)'));
   assert.ok(!notes.includes('undefined'));
@@ -224,4 +224,39 @@ test('recommendations and scope given as arrays render as bullet lists', () => {
   assert.ok(section(out, 'Scope & Method').includes('- Four roles.\n- No skills.'));
   assert.ok(section(out, 'Recommendations').includes('- Add a holdout.\n- Pin pandas.'));
   assert.ok(!out.includes('Add a holdout.,Pin'));
+});
+
+const CANDIDATE = (n, extra = {}) => ({
+  candidate_topic: `pattern-${n}`,
+  finding: `finding ${n}`,
+  evidence: `evidence ${n}`,
+  verified: true,
+  business_impact: `impact ${n}`,
+  materiality: 'high',
+  claim_level: 'descriptive',
+  rationale: `rationale ${n}`,
+  to_settle: `check ${n}`,
+  ...extra,
+});
+
+test('{{CANDIDATES}} renders each candidate in the given order with its fields and verified tag', () => {
+  const out = buildReport('{{CANDIDATES}}', {
+    candidates: [CANDIDATE(2), CANDIDATE(1, { materiality: 'low', claim_level: 'diagnostic', verified: false })],
+  });
+  const first = out.indexOf('### 1. pattern-2 — materiality high, descriptive (verified)');
+  const second = out.indexOf('### 2. pattern-1 — materiality low, diagnostic (unverified)');
+  assert.ok(first >= 0 && second > first, out);
+  const block = out.slice(first, second);
+  const fields = ['- **Finding:** finding 2', '- **Evidence:** evidence 2', '- **Decision affected / materiality:** impact 2', '- **Why this rating:** rationale 2', '- **To settle:** check 2'];
+  let at = 0;
+  for (const f of fields) {
+    const i = block.indexOf(f, at);
+    assert.ok(i > at, `${f} in order`);
+    at = i;
+  }
+});
+
+test('{{CANDIDATES}} prints a placeholder when candidates is empty or absent', () => {
+  assert.equal(buildReport('{{CANDIDATES}}', { candidates: [] }), '_No candidate patterns found._');
+  assert.equal(buildReport('{{CANDIDATES}}', {}), '_No candidate patterns found._');
 });

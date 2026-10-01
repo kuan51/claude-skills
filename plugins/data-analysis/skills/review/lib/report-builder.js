@@ -68,7 +68,24 @@ function renderOverCap(overCap) {
     const evidence = o.evidence ? `\n  - Evidence: ${o.evidence}` : '';
     return `- ${sev}**${o.topic}**: ${o.finding}${verifiedTag(o.verified)}${evidence}`;
   });
-  return `\n\n**Not cross-compared, over the topic cap:**\n\n${lines.join('\n')}`;
+  return `\n\n**Over the topic cap, not taken further:**\n\n${lines.join('\n')}`;
+}
+
+// Discover's so-what results, in the order given (the workflow sorts them by materiality).
+function renderCandidates(candidates) {
+  if (!candidates || !candidates.length) return '_No candidate patterns found._';
+  return candidates
+    .map((c, i) => {
+      const lines = [
+        `- **Finding:** ${c.finding}`,
+        `- **Evidence:** ${c.evidence}`,
+        impactLine(c.business_impact),
+        `- **Why this rating:** ${c.rationale}`,
+        `- **To settle:** ${c.to_settle}`,
+      ];
+      return `### ${i + 1}. ${c.candidate_topic} — materiality ${c.materiality}, ${c.claim_level}${verifiedTag(c.verified)}\n\n${lines.join('\n')}`;
+    })
+    .join('\n\n');
 }
 
 // The project addresses a topic unless the auditor returned `Not Addressed`; those render in
@@ -115,6 +132,7 @@ function buildReport(templateText, data) {
     '{{DISAGREEMENTS}}': renderDisagreements(data.disagreements) + renderOverCap(data.overCap),
     '{{CROSS_COMPARE}}': renderCrossCompare(data.crossCompare),
     '{{UNADDRESSED}}': renderUnaddressed(data.crossCompare),
+    '{{CANDIDATES}}': renderCandidates(data.candidates),
     '{{VERDICT_ACCURACY}}': data.verdictAccuracy || '',
     '{{VERDICT_COHESIVENESS}}': data.verdictCohesiveness || '',
     '{{VERDICT_RATIONALE}}': data.verdictRationale || '',
@@ -124,7 +142,7 @@ function buildReport(templateText, data) {
   return templateText.replace(/\{\{[^{}]+\}\}/g, (token) => replacements[token] ?? token);
 }
 
-module.exports = { buildReport, renderFindings, renderDisagreements, renderCrossCompare, renderUnaddressed, renderOverCap };
+module.exports = { buildReport, renderFindings, renderDisagreements, renderCrossCompare, renderUnaddressed, renderOverCap, renderCandidates };
 
 if (require.main === module) {
   const [, , templatePath, dataPath] = process.argv;
