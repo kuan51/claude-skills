@@ -13,6 +13,7 @@ Performs an empirical, objective review of a data science project in the current
 
 - The user wants you to fix, refactor, or build on the project. This skill only reviews, it never edits the target project.
 - The user wants a one-off quick question answered about the data. This skill's full gating + multi-agent flow is overkill for that. Just answer directly.
+- There is no conclusion to check, but a decision to inform. Use `data-analysis:discover`.
 
 ## Process
 
@@ -116,6 +117,6 @@ This is a two-part process: an interactive gating phase, then a `Workflow`-drive
 
 ## Guarantees
 
-- Project files are never modified. All analysis, including any code execution, runs against a disposable copy made in step 8. Agents only ever see paths inside that copy, never the original project's path. This is enforced two ways: procedurally, by step 8 rewriting every path before it's used, and structurally, by the analysis engine (`workflow.js`) refusing to dispatch any agent if a path it receives falls outside the declared sandbox root. A skipped or incomplete rewrite stops the run instead of silently reaching the original project. None of the 7 custom agent types (`agents/*.md`) has `Write`, `Edit`, or `Agent`, as further defense in depth: the five EDA roles have `Read, Grep, Glob, Bash`, the `thesis-auditor` has `Read, Grep, Glob` (no `Bash`), and the `findings-reconciler` has `Read` only.
+- Project files are never modified. All analysis, including any code execution, runs against a disposable copy made in step 8. Agents only ever see paths inside that copy, never the original project's path. This is enforced two ways: procedurally, by step 8 rewriting every path before it's used, and structurally, by the analysis engine (`workflow.js`) refusing to dispatch any agent if a path it receives falls outside the declared sandbox root. A skipped or incomplete rewrite stops the run instead of silently reaching the original project. None of the 9 custom agent types (`agents/*.md`) has `Write`, `Edit`, or `Agent`, as further defense in depth: the five EDA roles have `Read, Grep, Glob, Bash`, the `thesis-auditor` has `Read, Grep, Glob` (no `Bash`), and the `findings-reconciler` has `Read` only. Discover's two agents follow the same rule: `pattern-hunter` has `Read, Grep, Glob, Bash` and `so-what-auditor` has `Read` only.
 - Independent-EDA agents never receive the project's own conclusion-artifact paths. They literally aren't told those paths exist.
 - Every EDA and cross-compare prompt includes a scope-discipline instruction: use only the files you were given, don't Glob/Grep for more, don't spawn subagents. The reconcile prompt receives no file paths, so it carries none.
