@@ -205,3 +205,30 @@ test('two hard-linked notebooks each get a full copy byte-identical to the origi
     assert.equal(JSON.parse(fs.readFileSync(path.join(proj, n), 'utf8')).cells.length, 2, n);
   }
 });
+
+test('refuses a linked folder outside the copy whose only notebook is itself a link', () => {
+  const { base, real, sb, proj } = layout({ 'a.ipynb': NB_TEXT });
+  fs.mkdirSync(path.join(base, 'ext', 'inner'), { recursive: true });
+  fs.writeFileSync(path.join(base, 'target.ipynb'), NB_TEXT);
+  fs.symlinkSync(path.join(base, 'target.ipynb'), path.join(base, 'ext', 'inner', 'n.ipynb'));
+  fs.symlinkSync(path.join(base, 'ext'), path.join(proj, 'data'));
+  const before = snapshot(sb);
+  assert.throws(() => splitNotebooks(real, sb), (e) => e.message.includes(path.join(proj, 'data')) && /Nothing was written/.test(e.message));
+  assert.deepEqual(snapshot(sb), before);
+});
+
+test('a link in the copy that resolves into conclusions/ once the split has written it stops the run', () => {
+  for (const target of ['../conclusions', '../conclusions/a.ipynb']) {
+    const { real, sb, proj } = layout({ 'a.ipynb': NB_TEXT });
+    fs.symlinkSync(target, path.join(proj, 'peek'));
+    assert.throws(
+      () => splitNotebooks(real, sb),
+      (e) => e.message.includes(path.join(proj, 'peek')) && /delete the sandbox/.test(e.message) && !/Nothing was written/.test(e.message),
+      target
+    );
+    const again = layout({ 'a.ipynb': NB_TEXT });
+    fs.symlinkSync(target, path.join(again.proj, 'peek'));
+    assert.equal(cli(again.real, again.sb).status, 1, target);
+  }
+});
+

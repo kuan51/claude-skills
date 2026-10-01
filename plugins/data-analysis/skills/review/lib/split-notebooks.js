@@ -29,6 +29,7 @@ function inside(child, parent) {
 }
 
 // Read-only scan of a folder reached through a link: follows no links, skips unreadable folders.
+// Any entry named *.ipynb counts, a link included, since reading it reaches a notebook.
 function holdsNotebook(dir) {
   let entries;
   try {
@@ -36,7 +37,7 @@ function holdsNotebook(dir) {
   } catch {
     return false;
   }
-  return entries.some((e) => (e.isFile() && isNotebook(e.name)) || (e.isDirectory() && holdsNotebook(path.join(dir, e.name))));
+  return entries.some((e) => (e.isDirectory() ? holdsNotebook(path.join(dir, e.name)) : isNotebook(e.name)));
 }
 
 function parseNotebook(file) {
@@ -57,15 +58,16 @@ function parseNotebook(file) {
   return { bytes, code: JSON.stringify(out, null, 1) + '\n' };
 }
 
-function collect(projectDir, realProject, dir, rel, found) {
+function collect(projectDir, realProject, dir, rel, found, links) {
   const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   for (const e of entries) {
     if (e.name === '.git') continue;
     const abs = path.join(dir, e.name);
     const relPath = rel ? `${rel}/${e.name}` : e.name;
     if (e.isDirectory()) {
-      collect(projectDir, realProject, abs, relPath, found);
+      collect(projectDir, realProject, abs, relPath, found, links);
     } else if (e.isSymbolicLink()) {
+      links.push(abs);
       let target = null;
       try {
         target = fs.statSync(abs);
@@ -110,7 +112,8 @@ function splitNotebooks(projectRoot, sandboxRoot) {
   if (exists) refuse('already exists', conclusionsDir);
 
   const found = [];
-  collect(projectDir, realpath(projectDir), projectDir, '', found);
+  const links = [];
+  collect(projectDir, realpath(projectDir), projectDir, '', found, links);
 
   for (const nb of found) {
     const full = path.join(conclusionsDir, ...nb.rel.split('/'));
@@ -119,6 +122,23 @@ function splitNotebooks(projectRoot, sandboxRoot) {
     const tmp = path.join(path.dirname(nb.abs), `.split-${crypto.randomBytes(6).toString('hex')}.tmp`);
     fs.writeFileSync(tmp, nb.code, { flag: 'wx' });
     fs.renameSync(tmp, nb.abs);
+  }
+
+  // A link can point at conclusions/ before it exists (`peek -> ../conclusions`), so it is
+  // resolved again once the untouched notebooks are on disk.
+  if (found.length) {
+    const realConclusions = realpath(conclusionsDir);
+    for (const link of links) {
+      let real;
+      try {
+        real = fs.realpathSync(link);
+      } catch {
+        continue;
+      }
+      if (inside(real, realConclusions)) {
+        throw new Error(`split-notebooks: link resolves into the conclusions folder: ${link}. Files were written, so delete the sandbox.`);
+      }
+    }
   }
 
   const root = String(sandboxRoot).replace(/\\/g, '/').replace(/\/+$/, '');
