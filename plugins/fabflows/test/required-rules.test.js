@@ -158,6 +158,20 @@ const FAMILIES = [
     ruleFree: "Build it on the user's yes or on a timeout.",
   },
   {
+    name: 'the refuter probes each callee case, and an unprobed case is an open question',
+    pattern: all('\\bprobe\\b', '\\bper case\\b', '\\bcase not probed\\b', '\\bopen question\\b'),
+    files: [agent('refuter')],
+    paraphrase: 'A case not probed stays an open question, so probe one input per case.',
+    ruleFree: 'Probe each callee once per case you choose. List each open question.',
+  },
+  {
+    name: 'a later review round judges the rework diff only',
+    pattern: all('\\blater (?:review )?round\\b', '\\brework diff\\b', '\\bnever must-fix\\b'),
+    files: [agent('refuter')],
+    paraphrase: 'Anything outside the rework diff is never must-fix in a later round.',
+    ruleFree: 'Judge the rework diff in a later round. A real bug is never a note.',
+  },
+  {
     name: 'plan mode: no ticket write, commit or build launch',
     pattern: all('\\bplan mode\\b', NOT, '\\btickets?\\b', '\\bcommit(?:s|ted|ting)?\\b', '\\bbuild\\b'),
     files: [skill('fabflows'), skill('using-fabflows')],

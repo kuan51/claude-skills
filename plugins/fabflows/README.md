@@ -234,7 +234,10 @@ the old default. The reviewer reads code the diff calls, and a must-fix that nam
 there lets the builder fix it even where the spec says otherwise. The builder names each spec
 sentence it crossed in `deviations`, the loop matches each entry to the must-fix it cites, and
 the lead keeps a matched fix and proposes the spec amendment to the user rather than reverting
-it.
+it. The first review probes one input per case of each function the diff calls. Rounds 2 and 3
+judge only the rework since the commit the previous review read: an earlier must-fix still not
+fixed, a regression or a real bug in that rework diff, or uncommitted work. A new finding
+elsewhere is a note the lead reads.
 
 ## Measured performance
 
@@ -278,6 +281,10 @@ Iteration 7 ([#148](https://github.com/kuan51/claude-skills/issues/148)) landed 
 each one, with a gate rule that a matched fix stands. The lead kept the caret fix in 4 of 4 runs
 where the loop made it, against 1 of 3 before; 3 of 5 runs passed the whole bar, the misses being
 a review that never read the callee and a run that hit the rework cap with the fix in place.
+Iteration 8 ([#154](https://github.com/kuan51/claude-skills/issues/154)) made the first review
+sweep each callee case by case and later reviews judge the rework only, in 0.15.0. All 5 runs
+passed the whole bar: every first review listed `caret()`'s cases and probed the `^0.M.P` one,
+every loop ended ACCEPT after one rework round, and no lead reverted the fix.
 
 ## Long sessions
 

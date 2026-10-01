@@ -8,6 +8,23 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **ciso 1.2.0** -- every framework is one data folder: a `framework.json`, a `ground-rules.md`
+  (which replaces `invariants.md`) and one structure file per tier (#158). ciso loads them from
+  the plugin's `frameworks/` and from a project's own `docs/ciso/frameworks/`, and validates each
+  with `frameworks.js`. The four bundled frameworks moved there unedited, so existing `state.json`
+  files need no migration. A project framework is data, not instructions: it may not carry flow
+  files, verbs follow the plugin's generic flows and ground rules for it, and a certKey that
+  clashes with a bundled one is excluded. A control whose wording is `imported` never sends its
+  label or summary to vendor research or task sync. HITRUST's r2 maturity shape no longer applies
+  to another framework's tier named `r2`, and the dashboard stops calling CMMC's verbatim text a
+  paraphrase. `ADDING-A-CERTIFICATION.md` now opens with how to write a project framework.
+- **fabflows 0.15.0** -- the build loop's first review sweeps each function the diff calls by
+  its cases, probing one literal input per case and reporting an unprobed case as an open
+  question (#154). The reviewer's verdict gains `head`, the commit it read, and rounds 2 and 3
+  judge only the rework since that commit: an earlier must-fix still not fixed, a regression or
+  a real bug in that diff, or an uncommitted path. A new finding elsewhere is a note, so the
+  lead's gate now reads the final verdict's notes. A missing or invalid `head` makes the next
+  round judge the whole diff as round 1 does.
 - **fabflows 0.14.0** -- the build loop adopts the review-callees and rework-permission text
   measured in iterations 5 and 6 (#148). The builder's result gains an optional `deviations`
   list naming the spec sentence a must-fix fix crossed, and `fabflows:build` matches each entry
