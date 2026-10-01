@@ -288,3 +288,18 @@ test('list exits 1 when no bundled framework is found', () => {
   fs.mkdirSync(path.join(plugin, 'frameworks'));
   assert.equal(spawnSync(process.execPath, [path.join(plugin, 'skills/_shared/frameworks.js'), 'list', tmp()]).status, 1);
 });
+
+// The order is part of what users see (dashboard cards, register's picker). Before 1.2.0 a curated
+// certifications.json put HITRUST first; now it is bundled then project, each alphabetical.
+test('list orders bundled frameworks first, then project ones, each alphabetical by folder', () => {
+  const docs = tmp();
+  copyExample(path.join(docs, 'frameworks'), 'zeta');
+  editJson(path.join(docs, 'frameworks', 'zeta', 'framework.json'), (f) => { f.certKey = 'zeta'; });
+  copyExample(path.join(docs, 'frameworks'), 'alpha');
+  editJson(path.join(docs, 'frameworks', 'alpha', 'framework.json'), (f) => { f.certKey = 'alpha'; });
+  const { frameworks, errors } = listFrameworks(docs);
+  assert.deepEqual(errors, []);
+  const bundled = bundledDirs.map((d) => path.basename(d)).sort();
+  assert.deepEqual(frameworks.map((f) => f.certKey), [...bundled, 'alpha', 'zeta']);
+  assert.deepEqual(bundled, ['cmmc', 'hitrust', 'iso27001', 'soc2']);
+});
