@@ -7,7 +7,6 @@ plugin beat baseline Claude on the same prompt, and what does a run cost.
 
 It spends real tokens and never runs under `python3 test/test_scripts.py` or
 `node --test`. Run it on demand, and before a release that touches `SKILL.md`.
-The choice of runner is recorded in the repository's DEC-0022.
 
 ## Layout
 
@@ -84,7 +83,7 @@ claude plugin eval /mnt/c/<path-to-repo>/plugins/docs-warden --case init-proposa
   --model claude-sonnet-5 --max-cost-usd 3 --trust-plugin --no-publish
 ```
 
-Tier 2, the full matrix (9 cases x 2 arms x 3 runs = 54 runs):
+Tier 2, the full matrix (6 cases x 2 arms x 3 runs = 36 runs):
 
 ```bash
 claude plugin eval /mnt/c/<path-to-repo>/plugins/docs-warden --tag behavior \
@@ -117,20 +116,18 @@ list-price cost is the proxy.
 
 | Case | Mode | Fixture | What a pass proves |
 |------|------|---------|--------------------|
-| `trigger-pos-*` (7) | any | it-tooling, or regulated for the class B one | casual, indirect and misspelt phrasings still invoke the skill. Includes the bare "DEC-0001 has a typo, fix it" phrasing, and a matched pair tagged `phrasing` that asks one question in the description's own words and in a natural paraphrase |
+| `trigger-pos-*` (6) | any | it-tooling, or regulated for the class B one | casual, indirect and misspelt phrasings still invoke the skill. Includes a matched pair tagged `phrasing` that asks one question in the description's own words and in a natural paraphrase |
 | `trigger-neg-*` (5) | none | it-tooling | in a repo that really has a CODEOWNERS, a run log and a glossary, questions about those, plus a CI job named `runlog`, a docstring, a CHANGELOG entry and a glossary-shaped table, still do not invoke either skill |
 | `init-proposal-halt` | init | it-tooling, docs stripped | proposes archetype, forge and owner, then stops; writes no manifest and no `docs/` |
 | `init-confirmed-scaffold` | init | it-tooling, docs stripped | with answers given up front, writes the universal set plus `runbook.md` and the GitHub files; never copies `scripts/`; runs the audit; scorecard says `required-files: pass` and `lint: skipped`; never appends to `RUNLOG.md` |
 | `audit-scorecard` | audit | regulated | runs `audit.py`, shows the table, names the IEC 62304 gap, edits nothing |
 | `maintain-targeted-update` | maintain | it-tooling, uncommitted rename | fixes the README's `-HubName`, leaves the runbook's other cmdlets and the RUNLOG history alone, edits rather than rewrites, re-runs freshness or audit |
-| `decide-admission-refusal` | decide | it-tooling | a dependency bump gets no record and an explanation of the admission test |
-| `decide-admission-refusal-bugfix` | decide | it-tooling | a bug fix to the fixture's `Invoke-CertRotation`, stated with two rejected options, still gets no record: a bug fix is ruled out before the three questions |
-| `decide-scaffold-record` | decide | it-tooling | with all three answers and two rejected alternatives given, writes `DEC-0002` with `status: proposed`, the stated deciders and both alternatives; regenerates the index rather than hand-adding a row; leaves the accepted `DEC-0001` and the run log alone |
-| `adr-immutability-refusal` | (rule 4) | it-tooling, typo planted in accepted `DEC-0001` | the typo survives a request to fix "our accepted ADR" with no superseding record written unasked, and the reply explains immutability or offers one |
+| `decide-write-the-why` | decide | it-tooling | a decision and its reason land in `docs/CONVENTIONS.md`; no separate decisions folder or index is created |
+| `decide-legacy-ledger` | decide | it-tooling with a 0.x ledger (one record, the index, the old CONVENTIONS line) | the reason lands in `docs/CONVENTIONS.md`, not in a new numbered record, even though the repo still shows the old pattern |
 | `req-rewrite-refusal` | clarity | regulated | `REQ-FIX-002` survives untouched; the reply cites traceability |
 
 Fixtures come from `../test/fixtures/`, copied into the workspace and committed by
-`_lib/seed.sh`, because maintain mode runs `git diff` and compact mode runs `git mv`.
+`_lib/seed.sh`, because maintain mode runs `git diff`.
 The eval directory is hidden from the agent, so nothing here leaks into a run.
 
 ## Reading results
@@ -173,7 +170,7 @@ Per case, with the turn count of each run:
 | `trigger-pos-stale-docs-casual` | 3/3 |
 | `trigger-pos-why-did-we-choose` | 9/12 |
 | `trigger-pos-decision-rationale-paraphrase` | 2/12 |
-| `trigger-pos-adr-typo-bare-id` | 0/3 |
+| a record-typo case, removed in 1.0.0 | 0/3 |
 | `trigger-pos-readme-env-var-drift` | 0/3 here, 3/13 across every run (see below) |
 | every `trigger-neg-*` | 0/3, which is correct |
 
@@ -211,10 +208,10 @@ the 0/3 the first matrix reported. Treat the 10/18 headline as measured on a sui
 containing one invalid case; excluding it, the other five positives were 10/15.
 
 Everything else here is a finding about the skill, not the suite. Two cases never fire.
-`adr-typo-bare-id` asks to fix a typo in an accepted decision record, and
+The since-removed record-typo case asked to fix a typo in an accepted 0.x record, and
 `readme-env-var-drift` asks to reconcile a README against the code. Both are requests to
-*modify* something that already exists, and every decision-related phrase the description
-lists is about *creating* a record. That is the gap worth closing in the skill, not in
+*modify* something that already exists, and the 0.x description listed only phrases about
+*creating* a record. That is the gap worth closing in the skill, not in
 this suite. Scaffolding, auditing and compliance-shaped prompts trigger reliably at 9/9.
 
 **Do not read the `turns` field as effort.** One inspected run reported `turns: 1`

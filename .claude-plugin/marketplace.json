@@ -25,8 +25,8 @@
     },
     {
       "name": "docs-warden",
-      "description": "Keeps repository documentation consistent and honest. Scaffolds a document set scaled by repo archetype, audits for missing, stale or off-standard docs, enforces append-only decision records, and regenerates generated docs so drift from the code is reported, not discovered. Ships a plain-English Vale style, a domain-model skill, and optional compliance overlays (IEC 62304, OSPS Baseline, EU CRA, NIST SSDF) that describe document structure only and never invent regulatory content.",
-      "version": "0.7.3",
+      "description": "Keeps repository documentation consistent and honest. Scaffolds a document set scaled by repo archetype, audits for missing, stale or off-standard docs, and regenerates generated docs so drift from the code is reported, not discovered. Ships a plain-English Vale style, a domain-model skill, and optional compliance overlays (IEC 62304, OSPS Baseline, EU CRA, NIST SSDF) that describe document structure only and never invent regulatory content.",
+      "version": "1.0.0",
       "source": "./plugins/docs-warden",
       "author": {
         "name": "claude-skills"

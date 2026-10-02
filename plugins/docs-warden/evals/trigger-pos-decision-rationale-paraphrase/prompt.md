@@ -6,7 +6,7 @@ expected_outcome: >
   the docs-warden skill is invoked. This is the paired paraphrase of
   trigger-pos-why-did-we-choose: same situation, same fixture, same gap, but deliberately
   avoiding every literal trigger phrase in the skill's description. It says "why we went
-  with" rather than "why did we choose", and never says decision record or ADR. The gap
+  with" rather than "why did we choose", and never says "record a decision" or ADR. The gap
   between the two cases is the measurement: it says how much of the skill's triggering
   depends on a user happening to use the skill's own vocabulary.
 ---

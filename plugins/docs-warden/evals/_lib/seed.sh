@@ -7,7 +7,7 @@
 #   commit_fixture                             # git init + commit, so the skill's git calls work
 #
 # Every behavioral case needs a committed repository: maintain mode runs git diff,
-# compact mode runs git mv, and _common.py has git helpers. An uncommitted
+# and _common.py has git helpers. An uncommitted
 # fixture fails those for reasons that have nothing to do with the skill.
 # Anything you change between seed and commit_fixture is part of the fixture;
 # anything you change after commit_fixture shows up as an uncommitted diff.

@@ -21,7 +21,7 @@ repository docs honest, and route work from an expensive lead model to cheaper w
 | --- | --- |
 | [data-analysis](plugins/data-analysis/) | Re-derives a data science project's findings from its raw data and code, then checks its stated conclusions, or surfaces the patterns in its data that bear on a business decision. |
 | [ciso](plugins/ciso/) | Tracks work toward HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022, CMMC or your own framework in local HTML dashboards. |
-| [docs-warden](plugins/docs-warden/) | Scaffolds and audits a repository's documents and keeps its decision records append-only. |
+| [docs-warden](plugins/docs-warden/) | Scaffolds and audits a repository's documents and keeps each decision's reason next to its rule. |
 | [fabflows](plugins/fabflows/) | Routes work from an expensive lead model to tool-scoped workers and makes the lead re-verify what they report. |
 
 How each plugin did in its evals is in [docs/EVALS.md](docs/EVALS.md).
@@ -79,8 +79,8 @@ first session.
 - **[docs-warden](plugins/docs-warden/)**: keeps repository documentation consistent and honest.
   - **Scaffold and audit.** A document set scaled to what the repo actually is, and a scorecard
     of what is missing, stale or off-standard.
-  - **Decision records.** Append-only and indexed, with the oldest archived into a digest once
-    fifty are decided.
+  - **The why beside the rule.** A decision's reason is one or two sentences next to the rule
+    it explains, not a separate ledger.
   - **Drift.** Reports where the docs have drifted from the code instead of silently rewriting
     them.
   - **Domain model.** Maps a repo's concepts, their relationships and which document describes

@@ -33,12 +33,10 @@ that implements it and in the name of every test that verifies it.
 ## Documentation
 
 Every pull request updates the affected documents or says why not.
-Accepted decision records are never edited; supersede them instead.
+The reason for a rule sits next to the rule.
 
 ## Generated files
 
 | Path | Regenerate with |
 |------|-----------------|
-| `docs/DECISIONS.md` | `adr_index.py .` |
-| `docs/decisions/README.md` | the same command |
 | `docs/regulatory/traceability-matrix.md` | `trace_matrix.py . --write` |

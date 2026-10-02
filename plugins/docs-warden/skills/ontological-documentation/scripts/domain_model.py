@@ -7,9 +7,6 @@ Default prints the document. --write commits it to disk. --check exits 1 when
 what is committed differs from what would be generated, and 2 when the
 extractor found no source file it can read -- the audit turns that 2 into
 `skipped`, because a C or Rust repository has not failed anything.
-
-Same contract as adr_index.py --check, deliberately: one way to ask a
-docs-warden generator whether the tree is current.
 """
 import argparse
 import re

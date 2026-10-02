@@ -84,7 +84,7 @@ step which half they finished.
 
 ---
 
-## 5. Decision record consequence — vague attribution
+## 5. Decision reason — vague attribution
 
 **Rule:** `Microsoft.Passive` (delegated)
 

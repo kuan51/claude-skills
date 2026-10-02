@@ -28,28 +28,22 @@ from types import SimpleNamespace
 from archetypes import ARCHETYPES, required_files
 from standards import STANDARDS
 from _common import (
-    DECISIONS,
     FORGES,
     FORGE_DEFAULT,
-    DECISIONS_ARCHIVE_DIR,
-    DECISIONS_DIR,
     DOMAIN_MODEL,
     GENERATED_MARKER,
     GLOSSARY,
+    LEGACY_DECISIONS_DIR,
     README,
     RUNLOG,
     RUNLOG_ARCHIVE_DIR,
     UNIVERSAL_FILES,
-    adr_files,
-    adr_status,
     git,
     is_git_repo,
-    load_adrs,
     load_config,
     long_lived_docs,
     markdown_docs,
     parse_domain_model,
-    parse_front_matter,
     parse_glossary,
     read_doc,
     read_front_matter,
@@ -322,120 +316,15 @@ def check_front_matter(repo):
     return check("front-matter", "pass", "Owner and review_by present and current.")
 
 
-def check_adr_immutability(repo):
-    # A DEC file whose front matter fails to parse -- bad YAML, an unreadable
-    # file, a missing or non-dict "---" block -- comes back as {} from
-    # read_front_matter no matter which of those it was (_common.py), which
-    # load_adrs then turns into status: "" and drops from the filter below
-    # with no finding raised. Caught here, before that fallback ever runs, so
-    # a broken accepted record cannot silently stop being checked. Reads each
-    # file again below via load_adrs -- deliberate, not a missed shared pass:
-    # keeps this check's front-matter concern independent of the accepted-
-    # record logic that follows it.
-    unparsed = [
-        path.relative_to(repo).as_posix()
-        for path in adr_files(repo)
-        if not read_front_matter(path)[0]
-    ]
-    if unparsed:
-        return check(
-            "adr-immutability", "fail",
-            "Front matter did not parse: " + ", ".join(unparsed),
-            "Fix the YAML -- quote any value with @, :, #, or another "
-            "reserved indicator character.",
-        )
-    if not is_git_repo(repo):
-        return check("adr-immutability", "skipped", "Not a git repository.", "")
-    # Archived records are still accepted records; git mv'd, so their log
-    # starts at the move and post-move edits are what this can see.
-    records = [r for r in load_adrs(repo) + load_adrs(repo, archived=True)
-               if adr_status(r) == "accepted"]
-    if not records:
-        return check("adr-immutability", "skipped", "No accepted decision records.", "")
-    violations, uncommitted, unaccepted = [], [], []
-    for record in records:
-        rel = record["path"].relative_to(repo).as_posix()
-        # No --follow: it combines badly with --reverse (git silently drops
-        # commits), and its rename detection traces a scaffolded record's
-        # history back into the template it came from. Reverse in Python.
-        # ponytail: a record renamed after acceptance loses the history before
-        # the rename, so that edit goes unseen. Renaming an accepted record is
-        # rare; the alternative is a false positive on every scaffolded record.
-        log = git(repo, "log", "--format=%H", "--", rel)
-        if log is None or not log.strip():
-            uncommitted.append(record["id"])
-            continue
-        commits = log.split()[::-1]  # oldest first
-        # Edits made while the record was still 'proposed' are legitimate. Only
-        # commits after the one that set status: accepted are violations.
-        accepted_at = None
-        for index, sha in enumerate(commits):
-            # "sha:path" resolves from the repository root; the "./" prefix
-            # makes it relative to -C instead, which is what we need when the
-            # audited tree is nested inside a larger repository.
-            blob = git(repo, "show", f"{sha}:./{rel}")
-            # Parsed, not regexed: load_adrs selected this record by reading
-            # status out of the YAML, so the historical test has to ask the
-            # question the same way. A regex for a bare "accepted" at end of
-            # line missed status: "accepted" and a trailing "# ratified"
-            # comment, leaving a real post-acceptance edit unreported.
-            if blob and adr_status(parse_front_matter(blob)[0]) == "accepted":
-                accepted_at = index
-                break
-        if accepted_at is None:
-            # The record is committed -- the log above is non-empty -- but no
-            # revision of it says accepted, so there is no point in history to
-            # measure "after acceptance" from. Reported as its own fact: the
-            # old reason claimed the record was "not yet committed", which is
-            # false for a record that is.
-            unaccepted.append(record["id"])
-            continue
-        later = commits[accepted_at + 1:]
-        if later:
-            violations.append(
-                f"{record['id']} edited in {len(later)} commit(s) after acceptance, "
-                f"latest {later[-1][:8]}"
-            )
-    if violations:
-        return check(
-            "adr-immutability", "fail", "; ".join(violations),
-            "Revert the edit and write a superseding record instead. "
-            "Do not fix the accepted file.",
-        )
-    # Both buckets mean "history cannot answer for this record", but for
-    # different reasons, and saying which is the difference between a nudge to
-    # commit and a nudge to commit the acceptance itself.
-    unchecked = []
-    if uncommitted:
-        unchecked.append(f"not yet committed: {', '.join(uncommitted)}")
-    if unaccepted:
-        unchecked.append("committed but no revision sets status: accepted, so "
-                         f"post-acceptance edits are unchecked: {', '.join(unaccepted)}")
-    if len(uncommitted) + len(unaccepted) == len(records):
-        return check("adr-immutability", "skipped", "; ".join(unchecked) + ".",
-                     "Commit the records, and the acceptance itself; the check "
-                     "reads git history.")
-    checked = len(records) - len(uncommitted) - len(unaccepted)
-    reason = f"{checked} accepted record(s), none edited after acceptance."
-    if unchecked:
-        reason += " Unchecked -- " + "; ".join(unchecked) + "."
-    return check("adr-immutability", "pass", reason)
-
-
-def check_adr_index(repo, script_dir):
-    if not (repo / DECISIONS_DIR).is_dir():
-        return check("adr-index", "skipped", f"No {DECISIONS_DIR} directory.", "")
-    result = subprocess.run(
-        [sys.executable, str(script_dir / "adr_index.py"), str(repo), "--check"],
-        capture_output=True, text=True, check=False,
-        encoding="utf-8", errors="replace",
-    )
-    if result.returncode == 0:
-        return check("adr-index", "pass", f"{DECISIONS} matches the records.")
+def check_legacy_decisions(repo):
+    """A 0.x decision ledger left behind. Warn, never fail: upgrading must not
+    turn a green audit red, but the leftover should stay visible."""
+    if not (repo / LEGACY_DECISIONS_DIR).is_dir():
+        return check("legacy-decisions", "skipped", f"No {LEGACY_DECISIONS_DIR}/.", "")
     return check(
-        "adr-index", "fail",
-        (result.stderr.strip().splitlines() or ["index out of date"])[0],
-        "Run adr_index.py and commit the result.",
+        "legacy-decisions", "warn", f"{LEGACY_DECISIONS_DIR}/ exists.",
+        "0.x leftover: fold what still matters into docs/CONVENTIONS.md and "
+        "delete docs/decisions/ and docs/DECISIONS.md",
     )
 
 
@@ -717,16 +606,13 @@ def check_links(repo):
     that resolved to docs/regulatory/docs/regulatory. Anchors within a document
     are not validated -- that is lychee's job.
     """
-    docs = [p for p in _documentation_files(repo) if not _is_example_asset(p, repo)]
+    legacy = (repo / LEGACY_DECISIONS_DIR).resolve()
+    docs = [p for p in _documentation_files(repo)
+            if not _is_example_asset(p, repo) and legacy not in p.resolve().parents]
     if not docs:
         return check("links", "skipped", "No documentation files to check.", "")
     broken, unreadable, checked = [], [], 0
-    adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
     for path in docs:
-        # An archived record sits one folder deeper than it was written, so
-        # its ../ links break; it is immutable, so the fix cannot be to edit it.
-        if adr_archive in path.resolve().parents:
-            continue
         name = path.relative_to(repo).as_posix()
         text = read_doc(path)
         if text is None:
@@ -756,7 +642,7 @@ def check_links(repo):
     return check("links", "pass", resolved)
 
 
-# DEC-0004: markdownlint and lychee block from the start -- structural breakage
+# markdownlint and lychee block from the start -- structural breakage
 # and dead links are defects. Vale is advisory until its rules are promoted.
 # Each tool runs only when its config is present: these are config-driven, `init`
 # copies the configs, and running one without its config either errors out or
@@ -841,7 +727,7 @@ def check_lint(repo):
                      f"CI blocks on {' and '.join(blocking)}.")
     if findings:
         return check("lint", "warn", "Findings from: " + ", ".join(findings),
-                     "Advisory until the rules are promoted (DEC-0004).")
+                     "Advisory until the rules are promoted.")
 
     # Never a bare pass while anything went unrun: the module docstring promises
     # a check whose tool is missing reports skipped, never pass.
@@ -1175,8 +1061,7 @@ CHECKS = [
     ("manifest", lambda c: check_manifest(c.repo, c.config)),
     ("required-files", lambda c: check_required_files(c.repo, c.config)),
     ("front-matter", lambda c: check_front_matter(c.repo)),
-    ("adr-immutability", lambda c: check_adr_immutability(c.repo)),
-    ("adr-index", lambda c: check_adr_index(c.repo, c.script_dir)),
+    ("legacy-decisions", lambda c: check_legacy_decisions(c.repo)),
     ("generated-docs",
      lambda c: check_generated_docs(c.repo, c.config, c.run_generators)),
     ("lint", lambda c: check_lint(c.repo)),

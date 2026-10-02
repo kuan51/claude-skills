@@ -16,7 +16,7 @@ they rot.
 
 | Skill | Job |
 |-------|-----|
-| `docs-warden` | Scaffold, audit, and maintain a consistent document set per repo archetype. Keeps decision records append-only and indexed. |
+| `docs-warden` | Scaffold, audit, and maintain a consistent document set per repo archetype. Writes a decision's reason next to the rule it explains. |
 | `clarity` | A plain-English writing standard for technical prose, plus the `Clarity` Vale style that enforces the machine-checkable part. |
 | `ontological-documentation` | Map the repo's domain: which concepts exist, how they relate, and which document describes each. Generates `docs/architecture/domain-model.md` and seeds glossary rows. |
 
@@ -33,16 +33,11 @@ they rot.
 - **`audit`**: score a repo against the standard and report what is missing, stale,
   or off-standard. Never fixes silently.
 - **`maintain`**: find documents that drifted from changed code and propose edits.
-- **`decide`**: scaffold and index records of architecture decisions. Runs on an
-  explicit ask, or offers one when a change passes its admission test: not an
-  excluded kind of change, then three yeses. It never writes without the human's
-  yes. Bug fixes, review fixes, config values and other development history stay in
-  the pull request.
-- **`compact`**: once `docs/decisions/` holds fifty decided records, move the oldest 25
-  unchanged into `docs/decisions/archive/` and write one digest record carrying
-  their outcomes and accepted gaps. A hook says when it is due, or how many records
-  are not yet accepted or rejected, at session start and after an edit in `docs/decisions/`.
-  Compaction lands as its own pull request.
+- **`decide`**: write the why. "Record a decision" adds one or two sentences of
+  reasoning beside the rule in `docs/CONVENTIONS.md`, or in arc42 section 9 when it
+  shapes the whole system. Anything smaller goes in the pull request. "Why did we
+  choose X" reads the docs, then `git log` and the pull request, and answers without
+  writing anything unless asked.
 
 Repositories under a standard such as IEC 62304 take a further overlay, scaled by
 safety class. It describes document *structure* only: every regulated template
@@ -90,8 +85,6 @@ Run with `python3`. Each takes a repo path and is safe to run repeatedly. They n
 
 ```text
 skills/docs-warden/scripts/audit.py       <repo> [<repo> ...]
-skills/docs-warden/scripts/adr_index.py   <repo>
-skills/docs-warden/scripts/adr_new.py     <repo> "<title>"
 skills/docs-warden/scripts/freshness.py   <repo>
 skills/docs-warden/scripts/trace_matrix.py <repo> [--write]
 skills/docs-warden/scripts/glossary_to_vale.py <repo>
@@ -102,6 +95,16 @@ skills/ontological-documentation/scripts/extract_concepts.py <path>
 Each exits non-zero on failure, so CI can gate on it, though nothing wires them
 into CI yet. See the known gap in
 `skills/docs-warden/references/anti-drift.md`.
+
+## Migrating from 0.x
+
+1.0.0 drops the decision ledger. An existing `docs/decisions/` folder is no longer
+required, front-matter checked or link checked, and the `legacy-decisions` audit row
+warns until it is gone. `docs/DECISIONS.md` is no longer required, but its links point
+into that folder, so delete the two together. Fold what still matters into
+`docs/CONVENTIONS.md`, one or two sentences beside each rule, first. Delete any `.docs-warden.yml` waiver for `adr-immutability`
+or `adr-index`: the `manifest` check fails a waiver naming an unknown check. Remove
+any CI step that runs `adr_index.py --check`. The script is gone.
 
 ## Tests
 
@@ -118,6 +121,6 @@ real personal data, or secrets.
 
 `evals/` holds a `claude plugin eval` suite for the skills themselves: whether they
 trigger on the right prompts and not on near-misses, and whether a run obeys the
-non-negotiables (never fixes silently, never edits an accepted record, never fakes a
-lint pass). It spends tokens and never runs under the unit tests. See
+non-negotiables (never fixes silently, never writes the run log for a doc edit, never
+fakes a lint pass). It spends tokens and never runs under the unit tests. See
 [evals/README.md](evals/README.md) for the commands and the WSL2 requirement.

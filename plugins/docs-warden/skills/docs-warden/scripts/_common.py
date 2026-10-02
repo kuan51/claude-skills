@@ -23,20 +23,19 @@ FRONT_MATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 # they know anything about the repository.
 README = "README.md"
 CONVENTIONS = "docs/CONVENTIONS.md"
-DECISIONS = "docs/DECISIONS.md"
 RUNLOG = "docs/RUNLOG.md"
 GLOSSARY = "docs/GLOSSARY.md"
 SECURITY = "docs/SECURITY.md"
 DOMAIN_MODEL = "docs/architecture/domain-model.md"
-DECISIONS_DIR = "docs/decisions"
-DECISIONS_ARCHIVE_DIR = "docs/decisions/archive"
 RUNLOG_ARCHIVE_DIR = "docs/runlog"
 MANIFEST = ".docs-warden.yml"
+# A 0.x project's decision ledger. Nothing requires, front-matter checks or
+# link checks it any more; audit warns while it exists, phi-secrets still scans it.
+LEGACY_DECISIONS_DIR = "docs/decisions"
 
 UNIVERSAL_FILES = [
     README,
     CONVENTIONS,
-    DECISIONS,
     GLOSSARY,
     SECURITY,
     MANIFEST,
@@ -97,10 +96,7 @@ def read_doc(path: Path):
 
 
 def parse_front_matter(text: str):
-    """Return (front_matter_dict, body) for already-read text. Split out of
-    read_front_matter so a blob out of git history is judged by exactly the
-    same parse as the file on disk -- a second, regex-based definition of
-    "what does this record's front matter say" is how the two drifted."""
+    """Return (front_matter_dict, body) for already-read text."""
     match = FRONT_MATTER_RE.match(text)
     if not match:
         return {}, text
@@ -222,8 +218,7 @@ def long_lived_docs(repo):
         return
     exempt = {(repo / RUNLOG).resolve()}
     archive = (repo / RUNLOG_ARCHIVE_DIR).resolve()
-    decisions = (repo / DECISIONS_DIR).resolve()
-    adr_archive = (repo / DECISIONS_ARCHIVE_DIR).resolve()
+    legacy = (repo / LEGACY_DECISIONS_DIR).resolve()
     for path in sorted(docs.rglob("*.md")):
         if path.name == "README.md":
             continue
@@ -232,66 +227,9 @@ def long_lived_docs(repo):
         # Same for the rotated quarterly archives it spills into.
         if path.resolve() in exempt or archive in path.resolve().parents:
             continue
-        # Decision records carry their own front matter (id, status, date) and
-        # are immutable once accepted, so a review_by on one would be a promise
-        # nobody is allowed to keep. Whether the front matter itself is even
-        # parseable is checked separately, by check_adr_immutability.
-        # The archive adr_compact.py moves them into is the same kind of file.
-        if path.resolve().parent == decisions or adr_archive in path.resolve().parents:
+        if legacy in path.resolve().parents:
             continue
         yield path
-
-
-def adr_files(repo: Path, archived: bool = False):
-    """Decision record files, sorted by id. Live ones by default; archived=True
-    reads the folder adr_compact.py moves the oldest into instead."""
-    decisions = repo / (DECISIONS_ARCHIVE_DIR if archived else DECISIONS_DIR)
-    if not decisions.is_dir():
-        return []
-    return sorted(p for p in decisions.glob("DEC-*.md") if p.is_file())
-
-
-def load_adrs(repo: Path, archived: bool = False):
-    """Every decision record as a dict, with superseded_by derived from the
-    other records rather than stored -- that is what keeps accepted files
-    immutable."""
-    records = []
-    for path in adr_files(repo, archived):
-        front, _ = read_front_matter(path)
-        # Fall back to the filename prefix (DEC-0007-slug -> DEC-0007) so a
-        # record with broken front matter still appears in the index instead of
-        # vanishing from it.
-        fallback_id = "-".join(path.stem.split("-")[:2])
-        records.append(
-            {
-                "path": path,
-                "id": str(front.get("id") or fallback_id),
-                "title": front.get("title", ""),
-                "status": front.get("status", ""),
-                "date": str(front.get("date", "")),
-                "supersedes": front.get("supersedes") or [],
-                "tags": front.get("tags") or [],
-                "superseded_by": [],
-            }
-        )
-    by_id = {r["id"]: r for r in records}
-    for record in records:
-        for old in record["supersedes"]:
-            if old in by_id:
-                by_id[old]["superseded_by"].append(record["id"])
-    return records
-
-
-def adr_status(record) -> str:
-    """A decision record's status, trimmed and lowercased, from a load_adrs
-    record or a parsed front-matter dict. Status matches in any case and
-    spacing, so " Accepted " is accepted. load_adrs keeps the value as
-    written, because the generated index prints it and a consuming repo's
-    committed index must not change on upgrade; compare through this
-    instead. str() comes first because YAML can hand back a bool, a date or
-    a list. One definition, so the audit and compaction cannot drift into
-    two answers for what a record's status is."""
-    return str(record.get("status") or "").strip().lower()
 
 
 def git(repo: Path, *args):

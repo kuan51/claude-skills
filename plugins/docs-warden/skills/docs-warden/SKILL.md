@@ -1,6 +1,6 @@
 ---
 name: docs-warden
-description: Maintain repository documentation consistently across a repo or a fleet of them. Use when scaffolding docs for a repo, auditing documentation, checking what docs are missing or stale, updating docs after a code change, or when the human explicitly asks to record an architecture decision. Triggers on README, docs folder, CONVENTIONS, RUNLOG, GLOSSARY, SECURITY.md, CODEOWNERS, "document this repo", "set up documentation", "scaffold docs", "audit our docs", "what's missing from our docs", "is this repo compliant", "docs are out of date", "the README is wrong", and on the explicit requests "record a decision", "new ADR", "why did we choose". Also offer a record, without writing one, when a change is none of the kinds decide mode excludes and Claude's own answers to its three admission questions are all yes. Also triggers on any request to create, review, or fix repository documentation even when the word documentation is not used.
+description: Maintain repository documentation consistently across a repo or a fleet of them. Use when scaffolding docs for a repo, auditing documentation, checking what docs are missing or stale, updating docs after a code change, or when the human asks to record a decision or why something was chosen. Triggers on README, docs folder, CONVENTIONS, RUNLOG, GLOSSARY, SECURITY.md, CODEOWNERS, "document this repo", "set up documentation", "scaffold docs", "audit our docs", "what's missing from our docs", "is this repo compliant", "docs are out of date", "the README is wrong", and on "record a decision" and "why did we choose". Also triggers on any request to create, review, or fix repository documentation even when the word documentation is not used.
 ---
 
 # Docs Warden
@@ -18,13 +18,11 @@ Repositories fall into two worlds and both are in scope:
 ## Boundaries
 
 **This skill will:** propose and scaffold a document set, audit a repo against the
-standard, regenerate generated documents, scaffold and index decision records,
-archive the oldest of them into a digest once fifty are decided, and flag documents
-that have drifted from the code they describe.
+standard, regenerate generated documents, write a decision's reason next to the
+rule it explains, and flag documents that have drifted from the code they describe.
 
 **This skill will not:** invent regulatory content, write clinical or legal claims,
-edit an accepted decision record, write a decision record without a yes from the
-human, fix findings without asking, or govern visual design. Colors, logos, Mermaid
+fix findings without asking, or govern visual design. Colors, logos, Mermaid
 theming, badges, and product-name casing are out of scope; if your project has a
 brand or style guide, that owns them.
 
@@ -35,14 +33,9 @@ brand or style guide, that owns them.
    never `pass`.
 3. **No PHI, no real patient data, no secrets** in any template, fixture, or
    example. Synthetic data only.
-4. **Accepted decision records are immutable.** See `references/adr-format.md`.
-5. **Do not write to the target repo's `docs/RUNLOG.md`.** Git already records
+4. **Do not write to the target repo's `docs/RUNLOG.md`.** Git already records
    document edits through the commit and the PR. The run log is for operational actions that
    don't leave a commit behind. Duplicating doc edits there only makes it grow.
-6. **A decision record contains what the PR cannot.** If the pull request description
-   already explains the change fully, the change is development history, not a
-   decision. Do not write a record for it. See "The admission test" in
-   `references/adr-format.md`.
 
 ## Modes
 
@@ -134,96 +127,20 @@ documented behavior.
    Terraform, Kubernetes or CI configuration and an architecture document
    describes it, dispatch the `infra-inventory` agent and propose the edit from
    its tables, keeping its `Assumption (verify):` lines verbatim.
-5. Regenerate everything marked `generated: true`, plus `scripts/adr_index.py`
-   and `scripts/domain_model.py <repo> --write`.
+5. Regenerate everything marked `generated: true`, plus
+   `scripts/domain_model.py <repo> --write`.
 6. Re-run `audit.py`.
 
-### `decide` (record a decision)
+### `decide` (write the why)
 
-Triggered by an explicit ask ("record a decision," "new ADR," "why did we choose"),
-or by Claude finding that a change just made passes step 0 below: none of the
-excluded kinds, then three yeses. In the second case, show the answers and ask the
-human to confirm them. Never scaffold without a yes.
+Triggered when a request says "record a decision" or "why did we choose" something.
 
-0. Run the admission test with the human before scaffolding anything. First the
-   kind of change. These never earn a record, whatever else is true: a bug fix, a
-   fix for a review finding, a refactor, a rename, a wording change, a dependency
-   bump, a test change, a hook, CI, linter or config value (a threshold, timeout,
-   toggle or exclusion), a temporary switch with an exit condition, a rollout plan,
-   and a field, format or grouping choice inside one feature.
-   If the change is one of these, say which, put the reasoning in the pull request
-   description and stop. No record, and no questions.
-   Otherwise ask the three questions:
-   1. Would reversing this cost more than one pull request?
-   2. Does it constrain work outside the file or component just touched?
-   3. Is there a rejected alternative someone could reasonably re-propose later?
-      An option weighed only as another way to fix a bug does not count.
-   Any "no" means the change is not an architecture decision. Put the reasoning in the
-   pull request description and stop. No record.
-1. `scripts/adr_new.py <repo> "<title>"` scaffolds the next `DEC-NNNN`.
-2. Fill the sections **with the human**, not from assumption. Considered options,
-   consequences good and bad, and gaps accepted are the sections that matter most.
-   A decision record without rejected alternatives is only a note.
-3. Leave `status: proposed` while the pull request that implements it is in review.
-   A review round edits that proposed record. It never adds a new one. Accept only
-   when the human says so, and make the change to `accepted` the last change to the
-   file: at the end of that pull request once no review ask is open, or later
-   through the status-change route in `compact` mode. `audit.py` fails any edit after
-   acceptance, so a change asked for after that needs a superseding record. A
-   choice already merged, as in "why did we choose," has no review to wait for.
-4. Re-run `scripts/adr_index.py`.
-
-If the repo has a monolithic hand-written decision log with `DEC-NNN` entries,
-offer to split it into one file per entry, preserving IDs and dates. Ask first.
-
-### `compact` (archive the oldest decisions into a digest)
-
-Triggered by the plugin's hook (`hooks/decisions_check.py`), which runs at session
-start and after an edit in `docs/decisions/`, and prints a line once
-`docs/decisions/` holds 50 or more archivable records (accepted or rejected, not
-a digest), or once 50 records exist but some are not yet accepted or rejected. Also triggered
-by "compact decisions," "too many decision records."
-
-1. `scripts/adr_compact.py <repo> --dry-run` and show the human the mapping: the
-   25 oldest accepted or rejected records that move to `docs/decisions/archive/`, and the
-   id of the digest that replaces them.
-2. On a yes, prepare a branch. Compaction is housekeeping and lands alone. Unlike
-   a doc update, which rides with the code it describes
-   (`references/anti-drift.md`, "Documents in the same pull request"), it
-   describes no code change. Start a new branch from the up-to-date default
-   branch. If the current checkout has work in progress or sits on another
-   branch, do not stash or switch it: use a separate worktree
-   (`git worktree add`) or ask the human when. The script refuses a working tree
-   that is not clean.
-3. From here on, `<repo>` is that branch's checkout: the worktree's own path if
-   you made one, never the checkout the session started in. The clean-tree
-   refusal cannot tell a clean feature branch from the new one, so the path is
-   what keeps the moves off it. Run `scripts/adr_compact.py <repo> --dry-run`
-   again. If the mapping differs from the one the human agreed to, because the
-   default branch holds different records, show the new one and ask again. Then
-   run `scripts/adr_compact.py <repo>` without `--dry-run`. Files move with
-   `git mv`, bytes untouched; the digest is a new accepted record carrying each
-   archived record's outcome and gaps verbatim. The history still reads from
-   `docs/decisions/` alone.
-4. Re-run `scripts/adr_index.py <repo>`, then `audit.py <repo>`.
-5. Commit the moves, the digest and the index as one commit. Offer to push it and
-   open it as its own pull request (merge request on GitLab). Never fold it into
-   a branch that carries code. Once it is pushed, offer to remove a worktree you
-   made (`git worktree remove <path>`). The branch stays on the remote.
-
-If the line instead says 50 records exist but some are not yet accepted or
-rejected, nothing is due yet. `scripts/adr_compact.py <repo> --dry-run` lists
-those records oldest first, each with the status it shows; use that list, not
-your own reading of the files. Ask the human to accept or reject each. A record
-listed with status `none` has front matter that does not parse or no status:
-fix its YAML (quote the value that broke it) rather than choosing a status for
-it. Never change a status without their word. Then re-run
-`scripts/adr_compact.py <repo> --check`. Status changes follow the same route
-as compaction: their own commit, in the same housekeeping pull request. A record
-accepted as part of the change that implements it stays with that change.
-
-The script archives nothing below 50 decided. Never edit the digest or the archived
-files. They are accepted records like any other.
+- **Record a decision:** add one or two sentences of reasoning beside the rule in
+  `docs/CONVENTIONS.md`, or in arc42 section 9 when it shapes the whole system.
+  Anything smaller goes in the pull request description. No separate file, ID or
+  index.
+- **Why did we choose X:** read the documents, then `git log` and the pull request
+  that made the change, and answer. Write nothing unless asked.
 
 ## The universal set
 
@@ -233,11 +150,7 @@ Every repo, both worlds, gets these. Full specification in
 | File | Job |
 |------|-----|
 | `README.md` | Front door. Purpose, quick start, links into `docs/`. Root, because GitHub renders it nowhere else. |
-| `docs/CONVENTIONS.md` | Current state. Edited in place, with no history kept. |
-| `docs/decisions/DEC-NNNN-slug.md` | Why. One file per decision, immutable once accepted. |
-| `docs/decisions/README.md` | **Generated** signpost pointing at the index, with only a link. |
-| `docs/decisions/archive/` | The oldest records, moved here unchanged by `compact` mode. A digest record in the parent folder records their outcomes. |
-| `docs/DECISIONS.md` | **Generated** index of those records. Never hand-edited. |
+| `docs/CONVENTIONS.md` | Current state, and one or two sentences on why each rule is the rule. Edited in place, with no history kept. |
 | `docs/RUNLOG.md` | **Archetype-scoped:** `it-tooling` and `firmware` only (see `references/archetypes.md`). What happened outside git. Append-only, `PLANNED` then `CONFIRMED`. |
 | `docs/GLOSSARY.md` | Each approved term has exactly one meaning. |
 | `docs/SECURITY.md` | Reporting route and posture. GitHub reads it from `docs/` as well as the root. |
@@ -251,20 +164,17 @@ standards, each adding its own artifacts: see `references/standards.md`.
 
 ### Migrating a repo scaffolded before the docs/ move
 
-An older scaffold put these files at the repository root, and generated a full
-second copy of the index at `docs/decisions/README.md` rather than a pointer.
+An older scaffold put these files at the repository root.
 `audit.py` reports `required-files` as failing until the repo is moved over. Migrate
-it by hand with three commands, the last of which rewrites both
-generated files:
+it by hand with two commands:
 
 ```bash
 mkdir -p docs
-git mv CONVENTIONS.md DECISIONS.md GLOSSARY.md SECURITY.md docs/
-python3 scripts/adr_index.py .
+git mv CONVENTIONS.md GLOSSARY.md SECURITY.md docs/
 ```
 
 Then fix the two files that name the old paths: the README's documentation table,
-and `.github/CODEOWNERS`, where the five per-file lines merge into the `/docs/`
+and `.github/CODEOWNERS`, where the per-file lines merge into the `/docs/`
 line already there.
 
 ## Scripts
@@ -285,8 +195,6 @@ commands to the human before running them on a repository you did not write.
 | Script | Does | Writes |
 |--------|------|--------|
 | `scripts/audit.py <repo> [...]` | Scorecard to stdout and `docs-scorecard.json`. Multiple paths gives the aggregate view. | `docs-scorecard.json` (default `--json-out` path). With `--run-generators`, also EXECUTES repo-supplied commands. |
-| `scripts/adr_index.py <repo>` | Regenerates `docs/DECISIONS.md` (the full table) and `docs/decisions/README.md` (a short pointer to it). Idempotent: a second run must produce an empty diff. | `docs/DECISIONS.md`, `docs/decisions/README.md` |
-| `scripts/adr_new.py <repo> "<title>"` | Scaffolds the next `DEC-NNNN` file. | A new `docs/decisions/DEC-NNNN-*.md` |
 | `scripts/freshness.py <repo>` | Documents past `review_by`, or older than the code they reference. | Nothing |
 
 Two more live with the `ontological-documentation` skill, under
@@ -304,9 +212,8 @@ Two more scripts live in `scripts/` but aren't part of the day-to-day set above:
 | `scripts/trace_matrix.py <repo> [--write]` | Builds the requirements traceability matrix. | Nothing by default; with `--write`, `docs/regulatory/traceability-matrix.md` |
 | `scripts/glossary_to_vale.py <repo>` | Turns `GLOSSARY.md` into Vale vocabulary and swap rules. | `styles/config/vocabularies/Project/{accept,reject}.txt`, `styles/Clarity/GlossaryTerms.yml` |
 
-`audit.py`, `adr_index.py --check`, `freshness.py` and `trace_matrix.py` exit
-non-zero on a finding, so CI can gate on them. `adr_new.py` and
-`glossary_to_vale.py` exit non-zero only on bad input.
+`audit.py`, `freshness.py` and `trace_matrix.py` exit non-zero on a finding, so
+CI can gate on them. `glossary_to_vale.py` exits non-zero only on bad input.
 
 ## Anti-drift
 
@@ -334,7 +241,6 @@ guess domain terms.
 
 - `references/universal-set.md`: what each required file must contain.
 - `references/archetypes.md`: the archetypes, plus their overlays and detection hints.
-- `references/adr-format.md`: decision record format and the immutability rule.
 - `references/audit-schema.md`: every check, with what it means and how to fix it.
 - `references/anti-drift.md`: linters, freshness, ownership, and the CI gap.
 - `references/standards.md`: how overlays are declared, and how to add one.
