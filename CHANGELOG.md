@@ -408,6 +408,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
+  parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
+  with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a
+  "jump" link could open the wrong group. Links bookmarked to an old `#cat-...` anchor now open
+  the top of the page.
 - **ciso 1.3.1** -- `ciso:import` stops before it acts. Three steps are now questions, asked
   even when the user has already said yes: the licence question before the list is first read,
   which can stop the import; the archive warning before a tier is replaced; and the terms answer
