@@ -28,7 +28,7 @@ const BUNDLED_ROOT = path.join(__dirname, '..', '..', 'frameworks');
 // `hitrust-` would otherwise share cert-hitrust.html with `hitrust`.
 const KEY_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const VERSION_RE = /^v[A-Za-z0-9.-]+$/;
-const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'imported'];
+const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'imported', 'paraphrased'];
 const CONTROL_STRINGS = ['domain', 'domainKey', 'topicLabel', 'topicSummary'];
 const STRUCTURE_SUFFIX = '.structure.json';
 // id and domainKey reach shell commands in the generic flows, so only characters that are inert
@@ -111,6 +111,12 @@ function validateStructure(file, origin, errors) {
       errors.push(`${where}: domainKey "${c.domainKey}" is not allowed`);
     }
     for (const field of STATE_ONLY_FIELDS) {
+      // An imported tier holds the org's licensed wording, and registration carries it into state.
+      // A project folder lives in the gitignored docs/ciso/, so the wording stays on the machine.
+      if (field === 'statementText' && s.sourceAuthority === 'imported') {
+        if (c.statementText !== undefined && !isNonEmptyString(c.statementText)) errors.push(`${where}: statementText must be a non-empty string`);
+        continue;
+      }
       if (Object.prototype.hasOwnProperty.call(c, field)) {
         errors.push(`${where}: "${field}" is a field ciso state owns and may not appear in a structure file`);
       }
@@ -280,7 +286,7 @@ function listFrameworks(docsCisoDir, bundledRoot) {
   return { frameworks, errors };
 }
 
-module.exports = { listFrameworks, validateFramework, BUNDLED_ROOT, SOURCE_AUTHORITIES };
+module.exports = { listFrameworks, validateFramework, BUNDLED_ROOT, SOURCE_AUTHORITIES, KEY_RE, VERSION_RE };
 
 function main(argv) {
   const [cmd, target, flag] = argv;

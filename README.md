@@ -67,9 +67,11 @@ first session.
 - **[ciso](plugins/ciso/)**: tracks work toward security certifications alongside the
   development work that satisfies them.
   - **Certifications.** HITRUST CSF, SOC 2 Type II, ISO/IEC 27001:2022 and CMMC bundled, plus
-    any framework a project defines itself as a folder under `docs/ciso/frameworks/`.
-  - **Verbs.** Register a control set, run the assessment interview, review a PR for control
-    impact, attach a merged PR or CI run as evidence, and audit how ready you actually are.
+    any framework a project defines itself as a folder under `docs/ciso/frameworks/`, written by
+    hand or imported from its own controls list.
+  - **Verbs.** Register a control set, import a controls list, run the assessment interview,
+    review a PR for control impact, attach a merged PR or CI run as evidence, and audit how ready
+    you actually are.
   - **Dashboards.** Local HTML pages: an index across every certification, plus one page for
     each.
   - **Licensing.** Licensed requirement wording is imported by your organization at runtime and

@@ -1,8 +1,8 @@
 'use strict';
 
-// HITRUST-e1/MyCSF-specific by design, not incidental hardcoding: this reader targets the exact
-// slice of OOXML SpreadsheetML MyCSF's e1 export uses (see merge-import.js's parseE1Export call).
-// A future certification's import path is a new sibling module, not a generalization of this one.
+// Two layers. parseWorkbookSheet reads any workbook's first sheet into rows; the generic import
+// (skills/import/lib/convert-controls.js) uses it for any framework's controls list. parseE1Export
+// is MyCSF-e1-specific by design: it maps that export's exact column headers for merge-import.js.
 
 // Minimal, Node-stdlib-only (.xlsx is a standard ZIP container) reader for the small slice of
 // OOXML SpreadsheetML this plugin needs: shared strings + a single worksheet. No npm dependency.
@@ -13,6 +13,12 @@ const zlib = require('zlib');
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_DIR_SIGNATURE = 0x02014b50;
 const LOCAL_FILE_SIGNATURE = 0x04034b50;
+
+// An import file is untrusted. These caps keep a hostile one (a zip bomb, a cell at column
+// ZZZZZZ) from exhausting memory; a real controls export is far below all three.
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MAX_ENTRY_BYTES = 32 * 1024 * 1024;
+const MAX_COLUMNS = 16384; // XFD, the last column a spreadsheet can have
 
 // ---------------------------------------------------------------------------
 // ZIP layer
@@ -80,12 +86,20 @@ function readEntryData(buf, entry) {
     return Buffer.from(compressedData);
   }
   if (method === 8) {
-    return zlib.inflateRawSync(compressedData);
+    try {
+      // maxOutputLength, not the declared size: a hostile header can lie about it.
+      return zlib.inflateRawSync(compressedData, { maxOutputLength: MAX_ENTRY_BYTES });
+    } catch (err) {
+      if (err.code === 'ERR_BUFFER_TOO_LARGE') throw new Error(`A workbook entry inflates past ${MAX_ENTRY_BYTES} bytes -- refusing it`);
+      throw err;
+    }
   }
   throw new Error(`Unsupported ZIP compression method: ${method}`);
 }
 
 function openZip(filePath) {
+  const size = fs.statSync(filePath).size;
+  if (size > MAX_FILE_BYTES) throw new Error(`${filePath} is ${size} bytes; the limit is ${MAX_FILE_BYTES}`);
   const buf = fs.readFileSync(filePath);
   const central = readCentralDirectory(buf);
   return {
@@ -104,6 +118,11 @@ function openZip(filePath) {
 // XML-entity decoding
 // ---------------------------------------------------------------------------
 
+// A reference past U+10FFFF is not a character, so it stays as written rather than throwing.
+function fromCodePoint(match, code) {
+  return code <= 0x10ffff ? String.fromCodePoint(code) : match;
+}
+
 // &amp; must be decoded last, otherwise an already-encoded "&amp;lt;" would double-decode into "<".
 function decodeXmlEntities(str) {
   return str
@@ -111,8 +130,8 @@ function decodeXmlEntities(str) {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (m, hex) => fromCodePoint(m, parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (m, dec) => fromCodePoint(m, parseInt(dec, 10)))
     .replace(/&amp;/g, '&');
 }
 
@@ -160,6 +179,7 @@ function parseCell(attrs, inner, sharedStrings) {
   if (rMatch) {
     const lettersMatch = /^([A-Za-z]+)/.exec(rMatch[1]);
     if (lettersMatch) colIndex = columnLettersToIndex(lettersMatch[1].toUpperCase());
+    if (colIndex >= MAX_COLUMNS) throw new Error(`Cell ${rMatch[1]} is past the last column a spreadsheet can have`);
   }
 
   let value = '';
@@ -289,6 +309,8 @@ module.exports = {
   parseE1Export,
   decodeXmlEntities,
   openZip,
+  MAX_FILE_BYTES,
+  MAX_ENTRY_BYTES,
 };
 
 if (require.main === module) {

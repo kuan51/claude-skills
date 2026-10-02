@@ -38,6 +38,9 @@
     { "query": "I have my MyCSF requirements spreadsheet -- load the real wording into my tracking", "expected": "import", "category": "implicit" },
     { "query": "Replace the shipped topic-level controls with our licensed HITRUST export", "expected": "import", "category": "implicit" },
     { "query": "We bought our MyCSF subscription -- get the real requirement statements in", "expected": "import", "category": "implicit" },
+    { "query": "I have our licensed controls list for a standard ciso doesn't ship, as a CSV. Get it into ciso and keep the exact wording internal", "expected": "import", "category": "implicit" },
+    { "query": "Turn this controls spreadsheet into a ciso framework we can share with partners, reworded in our own words", "expected": "import", "category": "implicit" },
+    { "query": "The acme framework is already in docs/ciso/frameworks/acme -- load its controls so we can assess them", "expected": "register", "category": "disambiguation" },
 
     { "query": "Start the HITRUST control-by-control assessment interview", "expected": "interview", "category": "explicit" },
     { "query": "Start the SOC 2 criterion-by-criterion assessment", "expected": "interview", "category": "explicit" },

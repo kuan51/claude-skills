@@ -68,7 +68,8 @@ function defaultControl(entry, sourceAuthority, tierKey, structureCodeVerifiedBy
     // shape the dashboard's Sources block reads. Every other module keeps its own per-control
     // value (entry.codeVerifiedBy), which always wins over the file-level fallback.
     codeVerifiedBy: entry.codeVerifiedBy || structureCodeVerifiedBy,
-    statementText: null,
+    // Only an imported project tier carries it (frameworks.js refuses it anywhere else).
+    statementText: entry.statementText ?? null,
     statementSource: sourceAuthority || 'structural-only',
     assessment,
     // Development artifacts supporting this control -- PRs, commits, CI runs, scans, documents.

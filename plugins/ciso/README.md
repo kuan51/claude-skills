@@ -8,9 +8,11 @@ work has no copyright (CMMC's NIST and eCFR sources). Licensed or copyrighted re
 wording, and your organization's real assessment data, are imported/generated per-project and stored
 only locally, gitignored by default. It stays on your machine, out of this repo.
 
-A project can also track a framework ciso doesn't bundle: drop a framework folder into
-`docs/ciso/frameworks/<certKey>/` and every verb resolves it (`scope`, `import` and `upgrade` have
-no flow for one yet). See
+A project can also track a framework ciso doesn't bundle. `ciso:import` turns your own controls
+list (CSV, Excel or JSON) into one: privately, keeping the licensed wording verbatim and local, or
+as a shareable version rewritten in your own words when the publisher's terms allow it. You can
+also write a framework folder into `docs/ciso/frameworks/<certKey>/` by hand. Every verb resolves
+it (`scope` and `upgrade` have no flow for one yet). See
 [ADDING-A-CERTIFICATION.md](ADDING-A-CERTIFICATION.md).
 
 Not installed yet? See the [repo root README](../../README.md) for how to add this marketplace
@@ -100,9 +102,11 @@ something you feed in from your own machine.
 
 ## Guarantees
 
-- **License-restricted content never lives in this repo.** HITRUST's verbatim requirement-statement
-  wording lives only in your own local, gitignored project data, imported from your own MyCSF
-  export, never hardcoded here. The same rule applies to AICPA's Trust Services Criteria text and
+- **License-restricted content never lives in this repo.** Licensed requirement wording, such as
+  HITRUST's statements or any standard you bring in with `ciso:import`, lives only in your own
+  local, gitignored project data, imported from your own copy, never hardcoded here. A shareable
+  import keeps none of it: it is refused unless you say the publisher's terms permit derivative
+  works, and every label and summary must pass a check against copied runs of 8 or more words. The same rule applies to AICPA's Trust Services Criteria text and
   points of focus: the SOC 2 module includes criterion *identifiers* and paraphrased topic summaries,
   never the copyrighted criterion wording. ISO 27001 is stricter still, because the standard is
   sold rather than published: its identifiers were *corroborated* from convergent public sources
