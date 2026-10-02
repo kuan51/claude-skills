@@ -70,7 +70,8 @@ Each control:
 | `domainKey` | yes | The grouping key the dashboard rolls up by and the interview works through. Same character and name rules as `id`. |
 | `topicLabel` | yes | A short name for the control. |
 | `topicSummary` | yes | What the control covers. |
-| anything else | no | Carried into `state.json` and shown on the dashboard, except a field ciso's state owns (`assessment`, `evidence`, `roadmap`, `statementText`, `statementSource`, `needsReview`, `tracker`), which is an error. |
+| `statementText` | no | The requirement's verbatim wording, shown on the dashboard. Allowed only in an `imported` tier, as a non-empty string. |
+| anything else | no | Carried into `state.json` and shown on the dashboard, except a field ciso's state owns (`assessment`, `evidence`, `roadmap`, `statementText` outside an `imported` tier, `statementSource`, `needsReview`, `tracker`), which is an error. |
 
 What each `sourceAuthority` value makes ciso do:
 

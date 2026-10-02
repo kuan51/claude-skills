@@ -111,6 +111,12 @@ function validateStructure(file, origin, errors) {
       errors.push(`${where}: domainKey "${c.domainKey}" is not allowed`);
     }
     for (const field of STATE_ONLY_FIELDS) {
+      // An imported tier holds the org's licensed wording, and registration carries it into state.
+      // A project folder lives in the gitignored docs/ciso/, so the wording stays on the machine.
+      if (field === 'statementText' && s.sourceAuthority === 'imported') {
+        if (c.statementText !== undefined && !isNonEmptyString(c.statementText)) errors.push(`${where}: statementText must be a non-empty string`);
+        continue;
+      }
       if (Object.prototype.hasOwnProperty.call(c, field)) {
         errors.push(`${where}: "${field}" is a field ciso state owns and may not appear in a structure file`);
       }

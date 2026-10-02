@@ -55,6 +55,16 @@ test('the example fixture validates as a project framework', () => {
   assert.equal(r.status, 0, r.stderr);
 });
 
+test('an imported project tier may carry verbatim statementText', () => {
+  const dir = copyExample();
+  editJson(path.join(dir, STRUCTURE), (s) => {
+    s.sourceAuthority = 'imported';
+    s.nonAuthoritative = false;
+    s.controls[0].statementText = 'The organization shall give each person an account of their own.';
+  });
+  assert.deepEqual(validateFramework(dir, 'project'), []);
+});
+
 test('every bundled framework has a non-empty ground-rules.md, from the folder listing', () => {
   for (const dir of bundledDirs) {
     const rules = path.join(dir, 'ground-rules.md');
@@ -93,6 +103,10 @@ const ERROR_CASES = [
   ['missing required field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { delete s.controls[0].topicSummary; }), /topicSummary must be a non-empty string/],
   ['a STATE_ONLY_FIELDS field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].assessment = { status: 'met' }; }), /"assessment" is a field ciso state owns/],
   ['a tracker field', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].tracker = { system: 'jira', id: 'SEC-1', status: 'open' }; }), /"tracker" is a field ciso state owns/],
+  // Verbatim wording may sit in a structure file only where the file declares it licensed.
+  ['statementText outside an imported tier', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.controls[0].statementText = 'Verbatim.'; }), /"statementText" is a field ciso state owns/],
+  ['an empty statementText in an imported tier', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.sourceAuthority = 'imported'; s.controls[0].statementText = ' '; }), /statementText must be a non-empty string/],
+  ['statementSource in an imported tier', (dir) => editJson(path.join(dir, STRUCTURE), (s) => { s.sourceAuthority = 'imported'; s.controls[0].statementSource = 'imported'; }), /"statementSource" is a field ciso state owns/],
   // certPageSlug trims edge hyphens, so "example-" would share cert-example.html with "example".
   ['certKey with a trailing hyphen', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.certKey = 'example-'; }), /certKey "example-" must match/],
   ['declared tier with a leading hyphen', (dir) => editJson(path.join(dir, 'framework.json'), (f) => { f.tiers.push('-x'); }), /tier "-x" must match/],
