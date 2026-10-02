@@ -606,14 +606,13 @@ def check_links(repo):
     that resolved to docs/regulatory/docs/regulatory. Anchors within a document
     are not validated -- that is lychee's job.
     """
-    docs = [p for p in _documentation_files(repo) if not _is_example_asset(p, repo)]
+    legacy = (repo / LEGACY_DECISIONS_DIR).resolve()
+    docs = [p for p in _documentation_files(repo)
+            if not _is_example_asset(p, repo) and legacy not in p.resolve().parents]
     if not docs:
         return check("links", "skipped", "No documentation files to check.", "")
     broken, unreadable, checked = [], [], 0
-    legacy = (repo / LEGACY_DECISIONS_DIR).resolve()
     for path in docs:
-        if legacy in path.resolve().parents:
-            continue
         name = path.relative_to(repo).as_posix()
         text = read_doc(path)
         if text is None:

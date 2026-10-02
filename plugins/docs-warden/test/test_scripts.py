@@ -265,6 +265,8 @@ def test_a_legacy_decisions_folder_is_skipped_but_still_scanned_and_flagged():
             assert entry["state"] == state, (check_id, entry)
         assert "docs/decisions/DEC-0001-x.md" in \
             _audit_check(repo, "phi-secrets")["reason"]
+        # The skipped legacy file is not counted as a document read.
+        assert "across 1 document(s)" in _audit_check(repo, "links")["reason"]
 
 
 def test_runlog_is_required_only_by_the_operational_archetypes():
