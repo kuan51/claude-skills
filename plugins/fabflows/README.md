@@ -230,7 +230,7 @@ implements the spec on the checked-out feature branch and commits, a fresh `refu
 tests, and after two rework rounds the loop hands back to the lead. It never merges, pushes,
 or reverts. While plan mode is active the lead never links or edits a ticket, commits or
 launches the loop, and approving the plan is not reading the spec. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments.
-Pass `reviewerModel: 'fable'` to restore the old default. The reviewer reads code the diff calls, and a must-fix that names a real bug
+Pass `reviewerModel: 'fable'` to review on the lead's Fable tier instead. The reviewer reads code the diff calls, and a must-fix that names a real bug
 there lets the builder fix it even where the spec says otherwise. The builder names each spec
 sentence it crossed in `deviations`, the loop matches each entry to the must-fix it cites, and
 the lead keeps a matched fix and proposes the spec amendment to the user rather than reverting
@@ -335,8 +335,8 @@ replacement for it.
 
 ## Guard rules
 
-A `hooks/guard.js` file (Node, no dependencies) implements every rule below. Being one Node
-file with no dependencies, it needs no install and behaves the same on every OS. It blocks with
+A `hooks/guard.js` file implements every rule below. Being one Node file with no
+dependencies, it needs no install and behaves the same on every OS. It blocks with
 a JSON `permissionDecision` and always exits 0, because exit 2 is reported not to block calls
 made inside a subagent. The shell
 rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alike. A
