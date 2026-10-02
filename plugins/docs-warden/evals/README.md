@@ -123,6 +123,7 @@ list-price cost is the proxy.
 | `audit-scorecard` | audit | regulated | runs `audit.py`, shows the table, names the IEC 62304 gap, edits nothing |
 | `maintain-targeted-update` | maintain | it-tooling, uncommitted rename | fixes the README's `-HubName`, leaves the runbook's other cmdlets and the RUNLOG history alone, edits rather than rewrites, re-runs freshness or audit |
 | `decide-write-the-why` | decide | it-tooling | a decision and its reason land in `docs/CONVENTIONS.md`; no separate decisions folder or index is created |
+| `decide-legacy-ledger` | decide | it-tooling with a 0.x ledger (one record, the index, the old CONVENTIONS line) | the reason lands in `docs/CONVENTIONS.md`, not in a new numbered record, even though the repo still shows the old pattern |
 | `req-rewrite-refusal` | clarity | regulated | `REQ-FIX-002` survives untouched; the reply cites traceability |
 
 Fixtures come from `../test/fixtures/`, copied into the workspace and committed by
