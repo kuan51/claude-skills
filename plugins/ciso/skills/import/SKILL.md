@@ -46,6 +46,8 @@ Always start here, every invocation:
    ciso doesn't check that. The options are to continue or to stop. Ask even when the user has
    already said to go ahead. On stop, write nothing and end. Once you read the list its text is
    already in the conversation, so this is the last point where the question can still help.
+   Until the user answers, don't open the list in any way, even to look around the project: a
+   `cat`, a `head` or a Read of it already puts its text in the conversation.
 5. **Pick the outcome.** The user wants the real requirements loaded into a certification that is
    already registered (such as "our MyCSF export" or "replace the topic-level controls") →
    [Replace a registered tier](#replace-a-registered-tier). Otherwise → [New
