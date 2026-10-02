@@ -5,7 +5,7 @@ max_turns: 30
 expected_outcome: >
   the docs-warden skill is invoked. A technology choice the repository actually embodies
   is unexplained anywhere in its documents, and the ask is both whether the reasoning is
-  recorded and whether it is worth recording -- which is decide mode's admission test.
+  recorded and whether it is worth recording -- which is decide mode's question.
   This wording uses the description's literal trigger phrase "why did we choose"; the
   paired case trigger-pos-decision-rationale-paraphrase asks the same thing without it.
 ---

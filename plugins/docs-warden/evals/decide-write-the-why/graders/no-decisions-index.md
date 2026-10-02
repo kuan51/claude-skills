@@ -1,5 +1,5 @@
 ---
 type: file_exists
-path: 'docs/decisions/**'
+path: docs/DECISIONS.md
 exists: false
 ---
