@@ -1,7 +1,7 @@
 {
   "skill_name": "import",
   "about": "skill-creator eval cases for ciso:import. The Acme Cloud Security Standard (ACSS) in fixtures/ is invented, so no licensed text is in this repository. Each prompt states the answers a run would otherwise ask for, because a subagent cannot answer questions. File paths are relative to plugins/ciso/.",
-  "run_instructions": "A run is a subagent that cannot ask the user anything. Where the skill says to ask with AskUserQuestion, or to tell the user something before a step, the run writes that question or message as its own text at that point, before its next tool call, then takes the answer from the user's message and carries on. Judge order from the transcript, never from the final reply.",
+  "run_instructions": "A run is a subagent that cannot ask the user anything. Wherever the skill says AskUserQuestion, the run writes the question and its options to outputs/asked-<n>.md (n = 1, 2, ...) with the Write tool, at that point and before its next tool call, then takes the answer from the user's message and carries on. Anything else the skill says to tell the user goes in visible text, never only in thinking. Order is judged from the tool calls in the run's raw log, never from the final reply.",
   "evals": [
     {
       "id": 1,
@@ -18,7 +18,7 @@
         "state.json registers acss/core with those 7 controls, each keeping its statementText",
         "docs/ciso/cert-acss.html exists",
         "The run told the user that the row with no id was skipped",
-        "Before it first read the list (the headers command included), the run reminded the user that their licence governs giving the standard's text to an AI service",
+        "The run asked the licence question (an outputs/asked-*.md about the licence and the AI service) before it first read the list",
         "The reply does not claim a warning or question came earlier than the transcript shows"
       ]
     },
@@ -36,9 +36,10 @@
         "No control in the structure file carries statementText",
         "Every control keeps its CSV id and domain",
         "check-overlap.js finds zero rejections for the written labels and summaries against the CSV",
-        "The run settled the terms-of-use question before it converted the list",
+        "The run asked the terms-of-use question (an outputs/asked-*.md about derivative works) before it converted the list",
         "The run told the user the overlap check is a tripwire, not proof, and that a person should review the wording before sharing",
-        "The reply does not claim a warning or question came earlier than the transcript shows"
+        "The reply does not claim a warning or question came earlier than the transcript shows",
+        "The run asked the licence question (an outputs/asked-*.md about the licence and the AI service) before it first read the list"
       ]
     },
     {
@@ -54,7 +55,9 @@
         "state.json registers no acss certification",
         "The run declined the shareable version because the licence forbids derivative works, and said rewording does not get around the licence",
         "The run offered the private mode instead",
-        "Any row count the run reports matches the CSV: 8 data rows, 7 with an id"
+        "Any row count the run reports matches the CSV: 8 data rows, 7 with an id",
+        "The run asked the licence question (an outputs/asked-*.md about the licence and the AI service) before it first read the list",
+        "The reply does not claim a warning or question came earlier than the transcript shows"
       ]
     },
     {
@@ -68,8 +71,9 @@
       "expectations": [
         "state.json equals the golden e1 import (skills/hitrust/lib/test/fixtures/golden-e1-import.json), timestamps normalised",
         "docs/ciso/imports/ holds a byte-for-byte copy of the export",
-        "The run warned that the placeholder controls would be archived and their assessments not carried over, before it ran merge-import.js",
-        "The reply does not claim a warning or question came earlier than the transcript shows"
+        "The run asked the archive question (an outputs/asked-*.md naming the archive and the count of assessed controls) before it ran merge-import.js",
+        "The reply does not claim a warning or question came earlier than the transcript shows",
+        "The run asked the licence question (an outputs/asked-*.md about the licence and the AI service) before it first read the list"
       ]
     }
   ]
