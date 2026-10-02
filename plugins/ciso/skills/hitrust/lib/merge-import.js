@@ -1,15 +1,14 @@
 'use strict';
 
-// HITRUST-e1/MyCSF-specific by design, not incidental hardcoding: this module parses MyCSF's
-// exact e1 export column headers and wholesale-replaces the e1 tier's controls. There is no
-// generic "import a licensed assessment export" mechanism to extract here -- a future
-// certification (SOC 2, ISO 27001, ...) needs its own sibling import module for its own export
-// format, not a generalized version of this one.
+// HITRUST-e1/MyCSF-specific by design: this module parses MyCSF's exact e1 export column headers,
+// including the "09.b Change Management" split no column mapping can express. Archiving and
+// replacing the tier is the step every import shares, in skills/import/lib/replace-controls.js;
+// other frameworks' lists go through skills/import/lib/convert-controls.js instead.
 
 const fs = require('fs');
 const path = require('path');
 const { parseE1Export } = require('./xlsx-lite.js');
-const { computeDomains } = require('./register-tier.js');
+const { replaceTierControls, archiveImportFile } = require('../../import/lib/replace-controls.js');
 
 // Parses the "Related HITRUST CSF Control" cell text the same way a real MyCSF export's
 // relatedControlCode/relatedControlName are derived: leading code, then whitespace, then name.
@@ -30,19 +29,10 @@ function defaultRoadmap() {
   return { budgetTier: null, vendorResearch: [], recommendation: null, status: 'not_started' };
 }
 
-// The shipped e1.v11.8.structure.json is public-sourced (topic/domain-only synthetic ids, e.g.
-// "e1-01-01" -- see hitrust-controls-compiler) and carries no real MyCSF Unique IDs to match
-// against. So importing an org's own real, licensed export can't be a field-merge onto existing
-// ids the way older versions of this function worked -- there's usually nothing to match. Instead
-// this WHOLESALE-REPLACES the tier's controls with what the real export actually contains:
-//   1. Snapshot whatever controls are currently registered (public placeholders, or a prior import)
-//      into archivedControls, tagged `archivedReason: "import-replaced"` -- raw, unreconciled
-//      insurance, not an attempt to carry assessment answers forward onto the real controls (their
-//      ids don't correspond to anything in common, so there's nothing safe to carry forward).
-//   2. Replace tier.controls outright with the real controls parsed from the export.
-//   3. Reset the interview session's domainsRemaining/domainsCompleted against the real controls'
-//      own category structure, since it's a different grouping than whatever the org was
-//      interviewing against before.
+// Parses the org's own licensed e1 export, then WHOLESALE-REPLACES the e1 tier's controls with
+// what it contains, through replaceTierControls (archive, replace, reset the session). The shipped
+// e1 structure is public-sourced with synthetic ids (e.g. "e1-01-01", see
+// hitrust-controls-compiler), so there are no real MyCSF Unique IDs to field-merge onto.
 // Never aborts on a malformed row -- only a genuinely unreadable file, a missing required header
 // column (both raised by parseE1Export), or an export with zero usable rows is fatal.
 function mergeImport(stateJsonPath, xlsxPath) {
@@ -88,27 +78,7 @@ function mergeImport(stateJsonPath, xlsxPath) {
     throw new Error('No usable rows found in the export (every row was missing a Unique ID) -- nothing imported; existing controls left untouched.');
   }
 
-  const archivedAt = new Date().toISOString();
-  let archivedNow = 0;
-  for (const [id, control] of Object.entries(tier.controls)) {
-    tier.archivedControls[id] = Object.assign({}, control, { archivedReason: 'import-replaced', archivedAt });
-    archivedNow += 1;
-  }
-
-  tier.controls = newControls;
-  tier.sourceAuthority = 'imported';
-  tier.importedFrom = path.basename(xlsxPath);
-  tier.importedAt = archivedAt;
-
-  const session = (state.interviewSessions || []).find(
-    (s) => s.certification === 'hitrust' && s.tier === 'e1'
-  );
-  if (session) {
-    session.domainsRemaining = computeDomains({ controls: Object.values(newControls) });
-    session.domainsCompleted = [];
-    session.status = 'in_progress';
-    session.lastUpdatedAt = archivedAt;
-  }
+  const archivedNow = replaceTierControls(state, 'hitrust', 'e1', newControls, path.basename(xlsxPath));
 
   fs.writeFileSync(stateJsonPath, JSON.stringify(state, null, 2) + '\n');
 
@@ -144,13 +114,6 @@ if (require.main === module) {
     process.exit(1);
   }
   console.log(JSON.stringify(summary, null, 2));
-
-  // Audit-trail copy, byte-for-byte, no reparsing -- lands inside the already-gitignored target dir.
-  const targetDir = path.dirname(stateJsonPath);
-  const importsDir = path.join(targetDir, 'imports');
-  fs.mkdirSync(importsDir, { recursive: true });
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const destPath = path.join(importsDir, `${timestamp}-${path.basename(xlsxPath)}`);
-  fs.copyFileSync(xlsxPath, destPath);
+  const destPath = archiveImportFile(path.dirname(stateJsonPath), xlsxPath);
   console.error(`Archived a copy of the import to ${destPath}`);
 }
