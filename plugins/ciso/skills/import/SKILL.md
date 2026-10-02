@@ -45,14 +45,16 @@ Always start here, every invocation:
 
 1. **Resolve the framework.** Follow `${CLAUDE_PLUGIN_ROOT}/skills/_shared/resolve-framework.md`
    for the certification the user named. It also carries the pending-version-upgrade check.
-2. **A bundled framework with `<dir>/flows/import.md` follows that flow, and this skill ends
-   there.** That is HITRUST, whose MyCSF parsing no column mapping can express.
-3. Otherwise, read the list and agree a mapping, as steps 1 and 2 of [New
-   framework](#new-framework) describe.
-4. **Warn before anything changes.** Tell the user that the tier's current controls will be
-   archived (`archivedReason: "import-replaced"`) and that assessments recorded against them do not
-   carry over to the imported controls. Wait for their yes.
-5. Run:
+2. **Warn before anything changes, on every route.** Say it in your own words before you run
+   any import, even when the user has already said yes: the tier's current controls will be
+   archived (`archivedReason: "import-replaced"`), and assessments recorded against them do not
+   carry over to the imported controls. Say how many controls are assessed today, so the user
+   knows what is at stake. Wait for their yes.
+3. **A bundled framework with `<dir>/flows/import.md` follows that flow,** then comes back here for
+   [After importing](#after-importing). That is HITRUST, whose MyCSF parsing no column mapping
+   can express.
+4. Otherwise, read the list and agree a mapping, as steps 1 and 2 of [New
+   framework](#new-framework) describe, then run:
 
    ```bash
    node "$L/replace-controls.js" <docs/ciso-dir> <certKey> <tierKey> <list-file> <mapping.json>
@@ -74,8 +76,8 @@ Always start here, every invocation:
      warning.
    - `domain` (required): the group the control belongs to.
    - `domainKey`: a short key for the group. Leave it out and ciso makes one from `domain`.
-   - `topicLabel`, `topicSummary`: a short name and what the control covers. Left out, they
-     default to the id.
+   - `topicLabel`, `topicSummary`: a short name and what the control covers. Left out,
+     `topicLabel` is the id and `topicSummary` is the `topicLabel`.
    - `statementText`: the requirement's full wording, kept verbatim in private mode.
    - `relatedControlCode`: a cross-reference code, if the list has one.
 
@@ -92,9 +94,10 @@ Always start here, every invocation:
      service, this conversation included. ciso doesn't check that, and the reminder does not block
      anything.
    - **Shareable:** ask whether the publisher's terms of use permit derivative works. Only a clear
-     yes goes on. No, or not sure, means refusing shareable mode: say why (paraphrase answers
-     copyright, not the contract the terms set), offer the private mode instead, and write nothing
-     until the user picks.
+     yes goes on, and when the user already gave one, say back what shareable mode now rests on
+     before you convert: their answer, which ciso records and does not check. No, or not sure,
+     means refusing shareable mode: say why (paraphrase answers copyright, not the contract the
+     terms set), offer the private mode instead, and write nothing until the user picks.
 5. **Convert:**
 
    ```bash
@@ -144,8 +147,9 @@ Always start here, every invocation:
 2. Delete the scratch files that hold the list's wording. What ciso needs is in `docs/ciso/` now.
 3. Report in plain language: how many controls were imported or archived, the rows skipped and
    why, and what the tier's `sourceAuthority` means, per `generic-ground-rules.md`:
-   - **Private:** the wording is the organization's licensed text, kept on this machine. Don't
-     commit or share `docs/ciso/frameworks/<certKey>/`.
+   - **Private:** the wording is the organization's licensed text, kept on this machine. It is in
+     `docs/ciso/frameworks/<certKey>/`, `docs/ciso/state.json` and the rendered
+     `docs/ciso/cert-<certKey>.html`: don't commit or share any of them.
    - **Shareable:** passing the overlap check is a tripwire against copying, not proof of a
      paraphrase. A person should review the wording before it is shared. The terms answer was
      recorded as given, and nothing verified it.
