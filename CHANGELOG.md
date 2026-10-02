@@ -8,6 +8,16 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **ciso 1.3.0** -- `ciso:import` works for any framework (#157). It converts a controls list
+  (a CSV, the first sheet of an xlsx, a JSON array, or a document Claude first extracts to JSON)
+  through a column mapping the user confirms, and writes a project framework. Private mode, the
+  default, keeps the licensed wording verbatim as an `imported` tier that stays on the machine.
+  Shareable mode writes a `paraphrased` tier in the organization's own words: it is refused unless
+  the user says the publisher's terms permit derivative works, and every label and summary must
+  pass a check that rejects a copied run of 8 or more words. `ciso:import` can also replace any
+  registered tier's controls from a list. HITRUST's MyCSF e1 import is unchanged, and a golden
+  test pins it. The xlsx reader now refuses a file over 20 MB, an entry that inflates past 32 MB
+  and a cell past column XFD.
 - **ciso 1.2.0** -- every framework is one data folder: a `framework.json`, a `ground-rules.md`
   (which replaces `invariants.md`) and one structure file per tier (#158). ciso loads them from
   the plugin's `frameworks/` and from a project's own `docs/ciso/frameworks/`, and validates each
