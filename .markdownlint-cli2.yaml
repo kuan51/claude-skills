@@ -47,9 +47,5 @@ ignores:
   # Session scratch and other checkouts' worktrees are not this repository's docs.
   - .claude/**
   - .remember/**
-  # Accepted decision records are immutable and run logs are append-only, so a
-  # structural finding in one cannot be fixed without editing history. Same
-  # reasoning as .vale.ini's relaxed list.
-  - docs/decisions/**
   - .venv/**
   - styles/**

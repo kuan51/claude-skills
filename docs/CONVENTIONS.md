@@ -8,16 +8,13 @@ generated: false
 
 How we work in this repository **today**. Edited in place as the standard changes.
 
-No history here. A dated entry in this file belongs in git, in a pull request, or,
-only for an architecture decision (hard to reverse, constrains other
-components, had a real alternative), in a record under [DECISIONS.md](DECISIONS.md).
+No history here. A dated entry in this file belongs in git or in a pull request.
 
 ## Stack
 
 Node.js (built-in `node --test` runner, no test framework dependency) for
 JavaScript checks. Python 3 for the `docs-warden` plugin's scripts, using only
-the standard library except PyYAML, which `_common.py` and `adr_new.py`
-import (not currently declared in a `requirements.txt` anywhere in the repo; install it
+the standard library except PyYAML, which `_common.py` imports (not currently declared in a `requirements.txt` anywhere in the repo; install it
 yourself before running docs-warden's scripts locally).
 
 ## Repository layout
@@ -79,7 +76,9 @@ Behavioral evals for a plugin's skills live in `plugins/<name>/evals/` in
 `graders/*.md` and, when the case needs a seeded repository, `case.yaml` plus
 `fixture.sh`. They spend tokens and never run under the unit tests; each plugin's
 `evals/README.md` gives the command and its prerequisites. `docs-warden` has the
-one suite in that format (DEC-0022). `fabflows`'s benchmark predates it and keeps its
+one suite in that format. Suites use `claude plugin eval` rather than a ported harness,
+because the first-party runner already gives the baseline, repeats, isolation and reporting
+that CI reads. `fabflows`'s benchmark predates it and keeps its
 own harness under `evals/harness/`. Its `brainstorming` evals are in
 `skills/brainstorming/evals/evals.json`, with their results reset in
 [#122](https://github.com/kuan51/claude-skills/issues/122) and not yet re-measured. `ciso` and
@@ -92,17 +91,13 @@ to the full results.
 ## Documentation
 
 Every pull request updates the affected documents or says why not.
-Accepted decision records are never edited; supersede them instead.
-At 50 decided records, `docs-warden`'s `compact` mode offers to archive the oldest
-25 into `docs/decisions/archive/` behind one digest record, as its own pull request
-(DEC-0003).
+A decision's reason goes beside the rule it explains, or in the pull request description when
+it is smaller than that.
 
 ## Generated files
 
-Do not hand-edit these. CI regenerates each and fails on any diff.
+Do not hand-edit these. CI's `audit.py` run fails when one is out of date.
 
 | Path | Regenerate with |
 |------|-----------------|
-| `docs/DECISIONS.md` | `adr_index.py .` |
-| `docs/decisions/README.md` | the same command |
 | `docs/architecture/domain-model.md` | `domain_model.py . --write` |

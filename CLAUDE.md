@@ -80,8 +80,8 @@ dropping its `installed_plugins.json` entry, and checking the marketplace clone 
 
 ## Maintaining documentation with docs-warden
 
-`docs/` follows the docs-warden layout (`docs/CONVENTIONS.md` for current state, `docs/decisions/`
-for why, `docs/GLOSSARY.md`, `docs/SECURITY.md`,
+`docs/` follows the docs-warden layout (`docs/CONVENTIONS.md` for current state,
+`docs/GLOSSARY.md`, `docs/SECURITY.md`,
 `docs/specs/` for fabflows design records; when `.claude/fabflows.json` names a tracker, the
 spec lives in the linked ticket instead, and the approval fingerprint plus each commit's `Spec:`
 trailer replace the "never overwritten" guarantee). `.docs-warden.yml` at the root drives it. The
@@ -92,8 +92,6 @@ copy in this repo. CI is the one exception, described below:
 ```bash
 W=~/.claude/plugins/cache/claude-skills/docs-warden/<version>/skills/docs-warden/scripts
 python $W/audit.py .                 # scorecard; every fail or warn is offered as a fix, never applied silently
-python $W/adr_new.py . "<title>"     # scaffold the next DEC-NNNN, then fill it with the human
-python $W/adr_index.py .             # regenerate docs/DECISIONS.md and docs/decisions/README.md
 python $W/freshness.py .             # documents past review_by or older than the code they cite
 ```
 
@@ -101,15 +99,13 @@ Rules that bite here:
 
 - **Every PR updates the affected documents or says why not.** After a code change, grep `docs/`
   and the plugin READMEs for the paths and symbols you touched (`maintain` mode), propose the
-  specific edits, then re-run `adr_index.py` and `audit.py`.
-- **A decision record only when all three are yes:** reversing it costs more than one PR, it
-  constrains work outside the component touched, and a rejected alternative exists. Otherwise the
-  reasoning goes in the PR description. Accepted records are never edited. Supersede them instead.
-- **Generated files are never hand-edited:** `docs/DECISIONS.md`, `docs/decisions/README.md`,
-  `docs/architecture/domain-model.md` (see the table in `docs/CONVENTIONS.md`).
+  specific edits, then re-run `audit.py`.
+- **A decision's reason goes beside the rule it explains,** in the README or `docs/` file that
+  states the rule, or in the PR description when it is smaller than that.
+- **Generated files are never hand-edited:** `docs/architecture/domain-model.md` (see the table in `docs/CONVENTIONS.md`).
 - **This repo keeps no run log** (its archetype is `library`). Operational narrative, such as
-  commands run and checks skipped, goes in the PR description; durable conclusions go in a
-  decision record or spec.
+  commands run and checks skipped, goes in the PR description; durable conclusions go beside
+  the rule they explain or in a spec.
 - **CI runs markdownlint, Vale and `audit.py` on every pull request and push to master**
   (`.github/workflows/docs.yml`), from the checkout's own copy of the scripts, so a PR is
   checked by its own version of docs-warden. Vale lints only the Markdown files the PR changes, as pre-commit does.
