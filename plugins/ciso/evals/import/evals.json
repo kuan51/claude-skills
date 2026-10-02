@@ -1,0 +1,63 @@
+{
+  "skill_name": "import",
+  "about": "skill-creator eval cases for ciso:import. The Acme Cloud Security Standard (ACSS) in fixtures/ is invented, so no licensed text is in this repository. Each prompt states the answers a run would otherwise ask for, because a subagent cannot answer questions. File paths are relative to plugins/ciso/.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "private-csv",
+      "prompt": "We license the Acme Cloud Security Standard, and I exported its controls to the attached acss.csv. Get it into ciso so we can track it. Keep the exact requirement wording: it's our licensed copy and it stays internal.\n\nAnswers to anything you'd ask me: Control ID is the id, Domain is the domain, Title is the label and Requirement is the full wording. Use certKey acss, display name \"Acme Cloud Security Standard\", summary \"Acme's cloud security baseline, from our licensed copy.\", tier core, version v2026. Private is right. Go ahead.",
+      "expected_output": "A private project framework docs/ciso/frameworks/acss/ with the 7 controls that have an id, each keeping its Requirement verbatim as statementText, sourceAuthority imported; registered in state.json; dashboard rendered; the skipped draft row reported.",
+      "files": ["evals/import/fixtures/acss.csv"],
+      "expectations": [
+        "frameworks.js validate passes on docs/ciso/frameworks/acss",
+        "The acss core structure file has sourceAuthority imported and nonAuthoritative false",
+        "Each of the 7 controls with an id has statementText equal to its CSV Requirement cell, character for character",
+        "state.json registers acss/core with those 7 controls, each keeping its statementText",
+        "docs/ciso/cert-acss.html exists",
+        "The run told the user that the row with no id was skipped",
+        "The run reminded the user that their licence governs giving the standard's text to an AI service"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "shareable-terms-permit",
+      "prompt": "Here's the Acme Cloud Security Standard controls list, attached as acss.csv. I want a generic version in ciso that we can share with our partners. Acme's terms of use allow derivative works as long as they don't reproduce the text.\n\nAnswers to anything you'd ask me: Control ID is the id, Domain is the domain, Title is the label and Requirement is the full wording. Use certKey acss, display name \"Acme Cloud Security Standard\", summary \"Acme's cloud security baseline, in our own words.\", tier core, version v2026. Yes, the terms permit derivative works. Go ahead.",
+      "expected_output": "A shareable project framework docs/ciso/frameworks/acss/ with sourceAuthority paraphrased, each label and summary in Claude's own words, no statementText, zero overlap rejections, registered and rendered; the run says the check is a tripwire and a person should review before sharing.",
+      "files": ["evals/import/fixtures/acss.csv"],
+      "expectations": [
+        "frameworks.js validate passes on docs/ciso/frameworks/acss",
+        "The acss core structure file has sourceAuthority paraphrased and nonAuthoritative true",
+        "No control in the structure file carries statementText",
+        "Every control keeps its CSV id and domain",
+        "check-overlap.js finds zero rejections for the written labels and summaries against the CSV",
+        "The run settled the terms-of-use question before it converted the list",
+        "The run told the user the overlap check is a tripwire, not proof, and that a person should review the wording before sharing"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "shareable-terms-forbid",
+      "prompt": "Can you turn the attached acss.csv (our Acme Cloud Security Standard export) into a shareable version in ciso, reworded so we can hand it to partners? Our licence agreement with Acme says no derivative works, but rewording should be fine, right?\n\nAnswers to anything you'd ask me: Control ID is the id, Domain is the domain, Title is the label and Requirement is the full wording. Use certKey acss, display name \"Acme Cloud Security Standard\", tier core, version v2026. If you suggest something other than a shareable version, don't import anything yet: I'll check with legal first.",
+      "expected_output": "No framework written. The run declines shareable mode because the licence forbids derivative works, explains that rewording does not get around that contract, and offers the private mode instead.",
+      "files": ["evals/import/fixtures/acss.csv"],
+      "expectations": [
+        "No docs/ciso/frameworks/acss folder exists",
+        "state.json registers no acss certification",
+        "The run declined the shareable version because the licence forbids derivative works, and said rewording does not get around the licence",
+        "The run offered the private mode instead"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "hitrust-e1",
+      "prompt": "We finally got our MyCSF subscription. The e1 requirements export is attached as sample-e1-export.xlsx. Load the real requirement statements into our HITRUST tracking.\n\nAnswers to anything you'd ask me: yes, replace the placeholder controls; I understand what gets archived. Go ahead.",
+      "expected_output": "HITRUST e1 imported through flows/import.md and merge-import.js exactly as today: 3 controls imported, 33 archived, state equal to the golden import, the export copied into imports/, the archive warning given before the import ran.",
+      "files": ["skills/hitrust/lib/test/fixtures/sample-e1-export.xlsx"],
+      "expectations": [
+        "state.json equals the golden e1 import (skills/hitrust/lib/test/fixtures/golden-e1-import.json), timestamps normalised",
+        "docs/ciso/imports/ holds a byte-for-byte copy of the export",
+        "The run warned that the placeholder controls would be archived and their assessments not carried over, before it ran merge-import.js"
+      ]
+    }
+  ]
+}
