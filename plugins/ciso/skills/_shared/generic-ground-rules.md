@@ -37,6 +37,9 @@ Tell the user, the first time the framework comes up in a session, what the tier
 - `imported`: licensed wording held only in this project. Its wording never reaches vendor
   research: only its codes do (`id`, `relatedControlCode`, `legacyCategoryPrefix`, `domainKey`).
   Task sync sends neither its `topicLabel` nor its `topicSummary`.
+- `paraphrased`: labels and summaries written in the organization's own words from a standard
+  whose terms of use permit derivative works (`ciso:import`'s shareable mode). Not the publisher's
+  wording, and not checked by any publisher.
 
 `nonAuthoritative: true` means the set is not a substitute for the publisher's own control set.
 Either way, send the user to the publisher and their assessor or auditor for exact scope and
