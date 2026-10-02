@@ -1,0 +1,9 @@
+Control ID,Domain,Title,Requirement
+ACSS-AM-01,Asset Management,Asset inventory,"The organization shall maintain an inventory of all cloud resources, including each resource's owner, data classification and region."
+ACSS-AM-02,Asset Management,Resource tagging,The organization shall tag every cloud resource with its owning team and its environment at the time the resource is created.
+ACSS-IA-01,Identity and Access,Federated sign-in,All workforce access to the cloud management console shall be authenticated through the organization's central identity provider.
+ACSS-IA-02,Identity and Access,Privileged access review,"Privileged roles shall be reviewed at least every 90 days, and any privilege that has not been used since the last review shall be revoked."
+ACSS-DP-01,Data Protection,Encryption at rest,Customer data stored in the cloud environment shall be encrypted at rest using encryption keys that the organization itself controls.
+ACSS-DP-02,Data Protection,Key rotation,Encryption keys that protect customer data shall be rotated at least once every twelve months and whenever a compromise is suspected.
+,Logging and Monitoring,Draft control,This row is still a draft and has not been given an identifier yet.
+ACSS-LM-01,Logging and Monitoring,Audit logging,"Administrative actions in the cloud environment shall be logged, and the logs shall be retained for at least one year in storage that administrators cannot alter."

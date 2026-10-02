@@ -97,7 +97,7 @@ function reconcileStateVersion(stateJsonPath, certKey, tierKey, newStructure) {
   }
   if (tier.sourceAuthority === 'imported') {
     throw new Error(
-      `Tier ${certKey}/${tierKey} was populated from a licensed import (real MyCSF Unique IDs) -- reconciling against the bundled public structure (synthetic ids) would match nothing and misclassify every imported control as removed. Import a new licensed export for this version instead of reconciling.`
+      `Tier ${certKey}/${tierKey} was populated from a licensed import, whose control ids come from the organization's own list -- reconciling against the bundled structure would match nothing and misclassify every imported control as removed. Import the new version's list instead of reconciling.`
     );
   }
   if (!tier.controls) tier.controls = {};

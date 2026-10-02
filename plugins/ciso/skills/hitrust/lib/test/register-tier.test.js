@@ -391,3 +391,21 @@ test('registering the bundled r2.v11.8.structure.json seeds every control with t
     assert.ok(control.assessment.maturity && control.assessment.maturity.implemented, `${id} must have a maturity.implemented dimension`);
   }
 });
+
+test('registerTier keeps a structure entry\'s statementText, as an imported project tier carries it', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'register-tier-statement-'));
+  const stateJsonPath = path.join(dir, 'state.json');
+  fs.writeFileSync(stateJsonPath, JSON.stringify({ certifications: {}, interviewSessions: [] }));
+  const structure = {
+    tier: 'core', controlSetVersion: 'v1', sourceAuthority: 'imported', nonAuthoritative: false,
+    controls: [
+      { id: 'A-1', domain: 'Access', domainKey: 'access', topicLabel: 'A-1', topicSummary: 'A-1', statementText: 'Verbatim requirement.' },
+      { id: 'A-2', domain: 'Access', domainKey: 'access', topicLabel: 'A-2', topicSummary: 'A-2' },
+    ],
+  };
+  registerTier(stateJsonPath, structure, 'acme', 'Acme Standard');
+  const controls = JSON.parse(fs.readFileSync(stateJsonPath, 'utf8')).certifications.acme.tiers.core.controls;
+  assert.equal(controls['A-1'].statementText, 'Verbatim requirement.');
+  assert.equal(controls['A-1'].statementSource, 'imported');
+  assert.equal(controls['A-2'].statementText, null);
+});

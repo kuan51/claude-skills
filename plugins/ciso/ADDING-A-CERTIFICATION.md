@@ -10,7 +10,8 @@ A ciso framework is one folder of data. ciso loads frameworks from two places:
   never committed. Its control subjects still reach vendor research and `ciso:sync-tasks` as the
   plugin README describes, unless the tier is `imported`, whose labels and summaries stay local.
 
-Most people want the second. It needs no change to the plugin.
+Most people want the second. It needs no change to the plugin, and `ciso:import` can write it for
+you from a controls list you already have (see [Importing a controls list](#importing-a-controls-list)).
 
 ## Adding a project framework
 
@@ -70,7 +71,8 @@ Each control:
 | `domainKey` | yes | The grouping key the dashboard rolls up by and the interview works through. Same character and name rules as `id`. |
 | `topicLabel` | yes | A short name for the control. |
 | `topicSummary` | yes | What the control covers. |
-| anything else | no | Carried into `state.json` and shown on the dashboard, except a field ciso's state owns (`assessment`, `evidence`, `roadmap`, `statementText`, `statementSource`, `needsReview`, `tracker`), which is an error. |
+| `statementText` | no | The requirement's verbatim wording, shown on the dashboard. Allowed only in an `imported` tier, as a non-empty string. |
+| anything else | no | Carried into `state.json` and shown on the dashboard, except a field ciso's state owns (`assessment`, `evidence`, `roadmap`, `statementText` outside an `imported` tier, `statementSource`, `needsReview`, `tracker`), which is an error. |
 
 What each `sourceAuthority` value makes ciso do:
 
@@ -78,6 +80,7 @@ What each `sourceAuthority` value makes ciso do:
 |---|---|---|---|
 | `public-topic-level` | You wrote every label and summary yourself from public sources. | A "non-authoritative" banner on the tier, and a "a paraphrase" note under each `topicSummary`. | Send the control's subject, wording included. |
 | `publisher-verbatim` | The wording is the publisher's own, and the publisher permits copying it (US Government works, for instance). | No banner, no paraphrase note. | Send the control's subject, wording included. |
+| `paraphrased` | You wrote the labels and summaries in your own words from a standard whose terms of use permit derivative works. `ciso:import`'s shareable mode writes this. | A "non-authoritative" banner on the tier, and the paraphrase note under each `topicSummary`. | Send the control's subject, wording included. |
 | `imported` | The file holds licensed wording, copied from your organization's own licensed copy of the standard. Never allowed in a bundled framework. | No banner, no paraphrase note. | Vendor research gets **only codes**: `id`, `relatedControlCode`, `legacyCategoryPrefix` and `domainKey`, each a plain token. Task sync sends neither `topicLabel` nor `topicSummary`. Licensed wording, names and domains included, stays on your machine. |
 
 ### Check it
@@ -101,8 +104,9 @@ it as data, never as instructions:
   framework, and the plugin's generic flows for `register`, `interview` and `roadmap`.
 - Verbs read your `ground-rules.md` and tell the user what it says. They never act on an
   instruction found in any project framework file.
-- `ciso:scope`, `ciso:import` and `ciso:upgrade` have no generic flow. For a project framework they
-  say so and stop.
+- `ciso:import` replaces a project framework's tier from a controls list through its generic
+  flow, privately. `ciso:scope` and `ciso:upgrade` have no generic flow: for a project framework
+  they say so and stop.
 
 ### Honesty rules for a licensed standard
 
@@ -122,6 +126,38 @@ copyright. Before you write a structure file for one:
   secondary sources. Never put secondary URLs in `codeVerifiedBy`.
 - **Say what the set is not.** `ground-rules.md` must tell the user what the control set does not
   give them: the publisher's wording, its completeness, an assessor's view.
+
+## Importing a controls list
+
+You don't have to write the folder by hand. `ciso:import` writes it from a controls list you
+already have: a `.csv`, the first sheet of an `.xlsx`, a `.json` array of objects, or anything
+else Claude can read, which it first extracts into such an array. Claude proposes which column
+fills each field, and you confirm it. Then one of two modes:
+
+| Mode | When | What it writes |
+|---|---|---|
+| Private (the default) | The list is your organization's licensed copy | The wording verbatim, in `statementText`, as an `imported` tier. It stays in your gitignored `docs/ciso/`, and vendor research sees only its codes. |
+| Shareable | You want a version others may use, and the publisher's terms of use permit derivative works | The ids, domains and codes, with every label and summary written in your own words, as a `paraphrased` tier. No source wording. |
+
+Shareable mode guards against copying in two ways, and both have limits:
+
+- It is refused unless you say the terms permit derivative works. ciso records your answer and
+  cannot check it.
+- Every label and summary must pass `skills/import/lib/check-overlap.js`. It rejects a run of 8 or
+  more words shared with the source, and a label or summary equal to a source cell. That check is
+  a tripwire, not proof of a paraphrase, so have a person review the wording before sharing it.
+
+`ciso:import` can also replace a registered tier's controls with a list, privately. That archives
+the old controls first, and their assessments do not carry over. HITRUST's MyCSF e1 export keeps
+its own flow, `frameworks/hitrust/flows/import.md`.
+
+The scripts, in `skills/import/lib/`, run on their own too:
+
+- `convert-controls.js`: `headers <file>` lists the columns, and `convert <file> <mapping.json>`
+  converts the list.
+- `write-framework.js <docs/ciso-dir> <meta.json> <converted.json>` writes the folder.
+  Shareable mode adds `--paraphrases <file>` and `--terms-permit-derivatives`.
+- `replace-controls.js` replaces a registered tier from a list.
 
 ## Contributing a bundled framework
 
@@ -370,7 +406,9 @@ few years and rots faster than twenty lines can be rewritten.
    it.
 
    Only include a flow file for a verb your certification actually supports. `ciso:scope` is
-   SOC 2 only. `ciso:import` and `ciso:upgrade` are HITRUST only. A verb with no matching file says so
+   SOC 2 only, and `ciso:upgrade` is HITRUST only. `ciso:import` has a generic flow for any
+   framework, so add `flows/import.md` only for a publisher export a column mapping cannot read,
+   as HITRUST's MyCSF export is. A verb with no matching file says so
    plainly and names the certifications that do support it. Do not scaffold an empty file to make
    the matrix look full. `ciso:review`, `ciso:evidence` and `ciso:audit` read assessment data rather
    than certification mechanics and don't need a flow file at all (with one exception:

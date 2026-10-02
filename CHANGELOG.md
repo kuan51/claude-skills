@@ -8,6 +8,16 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **ciso 1.3.0** -- `ciso:import` works for any framework (#157). It converts a controls list
+  (a CSV, the first sheet of an xlsx, a JSON array, or a document Claude first extracts to JSON)
+  through a column mapping the user confirms, and writes a project framework. Private mode, the
+  default, keeps the licensed wording verbatim as an `imported` tier that stays on the machine.
+  Shareable mode writes a `paraphrased` tier in the organization's own words: it is refused unless
+  the user says the publisher's terms permit derivative works, and every label and summary must
+  pass a check that rejects a copied run of 8 or more words. `ciso:import` can also replace any
+  registered tier's controls from a list. HITRUST's MyCSF e1 import is unchanged, and a golden
+  test pins it. The xlsx reader now refuses a file over 20 MB, an entry that inflates past 32 MB
+  and a cell past column XFD.
 - **ciso 1.2.0** -- every framework is one data folder: a `framework.json`, a `ground-rules.md`
   (which replaces `invariants.md`) and one structure file per tier (#158). ciso loads them from
   the plugin's `frameworks/` and from a project's own `docs/ciso/frameworks/`, and validates each
@@ -398,11 +408,18 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
-- **ciso 1.2.2** -- dashboard anchor ids are built once, by two helpers, from slugged
+- **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
   parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
   with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a
   "jump" link could open the wrong group. Links bookmarked to an old `#cat-...` anchor now open
   the top of the page.
+- **ciso 1.3.1** -- `ciso:import` stops before it acts. Three steps are now questions, asked
+  even when the user has already said yes: the licence question before the list is first read,
+  which can stop the import; the archive warning before a tier is replaced; and the terms answer
+  a shareable import rests on. No question or warning may be left only in Claude's thinking,
+  where the user can't see it, and the report keeps events in the order they happened. Eval runs
+  of 1.3.0 gave each warning only in the final report, after the step, and some reports claimed
+  otherwise (#157).
 - **ciso 1.2.1** -- the dashboard escapes a certKey or tierKey from `state.json` in the
   domain-bar link, the "Jump to details" link and the tier section id, as it already did for
   the category id (#158). A hand-edited key holding a quote could break out of the attribute.
