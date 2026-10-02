@@ -398,6 +398,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **ciso 1.2.2** -- dashboard anchor ids are built once, by two helpers, from slugged
+  parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
+  with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a
+  "jump" link could open the wrong group. Links bookmarked to an old `#cat-...` anchor now open
+  the top of the page.
 - **ciso 1.2.1** -- the dashboard escapes a certKey or tierKey from `state.json` in the
   domain-bar link, the "Jump to details" link and the tier section id, as it already did for
   the category id (#158). A hand-edited key holding a quote could break out of the attribute.
