@@ -160,7 +160,8 @@ def main() -> int:
         if known and not required:
             warnings.append(
                 f"{RUNLOG} is not required for the {archetype} archetype; its "
-                f"contents belong in the PR description or a decision record. "
+                f"contents belong in the PR description or beside the rule in "
+                f"docs/CONVENTIONS.md. "
                 f"Consider removing it.")
         else:
             text = runlog.read_text(encoding="utf-8", errors="replace")

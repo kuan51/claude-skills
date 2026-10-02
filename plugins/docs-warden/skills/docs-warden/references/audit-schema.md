@@ -12,7 +12,7 @@ A repository may excuse one check in `.docs-warden.yml`, with a reason:
 
 ```yaml
 waivers:
-  required-files: "the runbook lives in the ops wiki, see DEC-0009"
+  required-files: "the runbook lives in the ops wiki"
   standards: "assessed out of scope by the regulatory lead"
 ```
 
@@ -96,22 +96,16 @@ Long-lived documents carry `owner` and `review_by`, and none is past due. `fail`
 a missing field, `warn` on a past-due date (`freshness.py` gives the detail).
 **Fix:** add the block, or review the document and push the date out.
 
-### 3. `adr-immutability`
+### 3. `legacy-decisions`
 
-For every record with `status: accepted`, `git log` on the record's path shows no
-commit touching it after the commit that set the status. `fail` names the
-offending commit.
-**Fix:** revert the edit and write a superseding record instead. Never "just fix"
-the accepted file. That is the thing being prevented.
+A 0.x decision ledger is still present. `skipped` when `docs/decisions/` is
+absent, `warn` when it exists. Never `fail`, so upgrading adds no failures. That
+folder is not required and not front-matter or link checked; `phi-secrets` still
+scans it.
+**Fix:** 0.x leftover: fold what still matters into docs/CONVENTIONS.md and delete
+docs/decisions/ and docs/DECISIONS.md.
 
-### 4. `adr-index`
-
-`adr_index.py` regenerated in a temporary directory matches what is committed.
-`fail` on any diff, which means either the index is stale or someone hand-edited a
-generated file.
-**Fix:** run `adr_index.py` and commit the result.
-
-### 5. `generated-docs`
+### 4. `generated-docs`
 
 Each `generated_docs` entry in `.docs-warden.yml` regenerates to the committed
 bytes. `skipped` when the command's tool is not on `PATH`. This is the common case
@@ -137,7 +131,7 @@ other files leaves them behind: the containment check restricts where `path`
 may resolve to, not what the command itself is allowed to touch. The command
 runs with your user's own privileges and is not sandboxed.
 
-### 6. `lint`
+### 5. `lint`
 
 `markdownlint-cli2`, `vale` and `lychee`, each run only when its own config is
 present in the repository: `.markdownlint-cli2.yaml`, `.vale.ini`, `lychee.toml`.
@@ -145,8 +139,8 @@ A config-driven linter invoked without its config either errors out or silently
 applies defaults nobody chose, so no config means the repository has not adopted
 that linter and the tool is reported unrun.
 
-States follow `DEC-0004`, which makes markdownlint and lychee blocking from the
-start and Vale advisory until its rules are promoted:
+markdownlint and lychee block from the start, and Vale stays advisory until its
+rules are promoted:
 
 | Situation | State |
 |-----------|-------|
@@ -164,13 +158,13 @@ it downloads into the npm cache. `pass` is never reported
 while anything went unrun.
 **Fix:** whatever the linter said, or the command in the `fix` field.
 
-### 7. `glossary-reject-terms`
+### 6. `glossary-reject-terms`
 
 No term from the `Do not use` column of `docs/GLOSSARY.md` appears in the prose of
 `docs/` or the root documents. Code blocks, inline code, and URLs are exempt.
 **Fix:** use the approved term, or move the entry out of the reject column.
 
-### 8. `phi-secrets`
+### 7. `phi-secrets`
 
 Pattern scan of all documentation for social security numbers, medical record
 numbers, dates of birth, private key blocks, and connection strings. **Any hit is
@@ -181,7 +175,7 @@ costs a minute. A miss puts
 patient data in a git history that cannot be rewritten. If a synthetic example
 matches it, change the example. Do not add an exception.
 
-### 9. `readme-shape`
+### 8. `readme-shape`
 
 Required sections present; 150 lines maximum, and past 100 lines a table of
 contents is also required. Generated regions are excluded from the line count:
@@ -189,7 +183,7 @@ their length measures the data they render, not anything a human wrote.
 `warn`, not `fail`. A long README is worth a second look, though not
 necessarily wrong.
 
-### 10. `standards:<id>` (one row per declared standard)
+### 9. `standards:<id>` (one row per declared standard)
 
 A repository declaring nothing gets a `standards` row, `skipped`. One
 that declares any gets **one check per standard**, id `standards:iec-62304`,
@@ -218,7 +212,7 @@ artifact table and marks the rows this check does not enforce. Read it before
 treating a `pass` as coverage.
 **Fix:** add the artifact, or add a test that references the requirement ID.
 
-### 11. `manifest`
+### 10. `manifest`
 
 Always runs, and reports the manifest itself.
 
@@ -234,7 +228,7 @@ place.
 This check cannot be waived.
 **Fix:** run init mode to create `.docs-warden.yml`, or correct the key named.
 
-### 12. `links`
+### 11. `links`
 
 Each relative Markdown link must resolve to a file that exists. It doesn't need a
 tool, network, or config, so it always runs. This exists because `lychee`
@@ -254,16 +248,16 @@ Scope, and what it deliberately does not do:
 - Files under `assets/examples/` and `assets/templates/` are skipped. They
   cross-reference documents an adopting repository would generate, so their
   targets are placeholders. This is a real coverage gap: an actually broken link
-  inside an included example is not caught. See `DEC-0009`.
+  inside an included example is not caught.
 
 `fail` lists up to ten `file -> target` pairs and counts the rest.
 **Fix:** correct the path, or delete the link if its target is not coming.
 
-### 13. `ontology`
+### 12. `ontology`
 
 `docs/architecture/domain-model.md` is current, and the documentation is tagged
 against it. Runs `domain_model.py <repo> --check` from the
-`ontological-documentation` skill, the way `adr-index` runs `adr_index.py`.
+`ontological-documentation` skill.
 
 | State | When |
 |-------|------|

@@ -41,4 +41,4 @@ error.
 
 ## Architecture decisions
 
-See [DECISIONS.md](../DECISIONS.md).
+Each decision's reason sits next to its rule in [CONVENTIONS.md](../CONVENTIONS.md).

@@ -20,7 +20,6 @@ Invoke-CertRotation -HubName hub-lab-01 -WhatIf
 | Document | What it answers |
 |----------|-----------------|
 | [CONVENTIONS.md](docs/CONVENTIONS.md) | How we do things here today |
-| [DECISIONS.md](docs/DECISIONS.md) | Why we do them that way |
 | [GLOSSARY.md](docs/GLOSSARY.md) | What our words mean |
 | [RUNLOG.md](docs/RUNLOG.md) | What was done outside git |
 | [docs/runbook.md](docs/runbook.md) | How to run a rotation |

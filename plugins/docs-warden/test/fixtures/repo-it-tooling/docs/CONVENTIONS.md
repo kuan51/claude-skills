@@ -31,11 +31,10 @@ Cmdlets use approved PowerShell verbs. Hub identifiers are `hub-<site>-<nn>`.
 ## Documentation
 
 Every pull request updates the affected documents or says why not.
-Accepted decision records are never edited; supersede them instead.
+The reason for a rule sits next to the rule.
 
 ## Generated files
 
 | Path | Regenerate with |
 |------|-----------------|
-| `docs/DECISIONS.md` | `adr_index.py .` |
-| `docs/decisions/README.md` | the same command |
+| `docs/architecture/domain-model.md` | `domain_model.py . --write` |
