@@ -286,7 +286,7 @@ function listFrameworks(docsCisoDir, bundledRoot) {
   return { frameworks, errors };
 }
 
-module.exports = { listFrameworks, validateFramework, BUNDLED_ROOT, SOURCE_AUTHORITIES };
+module.exports = { listFrameworks, validateFramework, BUNDLED_ROOT, SOURCE_AUTHORITIES, KEY_RE, VERSION_RE };
 
 function main(argv) {
   const [cmd, target, flag] = argv;

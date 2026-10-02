@@ -6,9 +6,11 @@
  * wording shares a run of RUN or more words with any of its mapped source cells, or whose label
  * or summary equals one. Passing it is not proof of a paraphrase; a person still reviews.
  *
- * Usage: node check-overlap.js <controls.json>   { rejections } as JSON; exit 1 when any
- * The file is { controls: [...] } or a bare array; each control carries `source`, as
- * convert-controls.js writes it. Stdlib only.
+ * Usage: node check-overlap.js <controls.json> [<paraphrases.json>]
+ *   { rejections } as JSON; exit 1 when any. The controls file is { controls: [...] } or a bare
+ *   array, each control carrying `source` as convert-controls.js writes it. The paraphrases file
+ *   is { "<id>": { "topicLabel": "...", "topicSummary": "..." } }, one entry per control, applied
+ *   over the controls first. Stdlib only.
  */
 
 const fs = require('fs');
@@ -51,17 +53,37 @@ function findOverlaps(controls) {
   return rejections;
 }
 
-module.exports = { findOverlaps, tokens, RUN };
+// The converted controls with each label and summary replaced by the paraphrase for its id. Every
+// control needs one, so none can slip through with the source's own wording.
+function applyParaphrases(controls, paraphrases) {
+  if (!paraphrases || typeof paraphrases !== 'object' || Array.isArray(paraphrases)) {
+    throw new Error('paraphrases must be a JSON object of control id to { topicLabel, topicSummary }');
+  }
+  const ids = new Set(controls.map((c) => c.id));
+  for (const id of Object.keys(paraphrases)) {
+    if (!ids.has(id)) throw new Error(`paraphrases: "${id}" is not a control in the list`);
+  }
+  return controls.map((c) => {
+    const p = Object.prototype.hasOwnProperty.call(paraphrases, c.id) ? paraphrases[c.id] : null;
+    const ok = (v) => typeof v === 'string' && v.trim().length > 0;
+    if (!p || !ok(p.topicLabel) || !ok(p.topicSummary)) throw new Error(`paraphrases: no paraphrase for "${c.id}" (it needs a topicLabel and a topicSummary)`);
+    return Object.assign({}, c, { topicLabel: p.topicLabel.trim(), topicSummary: p.topicSummary.trim() });
+  });
+}
+
+module.exports = { findOverlaps, applyParaphrases, tokens, RUN };
 
 if (require.main === module) {
-  const [file] = process.argv.slice(2);
+  const [file, paraphrasesFile] = process.argv.slice(2);
   if (!file) {
-    console.error('Usage: node check-overlap.js <controls.json>');
+    console.error('Usage: node check-overlap.js <controls.json> [<paraphrases.json>]');
     process.exit(1);
   }
   try {
     const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-    const rejections = findOverlaps(Array.isArray(data) ? data : data.controls || []);
+    let controls = Array.isArray(data) ? data : data.controls || [];
+    if (paraphrasesFile) controls = applyParaphrases(controls, JSON.parse(fs.readFileSync(paraphrasesFile, 'utf8')));
+    const rejections = findOverlaps(controls);
     console.log(JSON.stringify({ rejections }, null, 2));
     process.exitCode = rejections.length ? 1 : 0;
   } catch (err) {
