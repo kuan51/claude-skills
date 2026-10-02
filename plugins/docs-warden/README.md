@@ -54,7 +54,9 @@ documentation rather than only of the code. Concepts are read from Python,
 JavaScript/TypeScript, PowerShell and Terraform; the domain/technical split is a
 naming heuristic, corrected with `ontology.overrides:` in `.docs-warden.yml` and
 never by editing the generated file. The document is optional, and the `ontology`
-audit check reports it stale, untagged, or absent.
+audit check reports it stale, untagged, or absent. The ontology work is a docs-warden
+skill with its own audit check, not a separate plugin, because a domain model is only worth
+keeping if something reports when it goes stale.
 
 ## Out of scope
 

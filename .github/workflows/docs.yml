@@ -29,12 +29,10 @@ jobs:
       run:
         shell: bash
     steps:
-      # Full history: audit.py's adr-immutability check reads each decision
-      # record's git log, and a shallow clone cuts that log down to the PR
-      # head, so an edit to an accepted record would pass. The Vale step diffs
-      # against HEAD^1: on pull_request, HEAD is the merge commit and its first
-      # parent is the base branch tip. On push to master, HEAD^1 is the
-      # previous master tip when the push is a PR's merge commit.
+      # Full history, because the Vale step diffs against HEAD^1: on
+      # pull_request, HEAD is the merge commit and its first parent is the
+      # base branch tip. On push to master, HEAD^1 is the previous master tip
+      # when the push is a PR's merge commit.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
