@@ -173,15 +173,15 @@ test('REGRESSION (commit 3c238d8): a domain mixing controls with and without leg
   const groupIds = [...drilldownsHtml.matchAll(/<details class="category-group" id="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(
     groupIds,
-    ['cat-hitrust-e1-11'],
+    ['cat_hitrust_e1_11'],
     'client must render exactly ONE group for domainKey 11, matching the server rollup -- not split into a legacyCategoryPrefix-01 group and a domain-less group'
   );
 
-  const statsMatch = /id="cat-hitrust-e1-11"[\s\S]*?<span class="cat-stats">(\d+) controls?/.exec(drilldownsHtml);
-  assert.ok(statsMatch, 'expected a cat-stats block for the cat-hitrust-e1-11 group');
+  const statsMatch = /id="cat_hitrust_e1_11"[\s\S]*?<span class="cat-stats">(\d+) controls?/.exec(drilldownsHtml);
+  assert.ok(statsMatch, 'expected a cat-stats block for the cat_hitrust_e1_11 group');
   assert.equal(Number(statsMatch[1]), 5, 'all 5 controls must be counted in the single group, not split across two');
 
-  assert.ok(overviewHtml.includes('href="#cat-hitrust-e1-11"'), 'overview jump-link must point at the single correctly-keyed group');
+  assert.ok(overviewHtml.includes('href="#cat_hitrust_e1_11"'), 'overview jump-link must point at the single correctly-keyed group');
 });
 
 test('every overview domain-bar link href has a matching drilldown group id, and vice versa, across multiple domains', () => {
@@ -193,7 +193,7 @@ test('every overview domain-bar link href has a matching drilldown group id, and
 
   const { overviewHtml, drilldownsHtml } = renderClientSide(state);
 
-  const hrefIds = [...overviewHtml.matchAll(/href="#(cat-[^"]+)"/g)].map((m) => m[1]);
+  const hrefIds = [...overviewHtml.matchAll(/href="#(cat_[^"]+)"/g)].map((m) => m[1]);
   const groupIds = [...drilldownsHtml.matchAll(/<details class="category-group" id="([^"]+)"/g)].map((m) => m[1]);
 
   assert.ok(hrefIds.length > 0, 'expected at least one domain-bar link');
@@ -606,23 +606,41 @@ for (const [statementSource, tierAuthority, expectNote] of [
   });
 }
 
-test('a certKey or tierKey holding " and < is escaped in every href and id it builds', () => {
+test('a certKey or tierKey holding " and < is slugged in every href and id it builds', () => {
   // state.json is hand-editable, so its keys are untrusted text, not just validated framework keys.
   const state = baseState({ c1: makeControl({ id: 'e1-11-01' }) });
   const tier = state.certifications.hitrust.tiers.e1;
   state.certifications = { 'ev"il<cert': { displayName: 'Evil', activeTier: 't"<1', tiers: { 't"<1': tier } } };
 
   const { overviewHtml, drilldownsHtml } = renderClientSide(state);
-  const key = 'ev&quot;il&lt;cert-t&quot;&lt;1';
-  assert.ok(overviewHtml.includes(`href="#cat-${key}-11"`), 'domain-bar href must be escaped');
-  assert.ok(overviewHtml.includes(`href="#section-${key}"`), 'jump-link href must be escaped');
-  assert.ok(drilldownsHtml.includes(`id="cat-${key}-11"`), 'category id must be escaped');
-  assert.ok(drilldownsHtml.includes(`id="section-${key}"`), 'section id must be escaped');
+  const key = 'ev-il-cert_t-1';
+  assert.ok(overviewHtml.includes(`href="#cat_${key}_11"`), 'domain-bar href must be slugged');
+  assert.ok(overviewHtml.includes(`href="#section_${key}"`), 'jump-link href must be slugged');
+  assert.ok(drilldownsHtml.includes(`id="cat_${key}_11"`), 'category id must be slugged');
+  assert.ok(drilldownsHtml.includes(`id="section_${key}"`), 'section id must be slugged');
 
   const index = renderIndexClientSide(state, TEST_CATALOG).overviewHtml;
   assert.ok(index.includes('href="cert-ev-il-cert.html"'), 'index card href must be slugged');
 
   for (const html of [overviewHtml, drilldownsHtml, index]) {
     assert.ok(!html.includes('ev"il') && !html.includes('t"<'), 'no raw key may reach the markup');
+  }
+});
+
+test('two tier/domain pairs that join to the same hyphenated text still get distinct anchor ids', () => {
+  // Keys and slugs may hold hyphens, so joining them with "-" made tier "a" + domain "b-01"
+  // and tier "a-b" + domain "01" render the same id, and both jump-links opened the first.
+  const state = baseState({ c1: makeControl({ id: 'A-1', domainKey: 'b-01' }) });
+  const tierA = state.certifications.hitrust.tiers.e1;
+  const tierAB = Object.assign({}, tierA, { controls: { c2: makeControl({ id: 'AB-1', domainKey: '01' }) } });
+  state.certifications.hitrust.tiers = { a: tierA, 'a-b': tierAB };
+  state.certifications.hitrust.activeTier = 'a';
+
+  const { overviewHtml, drilldownsHtml } = renderClientSide(state);
+  const ids = [...drilldownsHtml.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(ids.length >= 4, `expected a group and a section id per tier, got ${JSON.stringify(ids)}`);
+  assert.equal(new Set(ids).size, ids.length, `anchor ids must be unique, got ${JSON.stringify(ids)}`);
+  for (const [, href] of overviewHtml.matchAll(/href="#([^"]+)"/g)) {
+    assert.ok(ids.includes(href), `link #${href} has no matching id`);
   }
 });
