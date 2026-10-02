@@ -1,8 +1,8 @@
 'use strict';
 
-// HITRUST-e1/MyCSF-specific by design, not incidental hardcoding: this reader targets the exact
-// slice of OOXML SpreadsheetML MyCSF's e1 export uses (see merge-import.js's parseE1Export call).
-// A future certification's import path is a new sibling module, not a generalization of this one.
+// Two layers. parseWorkbookSheet reads any workbook's first sheet into rows; the generic import
+// (skills/import/lib/convert-controls.js) uses it for any framework's controls list. parseE1Export
+// is MyCSF-e1-specific by design: it maps that export's exact column headers for merge-import.js.
 
 // Minimal, Node-stdlib-only (.xlsx is a standard ZIP container) reader for the small slice of
 // OOXML SpreadsheetML this plugin needs: shared strings + a single worksheet. No npm dependency.
