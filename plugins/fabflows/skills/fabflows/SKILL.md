@@ -107,7 +107,8 @@ verified and how afterwards. No log file: git records the edits.
 
 For a spec'd, sizeable change, `fabflows:build` runs an Opus `editor` that implements the
 spec and commits on the feature branch, then a fresh `refuter` (Opus by default) that reads
-the diff against the spec and re-runs the tests; REWORK sends the must-fix list to a fresh
+the diff against the spec and re-runs the tests; a round that sweeps callees reviews with two
+concurrent refuters, one on the spec and tests and one sweeping callees. REWORK sends the must-fix list to a fresh
 builder, up to two rework rounds. Offer it, or launch it when the session opened with
 `using-fabflows`. It never merges, pushes, or reverts.
 
