@@ -98,11 +98,11 @@ into CI yet. See the known gap in
 
 ## Migrating from 0.x
 
-1.0.0 drops the decision ledger. An existing `docs/decisions/` and
-`docs/DECISIONS.md` are no longer required, front-matter checked or link checked,
-and the `legacy-decisions` audit row warns until they are gone. Fold what still
-matters into `docs/CONVENTIONS.md`, one or two sentences beside each rule, and
-delete both when ready. Delete any `.docs-warden.yml` waiver for `adr-immutability`
+1.0.0 drops the decision ledger. An existing `docs/decisions/` folder is no longer
+required, front-matter checked or link checked, and the `legacy-decisions` audit row
+warns until it is gone. `docs/DECISIONS.md` is no longer required, but its links point
+into that folder, so delete the two together. Fold what still matters into
+`docs/CONVENTIONS.md`, one or two sentences beside each rule, first. Delete any `.docs-warden.yml` waiver for `adr-immutability`
 or `adr-index`: the `manifest` check fails a waiver naming an unknown check. Remove
 any CI step that runs `adr_index.py --check`; the script is gone.
 

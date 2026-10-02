@@ -96,10 +96,7 @@ def read_doc(path: Path):
 
 
 def parse_front_matter(text: str):
-    """Return (front_matter_dict, body) for already-read text. Split out of
-    read_front_matter so a blob out of git history is judged by exactly the
-    same parse as the file on disk -- a second, regex-based definition of
-    "what does this record's front matter say" is how the two drifted."""
+    """Return (front_matter_dict, body) for already-read text."""
     match = FRONT_MATTER_RE.match(text)
     if not match:
         return {}, text

@@ -127,7 +127,7 @@ a ref worth pinning to:
     ref: <release tag or commit sha>
     path: .docs-warden-src
 - run: pip install pyyaml==6.0.3
-- run: python3 .docs-warden-src/plugins/docs-warden/skills/docs-warden/scripts/audit.py . --run-generators
+- run: python3 .docs-warden-src/plugins/docs-warden/skills/docs-warden/scripts/audit.py .
 ```
 
 Pin to a tag or a full commit SHA, never a branch. `--run-generators` EXECUTES

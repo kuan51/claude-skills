@@ -209,8 +209,8 @@ containing one invalid case; excluding it, the other five positives were 10/15.
 Everything else here is a finding about the skill, not the suite. Two cases never fire.
 The since-removed record-typo case asked to fix a typo in an accepted 0.x record, and
 `readme-env-var-drift` asks to reconcile a README against the code. Both are requests to
-*modify* something that already exists, and every decision-related phrase the description
-lists is about *creating* a record. That is the gap worth closing in the skill, not in
+*modify* something that already exists, and the 0.x description listed only phrases about
+*creating* a record. That is the gap worth closing in the skill, not in
 this suite. Scaffolding, auditing and compliance-shaped prompts trigger reliably at 9/9.
 
 **Do not read the `turns` field as effort.** One inspected run reported `turns: 1`
