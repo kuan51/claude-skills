@@ -75,9 +75,9 @@ Three, each doing one job:
 - **markdownlint-cli2**: structure. Heading increments, no bare URLs, relaxed line
   length with tables and links exempt.
 - **Vale**: prose. House rules (`Clarity`) plus four off-the-shelf packages:
-  `Microsoft`, `write-good`, `proselint` and `ai-tells`. Generated documents and
-  `docs/DECISIONS.md` are excluded; linting a generated file just annoys the generator's
-  author. Decision records, run logs and changelogs keep the first three styles and skip
+  `Microsoft`, `write-good`, `proselint` and `ai-tells`. Generated documents
+  are excluded; linting a generated file just annoys the generator's author. Run logs
+  and changelogs keep the first three styles and skip
   `proselint` and `ai-tells`, because they are append-only and Vale lints the whole file.
   Front matter `title` and `description` are skipped everywhere: a skill's description
   decides when it triggers, so rewording it for a prose rule changes behavior.
@@ -108,9 +108,8 @@ in `.vale.ini` is what ties them together.
 
 `.pre-commit-config.yaml` runs the three linters locally, so prose, structure and
 link findings arrive before the push. **The generated-document checks do not run
-anywhere automatic.** `adr_index.py --check`, `freshness.py` and
-`audit.py --run-generators` are the half that actually catches drift, and today a
-human has to run them.
+anywhere automatic.** `freshness.py` and `audit.py --run-generators` are the half
+that actually catches drift, and today a human has to run them.
 
 That is a real hole in the idea this file is built on, so it is written down rather
 than papered over: a generated document can go stale between one manual audit and
@@ -128,7 +127,7 @@ a ref worth pinning to:
     ref: <release tag or commit sha>
     path: .docs-warden-src
 - run: pip install pyyaml==6.0.3
-- run: python3 .docs-warden-src/plugins/docs-warden/skills/docs-warden/scripts/adr_index.py . --check
+- run: python3 .docs-warden-src/plugins/docs-warden/skills/docs-warden/scripts/audit.py . --run-generators
 ```
 
 Pin to a tag or a full commit SHA, never a branch. `--run-generators` EXECUTES
@@ -137,9 +136,8 @@ the event: true for a push or a same-repo pull request, false for a fork PR, who
 head is not trusted.
 
 Ordering, when that workflow exists: markdownlint, then vale at warning level
-(non-blocking at first), then lychee, then `adr_index.py --check` failing on a diff,
-then `freshness.py`, then `audit.py --run-generators` writing `docs-scorecard.json`
-as an artifact.
+(non-blocking at first), then lychee, then `freshness.py`, then
+`audit.py --run-generators` writing `docs-scorecard.json` as an artifact.
 
 The scorecard artifact is what makes the cross-repo view possible: collect it from
 every repo and you have one table showing which repos are actually maintained.

@@ -86,8 +86,8 @@ against live systems and flash runs: actions git cannot see. `library` and
 actions by design, and a manual one belongs in the incident tracker. A repo of
 any archetype that wants a log lists `docs/RUNLOG.md` in `extra_files`, and it
 is then required and checked the same way. Elsewhere, `freshness.py` warns once
-that the file is not required: its contents belong in the PR description or a
-decision record.
+that the file is not required: its contents belong in the PR description or
+beside the rule in `docs/CONVENTIONS.md`.
 
 Append-only. The narrowest scope of any file here, and the one most often abused.
 

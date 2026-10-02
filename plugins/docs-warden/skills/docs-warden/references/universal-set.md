@@ -45,29 +45,13 @@ section is longer than a screen, it belongs in `docs/` with a link from here.
 ## docs/CONVENTIONS.md
 
 **Current state only.** Edited in place as the standard changes. It answers "how do
-we do things here today," never "how did we get here." That is what decision
-records are for. A dated entry in `docs/CONVENTIONS.md` is a bug.
+we do things here today," never "how did we get here." Each rule may carry one or
+two sentences on why it is the rule today; how it got there lives in git history
+and the pull request. A dated entry in `docs/CONVENTIONS.md` is a bug.
 
 Sections: stack and versions plus repository layout, branch and commit rules, naming,
 testing expectations, documentation rules, and the list of generated files with the
 command that regenerates each.
-
-## docs/decisions/DEC-NNNN-slug.md
-
-Each decision gets one file, immutable once accepted. Specified in `adr-format.md`.
-
-Alongside them, `adr_index.py` writes a generated `docs/decisions/README.md`: a
-heading, one sentence, and a link up to the index. It is a signpost for anyone
-browsing the folder, not a second copy of the table.
-
-At 50 decided records, `adr_compact.py` moves the 25 oldest unchanged into
-`docs/decisions/archive/` and writes one digest record in their place; see
-`adr-format.md`, "Compaction."
-
-## docs/DECISIONS.md
-
-**Generated** by `adr_index.py`. First line is the generated marker. The audit
-regenerates it and fails on a non-empty diff, so a hand edit is always caught.
 
 ## docs/GLOSSARY.md
 
