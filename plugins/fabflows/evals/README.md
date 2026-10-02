@@ -1,9 +1,10 @@
 # fabflows benchmark
 
 Measures what a fabflows-led session costs against a plain session, and against a session
-with the superpowers plugin (obra/superpowers), on the same tasks, with tokens attributed to the lead and to each worker type by model. It exists because DEC-0004,
-DEC-0012 and DEC-0013 each accepted the same gap: every tier, effort pin and cost claim in
-this plugin rested on list-price arithmetic, and nothing measured it.
+with the superpowers plugin (obra/superpowers), on the same tasks, with tokens attributed to the lead and to each worker type by model. It exists because every tier,
+effort pin and cost claim in the plugin README's [The build loop](../README.md#the-build-loop)
+and [Long sessions](../README.md#long-sessions) rested on list-price arithmetic, and nothing
+measured it.
 
 **This is on-demand tooling, not a test.** Each run is a fresh headless `claude -p` lead
 session (Fable by default) that spends real tokens. It never runs under `node --test`. What
@@ -178,8 +179,8 @@ several events that repeat its usage) and reports:
 | 1 | `wide-search` | explorer (Haiku) | Every `plugins/*/agents/*.md` named. Correct model per pinned agent, as `path:line`. Every unpinned agent flagged. No invented files. Repo unchanged. |
 | 2 | `scoped-edit` | editor (Sonnet) + gate | Guard tests pass. Exactly `guard.js` and `guard.test.js` changed. `guard.js` really denies `pipx install black` and still allows `pipx run`. |
 | 3 | `write-tests` | test-runner (Sonnet) | New `*.test.js` under `plugins/fabflows/test/`. Suite passes. Nothing outside that directory changed. The test covers the cases the prompt names. |
-| 4 | `short-chain` | none (DEC-0004 predicts inline wins) | Both manifests read `0.3.7`. Marketplace test passes. Exactly two files changed. |
-| 5 | `deep-read` | explorer, volume: 13 decision records, ~60k chars of prose | Every record listed with its id, title, status and chosen option (from frontmatter and the outcome section). A 20+ word row each. No invented id. Repo unchanged. |
+| 4 | `short-chain` | none ([Long sessions](../README.md#long-sessions) predicts inline wins) | Both manifests read `0.3.7`. Marketplace test passes. Exactly two files changed. |
+| 5 | `deep-read` | explorer, volume: 13 records at the pinned commit, ~60k chars of prose | Every record listed with its id, title, status and chosen option (from frontmatter and the outcome section). A 20+ word row each. No invented id. Repo unchanged. |
 | 6 | `triage-failures` | test-runner, volume: a ~200-line suite log with 3 planted failures | Every failing test and file named (truth from a TAP re-run). No invented or falsely failing file. Repo unchanged. The breaks are applied and committed by the task's `setup` before the session starts. |
 | 7 | `build-component` | `fabflows:build` (a spec'd, sizeable change) | A greenfield project (`fixtures/dep-resolver/visible`: a spec for a semver range parser, a flat backtracking resolver and a CLI, plus `package.json`). Graded by a hidden 41-test acceptance suite (`fixtures/dep-resolver/hidden`) run against the fixture at grade time, plus: `npm test` passes, the tree is clean and committed, no dependency added, every launched workflow finished. Caps 200 turns, $60, 120 min. |
 | 8 | `review-catch` | `fabflows:build` loop arm against the same lead working alone (`inline` arm, `Agent` and `Workflow` removed), `repeats: 5` | A brownfield fixture (`fixtures/lockstep-outdated/visible`: a `lockstep` library with `resolve` and `check`, plus a spec for `lockstep outdated`) with a planted defect the spec never names: `caret()` admits the next minor under a caret on a zero major. Graded by a hidden suite (`fixtures/lockstep-outdated/hidden`) whose `caret-on-zero` tests fail on the fixture as given, plus two informational rows read from the build loop's journal: whether the review's must-fix cites the defect and whether the build round left it in. Caps 120 turns, $15, 30 min. |
@@ -334,7 +335,7 @@ still applies to the agents at `45978ed`.
 ## Fixtures are blind
 
 A fixture never carries the benchmark: no `tasks.json`, no graders, no
-RESULTS.md, no run-log entries or decision records about it, and no hint in the prompt about
+RESULTS.md, no run-log entries or recorded decisions about it, and no hint in the prompt about
 delegation or the build loop. These fixture kinds do that (`fixture` in `tasks.json`, top-level
 default and per-task override):
 
@@ -380,7 +381,7 @@ wall-clock kill. Without `--confirm` the runner prints the matrix and exits.
 ## When to re-run
 
 After a tier or effort change, after trimming the skill prose, before a version bump that
-touches routing, and whenever a decision record wants a number instead of arithmetic.
+touches routing, and whenever a stated reason in the README wants a number instead of arithmetic.
 
 ## Limitations and Windows notes
 
