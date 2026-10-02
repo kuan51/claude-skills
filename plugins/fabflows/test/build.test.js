@@ -173,6 +173,9 @@ test('an invalid or missing head makes the next round judge the whole diff as ro
     assert.equal(sweepCalls.length, 2, `round 2 sweeps again: ${JSON.stringify(head)}`);
     assert.equal(sweepCalls[1].opts.label, 'review:2:sweep');
     assert.match(sweepCalls[1].prompt, SWEEP);
+    // refuter.md sweeps a later round only when its brief says the boundary is unknown.
+    assert.match(sweepCalls[1].prompt, /the boundary is unknown/, 'a later sweep lens says why it sweeps');
+    assert.doesNotMatch(sweepCalls[0].prompt, /the boundary is unknown/, 'round 1 needs no reason');
     assert.match(brief, PER_ITEM);
     assert.doesNotMatch(brief, /limited to/);
     assert.equal(brief.match(/git diff [^`]*\.\.HEAD/g).length, 1, `only the baseRef diff: ${JSON.stringify(head)}`);

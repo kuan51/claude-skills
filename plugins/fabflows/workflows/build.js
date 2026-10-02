@@ -198,7 +198,7 @@ function reviewBrief(round, lens) {
 // leave transient files.
 function sweepBrief(round) {
   return [
-    `**Objective:** Find out whether a function the change on \`${a.branch}\` since \`${a.baseRef}\` calls but does not change gives a wrong result the change now depends on. This is review round ${round}. Another reviewer checks the diff against the spec and runs the tests at the same time: your only job is the callee sweep.`,
+    `**Objective:** Find out whether a function the change on \`${a.branch}\` since \`${a.baseRef}\` calls but does not change gives a wrong result the change now depends on. This is review round ${round}.${round > 1 ? ' The previous review recorded no valid head, so the boundary is unknown: sweep the whole diff as round 1 does.' : ''} Another reviewer checks the diff against the spec and runs the tests at the same time: your only job is the callee sweep.`,
     '',
     '<spec>',
     a.spec,
