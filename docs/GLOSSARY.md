@@ -9,7 +9,7 @@ generated: false
 One word, one meaning: the `Do not use` column is what makes this enforceable
 rather than decorative, because it becomes the Vale reject list.
 
-Seeded by hand. The `ontological-documentation` skill's extractor now ships with
+Seeded by hand. The `ontological-documentation` skill's extractor now comes with
 docs-warden, and running it over this repository returns two domain concepts: one
 PowerShell noun inside a test fixture, and one class in the extractor itself. Both
 are code-structure entities, not this repository's vocabulary, so there is still

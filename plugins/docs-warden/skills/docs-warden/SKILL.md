@@ -133,7 +133,7 @@ documented behavior.
 
 ### `decide` (write the why)
 
-Triggered by "record a decision" or "why did we choose".
+Triggered when a request says "record a decision" or "why did we choose" something.
 
 - **Record a decision:** add one or two sentences of reasoning beside the rule in
   `docs/CONVENTIONS.md`, or in arc42 section 9 when it shapes the whole system.

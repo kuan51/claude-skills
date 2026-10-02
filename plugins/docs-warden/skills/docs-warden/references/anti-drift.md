@@ -76,7 +76,7 @@ Three, each doing one job:
   length with tables and links exempt.
 - **Vale**: prose. House rules (`Clarity`) plus four off-the-shelf packages:
   `Microsoft`, `write-good`, `proselint` and `ai-tells`. Generated documents
-  are excluded; linting a generated file just annoys the generator's author. Run logs
+  are excluded. Linting a generated file just annoys the generator's author. Run logs
   and changelogs keep the first three styles and skip
   `proselint` and `ai-tells`, because they are append-only and Vale lints the whole file.
   Front matter `title` and `description` are skipped everywhere: a skill's description

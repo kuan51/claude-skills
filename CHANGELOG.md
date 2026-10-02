@@ -244,7 +244,7 @@ per-plugin history until entries are recorded here going forward.
   the `adr-immutability` and `adr-index` audit checks, and `docs/DECISIONS.md` from the required
   set. A leftover `docs/decisions/` is skipped by the front-matter and link checks, still scanned
   for PHI and secrets, and flagged by a new `legacy-decisions` warn. A waiver naming a removed
-  check now fails `manifest`; delete it. See the plugin README's "Migrating from 0.x".
+  check now fails `manifest`; delete it. See "Migrating from 0.x" in the plugin README.
 - **data-analysis 1.0.0 (breaking)** -- `data-analysis-review` is renamed `data-analysis`, and
   its skill is now `data-analysis:review`, so the plugin can host a second skill (#105). Run
   `/plugin uninstall data-analysis-review`, then `/plugin install data-analysis`. Review's

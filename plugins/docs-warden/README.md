@@ -35,7 +35,7 @@ they rot.
 - **`maintain`**: find documents that drifted from changed code and propose edits.
 - **`decide`**: write the why. "Record a decision" adds one or two sentences of
   reasoning beside the rule in `docs/CONVENTIONS.md`, or in arc42 section 9 when it
-  shapes the whole system; anything smaller goes in the pull request. "Why did we
+  shapes the whole system. Anything smaller goes in the pull request. "Why did we
   choose X" reads the docs, then `git log` and the pull request, and answers without
   writing anything unless asked.
 
@@ -104,7 +104,7 @@ warns until it is gone. `docs/DECISIONS.md` is no longer required, but its links
 into that folder, so delete the two together. Fold what still matters into
 `docs/CONVENTIONS.md`, one or two sentences beside each rule, first. Delete any `.docs-warden.yml` waiver for `adr-immutability`
 or `adr-index`: the `manifest` check fails a waiver naming an unknown check. Remove
-any CI step that runs `adr_index.py --check`; the script is gone.
+any CI step that runs `adr_index.py --check`. The script is gone.
 
 ## Tests
 
