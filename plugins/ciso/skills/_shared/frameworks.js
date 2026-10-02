@@ -28,7 +28,7 @@ const BUNDLED_ROOT = path.join(__dirname, '..', '..', 'frameworks');
 // `hitrust-` would otherwise share cert-hitrust.html with `hitrust`.
 const KEY_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const VERSION_RE = /^v[A-Za-z0-9.-]+$/;
-const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'imported'];
+const SOURCE_AUTHORITIES = ['public-topic-level', 'publisher-verbatim', 'imported', 'paraphrased'];
 const CONTROL_STRINGS = ['domain', 'domainKey', 'topicLabel', 'topicSummary'];
 const STRUCTURE_SUFFIX = '.structure.json';
 // id and domainKey reach shell commands in the generic flows, so only characters that are inert

@@ -79,6 +79,7 @@ What each `sourceAuthority` value makes ciso do:
 |---|---|---|---|
 | `public-topic-level` | You wrote every label and summary yourself from public sources. | A "non-authoritative" banner on the tier, and a "a paraphrase" note under each `topicSummary`. | Send the control's subject, wording included. |
 | `publisher-verbatim` | The wording is the publisher's own, and the publisher permits copying it (US Government works, for instance). | No banner, no paraphrase note. | Send the control's subject, wording included. |
+| `paraphrased` | You wrote the labels and summaries in your own words from a standard whose terms of use permit derivative works. `ciso:import`'s shareable mode writes this. | A "non-authoritative" banner on the tier, and the paraphrase note under each `topicSummary`. | Send the control's subject, wording included. |
 | `imported` | The file holds licensed wording, copied from your organization's own licensed copy of the standard. Never allowed in a bundled framework. | No banner, no paraphrase note. | Vendor research gets **only codes**: `id`, `relatedControlCode`, `legacyCategoryPrefix` and `domainKey`, each a plain token. Task sync sends neither `topicLabel` nor `topicSummary`. Licensed wording, names and domains included, stays on your machine. |
 
 ### Check it

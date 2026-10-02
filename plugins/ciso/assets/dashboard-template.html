@@ -849,6 +849,8 @@ const CISO_DATA = /*__CISO_DATA__*/null;
       // Certification-agnostic on purpose: this banner keys off sourceAuthority, which every
       // topic-level module sets, so naming one publisher's catalog mis-advises the others.
       html += '<div class="non-auth-banner">Non-authoritative: topic-level structure compiled from public sources, not the publisher\'s own catalog. Consult the authoritative control set and your assessor or auditor for exact scope and wording before relying on this for a real assessment.</div>';
+    } else if (tier.sourceAuthority === 'paraphrased') {
+      html += '<div class="non-auth-banner">Non-authoritative: labels and summaries written in your organization\'s own words from the standard, not the publisher\'s wording. Consult the authoritative standard and your assessor or auditor for exact scope and wording before relying on this for a real assessment.</div>';
     }
 
     html += '<div class="gauge"><div class="gauge-label"><span>Compliance</span><b>' + rollupSafe.compliancePercent + '%</b></div>';

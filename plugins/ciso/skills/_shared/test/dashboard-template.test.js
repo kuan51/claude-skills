@@ -594,6 +594,7 @@ for (const [statementSource, tierAuthority, expectNote] of [
   ['structural-only', 'structural-only', true],
   ['publisher-verbatim', 'publisher-verbatim', false],
   ['imported', 'imported', false],
+  ['paraphrased', 'paraphrased', true],
 ]) {
   test(`the "a paraphrase" note ${expectNote ? 'appears' : 'does not appear'} for a ${statementSource} control (tier: ${tierAuthority})`, () => {
     const state = baseState({
@@ -603,6 +604,18 @@ for (const [statementSource, tierAuthority, expectNote] of [
     const { drilldownsHtml } = renderClientSide(state);
     assert.ok(drilldownsHtml.includes('The summary text.'));
     assert.equal(drilldownsHtml.includes('a paraphrase, not the publisher'), expectNote);
+  });
+}
+
+for (const [authority, banner] of [
+  ['public-topic-level', 'compiled from public sources'],
+  ['paraphrased', 'written in your organization\'s own words'],
+]) {
+  test(`a ${authority} tier gets its non-authoritative banner`, () => {
+    const state = baseState({ c1: makeControl({ id: 'X-1' }) });
+    state.certifications.hitrust.tiers.e1.sourceAuthority = authority;
+    const { overviewHtml, drilldownsHtml } = renderClientSide(state);
+    assert.ok((overviewHtml + drilldownsHtml).includes(banner));
   });
 }
 

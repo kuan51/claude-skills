@@ -65,6 +65,12 @@ test('an imported project tier may carry verbatim statementText', () => {
   assert.deepEqual(validateFramework(dir, 'project'), []);
 });
 
+test('a project tier may be paraphrased', () => {
+  const dir = copyExample();
+  editJson(path.join(dir, STRUCTURE), (s) => { s.sourceAuthority = 'paraphrased'; });
+  assert.deepEqual(validateFramework(dir, 'project'), []);
+});
+
 test('every bundled framework has a non-empty ground-rules.md, from the folder listing', () => {
   for (const dir of bundledDirs) {
     const rules = path.join(dir, 'ground-rules.md');
