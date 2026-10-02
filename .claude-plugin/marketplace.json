@@ -8,7 +8,7 @@
     {
       "name": "data-analysis",
       "description": "Two skills for a data science project's raw data. review re-derives findings from the raw data and code, then checks whether the project's stated conclusions hold up and lists what the data supports that the project never claimed. discover starts from a business decision, its metric and a baseline, and rates the patterns the data supports without claiming causes. All analysis, including code execution, runs on a disposable copy of the project, so the original is never modified.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "source": "./plugins/data-analysis",
       "author": {
         "name": "claude-skills"

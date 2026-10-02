@@ -69,7 +69,9 @@ whether to save the report before any analysis runs.
 - **Never modifies the reviewed project.** All analysis, including any code execution,
   runs against a disposable copy made before analysis starts. The analysis engine refuses to run
   if any path it is given lies outside that copy. The only possible write to your actual project is
-  one optional report file, and only if you opt in.
+  one optional report file, and only if you opt in. The copy is enforced twice. The skill
+  rewrites every path into the copy, and the workflow refuses any path outside it, so a missed
+  rewrite fails as an error instead of writing to the project.
 - **Genuinely independent.** The reviewers never see the project's own conclusions until after
   their own findings are locked in. Each notebook is split first: the reviewers get only its code
   cells, and the untouched notebook is kept outside their copy of the project. The engine refuses
