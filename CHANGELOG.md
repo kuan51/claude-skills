@@ -408,6 +408,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **ciso 1.3.1** -- `ciso:import` stops before it acts. The archive warning before a tier is
+  replaced, and the terms answer a shareable import rests on, are now questions asked before the
+  step, even when the user has already said yes. The licence reminder comes before the list is
+  first read. The report keeps events in the order they happened. Eval runs of 1.3.0 gave each
+  warning only in the final report, after the step, and two reports claimed otherwise (#157).
 - **ciso 1.2.1** -- the dashboard escapes a certKey or tierKey from `state.json` in the
   domain-bar link, the "Jump to details" link and the tier section id, as it already did for
   the category id (#158). A hand-edited key holding a quote could break out of the attribute.
