@@ -255,7 +255,10 @@ inside a `<must-fix>` fence labelled as data, with fence tags stripped, because 
 files the reviewer read and the builder must not obey text quoted inside them.
 `git status --porcelain` must print nothing before the builder reports done, and the reviewer
 counts every printed path as must-fix, because the workflow has no shell and the diff cannot
-show uncommitted files. A build that throws is resumed with `resumeFromRunId`, not caught
+show uncommitted files. The reviewer checks the tree before it runs the tests, because a test's
+transient files would otherwise count as must-fix. It starts the tests in the background and reads
+the diff while they run, to shorten the review. It never returns before the tests finish, and
+answers BLOCKED when it never sees them finish. A build that throws is resumed with `resumeFromRunId`, not caught
 inside the script, because git, the args and the run journal already hold its history, and a
 resume carries on where a catch would end it.
 
