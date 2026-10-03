@@ -15,9 +15,9 @@ per-plugin history until entries are recorded here going forward.
   the loop at 396 s and $2.53 a run against 490 s and $2.61 for 0.15.1, quality 8 of 8, but the
   round-1 review it targets moved only from 200 s to 191 s, within noise: most of the gap is in
   other stages. Details in `plugins/fabflows/evals/RESULTS.md`. The sweep lens runs on Sonnet 5.5
-  at high effort (#181), half Opus 5.5's per-token price; the spec lens and a later round's single
-  reviewer keep `reviewerModel` (Opus by default) at xhigh, and `reviewerModel` no longer reaches
-  the sweep lens. Iteration 11 measured it against the Opus-xhigh sweep: round-1 review 90 s
+  at high effort (#181), half Opus 5.5's per-token price; the spec lens keeps `reviewerModel` (Opus
+  by default) at xhigh, a later round's single reviewer keeps it at high (#182), and
+  `reviewerModel` no longer reaches the sweep lens. Iteration 11 measured it against the Opus-xhigh sweep: round-1 review 90 s
   against 162 s, $1.91 a run against $2.38, quality 8 of 8. Opus at medium effort also passed but
   trailed on every measure; a Haiku sweep missed the planted defect in 8 of 8 runs.
 
