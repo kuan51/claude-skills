@@ -544,5 +544,341 @@
    "Bash": 3,
    "Workflow": 1
   }
+ },
+ {
+  "task": "review-catch",
+  "arm": "sweep-sonnet-high",
+  "run": "run-1",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.16.0",
+   "treeSha256": "d064c21cb140bd6374e858a96056ac9bc05e0280ec7eed5c7d989b776a8ae583"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 14,
+  "lead_out": 5016,
+  "lead_think": 273,
+  "lead_msgs": 11,
+  "lead_cache_read": 352883,
+  "lead_cache_write": 31362,
+  "first_ctx": 23437,
+  "final_ctx": 44754,
+  "worker_out": 30231,
+  "worker_in": 614532,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 3
+  },
+  "spawns": 5,
+  "cache_write_1h": 31362,
+  "cache_write_5m": 84384,
+  "skill_chars": 11059,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 1.9323664500000006,
+  "sec": 286.505,
+  "verification_runs": 1,
+  "hook_payloads": 61,
+  "tools": {
+   "Skill": 2,
+   "Read": 1,
+   "Bash": 6,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "sweep-sonnet-high",
+  "run": "run-2",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.16.0",
+   "treeSha256": "d064c21cb140bd6374e858a96056ac9bc05e0280ec7eed5c7d989b776a8ae583"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 13,
+  "lead_out": 4941,
+  "lead_think": 529,
+  "lead_msgs": 9,
+  "lead_cache_read": 272124,
+  "lead_cache_write": 32153,
+  "first_ctx": 23437,
+  "final_ctx": 45545,
+  "worker_out": 31117,
+  "worker_in": 606728,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 3
+  },
+  "spawns": 5,
+  "cache_write_1h": 32153,
+  "cache_write_5m": 81012,
+  "skill_chars": 11059,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 1.9383296000000003,
+  "sec": 293.368,
+  "verification_runs": 1,
+  "hook_payloads": 58,
+  "tools": {
+   "Skill": 2,
+   "Read": 1,
+   "Bash": 5,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "sweep-sonnet-high",
+  "run": "run-3",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.16.0",
+   "treeSha256": "d064c21cb140bd6374e858a96056ac9bc05e0280ec7eed5c7d989b776a8ae583"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 12,
+  "lead_out": 4304,
+  "lead_think": 264,
+  "lead_msgs": 9,
+  "lead_cache_read": 268397,
+  "lead_cache_write": 31404,
+  "first_ctx": 23438,
+  "final_ctx": 44796,
+  "worker_out": 26665,
+  "worker_in": 461297,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 3
+  },
+  "spawns": 5,
+  "cache_write_1h": 31404,
+  "cache_write_5m": 65427,
+  "skill_chars": 11059,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 1.7060902500000006,
+  "sec": 227.625,
+  "verification_runs": 1,
+  "hook_payloads": 54,
+  "tools": {
+   "Skill": 2,
+   "Read": 1,
+   "Bash": 4,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "sweep-sonnet-high",
+  "run": "run-4",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.16.0",
+   "treeSha256": "d064c21cb140bd6374e858a96056ac9bc05e0280ec7eed5c7d989b776a8ae583"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 17,
+  "lead_out": 5106,
+  "lead_think": 262,
+  "lead_msgs": 12,
+  "lead_cache_read": 386048,
+  "lead_cache_write": 33073,
+  "first_ctx": 23437,
+  "final_ctx": 46465,
+  "worker_out": 24241,
+  "worker_in": 631797,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 3
+  },
+  "spawns": 5,
+  "cache_write_1h": 33073,
+  "cache_write_5m": 70229,
+  "skill_chars": 11059,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 1.8468167,
+  "sec": 261.116,
+  "verification_runs": 1,
+  "hook_payloads": 59,
+  "tools": {
+   "Skill": 3,
+   "Read": 1,
+   "Bash": 7,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "sweep-sonnet-high",
+  "run": "run-5",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.16.0",
+   "treeSha256": "d064c21cb140bd6374e858a96056ac9bc05e0280ec7eed5c7d989b776a8ae583"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 14,
+  "lead_out": 4457,
+  "lead_think": 38,
+  "lead_msgs": 10,
+  "lead_cache_read": 308748,
+  "lead_cache_write": 32623,
+  "first_ctx": 23437,
+  "final_ctx": 46015,
+  "worker_out": 30290,
+  "worker_in": 619257,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 3
+  },
+  "spawns": 5,
+  "cache_write_1h": 32623,
+  "cache_write_5m": 78803,
+  "skill_chars": 11059,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 1.9201598,
+  "sec": 286.729,
+  "verification_runs": 1,
+  "hook_payloads": 57,
+  "tools": {
+   "Skill": 2,
+   "Read": 1,
+   "Bash": 6,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "sweep-sonnet-high",
+  "run": "run-6",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.16.0",
+   "treeSha256": "d064c21cb140bd6374e858a96056ac9bc05e0280ec7eed5c7d989b776a8ae583"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 13,
+  "lead_out": 4415,
+  "lead_think": 296,
+  "lead_msgs": 9,
+  "lead_cache_read": 270359,
+  "lead_cache_write": 31041,
+  "first_ctx": 23436,
+  "final_ctx": 44433,
+  "worker_out": 30777,
+  "worker_in": 620655,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 3
+  },
+  "spawns": 5,
+  "cache_write_1h": 31041,
+  "cache_write_5m": 76673,
+  "skill_chars": 11059,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 1.867122249999999,
+  "sec": 270.606,
+  "verification_runs": 1,
+  "hook_payloads": 56,
+  "tools": {
+   "Skill": 2,
+   "Read": 1,
+   "Bash": 5,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "sweep-sonnet-high",
+  "run": "run-7",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.16.0",
+   "treeSha256": "d064c21cb140bd6374e858a96056ac9bc05e0280ec7eed5c7d989b776a8ae583"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 17,
+  "lead_out": 4173,
+  "lead_think": 295,
+  "lead_msgs": 12,
+  "lead_cache_read": 379825,
+  "lead_cache_write": 33431,
+  "first_ctx": 23438,
+  "final_ctx": 46823,
+  "worker_out": 37147,
+  "worker_in": 860497,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 3
+  },
+  "spawns": 5,
+  "cache_write_1h": 33431,
+  "cache_write_5m": 93665,
+  "skill_chars": 11059,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 2.162919949999999,
+  "sec": 322.504,
+  "verification_runs": 1,
+  "hook_payloads": 69,
+  "tools": {
+   "Skill": 3,
+   "Read": 1,
+   "Bash": 7,
+   "Workflow": 1
+  }
+ },
+ {
+  "task": "review-catch",
+  "arm": "sweep-sonnet-high",
+  "run": "run-8",
+  "plugin": {
+   "name": "fabflows",
+   "version": "0.16.0",
+   "treeSha256": "d064c21cb140bd6374e858a96056ac9bc05e0280ec7eed5c7d989b776a8ae583"
+  },
+  "quality": 1,
+  "denials": 0,
+  "turns": 16,
+  "lead_out": 4778,
+  "lead_think": 302,
+  "lead_msgs": 11,
+  "lead_cache_read": 337604,
+  "lead_cache_write": 31879,
+  "first_ctx": 23437,
+  "final_ctx": 45271,
+  "worker_out": 31149,
+  "worker_in": 633256,
+  "workers": {
+   "fabflows:editor": 2,
+   "fabflows:refuter": 3
+  },
+  "spawns": 5,
+  "cache_write_1h": 31879,
+  "cache_write_5m": 82100,
+  "skill_chars": 11059,
+  "hook_chars": 0,
+  "synced_plugin_count": 0,
+  "cost": 1.9414181999999998,
+  "sec": 301.422,
+  "verification_runs": 1,
+  "hook_payloads": 59,
+  "tools": {
+   "Skill": 3,
+   "Read": 2,
+   "Bash": 5,
+   "Workflow": 1
+  }
  }
 ]
