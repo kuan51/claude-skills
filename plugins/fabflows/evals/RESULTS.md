@@ -1826,12 +1826,15 @@ for Opus-medium and $12.9782 for Haiku.
 
 ```bash
 git archive 334b851 plugins/fabflows | tar -x -C <scratch>/control10
+git archive 16f06a4 plugins/fabflows | tar -x -C <scratch>/sweep
 node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir <scratch>/control10/plugins/fabflows --config-name control-334b851 --repeats 5 --confirm
 node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/sweep-haiku --config-name sweep-haiku --repeats 8 --confirm
-node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name sweep-sonnet-high --repeats 8 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir <scratch>/sweep/plugins/fabflows --config-name sweep-sonnet-high --repeats 8 --confirm
 node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/sweep-opus-medium --config-name sweep-opus-medium --repeats 8 --confirm
 (cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-11 --skill-name fabflows)
 ```
 
 The two snapshots are staged with the `patch -p3` recipe under Skill variants in
-`evals/README.md`.
+`evals/README.md`, copying from `<scratch>/sweep/plugins/fabflows`, which is #181 as built at `16f06a4`, not from
+`plugins/fabflows`. The merge of #182 rewrote the lines the patches change, so they no longer apply to
+later commits, and `sweep-sonnet-high` is that same tree unpatched.
