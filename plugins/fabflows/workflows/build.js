@@ -1,6 +1,6 @@
 export const meta = {
   name: 'build',
-  description: "Build one spec'd change on a feature branch: an Opus builder implements and commits, a fresh reviewer returns ACCEPT or REWORK, and rework is capped",
+  description: "Build one spec'd change on a feature branch: an Opus builder implements and commits, fresh reviewers return ACCEPT or REWORK, and rework is capped",
   whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef, testCommand, and optionally reviewerModel (Opus by default; the sweep lens always runs on Sonnet at high effort). The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
   phases: [
     { title: 'Build', detail: 'fabflows:editor on Opus implements the spec and commits to the branch' },
