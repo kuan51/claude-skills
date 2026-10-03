@@ -1450,7 +1450,7 @@ node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/ite
 python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-8 <skill-creator> <abs>/runs/iteration-8/notes.json
 ```
 
-## Iteration 9: two concurrent reviewers in a sweeping round
+## Iteration 10: two concurrent reviewers in a sweeping round
 
 Tracked in [#176](https://github.com/kuan51/claude-skills/issues/176). A change cannot be reviewed
 before it is built, but a review round that sweeps callees does two independent jobs in one
@@ -1458,7 +1458,7 @@ agent: it checks the diff against the spec with the tests, and it sweeps the fun
 calls. This iteration asks whether running those jobs as two reviewers at once makes the build
 loop faster without costing much more.
 
-The data is in `runs/iteration-9/`: `cells.json` has one row per run, and `benchmark.json` and
+The data is in `runs/iteration-10/`: `cells.json` has one row per run, and `benchmark.json` and
 `benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
 
 ### Prior
@@ -1548,7 +1548,7 @@ came from each run's `metrics.json`.
 
 ```bash
 node -e '
-const fs=require("fs"),p=require("path"),I="plugins/fabflows/evals/runs/iteration-9/eval-8-review-catch";
+const fs=require("fs"),p=require("path"),I="plugins/fabflows/evals/runs/iteration-10/eval-8-review-catch";
 for(const C of ["control-0.15.1","review-split"])for(const r of fs.readdirSync(p.join(I,C)).sort()){const d=p.join(I,C,r);
 const e=JSON.parse(fs.readFileSync(p.join(d,"grading.json"))).expectations,row=(t)=>e.find((x)=>x.text.startsWith(t))||{};
 let s="none";for(const l of fs.readFileSync(p.join(d,"transcript.jsonl"),"utf8").split("\n")){if(!l.includes("task_notification"))continue;const q=JSON.parse(l);if(q.output_file)try{s=JSON.parse(fs.readFileSync(q.output_file)).result.status}catch{}}
@@ -1592,25 +1592,25 @@ its cost was not recorded.
 
 ```bash
 git archive 08f2095 plugins/fabflows | tar -x -C <scratch>/control
-node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --plugin-dir <scratch>/control/plugins/fabflows --config-name control-0.15.1 --repeats 5 --confirm
-node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name review-split --repeats 8 --confirm
-(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-9 --skill-name fabflows)
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir <scratch>/control/plugins/fabflows --config-name control-0.15.1 --repeats 5 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name review-split --repeats 8 --confirm
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-10 --skill-name fabflows)
 ```
 
-## Iteration 10: the sweep lens on a cheaper model
+## Iteration 11: the sweep lens on a cheaper model
 
-Tracked in [#181](https://github.com/kuan51/claude-skills/issues/181). Iteration 9 showed the sweep
+Tracked in [#181](https://github.com/kuan51/claude-skills/issues/181). Iteration 10 showed the sweep
 lens was round 1's slowest step, about 191 s on Opus at xhigh effort against about 108 s for the
 spec lens. Its job is narrow: list the cases of each function the diff calls but does not change,
 and probe one input per case. This iteration asks whether a cheaper model at lower effort can do
 that job as well, and faster.
 
-The data is in `runs/iteration-10/`: `cells.json` has one row per run, and `benchmark.json` and
+The data is in `runs/iteration-11/`: `cells.json` has one row per run, and `benchmark.json` and
 `benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
 
 ### Prior
 
-Iteration 9's split kept quality at 8 of 8. Its sweep lens took about as long as the single
+Iteration 10's split kept quality at 8 of 8. Its sweep lens took about as long as the single
 reviewer it replaced, and the sweep's first probe came 78 to 152 s into the agent, so about half
 its time went to reading before probing.
 
@@ -1696,7 +1696,7 @@ Round-1 review is the slower lens, from each run's `metrics.json` per-agent `dur
 ### Verdict
 
 `sweep-sonnet-high` passes #181's bar and ships as built, per the spec's decision rule. Computed
-from `plugins/fabflows/evals/runs` with a script that applies the iteration 9 snippet's checks
+from `plugins/fabflows/evals/runs` with a script that applies the iteration 10 snippet's checks
 per arm, adds the per-agent model check and compares means with their standard error:
 
 | Bar, against the control | Sonnet-high | Opus-medium | Haiku |
@@ -1727,11 +1727,11 @@ for Opus-medium and $12.9782 for Haiku.
 
 ```bash
 git archive 334b851 plugins/fabflows | tar -x -C <scratch>/control10
-node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir <scratch>/control10/plugins/fabflows --config-name control-334b851 --repeats 5 --confirm
-node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/sweep-haiku --config-name sweep-haiku --repeats 8 --confirm
-node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name sweep-sonnet-high --repeats 8 --confirm
-node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/sweep-opus-medium --config-name sweep-opus-medium --repeats 8 --confirm
-(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-10 --skill-name fabflows)
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir <scratch>/control10/plugins/fabflows --config-name control-334b851 --repeats 5 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/sweep-haiku --config-name sweep-haiku --repeats 8 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name sweep-sonnet-high --repeats 8 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 11 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/sweep-opus-medium --config-name sweep-opus-medium --repeats 8 --confirm
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-11 --skill-name fabflows)
 ```
 
 The two snapshots are staged with the `patch -p3` recipe under Skill variants in
