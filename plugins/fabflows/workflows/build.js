@@ -331,7 +331,7 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     log(`round ${round}: the reviewer returned nothing -- escalating to the lead`)
     return escalate('reviewer-failed')
   }
-  // The review never ran, so any must-fix items with it are not rework the builder can do.
+  // A blocked review is incomplete, so any must-fix items with it are not rework the builder can do.
   if (review.verdict === 'BLOCKED') {
     log(`round ${round}: the reviewer could not review -- escalating to the lead`)
     return escalate('reviewer-blocked')

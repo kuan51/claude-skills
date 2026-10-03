@@ -284,7 +284,7 @@ test('escalates when the reviewer could not review, in any round', async () => {
   assert.equal(later.result.rounds.length, 2);
   assert.equal(later.calls.length, 4);
 
-  // Must-fix items sent with BLOCKED are not rework: the review never ran.
+  // Must-fix items sent with BLOCKED are not rework: the review is incomplete.
   const withItems = await run(ARGS, [built, { ...reviewBlocked, mustFix: rework.mustFix }]);
   assert.equal(withItems.result.reason, 'reviewer-blocked');
   assert.equal(withItems.calls.length, 2);
