@@ -67,8 +67,9 @@ plugin.
   the tests under `evals/fixtures/` belong to the benchmark's fixture projects.
 
 A plugin that includes a hook keeps that hook's allow and deny cases in a table its
-test suite drives directly. Nothing in this repository runs these suites
-automatically, so a security-adjacent code path is protected by convention alone.
+test suite drives directly. CI does not run these allow and deny suites (it runs
+only the test files `docs.yml` names), so a security-adjacent code path is
+protected by convention alone.
 Run the suite for any plugin you touch.
 
 Behavioral evals for a plugin's skills live in `plugins/<name>/evals/` in
