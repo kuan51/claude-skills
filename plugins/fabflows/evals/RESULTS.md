@@ -1560,9 +1560,9 @@ The data is in `runs/iteration-10/`: `cells.json` has one row per run, and `benc
 ### Prior
 
 Iteration 8 passed its bar 5 of 5 at $2.34 and 434 s a run, every run in two rounds. It did not
-record where a run's time goes. Iteration 9 (#182) ran in parallel on master and was merged after
-these runs, so rework-only rounds here still ran at xhigh, not #182's high. This iteration's control does: its round-1 review took 200 s on
-average, against 45 s for the round-1 build.
+record where a run's time goes. This iteration's control does: its round-1 review took 200 s on
+average, against 45 s for the round-1 build. Iteration 9 (#182) ran in parallel on master and was
+merged after these runs, so rework-only rounds here still ran at xhigh, not #182's high.
 
 ### Setup
 
