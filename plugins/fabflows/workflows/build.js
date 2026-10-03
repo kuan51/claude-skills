@@ -206,7 +206,7 @@ function sweepBrief(round) {
     '',
     `**Tools and paths:** Read, Grep, Glob, and Bash for these commands: \`git diff ${a.baseRef}..HEAD\`, \`git log\`, \`git show\`, and one-line probes of the project's own code on a literal input (\`node -e\`, or the built command with its arguments) from the repository directory. A probe prints to stdout only and never redirects to a file; that it writes nothing is your own check before you run it, and the guard does not make it for you. This is a sweep-only brief and names no test command: the other reviewer runs the tests and checks the working tree, so do neither.`,
     '',
-    "**Boundaries:** Read-only. Never edit, create, or delete a file; never commit, push, merge, rebase, or reset. For each function the diff calls but does not change, list its cases from its own code (each branch, comparison or range form), probe one literal input per case with one line of the project's own code, and quote each probe and its output; a case not probed is an open question in the report, never a checked one. Must-fix means a wrong result in such a callee on an input the code's domain has, not a difference from another library or a stricter standard; everything else is a note.",
+    "**Boundaries:** Read-only. Never edit, create, or delete a file; never commit, push, merge, rebase, or reset. For each function the diff calls but does not change, list its cases from its own code (each branch, comparison or range form), probe one literal input per case with one line of the project's own code, and quote each probe and its output; a case not probed is an open question in the report, never a checked one. Must-fix means a wrong result in such a callee on an input the code's domain has, not a difference from another library or a stricter standard; everything else is a note. Give each must-fix item's location as the line in the diff that calls the faulty callee, and the callee's own path:line in its evidence, so a defect the other reviewer also finds shares its location.",
   ].join('\n')
 }
 
@@ -223,9 +223,29 @@ function merge(lenses) {
     both.find(([, r]) => r.verdict === 'REWORK' && !r.mustFix.length)
   if (contradiction) return { ...contradiction[1], report }
   const [s, w] = [lenses.spec, lenses.sweep]
-  const mustFix = [...s.mustFix, ...w.mustFix]
+  // A sweep item at a spec item's exact trimmed location merges into the first such spec item, so
+  // one defect is one must-fix. Items are copies: `lenses` keeps each lens's unmerged result.
+  const loc = (f) => (typeof f.location === 'string' ? f.location.trim() : '')
+  // Low to high, so a severity outside the enum (-1) ranks below low.
+  const rank = [...FINDING.properties.severity.enum].reverse()
+  const specLocs = s.mustFix.map(loc)
+  const mustFix = s.mustFix.map((f) => ({ ...f }))
+  const merges = []
+  for (const [k, f] of w.mustFix.entries()) {
+    const n = loc(f) ? specLocs.indexOf(loc(f)) : -1
+    if (n < 0) {
+      mustFix.push({ ...f })
+      continue
+    }
+    const t = mustFix[n]
+    t.problem = `${t.problem || ''} / sweep lens: ${f.problem || ''}`
+    t.evidence = `${t.evidence || ''} / sweep lens: ${f.evidence || ''}`
+    if (rank.indexOf(f.severity) > rank.indexOf(t.severity)) t.severity = f.severity
+    merges.push(`sweep item ${k + 1} merged into item ${n + 1} (same location)`)
+  }
   const same = typeof s.head === 'string' && typeof w.head === 'string' && s.head.trim() === w.head.trim()
-  return { verdict: mustFix.length ? 'REWORK' : 'ACCEPT', mustFix, ...(same && { head: s.head }), report }
+  const merged = merges.length ? `${report}\n\n## merges\n\n${merges.join('\n')}` : report
+  return { verdict: mustFix.length ? 'REWORK' : 'ACCEPT', mustFix, ...(same && { head: s.head }), report: merged }
 }
 
 const rounds = []
