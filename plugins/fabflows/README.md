@@ -50,7 +50,9 @@ accepting anything; the `fabflows:build` workflow, described in
 [The build loop](#the-build-loop); and the `using-fabflows` entrypoint skill, which you
 invoke at the start of a conversation to run the whole session on that discipline.
 Invoking it authorizes the lead to launch the build loop, which commits to your feature
-branch, without asking again per task. The `brainstorming` skill sits in front of the loop
+branch, without asking again per task. That invocation is the opt-in, not a SessionStart hook,
+because consent should be one deliberate user action and a hook would opt in sessions that
+never asked. The `brainstorming` skill sits in front of the loop
 for a request that arrives without a spec; see [Brainstorming](#brainstorming). The
 `fabflows-setup` skill points the repository at a tracker, and the `ticket` skill keeps the
 linked ticket current; see [Tickets](#tickets). The `trace` skill writes an audit report
@@ -71,7 +73,9 @@ with an assumptions round, then runs rounds of at most three numbered questions,
 a recommended answer, until nothing is open. The lead states the maximal version, cuts it
 to the smallest shippable slice, and sends the draft to `refuter` in spec mode, which
 attacks it across seven lenses and blocks on a security gap. The user reads the spec before
-`fabflows:build` launches.
+`fabflows:build` launches. Spec review reuses `refuter` rather than a new agent because it is
+already the adversarial reviewer with the right tier and tools. Brainstorming is a skill, not
+an agent, because asking the user is the lead's job.
 
 ## Tickets
 
@@ -227,12 +231,8 @@ tests, and after two rework rounds the loop hands back to the lead. A round that
 reviews with two concurrent refuters on the same commit: one reads the diff against the spec
 and re-runs the tests, the other only sweeps callees, on Sonnet at high effort. It never merges, pushes,
 or reverts. While plan mode is active the lead never links or edits a ticket, commits or
-launches the loop, and approving the plan is not reading the spec. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
-[DEC-0004](../../docs/decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md)
-records the original design and
-[DEC-0016](../../docs/decisions/DEC-0016-harden-the-fabflows-build-loop-denial-classification-reviewe.md)
-records why the reviewer moved off the lead's tier. Pass `reviewerModel: 'fable'` to restore
-the old default for every reviewer except the sweep lens, which stays on Sonnet. The reviewer reads code the diff calls, and a must-fix that names a real bug
+launches the loop, and approving the plan is not reading the spec. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments.
+Pass `reviewerModel: 'fable'` to review on the lead's Fable tier instead, for every reviewer except the sweep lens, which stays on Sonnet. The reviewer reads code the diff calls, and a must-fix that names a real bug
 there lets the builder fix it even where the spec says otherwise. The builder names each spec
 sentence it crossed in `deviations`, the loop matches each entry to the must-fix it cites, and
 the lead keeps a matched fix and proposes the spec amendment to the user rather than reverting
@@ -240,6 +240,24 @@ it. The first review probes one input per case of each function the diff calls. 
 judge only the rework since the commit the previous review read: an earlier must-fix still not
 fixed, a regression or a real bug in that rework diff, or uncommitted work. A new finding
 elsewhere is a note the lead reads.
+
+Opus builds because the builder gets the full spec up front and writes most of the output, so
+the loop overrides `editor`'s Sonnet pin. The build-then-review order and the rework cap live
+in the workflow script, so they hold whatever the lead remembers, and the loop never merges, so
+merging stays a human pull request. The loop reviews on Opus by default because iteration 5
+measured the Fable reviewer at $1.33 against $0.70 on Opus. Structured `status` and `blocker`
+fields decide escalation, never report prose. Any non-blank `blocker` from the builder
+escalates to the lead whatever its status says, so the loop never reviews a reply the builder
+itself flagged. A reviewer that cannot run the diff or tests answers BLOCKED and the loop
+escalates, because the loop must never accept a change its reviewer could not test, and a
+broken runner is nothing another round can fix. Reviewer findings reach the next builder
+inside a `<must-fix>` fence labelled as data, with fence tags stripped, because findings quote
+files the reviewer read and the builder must not obey text quoted inside them.
+`git status --porcelain` must print nothing before the builder reports done, and the reviewer
+counts every printed path as must-fix, because the workflow has no shell and the diff cannot
+show uncommitted files. A build that throws is resumed with `resumeFromRunId`, not caught
+inside the script, because git, the args and the run journal already hold its history, and a
+resume carries on where a catch would end it.
 
 ## Measured performance
 
@@ -288,11 +306,19 @@ sweep each callee case by case and later reviews judge the rework only, in 0.15.
 passed the whole bar: every first review listed `caret()`'s cases and probed the `^0.M.P` one,
 every loop ended ACCEPT after one rework round, and no lead reverted the fix.
 
+The skill's description keeps it off short tasks, because iterations 1 to 3 measured the same
+quality there at extra cost. Reading more than a handful of files counts as volume even when
+the lead will judge the result, because with narrower wording one of two leads read all 13
+files itself.
+
 ## Long sessions
 
 The skill's [recovery reference](skills/fabflows/references/recovery.md) carries the
-long-session habits. The lead runs at the session's effort; only the workers pin their own,
-per the table above.
+long-session habits. The lead delegates only when a worker keeps a large volume out of its
+context, because a worker starts cold and its report is re-read on every later turn, so a small
+delegation costs more than doing the task. The skill never sets the lead's effort, because
+effort is the user's session setting. Only the workers pin theirs, per the table above, so a
+cheap worker never inherits an expensive lead's level.
 
 On a Claude subscription within plan usage, the main conversation's prompt cache already
 lives one hour. Workers and the build loop get five minutes, so set
@@ -311,7 +337,10 @@ replacement for it.
 
 ## Guard rules
 
-A `hooks/guard.js` file (Node, no dependencies) implements every rule below. The shell
+A `hooks/guard.js` file implements every rule below. Being one Node file with no
+dependencies, it needs no install and behaves the same on every OS. It blocks with
+a JSON `permissionDecision` and always exits 0, because exit 2 is reported not to block calls
+made inside a subagent. The shell
 rules apply to the commands of the `Bash`, `PowerShell` and `Monitor` tools alike. A
 command is split into segments on `&&`, `||`, `;`, `|`, `&` and line breaks outside
 quotes, and each rule is anchored at the start of a segment. A commit message, a PR body or
@@ -329,7 +358,9 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   Claude is told to stop if you decline. It only asks once every other rule has passed,
   so an install next to a denied segment is still denied. A worker, and any other mode
   (`plan`, `bypassPermissions`, `dontAsk`, missing), gets `deny`; in a mode that cannot
-  prompt, Claude asks you to run the command yourself. The prompt names every install in
+  prompt, Claude asks you to run the command yourself. The lead asks instead of a flat deny
+  because a deny gives you no way to say yes and pushes the model to find another route. A
+  worker gets `deny` because a background worker cannot show a prompt. The prompt names every install in
   the command, not only the first. An install aimed at live configuration is always
   denied: run from a session directory there, after a `cd`, `pushd` or `Set-Location`
   into it, or naming it in its own `VAR=` prefix, `--prefix=` or `--target=`, whether

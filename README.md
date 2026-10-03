@@ -133,8 +133,7 @@ enforces that. See [CLAUDE.md](CLAUDE.md) for when to bump.
 
 ## Docs, contributing and license
 
-- [Documentation](docs/CONVENTIONS.md): how this repository works today, with the decision
-  records in [docs/DECISIONS.md](docs/DECISIONS.md).
+- [Documentation](docs/CONVENTIONS.md): how this repository works today.
 - [Eval results](docs/EVALS.md) for every plugin.
 - [Contributing](CONTRIBUTING.md).
 - [Security policy](docs/SECURITY.md).

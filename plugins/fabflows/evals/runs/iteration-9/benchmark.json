@@ -1,0 +1,1392 @@
+{
+  "metadata": {
+    "skill_name": "fabflows",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "lead claude-fable-5-1; workers per agent pins",
+    "analyzer_model": "authoring session",
+    "timestamp": "2026-10-03T06:36:54Z",
+    "evals_run": [
+      8
+    ],
+    "runs_per_configuration": "control 5, rework-high 5"
+  },
+  "runs": [
+    {
+      "eval_id": 8,
+      "configuration": "control",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 458.9,
+        "tokens": 1283988,
+        "tool_calls": 11,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=16"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=16"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 541.330152"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): Fix ^0.x.y caret upper bound and reject non-string range/version in outdated | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 `outdated` relies on `satisfies` (bin/lockstep.js:67), and `satisfies` gets the wrong answer for caret r"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 `outdated` relies on `satisfies` (bin/lockstep.js:67), and `satisfies` gets the wrong answer for caret ranges of the form ^0.<minor>.<patch> whe"
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "control",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.8421,
+        "passed": 16,
+        "failed": 3,
+        "total": 19,
+        "time_seconds": 502.9,
+        "tokens": 1495435,
+        "tool_calls": 12,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=17"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=17"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 575.834306"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): outdated: reject non-string inputs, fix <* / >* and large-number comparisons | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": false,
+          "evidence": "error: Expected values to be strictly equal: | + actual - expected | + '' | - 'left-pad 0.3.0 ^0.2.3\\n'"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": false,
+          "evidence": "error: Expected values to be strictly equal: | true !== false"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: bin/lockstep.js:62 If a range or locked version in the JSON is an object instead of a string, it is not rejected as inva"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "bin/lockstep.js:62 If a range or locked version in the JSON is an object instead of a string, it is not rejected as invalid. `outdated` prints a stdout line con"
+        },
+        {
+          "text": "Hidden acceptance suite: 7/9 tests pass",
+          "passed": false,
+          "evidence": "exit 1; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "control",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 465.8,
+        "tokens": 1396305,
+        "tool_calls": 12,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=17"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=17"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 629.440615"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): Fix ^0.M.P upper bound and reject non-string inputs in outdated | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 caret() sets the upper bound of ^0.M.P (with M > 0) to <1.0.0 instead of <0.(M+1).0. outdated calls this"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 caret() sets the upper bound of ^0.M.P (with M > 0) to <1.0.0 instead of <0.(M+1).0. outdated calls this through satisfies() at bin/lockstep.js:"
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "control",
+      "run_number": 4,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 477.9,
+        "tokens": 1490455,
+        "tool_calls": 13,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=18"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=18"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 505.82637"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): outdated: bound ^0.minor.patch by next minor; reject non-string ranges and versions | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 `outdated` silently misses dependencies with 0.x caret ranges. The caret helper (called by `outdated` th"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 `outdated` silently misses dependencies with 0.x caret ranges. The caret helper (called by `outdated` through `satisfies`, not changed by the di"
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "control",
+      "run_number": 5,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 557.8,
+        "tokens": 1401486,
+        "tool_calls": 12,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=17"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=17"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 704.986685"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): Fix caret on 0.x.y, reject non-string and oversized versions in outdated | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 This is a callee bug that the new command depends on. For a caret range on a 0.minor.patch version with "
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 This is a callee bug that the new command depends on. For a caret range on a 0.minor.patch version with minor>0, the upper bound is <1.0.0 when "
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "rework-high",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 386.9,
+        "tokens": 1144940,
+        "tool_calls": 11,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=16"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=16"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 586.025615"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): Fix ^0.x.y caret upper bound and reject non-string ranges/versions in outdated | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 The new command relies on caret(), which the diff does not change. caret() gives the wrong upper bound f"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 The new command relies on caret(), which the diff does not change. caret() gives the wrong upper bound for a full 0.x.y caret: ^0.2.3 becomes >="
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "rework-high",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 502.1,
+        "tokens": 1269410,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=15"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=15"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 569.550871"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): Fix outdated review findings: ^0.Y.Z bound, non-string inputs, >*/<* ranges, unsafe integers | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 `outdated` relies on `satisfies`, and caret ranges of the form ^0.Y.Z with Y>0 use an upper bound of <1."
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 `outdated` relies on `satisfies`, and caret ranges of the form ^0.Y.Z with Y>0 use an upper bound of <1.0.0 instead of <0.(Y+1).0. So `outdated`"
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "rework-high",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 399.6,
+        "tokens": 1347260,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=15"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=15"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 634.535741"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): Fix caret on 0.MINOR.PATCH and precision loss on large version numbers | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 caret() for 0.MINOR.PATCH with MINOR>0 uses upper bound <1.0.0 instead of <0.(MINOR+1).0. `outdated` cal"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 caret() for 0.MINOR.PATCH with MINOR>0 uses upper bound <1.0.0 instead of <0.(MINOR+1).0. `outdated` calls satisfies(), which uses caret(), so i"
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "rework-high",
+      "run_number": 4,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 385,
+        "tokens": 1188739,
+        "tool_calls": 12,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=17"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=17"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 662.164871"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): outdated: fix ^0.y.z upper bound and reject non-string ranges/versions | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 `outdated` relies on `satisfies`, which the diff does not change. Its caret rule for `^0.y.z` with y > 0"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 `outdated` relies on `satisfies`, which the diff does not change. Its caret rule for `^0.y.z` with y > 0 sets the upper bound to <1.0.0 instead "
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 8,
+      "configuration": "rework-high",
+      "run_number": 5,
+      "result": {
+        "pass_rate": 1,
+        "passed": 19,
+        "failed": 0,
+        "total": 19,
+        "time_seconds": 345.3,
+        "tokens": 1296152,
+        "tool_calls": 12,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=17"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=17"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: # cancelled 0 | # skipped 0 | # todo 0 | # duration_ms 520.269462"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "2 commit(s): Fix caret upper bound for ^0.M.P with M > 0 | Add lockstep outdated subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: outdated: the spec's example (^1.2.3 locked at 2.0.0) is reported and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: reports a locked version outside a caret-on-zero range and exits 1",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a manifest and lockfile that agree print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: outdated: a transitive entry out of range is ignored",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: caret-on-zero: satisfies('0.3.0', '^0.2.3') is false",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: ranges other than caret-on-zero are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "review named it: src/index.js:89 The caret callee that `outdated` relies on (bin/lockstep.js:69 calls satisfies) builds the wrong upper b"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "src/index.js:89 The caret callee that `outdated` relies on (bin/lockstep.js:69 calls satisfies) builds the wrong upper bound for `^0.M.P` when M > 0. It produce"
+        },
+        {
+          "text": "Hidden acceptance suite: 9/9 tests pass",
+          "passed": true,
+          "evidence": "exit 0; 2 test files"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "control": {
+      "pass_rate": {
+        "mean": 0.9684,
+        "stddev": 0.0706,
+        "min": 0.8421,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 492.66,
+        "stddev": 40.0847,
+        "min": 458.9,
+        "max": 557.8
+      },
+      "tokens": {
+        "mean": 1413533.8,
+        "stddev": 86383.9871,
+        "min": 1283988,
+        "max": 1495435
+      },
+      "cost_usd": {
+        "mean": 2.5169,
+        "stddev": 0.152,
+        "min": 2.3507,
+        "max": 2.7191
+      }
+    },
+    "rework-high": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1,
+        "max": 1
+      },
+      "time_seconds": {
+        "mean": 403.78,
+        "stddev": 58.6128,
+        "min": 345.3,
+        "max": 502.1
+      },
+      "tokens": {
+        "mean": 1249300.2,
+        "stddev": 81783.7513,
+        "min": 1144940,
+        "max": 1347260
+      },
+      "cost_usd": {
+        "mean": 2.2081,
+        "stddev": 0.183,
+        "min": 2.0167,
+        "max": 2.4989
+      }
+    },
+    "delta": {
+      "pass_rate": "-0.03",
+      "time_seconds": "+88.9",
+      "tokens": "+164234"
+    }
+  },
+  "notes": [
+    "Tracked in #177: rework-only review rounds at high effort instead of xhigh. control is master's fabflows 0.15.2 (a5d726c); rework-high is 0.15.3 (6b25f90). Same day, one session at a time.",
+    "Every run of both configurations took two rounds, REWORK then ACCEPT; each agent transcript confirms review:2 ran at high in rework-high and xhigh in control.",
+    "Round-2 reviewer tokens: control mean 28,333, rework-high mean 20,719 (26.9% lower). Round-2 reviewer time: control mean 86.2 s, rework-high 37.4 s.",
+    "Every rework-high round-2 report marks each round-1 item fixed, and raises no must-fix. Control run-2 shipped 7/9 on the hidden suite; it does not affect the variant bar.",
+    "Cost: control mean $2.52 per run",
+    "Cost: rework-high mean $2.21 per run"
+  ]
+}

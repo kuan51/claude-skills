@@ -182,6 +182,18 @@ test('an invalid or missing head makes the next round judge the whole diff as ro
   }
 });
 
+test('a sweeping review runs at xhigh; a rework-only review after a valid head runs at high', async () => {
+  const first = await run(ARGS, [built, accept]);
+  assert.equal(first.calls[1].opts.effort, 'xhigh', 'round 1 sweeps');
+  const valid = await run(ARGS, [built, { ...rework, head: 'deadbee' }, built, accept]);
+  assert.equal(valid.calls[1].opts.effort, 'xhigh');
+  assert.equal(valid.calls[3].opts.effort, 'high', 'a later round after a valid head');
+  for (const head of [undefined, 'HEAD', 'abc12']) {
+    const { calls } = await run(ARGS, [built, { ...rework, head }, built, accept]);
+    assert.equal(calls[3].opts.effort, 'xhigh', `no valid head sweeps: ${JSON.stringify(head)}`);
+  }
+});
+
 test('the verdict schema lists head', async () => {
   const { calls } = await run(ARGS, [built, accept]);
   assert.match(calls[1].opts.schema.properties.head.description, /git log -1 --format=%H/);
@@ -524,10 +536,11 @@ test('the sweep lens runs on sonnet at high effort; reviewerModel reaches only t
     assert.equal(sweepCalls[0].opts.label, 'review:1:sweep');
     assert.equal(sweepCalls[0].opts.model, 'sonnet', `sweep lens model with reviewerModel ${reviewerModel}`);
     assert.equal(sweepCalls[0].opts.effort, 'high', 'sweep lens effort');
-    for (const { opts } of [calls[1], calls[3]]) {
+    // The spec lens sweeps nothing but judges round 1 at xhigh; the rework-only reviewer runs at high (#182).
+    for (const [{ opts }, effort] of [[calls[1], 'xhigh'], [calls[3], 'high']]) {
       assert.match(opts.label, /^review:(1:spec|2)$/);
       assert.equal(opts.model, want, `${opts.label} carries reviewerModel`);
-      assert.equal(opts.effort, 'xhigh', `${opts.label} effort`);
+      assert.equal(opts.effort, effort, `${opts.label} effort`);
     }
   }
 });

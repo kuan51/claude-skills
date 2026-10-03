@@ -147,20 +147,21 @@ function buildBrief(round, mustFix) {
 
 // A later round judges only the rework since the commit the previous review read. That commit
 // comes from a reviewer, so it is used only when it looks like one; otherwise the boundary is
-// unknown and the round judges the whole diff, sweeping callees, as round 1 does.
-function prevHead() {
+// unknown and this round judges the whole diff, sweeping callees, as round 1 does. Computed once
+// per round so the review brief, its effort and the lens split always agree on which kind of
+// round it is.
+function previousHead() {
   const prev = rounds.length ? rounds[rounds.length - 1].review : null
   return prev && typeof prev.head === 'string' && /^[0-9a-f]{7,40}$/.test(prev.head.trim()) ? prev.head.trim() : null
 }
 
-// lens is undefined for a single reviewer, or 'spec' / 'sweep' for the two concurrent reviewers
-// of a round that sweeps callees.
-function reviewBrief(round, lens) {
+// head is previousHead() for this round. lens is undefined for a single reviewer, or 'spec' /
+// 'sweep' for the two concurrent reviewers of a round that sweeps callees.
+function reviewBrief(round, head, lens) {
   if (lens === 'sweep') return sweepBrief(round)
   // Every earlier round's must-fix items, each named by its round and its number in that round's
   // block, which is what a builder's deviation cites. Empty in round 1.
   const earlier = rounds.flatMap((r) => ((r.review && r.review.mustFix) || []).map((f, i) => unfence(`round ${r.round}, item ${i + 1}: ${f.location} -- ${f.problem}`)))
-  const head = prevHead()
   const sweep = !head
   const scope = round === 1
     ? ''
@@ -304,21 +305,23 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     return escalate(reason)
   }
 
-  // A round that sweeps callees splits its review into two lenses on the same commit, run at
-  // once. Promise.all, not parallel(): a thrown agent() must end the run so the lead can resume
-  // it (DEC-0007), and parallel() turns a throw into null. The sweep lens runs on Sonnet at high
-  // effort, outside reviewerModel (#181).
+  // A round that sweeps callees (round 1, or no valid head) splits its review into two lenses on
+  // the same commit, run at once: the spec lens at xhigh, and the sweep lens on Sonnet at high
+  // effort, outside reviewerModel (#181). A rework-only round after a valid head has one reviewer
+  // at high (#182). Promise.all, not parallel(): a thrown agent() must end the run so the lead can
+  // resume it (the README's build loop section says why), and parallel() turns a throw into null.
+  const head = previousHead()
   const reviewer = (lens) =>
-    agent(reviewBrief(round, lens), {
+    agent(reviewBrief(round, head, lens), {
       label: lens ? `review:${round}:${lens}` : `review:${round}`,
       phase: 'Review',
       agentType: 'fabflows:refuter',
       model: lens === 'sweep' ? 'sonnet' : reviewerModel,
-      effort: lens === 'sweep' ? 'high' : 'xhigh',
+      effort: lens === 'spec' ? 'xhigh' : 'high',
       schema: VERDICT,
     })
   let review
-  if (prevHead()) {
+  if (head) {
     review = await reviewer()
     rounds.push({ round, build, review })
   } else {
