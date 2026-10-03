@@ -250,6 +250,17 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.17.0** -- the build loop reviews before anything is committed (#185). The builder
+  stages each path by name and never commits; reviewers read `git diff --cached <baseRef>` and
+  record the staged tree from `git write-tree` as `head`, and a later round judges
+  `git diff --cached <head>`. On ACCEPT the lead checks the tree, re-runs the tests and makes one
+  commit with the ticket's trailers, so an accepted build lands as one reviewed commit with no
+  fix-up commits. The builder stages files by their own path, never a directory or glob; every
+  `git ls-files --others --exclude-standard` check runs on `:/`; an ACCEPT without a full tree
+  hash as `head` escalates as `accept-without-head`; and every escalation's `next` names
+  `git status --porcelain` and `git diff <baseRef>`, since unstaged work is hidden from
+  `git diff --cached`.
+
 - **fabflows 0.16.1** -- when both review lenses name the same `path:line`, the build loop merges
   the sweep lens's finding into the spec lens's (#178), so one defect reaches the builder as one
   must-fix item. The sweep lens now gives a finding's location as the diff line that calls the
