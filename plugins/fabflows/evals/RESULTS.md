@@ -1596,3 +1596,143 @@ node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop -
 node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name review-split --repeats 8 --confirm
 (cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-9 --skill-name fabflows)
 ```
+
+## Iteration 10: the sweep lens on a cheaper model
+
+Tracked in [#181](https://github.com/kuan51/claude-skills/issues/181). Iteration 9 showed the sweep
+lens was round 1's slowest step, about 191 s on Opus at xhigh effort against about 108 s for the
+spec lens. Its job is narrow: list the cases of each function the diff calls but does not change,
+and probe one input per case. This iteration asks whether a cheaper model at lower effort can do
+that job as well, and faster.
+
+The data is in `runs/iteration-10/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Prior
+
+Iteration 9's split kept quality at 8 of 8. Its sweep lens took about as long as the single
+reviewer it replaced, and the sweep's first probe came 78 to 152 s into the agent, so about half
+its time went to reading before probing.
+
+### Setup
+
+- **The plugin.** fabflows 0.16.0 on the branch for #181. `workflows/build.js` gives the sweep lens
+  `model: 'sonnet'` and `effort: 'high'`; the spec lens and a later round's single reviewer keep
+  `reviewerModel` and `xhigh`.
+- **Configurations.** Task 8's `loop` arm, lead claude-fable-5-1 at medium effort, one session at
+  a time, caps 120 turns, $15 list price and 30 minutes a run, one configuration after another.
+  - `control-334b851`: the branch before #181, sweep lens on Opus at xhigh, from
+    `git archive 334b851`. 5 runs, 08:49 to 09:20 UTC.
+  - `sweep-haiku`: `snapshots/sweep-haiku.patch`, sweep lens on Haiku with no effort pin, as
+    fabflows' other Haiku agents run. An arm the owner added. 8 runs, 09:20 to 09:57 UTC.
+  - `sweep-sonnet-high`: #181 as built. 8 runs, 09:58 to 10:35 UTC.
+  - `sweep-opus-medium`: `snapshots/sweep-opus-medium.patch`, sweep lens on Opus at medium. 8 runs,
+    10:36 to 11:16 UTC. All on 2026-10-03.
+- **Clean room.** As iterations 2 to 9. The container has 4 CPUs, so the workflow runs at most 2
+  agents at once: both lenses, never more.
+
+### Runs
+
+Every run ended with the workflow status `accepted`. The Haiku runs accepted a change that still
+held the planted defect.
+
+| Config | Run | Cost | Time s | Review rounds (must-fix items) | Round-1 spec s | Round-1 sweep s | Hidden suite | Sweep named `index.js:89` |
+|---|---|---|---|---|---|---|---|---|
+| control-334b851 | 1 | $2.6667 | 373 | REWORK (1), ACCEPT (0) | 92 | 159 | 9/9 | yes |
+| control-334b851 | 2 | $2.2315 | 373 | REWORK (1), ACCEPT (0) | 92 | 160 | 9/9 | yes |
+| control-334b851 | 3 | $2.3373 | 361 | REWORK (1), ACCEPT (0) | 66 | 173 | 9/9 | yes |
+| control-334b851 | 4 | $2.2585 | 362 | REWORK (1), ACCEPT (0) | 86 | 167 | 9/9 | yes |
+| control-334b851 | 5 | $2.3891 | 374 | REWORK (1), ACCEPT (0) | 100 | 149 | 9/9 | yes |
+| sweep-sonnet-high | 1 | $1.9324 | 287 | REWORK (1), ACCEPT (0) | 89 | 69 | 9/9 | yes |
+| sweep-sonnet-high | 2 | $1.9383 | 293 | REWORK (1), ACCEPT (0) | 105 | 70 | 9/9 | yes |
+| sweep-sonnet-high | 3 | $1.7061 | 228 | REWORK (1), ACCEPT (0) | 73 | 65 | 9/9 | yes |
+| sweep-sonnet-high | 4 | $1.8468 | 261 | REWORK (1), ACCEPT (0) | 73 | 56 | 9/9 | yes |
+| sweep-sonnet-high | 5 | $1.9202 | 287 | REWORK (1), ACCEPT (0) | 95 | 71 | 9/9 | yes |
+| sweep-sonnet-high | 6 | $1.8671 | 271 | REWORK (1), ACCEPT (0) | 98 | 76 | 9/9 | yes |
+| sweep-sonnet-high | 7 | $2.1629 | 323 | REWORK (2), ACCEPT (0) | 94 | 89 | 9/9 | yes |
+| sweep-sonnet-high | 8 | $1.9414 | 301 | REWORK (1), ACCEPT (0) | 92 | 77 | 9/9 | yes |
+| sweep-opus-medium | 1 | $2.0684 | 273 | REWORK (1), ACCEPT (0) | 98 | 72 | 9/9 | yes |
+| sweep-opus-medium | 2 | $2.2411 | 339 | REWORK (2), ACCEPT (0) | 98 | 92 | 9/9 | yes |
+| sweep-opus-medium | 3 | $2.0091 | 299 | REWORK (1), ACCEPT (0) | 89 | 80 | 9/9 | yes |
+| sweep-opus-medium | 4 | $1.9478 | 272 | REWORK (1), ACCEPT (0) | 87 | 66 | 9/9 | yes |
+| sweep-opus-medium | 5 | $1.9792 | 313 | REWORK (1), ACCEPT (0) | 116 | 88 | 9/9 | yes |
+| sweep-opus-medium | 6 | $2.0589 | 327 | REWORK (2), ACCEPT (0) | 99 | 62 | 9/9 | yes |
+| sweep-opus-medium | 7 | $2.0594 | 293 | REWORK (1), ACCEPT (0) | 100 | 83 | 9/9 | yes |
+| sweep-opus-medium | 8 | $1.9394 | 295 | REWORK (1), ACCEPT (0) | 108 | 74 | 9/9 | yes |
+| sweep-haiku | 1 | $1.9163 | 332 | REWORK (1), ACCEPT (0) | 96 | 144 | 7/9 | no |
+| sweep-haiku | 2 | $1.7501 | 305 | ACCEPT (0) | 112 | 167 | 7/9 | no |
+| sweep-haiku | 3 | $1.3584 | 177 | ACCEPT (0) | 82 | 81 | 7/9 | no |
+| sweep-haiku | 4 | $1.9129 | 362 | REWORK (1), ACCEPT (0) | 110 | 85 | 7/9 | no |
+| sweep-haiku | 5 | $1.3172 | 169 | ACCEPT (0) | 84 | 80 | 7/9 | no |
+| sweep-haiku | 6 | $1.4243 | 287 | ACCEPT (0) | 79 | 186 | 7/9 | no |
+| sweep-haiku | 7 | $1.9061 | 308 | REWORK (1), ACCEPT (0) | 109 | 140 | 7/9 | no |
+| sweep-haiku | 8 | $1.3929 | 253 | ACCEPT (0) | 82 | 164 | 7/9 | no |
+
+| Config | Runs | Cost a run | Time s | Round-1 review s | Spec lens s | Sweep lens s | Hidden suite | Sweep named the defect |
+|---|---|---|---|---|---|---|---|---|
+| control-334b851 (Opus xhigh) | 5 | $2.3766 | 368.6 | 161.6 | 87.0 | 161.6 | 5 of 5 | 5 of 5 |
+| sweep-sonnet-high | 8 | $1.9144 | 281.2 | 89.7 | 89.7 | 71.7 | 8 of 8 | 8 of 8 |
+| sweep-opus-medium | 8 | $2.0379 | 301.4 | 99.2 | 99.2 | 77.0 | 8 of 8 | 8 of 8 |
+| sweep-haiku | 8 | $1.6223 | 274.1 | 134.8 | 94.2 | 131.1 | 0 of 8 | 0 of 8 |
+
+Round-1 review is the slower lens, from each run's `metrics.json` per-agent `durationMs`.
+
+### What the runs show
+
+- **Sonnet at high effort does the sweep in under half the time.** Its sweep lens took 72 s
+  against 162 s on Opus at xhigh, and named the defect at `src/index.js:89` as must-fix in all 8
+  runs, each after listing `caret()`'s cases and quoting a `^0.M.P` probe. Every Sonnet sweep agent
+  recorded `claude-sonnet-5-5`.
+- **Round 1 now waits on the spec lens.** In every Sonnet and Opus-medium run the spec lens
+  finished last, so round-1 review equals the spec lens's time: 90 s for Sonnet-high and 99 s for
+  Opus-medium. A faster sweep no longer shortens round 1; the spec lens is the next lever.
+- **Opus at medium effort also works**, at 77 s for the sweep, but costs more and runs slower than
+  Sonnet-high on every measure.
+- **Haiku misses the defect every time.** Every Haiku sweep returned ACCEPT with no must-fix, the
+  defect shipped and the hidden suite failed 7 of 9 in all 8 runs. In runs 2 and 4 it probed a
+  `^0.M.P` range and passed the wrong result as correct. Its runs look faster and cheaper only
+  because nothing was sent back for rework: 5 of 8 accepted in round 1.
+
+### Verdict
+
+`sweep-sonnet-high` passes #181's bar and ships as built, per the spec's decision rule. Computed
+from `plugins/fabflows/evals/runs` with a script that applies the iteration 9 snippet's checks
+per arm, adds the per-agent model check and compares means with their standard error:
+
+| Bar, against the control | Sonnet-high | Opus-medium | Haiku |
+|---|---|---|---|
+| Round-1 review at least 25% lower | Holds: -44.5% (standard error 3.5%) | Holds: -38.6% (3.2%) | Fails: -16.6% (8.9%) |
+| Mean cost at most 20% higher | Holds: -19.4% (3.8%) | Holds: -14.3% (3.6%) | Holds: -31.7% (5.2%) |
+| Mean total wall time not above the control's | Holds: -23.7% (2.8%) | Holds: -18.2% (2.4%) | Holds: -25.6% (6.8%) |
+| Every run `accepted`, hidden suite 9/9, finished, no denial, sweep on the arm's model | Holds: 8 of 8 | Holds: 8 of 8 | Fails: 0 of 8 |
+| Round-1 sweep lists `caret()`'s cases, probes `^0.M.P`, names `src/index.js:89` (by hand) | Holds: 8 of 8 | Holds: 8 of 8 | Fails: 0 of 8 |
+
+### Cost of this iteration
+
+$56.4798 at list price for 29 runs: $11.8832 for the control, $15.3152 for Sonnet-high, $16.3032
+for Opus-medium and $12.9782 for Haiku.
+
+### Confounds
+
+- **The configurations ran one after another**, over about 2.5 hours, so time of day is not
+  controlled. The control's wall times were unusually steady (sd 6.5 s).
+- **One fixture.** Task 8 plants one defect in one callee. Whether Sonnet's sweep holds on a
+  diff that reaches many callees, or a subtler defect, is not measured.
+- **Haiku's effort.** The Haiku arm left `effort` unset; whether the refuter's `xhigh` pin then
+  applied is not recorded.
+- **The fan-out is not measured.** A mapper plus grouped sweepers needs more than 2 agents at
+  once, which this 4-CPU container cannot run (#181, out of scope).
+
+### Commands
+
+```bash
+git archive 334b851 plugins/fabflows | tar -x -C <scratch>/control10
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir <scratch>/control10/plugins/fabflows --config-name control-334b851 --repeats 5 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/sweep-haiku --config-name sweep-haiku --repeats 8 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name sweep-sonnet-high --repeats 8 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 10 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/sweep-opus-medium --config-name sweep-opus-medium --repeats 8 --confirm
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-10 --skill-name fabflows)
+```
+
+The two snapshots are staged with the `patch -p3` recipe under Skill variants in
+`evals/README.md`.

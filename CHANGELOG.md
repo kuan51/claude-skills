@@ -17,7 +17,9 @@ per-plugin history until entries are recorded here going forward.
   other stages. Details in `plugins/fabflows/evals/RESULTS.md`. The sweep lens runs on Sonnet 5.5
   at high effort (#181), half Opus 5.5's per-token price; the spec lens and a later round's single
   reviewer keep `reviewerModel` (Opus by default) at xhigh, and `reviewerModel` no longer reaches
-  the sweep lens.
+  the sweep lens. Iteration 10 measured it against the Opus-xhigh sweep: round-1 review 90 s
+  against 162 s, $1.91 a run against $2.38, quality 8 of 8. Opus at medium effort also passed but
+  trailed on every measure; a Haiku sweep missed the planted defect in 8 of 8 runs.
 
 - **ciso 1.3.0** -- `ciso:import` works for any framework (#157). It converts a controls list
   (a CSV, the first sheet of an xlsx, a JSON array, or a document Claude first extracts to JSON)
