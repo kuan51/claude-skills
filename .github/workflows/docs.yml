@@ -1,6 +1,7 @@
 # Lints and audits the documentation on every pull request: markdownlint,
 # the fabflows prompt security rules guard, the marketplace manifest tests
-# (test/*.test.js), docs-warden's audit (which also
+# (test/*.test.js), the fabflows build-loop and frontmatter tests
+# (build.test.js, frontmatter.test.js), docs-warden's audit (which also
 # checks that generated documents are current), then Vale on the changed
 # files, as .pre-commit-config.yaml runs it, then self-tests of the
 # vale-warn-gate script and the Prompting style, then a report of every
@@ -53,6 +54,11 @@ jobs:
       - name: marketplace manifests
         if: ${{ !cancelled() }}
         run: node --test test/*.test.js
+      # The build-loop workflow (lens merge, effort per round, brief wording)
+      # and the agent and skill frontmatter.
+      - name: fabflows build and frontmatter
+        if: ${{ !cancelled() }}
+        run: node --test plugins/fabflows/test/build.test.js plugins/fabflows/test/frontmatter.test.js
       # Before Vale is installed or synced, on purpose. With no vale on PATH,
       # audit's lint row skips its repo-wide Vale run (the step below lints
       # the changed files), and `vale sync` has not yet put untracked package
