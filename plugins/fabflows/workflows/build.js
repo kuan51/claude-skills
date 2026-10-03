@@ -145,15 +145,19 @@ function buildBrief(round, mustFix) {
   ].join('\n')
 }
 
-function reviewBrief(round) {
+// A later round judges only the rework since the commit the previous review read. That commit
+// comes from a reviewer, so it is used only when it looks like one; otherwise the boundary is
+// unknown and this round judges the whole diff as round 1 does. Computed once per round so the
+// review brief and its effort always agree on which kind of round it is.
+function previousHead() {
+  const prev = rounds.length ? rounds[rounds.length - 1].review : null
+  return prev && typeof prev.head === 'string' && /^[0-9a-f]{7,40}$/.test(prev.head.trim()) ? prev.head.trim() : null
+}
+
+function reviewBrief(round, head) {
   // Every earlier round's must-fix items, each named by its round and its number in that round's
   // block, which is what a builder's deviation cites. Empty in round 1.
   const earlier = rounds.flatMap((r) => ((r.review && r.review.mustFix) || []).map((f, i) => unfence(`round ${r.round}, item ${i + 1}: ${f.location} -- ${f.problem}`)))
-  // A later round judges only the rework since the commit the previous review read. That commit
-  // comes from a reviewer, so it is used only when it looks like one; otherwise the boundary is
-  // unknown and this round judges the whole diff as round 1 does.
-  const prev = rounds.length ? rounds[rounds.length - 1].review : null
-  const head = prev && typeof prev.head === 'string' && /^[0-9a-f]{7,40}$/.test(prev.head.trim()) ? prev.head.trim() : null
   const sweep = !head
   const scope = round === 1
     ? ''
@@ -258,12 +262,14 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     return escalate(reason)
   }
 
-  const review = await agent(reviewBrief(round), {
+  // A sweeping round (round 1, or no valid head) runs at xhigh; a rework-only round at high.
+  const head = previousHead()
+  const review = await agent(reviewBrief(round, head), {
     label: `review:${round}`,
     phase: 'Review',
     agentType: 'fabflows:refuter',
     model: reviewerModel,
-    effort: 'xhigh',
+    effort: head ? 'high' : 'xhigh',
     schema: VERDICT,
   })
   rounds.push({ round, build, review })
