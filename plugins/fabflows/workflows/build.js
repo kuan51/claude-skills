@@ -223,9 +223,23 @@ function merge(lenses) {
     both.find(([, r]) => r.verdict === 'REWORK' && !r.mustFix.length)
   if (contradiction) return { ...contradiction[1], report }
   const [s, w] = [lenses.spec, lenses.sweep]
-  const mustFix = [...s.mustFix, ...w.mustFix]
+  // A sweep item at a spec item's exact trimmed location merges into the first such spec item, so
+  // one defect is one must-fix. Items are copies: `lenses` keeps each lens's unmerged result.
+  const loc = (f) => (typeof f.location === 'string' ? f.location.trim() : '')
+  const rank = { low: 0, medium: 1, high: 2 }
+  const mustFix = s.mustFix.map((f) => ({ ...f }))
+  const merges = []
+  w.mustFix.forEach((f, k) => {
+    const n = loc(f) ? s.mustFix.findIndex((g) => loc(g) === loc(f)) : -1
+    if (n < 0) return void mustFix.push({ ...f })
+    const t = mustFix[n]
+    t.problem += ` / sweep lens: ${f.problem}`
+    t.evidence += ` / sweep lens: ${f.evidence}`
+    if (rank[f.severity] > rank[t.severity]) t.severity = f.severity
+    merges.push(`sweep item ${k + 1} merged into item ${n + 1} (same location)`)
+  })
   const same = typeof s.head === 'string' && typeof w.head === 'string' && s.head.trim() === w.head.trim()
-  return { verdict: mustFix.length ? 'REWORK' : 'ACCEPT', mustFix, ...(same && { head: s.head }), report }
+  return { verdict: mustFix.length ? 'REWORK' : 'ACCEPT', mustFix, ...(same && { head: s.head }), report: [report, ...(merges.length ? [merges.join('\n')] : [])].join('\n\n') }
 }
 
 const rounds = []
