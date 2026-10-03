@@ -463,8 +463,9 @@ test('reviewerModel overrides the Opus default', async () => {
 });
 
 test('every call pins effort, requires a prose report, and carries the spec and all four brief parts', async () => {
-  const { calls } = await run(ARGS, [built, rework, built, accept]);
-  for (const { prompt, opts } of calls) {
+  const { calls, sweepCalls } = await run(ARGS, [built, rework, built, accept]);
+  assert.ok(sweepCalls.length, 'the sweep lens must be among the calls checked');
+  for (const { prompt, opts } of [...calls, ...sweepCalls]) {
     assert.ok(opts.effort, `${opts.label} must pass effort`);
     assert.ok(opts.schema.required.includes('report'), `${opts.label} schema must require report`);
     assert.equal(opts.schema.properties.report.minLength, 1, `${opts.label} report must not be empty`);
