@@ -459,7 +459,9 @@ test('every brief checks the working tree for uncommitted work', async () => {
 // The spec lens and a rework round's single reviewer start the tests in the background and read
 // the diff while they run (#180); the tree check stays first, so transient test files are not must-fix.
 test('a reviewer that runs the tests checks the tree first, backgrounds them and waits for their exit status', async () => {
-  const { calls } = await run(ARGS, [built, rework, built, accept]);
+  const { calls } = await run(ARGS, [built, { ...rework, head: 'deadbee' }, built, accept]);
+  assert.equal(calls[1].opts.label, 'review:1:spec');
+  assert.equal(calls[3].opts.label, 'review:2');
   for (const i of [1, 3]) {
     const p = calls[i].prompt;
     assert.match(p, /Run `git status --porcelain` first, before `npm test`/, `${calls[i].opts.label} checks the tree before the tests`);
