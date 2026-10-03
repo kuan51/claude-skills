@@ -540,6 +540,8 @@ test('the lens briefs split the review: the sweep lens sweeps only, the spec len
   assert.match(sweep.prompt, /git diff --cached abc1234`/);
   assert.match(sweep.prompt, /sweep-only brief/, 'refuter.md keys its exception on the words sweep-only');
   assert.match(sweep.prompt, SWEEP);
+  assert.match(sweep.prompt, /Give each must-fix item's location as the line in the diff that calls the faulty callee, and the callee's own path:line in its evidence/);
+  assert.doesNotMatch(spec.prompt, /calls the faulty callee/);
   assert.ok(sweep.prompt.includes(`<spec>\n${ARGS.spec}\n</spec>`));
   for (const part of ['Objective', 'Output', 'Tools and paths', 'Boundaries']) assert.match(sweep.prompt, new RegExp(`\\*\\*${part}:\\*\\*`));
   assert.match(spec.prompt, /Another reviewer sweeps the callees at the same time: do not sweep them; a callee problem you notice anyway is a note\./);
@@ -659,6 +661,43 @@ test('merge: must-fix is spec then sweep, the report has both, and head comes fr
   assert.equal(ok.result.status, 'accepted');
   assert.equal(ok.result.verdict.verdict, 'ACCEPT');
   assert.deepEqual(ok.result.verdict.mustFix, []);
+});
+
+test('merge: a sweep item at a spec item\'s location merges into the first one, and a deviation cites the merged number', async () => {
+  const f = (location, p, severity) => ({ location, problem: `p${p}`, evidence: `e${p}`, severity });
+  const specItems = () => [f('src/a.js:10', 'a', 'low'), f('src/b.js:5', 'b', 'medium'), f('src/b.js:5', 'c', 'low'), f('', 'd', 'low')];
+  const sweepItems = () => [f(' src/b.js:5 ', 'x', 'high'), f('src/c.js:1', 'y', 'low'), f('src/a.js:10', 'z', 'medium'), f('', 'e', 'low'), f('src/b.js:5', 'w', 'low')];
+  const spec = { ...rework, mustFix: specItems() };
+  const sweep = { ...sweepRework, mustFix: sweepItems() };
+  const dev = { round: 1, item: 2, sentence: 'The library keeps working as it does.' };
+  const { result, calls } = await run(ARGS, [built, spec, { ...built, deviations: [dev] }, accept], [sweep]);
+  const merged = result.rounds[0].review;
+  assert.deepEqual(merged.mustFix, [
+    { location: 'src/a.js:10', problem: 'pa / sweep lens: pz', evidence: 'ea / sweep lens: ez', severity: 'medium' },
+    { location: 'src/b.js:5', problem: 'pb / sweep lens: px / sweep lens: pw', evidence: 'eb / sweep lens: ex / sweep lens: ew', severity: 'high' },
+    f('src/b.js:5', 'c', 'low'),
+    f('', 'd', 'low'),
+    f('src/c.js:1', 'y', 'low'),
+    f('', 'e', 'low'),
+  ]);
+  assert.match(merged.report, /\n\n## merges\n\nsweep item 1 merged into item 2 \(same location\)\nsweep item 3 merged into item 1 \(same location\)\nsweep item 5 merged into item 2 \(same location\)$/);
+  assert.equal(merged.report.match(/merged into/g).length, 3, 'one line per merge');
+  assert.deepEqual(result.rounds[0].lenses.spec.mustFix, specItems(), 'lenses keeps the raw spec items');
+  assert.deepEqual(result.rounds[0].lenses.sweep.mustFix, sweepItems(), 'lenses keeps the raw sweep items');
+  assert.match(calls[2].prompt, /^2\. src\/b\.js:5 -- pb \/ sweep lens: px \/ sweep lens: pw /m);
+  assert.match(calls[2].prompt, /^6\. +-- pe /m);
+  assert.match(calls[3].prompt, /^round 1, item 2: src\/b\.js:5 -- pb \/ sweep lens: px \/ sweep lens: pw$/m, 'the next round numbers from the merged list');
+  assert.match(calls[3].prompt, /^round 1, item 5: src\/c\.js:1 -- py$/m);
+  assert.deepEqual(result.deviations, [{ ...dev, location: 'src/b.js:5', problem: 'pb / sweep lens: px / sweep lens: pw', matched: true }]);
+
+  const apart = await run(ARGS, [built, { ...rework, head: 'h' }, built, accept], [{ ...sweepRework, head: 'h' }]);
+  assert.deepEqual(apart.result.rounds[0].review.mustFix, [...rework.mustFix, sweepFix], 'different locations are left alone');
+  assert.doesNotMatch(apart.result.rounds[0].review.report, /merged into|## merges/);
+
+  // A missing problem or evidence is empty text, and a severity outside the enum ranks below low.
+  const bare = await run(ARGS, [built, { ...rework, head: 'h', mustFix: [{ location: 'a.js:1', severity: 'odd' }] }, built, accept],
+    [{ ...sweepRework, head: 'h', mustFix: [{ location: 'a.js:1', severity: 'low' }, { location: 'a.js:1', problem: 'q', evidence: 'v', severity: 'odd' }] }]);
+  assert.deepEqual(bare.result.rounds[0].review.mustFix, [{ location: 'a.js:1', problem: ' / sweep lens:  / sweep lens: q', evidence: ' / sweep lens:  / sweep lens: v', severity: 'low' }]);
 });
 
 test('a throw from either lens ends the run', async () => {
