@@ -257,10 +257,10 @@ escalates, because the loop must never accept a change its reviewer could not te
 broken runner is nothing another round can fix. Reviewer findings reach the next builder
 inside a `<must-fix>` fence labelled as data, with fence tags stripped, because findings quote
 files the reviewer read and the builder must not obey text quoted inside them.
-The builder stages each path by name with `git add -- <path>...`, never with `-A` or `.`,
-because the guard checks only the paths a `git add` names, so a blanket add would stage an
-un-ignored secret file unseen. `git diff --name-only` and
-`git ls-files --others --exclude-standard` must print nothing before the builder reports done,
+The builder stages each file by its own path with `git add -- <file>...`, never a directory, a
+glob, a pathspec such as `:/`, `-A` or `.`, because the guard checks only the paths a `git add`
+names, so `git add -- src/` would stage an un-ignored `src/.env.local` unseen. `git diff --name-only` and
+`git ls-files --others --exclude-standard :/` must print nothing before the builder reports done,
 and the reviewer counts every printed path as must-fix, because the workflow has no shell and the
 staged diff cannot show unstaged files. A reviewer that finds HEAD moved past `baseRef` answers
 BLOCKED, since the builder committed. A build that throws is resumed with `resumeFromRunId`, not caught

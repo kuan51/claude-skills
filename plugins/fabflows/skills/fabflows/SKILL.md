@@ -127,7 +127,7 @@ object, `Workflow({ name: 'fabflows:build', args: { spec, branch, baseRef, testC
 not as a string.
 
 On `accepted`, run the gate yourself: `git write-tree` equals `verdict.head`, and
-`git diff --name-only` and `git ls-files --others --exclude-standard` print nothing; re-run
+`git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; re-run
 `testCommand`, read `git diff --cached --stat <baseRef>`, and check that one must-fix from an
 earlier round is really fixed. Then make exactly one commit of the staged tree on the feature
 branch, with the ticket's `Refs:`/`Spec:` lines, and check that `git rev-parse HEAD^{tree}`

@@ -1,7 +1,7 @@
 export const meta = {
   name: 'build',
   description: "Build one spec'd change on a feature branch: an Opus builder implements and stages it without committing, fresh reviewers return ACCEPT or REWORK on the staged diff, rework is capped, and the lead commits the accepted tree",
-  whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef, testCommand, and optionally reviewerModel (Opus by default; the sweep lens always runs on Sonnet at high effort). The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
+  whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef (`git rev-parse HEAD` at launch, or every review answers BLOCKED), testCommand, and optionally reviewerModel (Opus by default; the sweep lens always runs on Sonnet at high effort). The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
   phases: [
     { title: 'Build', detail: 'fabflows:editor on Opus implements the spec and stages each path by name, never committing' },
     { title: 'Review', detail: 'a fresh fabflows:refuter reads the staged diff and re-runs the tests; a round that sweeps callees reviews with two concurrent refuters, one on the spec and tests, one sweeping callees on Sonnet at high effort' },
@@ -145,7 +145,7 @@ function buildBrief(round, mustFix) {
     '',
     `**Tools and paths:** Read, Edit, Write, Grep, Glob, and Bash in this repository. Run \`${a.testCommand}\` to prove the change.`,
     '',
-    `**Boundaries:** First run \`git rev-parse --abbrev-ref HEAD\`; if it does not print \`${a.branch}\`, report blocked and change nothing. Once \`${a.testCommand}\` passes, stage every path the change needs by name with \`git add -- <path>...\`, never \`git add\` with \`-A\`, \`--all\` or \`.\`, so the guard's credential-file check sees each path. Never commit: this brief authorizes no commit, and the lead commits the reviewed change. Before you report done, \`git diff --name-only\` and \`git ls-files --others --exclude-standard\` must both print nothing: stage what the change needs and delete anything else you created. Never push, merge, rebase, or reset. If the spec turns out to be wrong or impossible, report blocked instead of redesigning it. Change only what the spec${mustFix ? ' and the must-fix list' : ''} requires.`,
+    `**Boundaries:** First run \`git rev-parse --abbrev-ref HEAD\`; if it does not print \`${a.branch}\`, report blocked and change nothing. Once \`${a.testCommand}\` passes, stage every file the change needs by its own path with \`git add -- <file>...\`: never a directory, a glob, a pathspec such as \`:/\`, or \`-A\`, \`--all\` or \`.\`, so the guard's credential-file check sees each file. Never commit: this brief authorizes no commit, and the lead commits the reviewed change. Before you report done, \`git diff --name-only\` and \`git ls-files --others --exclude-standard :/\` must both print nothing: stage what the change needs and delete anything else you created. Never push, merge, rebase, or reset. If the spec turns out to be wrong or impossible, report blocked instead of redesigning it. Change only what the spec${mustFix ? ' and the must-fix list' : ''} requires.`,
   ].join('\n')
 }
 
@@ -156,7 +156,13 @@ function buildBrief(round, mustFix) {
 // round it is.
 function previousHead() {
   const prev = rounds.length ? rounds[rounds.length - 1].review : null
-  return prev && typeof prev.head === 'string' && /^[0-9a-f]{7,40}$/.test(prev.head.trim()) ? prev.head.trim() : null
+  return prev ? fullHash(prev.head) : null
+}
+
+// A full SHA-1 or SHA-256 hash, as `git write-tree` prints it, or null. A short hash never equals
+// `git write-tree` output, so the lead's commit gate could not check it.
+function fullHash(h) {
+  return typeof h === 'string' && /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(h.trim()) ? h.trim() : null
 }
 
 // head is previousHead() for this round. lens is undefined for a single reviewer, or 'spec' /
@@ -181,7 +187,7 @@ function reviewBrief(round, head, lens) {
     '',
     '**Output:** The structured result: verdict (ACCEPT when there are no must-fix findings, REWORK when there is at least one, BLOCKED when you could not run the diff or the test command -- say what stopped you in blocker), mustFix as findings with path:line, problem, evidence and severity, head (the staged tree you reviewed: the output of `git write-tree`, run once more if it fails on `index.lock`), and report -- your usual report contract in prose, including your notes and the summary and failing lines of the test command, not its whole output.',
     '',
-    `**Tools and paths:** Read, Grep, Glob, and Bash for these commands: \`git diff --cached ${a.baseRef}\`, ${head ? `\`git diff --cached ${head}\`, ` : ''}\`git diff --name-only\`, \`git ls-files --others --exclude-standard\`, \`git rev-parse HEAD\`, \`git rev-parse ${a.baseRef}\`, \`git write-tree\`, \`git log\`, \`git show\`, \`git status --porcelain\` and \`${a.testCommand}\`. Bash may also run a one-line probe of the project's own code on a literal input (\`node -e\`, or the built command with its arguments) from the repository directory; that it writes nothing is your own check before you run it, and the guard does not make it for you.`,
+    `**Tools and paths:** Read, Grep, Glob, and Bash for these commands: \`git diff --cached ${a.baseRef}\`, ${head ? `\`git diff --cached ${head}\`, ` : ''}\`git diff --name-only\`, \`git ls-files --others --exclude-standard :/\`, \`git rev-parse HEAD\`, \`git rev-parse ${a.baseRef}\`, \`git write-tree\`, \`git log\`, \`git show\`, \`git status --porcelain\` and \`${a.testCommand}\`. Bash may also run a one-line probe of the project's own code on a literal input (\`node -e\`, or the built command with its arguments) from the repository directory; that it writes nothing is your own check before you run it, and the guard does not make it for you.`,
     '',
     '**Boundaries:** Read-only. Never edit, create, or delete a file; never commit, push, merge, rebase, or reset; `git write-tree` writes git objects only, never a working file. Must-fix means the change contradicts the spec, a test fails, or it is a real bug' +
       ": a wrong result on an input the code's domain has, not a difference from another library or a stricter standard" +
@@ -192,7 +198,7 @@ function reviewBrief(round, head, lens) {
         : `This round judges the rework only, so must-fix here is limited to: an earlier round's must-fix item still not fixed, a regression in \`git diff --cached ${head}\`, a real bug in code that diff changed, or an unstaged or untracked path. A new finding anywhere else is a note with its path:line, never must-fix; do not repeat round 1's callee sweep. `) +
       (earlier.length ? "A change an earlier round's must-fix demanded is not a departure from the spec, even where the spec says that code keeps working as it does, unless it deletes, skips or weakens a test, weakens a validation or a security check, installs something, or edits a file neither the change nor the code it calls touches; judge whether it fixes the item. " : '') +
       `If \`git rev-parse HEAD\` differs from \`git rev-parse ${a.baseRef}\`, the builder committed: the verdict is BLOCKED, with that as the blocker. ` +
-      `Run \`git diff --name-only\` and \`git ls-files --others --exclude-standard\` before \`${a.testCommand}\`; every path either prints is must-fix -- it is unstaged, so the diff does not contain it.`,
+      `Run \`git diff --name-only\` and \`git ls-files --others --exclude-standard :/\` before \`${a.testCommand}\`; every path either prints is must-fix -- it is unstaged, so the diff does not contain it.`,
   ].join('\n')
 }
 
@@ -262,15 +268,23 @@ let mustFix = null
 // references/build-loop.md can be refused, and the result is the one channel that cannot be
 // blocked. Every reason escalate() is called with has an entry here, so there is no fallback.
 const NEXT = {
-  blocked: "Read the last round's build.blocker, or the start of its report when blocker is empty. Its work is staged, not committed: `git diff --cached <baseRef>` shows it. A permission denial is the user's to resolve: never bypass it and never re-issue the denied call yourself.",
-  unexplained: 'The builder named no reason. Read its report if it has one, then run `git status --porcelain` and `git diff --cached <baseRef>` to see what it left, staged and not committed, and take the work over.',
-  'builder-failed': 'The builder returned nothing. Its partial work is staged, not committed: check `git diff --cached <baseRef>` and `git status --porcelain`, then take the work over rather than relaunching.',
+  blocked: "Read the last round's build.blocker, or the start of its report when blocker is empty. A permission denial is the user's to resolve: never bypass it and never re-issue the denied call yourself.",
+  unexplained: 'The builder named no reason. Read its report if it has one, then run `git status --porcelain` and `git diff <baseRef>` to see what it left, and take the work over.',
+  'builder-failed': 'The builder returned nothing. Check what partial work it left, then take the work over rather than relaunching.',
   'reviewer-failed': 'The reviewer returned nothing. The builder\'s work is staged, not committed: run `fabflows:refuter` yourself on `git diff --cached <baseRef>` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` keeps the one that came back, so review only what the missing lens covered.',
-  'reviewer-blocked': 'A reviewer could not review. Fix what verdict.blocker names (a missing dependency is the user\'s to install), then run `fabflows:refuter` yourself on the staged, uncommitted work in `git diff --cached <baseRef>` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` holds the other lens\'s finished review, so review again only what the blocked lens covered.',
+  'reviewer-blocked': 'A reviewer could not review. If verdict.blocker says the builder committed, do not review: ask the user what to do with that unreviewed commit. Otherwise fix what verdict.blocker names (a missing dependency is the user\'s to install), then run `fabflows:refuter` yourself on the staged, uncommitted work in `git diff --cached <baseRef>` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` holds the other lens\'s finished review, so review again only what the blocked lens covered.',
   'accept-with-must-fix': 'The reviewer contradicted itself: it accepted while listing must-fix items. Read verdict.mustFix against the staged, uncommitted work in `git diff --cached <baseRef>` and decide yourself; do not relaunch on a contradiction. In a round reviewed by two lenses, the last round\'s `lenses` holds each lens\'s own verdict and must-fix items.',
+  'accept-without-head': 'The reviewer accepted but recorded no full tree hash as verdict.head, so the commit gate cannot check the staged tree. Run `fabflows:refuter` yourself on the staged work in `git diff --cached <baseRef>`, recording `git write-tree`, rather than relaunching or committing unchecked.',
   'rework-without-must-fix': 'The reviewer asked for rework without naming anything to fix. Read verdict.report against the staged, uncommitted work in `git diff --cached <baseRef>` and decide yourself; do not relaunch on a contradiction. In a round reviewed by two lenses, the last round\'s `lenses` holds each lens\'s own verdict and must-fix items.',
   'rework-cap': 'Two rework rounds did not satisfy the reviewer. Read verdict.mustFix and the rounds, and take the work over rather than raising the cap; it is staged, not committed, and `git diff --cached <baseRef>` shows it. A matched entry in deviations still in the diff stands: never revert it on the spec\'s text alone; propose the spec amendment to the user.',
 }
+
+// Appended to every escalation's next: a builder that stopped before staging leaves unstaged
+// edits that `git diff --cached` would hide.
+const UNCOMMITTED = "The builder's work is uncommitted, staged or not: `git status --porcelain` and `git diff <baseRef>` show it."
+
+// The lead's commit gate on accepted: the workflow has no shell, so the lead commits.
+const ACCEPTED_NEXT = 'Run the commit gate: `git write-tree` equals verdict.head, and `git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; re-run testCommand; make exactly one commit of the staged tree on the feature branch with the ticket\'s `Refs:`/`Spec:` lines; then `git rev-parse HEAD^{tree}` equals verdict.head and `git status --porcelain` prints nothing. If a commit hook refuses the commit or changes the tree, stop and tell the user: never amend it or fix it unreviewed.'
 
 // A builder's deviation is data: it stands only when it cites a must-fix the builder was
 // actually sent, which is the previous round's review. Rework round r is build round r + 1 and
@@ -299,7 +313,7 @@ function deviations() {
 // action the lead should take next.
 function escalate(reason) {
   const verdict = rounds.map((r) => r.review).filter(Boolean).pop() || null
-  return { status: 'escalate', reason, baseRef: a.baseRef, rounds, verdict, deviations: deviations(), next: NEXT[reason] }
+  return { status: 'escalate', reason, baseRef: a.baseRef, rounds, verdict, deviations: deviations(), next: `${NEXT[reason]} ${UNCOMMITTED}` }
 }
 
 for (let round = 1; round <= MAX_REWORK + 1; round++) {
@@ -366,9 +380,13 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     log(`round ${round}: ACCEPT with ${review.mustFix.length} must-fix item(s) -- escalating rather than guessing`)
     return escalate('accept-with-must-fix')
   }
+  if (review.verdict === 'ACCEPT' && !fullHash(review.head)) {
+    log(`round ${round}: ACCEPT with no full head -- escalating, since the commit gate needs one`)
+    return escalate('accept-without-head')
+  }
   if (review.verdict === 'ACCEPT') {
     log(`round ${round}: ACCEPT`)
-    return { status: 'accepted', baseRef: a.baseRef, rounds, verdict: review, deviations: deviations() }
+    return { status: 'accepted', baseRef: a.baseRef, rounds, verdict: review, deviations: deviations(), next: ACCEPTED_NEXT }
   }
   if (!review.mustFix.length) {
     log(`round ${round}: REWORK with no must-fix items -- escalating rather than guessing`)
