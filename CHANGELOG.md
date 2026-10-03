@@ -8,6 +8,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.16.0** -- a build-loop review round that sweeps callees now runs two reviewers at
+  once on the same commit (#176): a spec lens that judges the diff against the spec and runs the
+  tests, and a sweep lens that only sweeps the functions the diff calls. The script merges their
+  verdicts into one, and a later round with a valid head keeps one reviewer. Iteration 9 measured
+  the loop at 396 s and $2.53 a run against 490 s and $2.61 for 0.15.1, quality 8 of 8, but the
+  round-1 review it targets moved only from 200 s to 191 s, within noise: most of the gap is in
+  other stages. Details in `plugins/fabflows/evals/RESULTS.md`.
+
 - **ciso 1.3.0** -- `ciso:import` works for any framework (#157). It converts a controls list
   (a CSV, the first sheet of an xlsx, a JSON array, or a document Claude first extracts to JSON)
   through a column mapping the user confirms, and writes a project framework. Private mode, the

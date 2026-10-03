@@ -1449,3 +1449,150 @@ node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/ite
 (cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-8 --skill-name fabflows)
 python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-8 <skill-creator> <abs>/runs/iteration-8/notes.json
 ```
+
+## Iteration 9: two concurrent reviewers in a sweeping round
+
+Tracked in [#176](https://github.com/kuan51/claude-skills/issues/176). A change cannot be reviewed
+before it is built, but a review round that sweeps callees does two independent jobs in one
+agent: it checks the diff against the spec with the tests, and it sweeps the functions the diff
+calls. This iteration asks whether running those jobs as two reviewers at once makes the build
+loop faster without costing much more.
+
+The data is in `runs/iteration-9/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Prior
+
+Iteration 8 passed its bar 5 of 5 at $2.34 and 434 s a run, every run in two rounds. It did not
+record where a run's time goes. This iteration's control does: its round-1 review took 200 s on
+average, against 45 s for the round-1 build.
+
+### Setup
+
+- **The plugin.** fabflows 0.16.0 as it is on the branch for #176, with no snapshot patch.
+  - `workflows/build.js`: a round that sweeps callees (round 1, or a later round whose previous
+    review recorded no valid head) starts two `fabflows:refuter` agents on the same commit with
+    `Promise.all`. The spec lens judges the diff against the spec and runs the tests and
+    `git status --porcelain`. The sweep lens only sweeps callees and runs neither. The script
+    merges the two results into one verdict. A later round with a valid head keeps one reviewer.
+  - `agents/refuter.md`: a brief that says another reviewer sweeps means do not sweep, and a
+    sweep-only brief may ACCEPT without a test command.
+- **Runs.** Task 8's `loop` arm, lead claude-fable-5-1 at medium effort, one session at a time,
+  caps 120 turns, $15 list price and 30 minutes a run. The control, `control-0.15.1`, is the
+  shipped 0.15.1 taken with `git archive 08f2095`: 5 runs, 22:52 to 23:33 UTC on 2026-10-02.
+  The variant, `review-split`: 8 runs, 03:56 to 04:49 UTC on 2026-10-03. The variant's first
+  attempt was stopped by the owner during its run 1; that run had no grading and was deleted
+  before the 8 runs below.
+- **Clean room.** As iterations 2 to 8. The container has 4 CPUs, so the workflow concurrency
+  cap, min(16, CPUs - 2), is 2 and both lenses can run at once.
+
+### Runs
+
+Round-1 review is the slower lens in the variant. Every run ended with the workflow status
+`accepted` and the hidden suite at 9/9.
+
+| Config | Run | Cost | Time s | Review rounds (must-fix items) | Round-1 review s |
+|---|---|---|---|---|---|
+| control | 1 | $3.0274 | 516 | REWORK (2), ACCEPT | 204 |
+| control | 2 | $3.0807 | 650 | REWORK (3), REWORK (1), ACCEPT | 231 |
+| control | 3 | $2.2528 | 418 | REWORK (2), ACCEPT | 170 |
+| control | 4 | $2.4624 | 450 | REWORK (2), ACCEPT | 196 |
+| control | 5 | $2.2291 | 418 | REWORK (2), ACCEPT | 199 |
+| review-split | 1 | $2.9841 | 386 | REWORK (2), ACCEPT | spec 121, sweep 167 |
+| review-split | 2 | $2.4531 | 385 | REWORK (1), ACCEPT | spec 104, sweep 202 |
+| review-split | 3 | $2.4583 | 423 | REWORK (1), ACCEPT | spec 102, sweep 233 |
+| review-split | 4 | $2.4963 | 380 | REWORK (2), ACCEPT | spec 112, sweep 155 |
+| review-split | 5 | $2.4082 | 389 | REWORK (1), ACCEPT | spec 83, sweep 183 |
+| review-split | 6 | $2.3630 | 334 | REWORK (1), ACCEPT | spec 111, sweep 163 |
+| review-split | 7 | $2.5500 | 415 | REWORK (2), ACCEPT | spec 112, sweep 183 |
+| review-split | 8 | $2.5473 | 453 | REWORK (1), ACCEPT | spec 123, sweep 240 |
+
+Where the time went, as the mean seconds a run, from each run's `metrics.json` per-agent
+`durationMs` and `cells.json` `sec`:
+
+| Stage | Control | Variant | Change |
+|---|---|---|---|
+| Round-1 review | 200.0 | 190.6 | -9.4 |
+| Round-2 review | 88.7 | 53.9 | -34.8 |
+| Builds, rounds 1 and 2 | 82.3 | 73.0 | -9.3 |
+| Round 3 (control run 2 only, averaged over 5 runs) | 21.6 | 0 | -21.6 |
+| Lead, outside the workflow | 97.7 | 78.2 | -19.5 |
+| Total | 490.2 | 395.7 | -94.5 |
+
+### What the runs show
+
+- **Quality held.** Every round-1 sweep lens listed `caret()`'s cases and quoted a `^0.M.P`
+  probe with a wrong output, 8 of 8, and named the defect as must-fix at `src/index.js:89`. No
+  round-1 spec lens listed a callee's cases; in 7 of 8 it probed the new `outdated` command
+  itself, which is the code under review. Each later round had one reviewer: both lenses always
+  reported the same head.
+- **The loop was faster: 396 s against 490 s (-19.3%, standard error 9.3%).**
+- **The split itself barely shortened round 1: 191 s against 200 s (-4.7%, standard error
+  7.4%).** The sweep lens alone took about as long as the single reviewer did. The spec lens
+  finished in 108 s on average and then waited for it.
+- **Most of the gap is in other stages.** Round 2's review fell by 35 s, control run 2's third
+  round adds 22 s to the control's mean, the lead spent 20 s less outside the workflow, and the
+  builds 9 s less. Round 1 raised fewer must-fix items in the variant (1.4 against 2.2 on
+  average), which may be why round 2 was shorter; that link is inferred, not shown.
+- **Cost stayed flat: $2.53 against $2.61 (-3.0%, standard error 7.6%).** Round-1 review output
+  rose from 20.5k to 30.2k tokens a run (+47%), but the run's total fell from 1.49M to 1.34M
+  tokens (`benchmark.json`).
+
+### Verdict
+
+The change stays, by the owner's decision on 2026-10-03. The bar passes as written, but the
+split is not the main reason the loop was faster: the stage it targets moved within noise. The
+sweep is now the slowest step, about 190 s a run, and one sweeper per callee is the next
+candidate. Computed from `plugins/fabflows/evals/runs` with the snippet below; the stage table
+came from each run's `metrics.json`.
+
+```bash
+node -e '
+const fs=require("fs"),p=require("path"),I="plugins/fabflows/evals/runs/iteration-9/eval-8-review-catch";
+for(const C of ["control-0.15.1","review-split"])for(const r of fs.readdirSync(p.join(I,C)).sort()){const d=p.join(I,C,r);
+const e=JSON.parse(fs.readFileSync(p.join(d,"grading.json"))).expectations,row=(t)=>e.find((x)=>x.text.startsWith(t))||{};
+let s="none";for(const l of fs.readFileSync(p.join(d,"transcript.jsonl"),"utf8").split("\n")){if(!l.includes("task_notification"))continue;const q=JSON.parse(l);if(q.output_file)try{s=JSON.parse(fs.readFileSync(q.output_file)).result.status}catch{}}
+const h=row("Hidden acceptance suite:"),bar=s==="accepted"&&h.passed&&row("No tool call was denied").passed&&row("Every launched workflow finished").passed;
+console.log(C,"|",r,"| status:",s,"|",h.text,"| BAR:",bar?"pass":"FAIL")}'
+```
+
+It printed `status: accepted`, `Hidden acceptance suite: 9/9 tests pass` and `BAR: pass` for all
+5 control and all 8 variant runs. Earlier iterations' snippet took the last verdict in the
+journal; here that can be a lens's verdict, so the snippet reads the workflow's returned
+`status` from the task output file the lead's `task_notification` names. That file sits in the
+run's isolated temp directory and is not tracked.
+
+| Bar | Result |
+|---|---|
+| Variant mean wall time at least 15% below the control's | Holds: -19.3% (standard error 9.3%) |
+| Variant mean cost at most 20% above the control's | Holds: -3.0% (standard error 7.6%) |
+| Every variant run: `accepted`, hidden suite 9/9, finished, no tool call denied | Holds: 8 of 8 |
+| Round 1's sweep lens lists `caret()`'s cases and probes `^0.M.P` (by hand) | Holds: 8 of 8 |
+| No round-1 spec lens sweeps callees (by hand) | Holds: 8 of 8 |
+
+### Cost of this iteration
+
+$33.3128 at list price for 13 runs: $13.0525 for the control ($2.6105 a run) and $20.2604 for
+the variant ($2.5325 a run). The stopped first attempt is not included: it was not graded and
+its cost was not recorded.
+
+### Confounds
+
+- **One long control run decides the wall-time bar.** Control run 2 needed a third round and
+  took 650 s. Without it the control's mean is 450.4 s, and the variant is 12.1% faster, short
+  of the 15% bar.
+- **Not quite same-day.** The variant ran 4 to 5 hours after the control.
+- **One fixture.** Task 8 plants one defect in one callee, and its tests write only to the
+  system temp directory, so neither a slow multi-callee sweep nor the shared working tree risk
+  is measured here.
+- **The concurrency cap.** This container's 4 CPUs give a cap of 2. A machine with 3 CPUs or
+  fewer would run the lenses one after the other.
+
+### Commands
+
+```bash
+git archive 08f2095 plugins/fabflows | tar -x -C <scratch>/control
+node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --plugin-dir <scratch>/control/plugins/fabflows --config-name control-0.15.1 --repeats 5 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name review-split --repeats 8 --confirm
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-9 --skill-name fabflows)
+```
