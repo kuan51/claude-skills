@@ -234,7 +234,7 @@ In plan mode, these steps run after ExitPlanMode.
    get a new yes, then `ticket.js approve` that file and check again. When `check` says the
    approved text was tampered with, show the full raw `normalize` output instead.
 4. The build's `spec` is `ticket.js normalize < <file>` of that same file: the ticket text as
-   written, minus HTML comments, invisible and control characters, and the Links section. Add
-   one line giving the commit trailers, `Refs: <key>` and `Spec: <specHash>`, both from
-   `ticket.js status`.
+   written, minus HTML comments, invisible and control characters, and the Links section. Do
+   not add the commit trailers to it: keep `Refs: <key>` and `Spec: <specHash>`, both from
+   `ticket.js status`, for the one commit you make after the build is accepted.
 5. Delete the scratch files once `check` passes.

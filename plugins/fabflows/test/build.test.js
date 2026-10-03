@@ -74,13 +74,13 @@ test('accepts on the first round: Opus editor builds, Opus refuter reviews', asy
   assert.match(calls[0].prompt, /git rev-parse --abbrev-ref HEAD`; if it does not print `feat\/dry-run`/);
   assert.equal(calls[1].opts.agentType, 'fabflows:refuter');
   assert.equal(calls[1].opts.model, 'opus', 'the reviewer defaults to the tier refuter.md pins, not to the lead');
-  assert.match(calls[1].prompt, /git diff abc1234\.\.HEAD/);
+  assert.match(calls[1].prompt, /git diff --cached abc1234`/);
 });
 
 test('trims the settings before they reach a brief', async () => {
   const { calls } = await run({ ...ARGS, branch: ' feat/dry-run ', baseRef: 'abc1234\n' }, [built, accept]);
   assert.match(calls[0].prompt, /does not print `feat\/dry-run`,/);
-  assert.match(calls[1].prompt, /git diff abc1234\.\.HEAD/);
+  assert.match(calls[1].prompt, /git diff --cached abc1234`/);
 });
 
 test('reworks with the must-fix list, then accepts', async () => {
@@ -90,7 +90,7 @@ test('reworks with the must-fix list, then accepts', async () => {
   assert.equal(calls.length, 4);
   assert.match(calls[2].prompt, /This is rework round 1\./);
   assert.match(calls[2].prompt, /src\/cli\.js:10 -- flag is parsed but ignored/);
-  assert.match(calls[2].prompt, /git diff abc1234\.\.HEAD/);
+  assert.match(calls[2].prompt, /start with `git diff --cached abc1234`/);
   assert.doesNotMatch(calls[0].prompt, /rework round/);
 });
 
@@ -138,13 +138,13 @@ test('the first review carries no earlier must-fix fence, and every review the s
 });
 
 const SWEEP = /probe one literal input per case with one line of the project's own code, and quote each probe and its output; a case not probed is an open question in the report, never a checked one\./;
-const REWORK_ONLY = /must-fix here is limited to: an earlier round's must-fix item still not fixed, a regression in `git diff [0-9a-f]+\.\.HEAD`, a real bug in code that diff changed, or an uncommitted path from `git status --porcelain`\. A new finding anywhere else is a note with its path:line, never must-fix/;
+const REWORK_ONLY = /must-fix here is limited to: an earlier round's must-fix item still not fixed, a regression in `git diff --cached [0-9a-f]+`, a real bug in code that diff changed, or an unstaged or untracked path\. A new finding anywhere else is a note with its path:line, never must-fix/;
 const PER_ITEM = /say in the report whether it is fixed, not fixed, or regressed/;
 
 test('round 1 sweeps callees by their cases; rounds 2 and 3 judge only the rework since the previous head', async () => {
   const h1 = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
   const h2 = 'deadbee';
-  // A reviewer that pastes `git log -1 --format=%H` output leaves a newline on it: still a head.
+  // A reviewer that pastes `git write-tree` output leaves a newline on it: still a head.
   const { calls, sweepCalls } = await run(ARGS, [built, { ...rework, head: `${h1}\n` }, built, { ...rework, head: h2 }, built, accept]);
   const [r1, r2, r3] = [calls[1].prompt, calls[3].prompt, calls[5].prompt];
   assert.equal(sweepCalls.length, 1, 'only round 1 sweeps');
@@ -156,8 +156,8 @@ test('round 1 sweeps callees by their cases; rounds 2 and 3 judge only the rewor
   for (const [brief, prev] of [[r2, h1], [r3, h2]]) {
     assert.match(brief, REWORK_ONLY);
     assert.match(brief, PER_ITEM);
-    assert.ok(brief.includes(`\`git diff abc1234..HEAD\`, \`git diff ${prev}..HEAD\``), `Tools line carries git diff ${prev}..HEAD`);
-    assert.ok(brief.includes(`a regression in \`git diff ${prev}..HEAD\``));
+    assert.ok(brief.includes(`\`git diff --cached abc1234\`, \`git diff --cached ${prev}\``), `Tools line carries git diff --cached ${prev}`);
+    assert.ok(brief.includes(`a regression in \`git diff --cached ${prev}\``));
     assert.match(brief, new RegExp(`Judge the rework since \`${prev}\``));
     assert.doesNotMatch(brief, SWEEP);
     assert.doesNotMatch(brief, /names the callees you swept/);
@@ -178,7 +178,7 @@ test('an invalid or missing head makes the next round judge the whole diff as ro
     assert.doesNotMatch(sweepCalls[0].prompt, /the boundary is unknown/, 'round 1 needs no reason');
     assert.match(brief, PER_ITEM);
     assert.doesNotMatch(brief, /limited to/);
-    assert.equal(brief.match(/git diff [^`]*\.\.HEAD/g).length, 1, `only the baseRef diff: ${JSON.stringify(head)}`);
+    assert.equal(brief.match(/git diff --cached [^`]*/g).length, 1, `only the baseRef diff: ${JSON.stringify(head)}`);
   }
 });
 
@@ -194,10 +194,11 @@ test('a sweeping review runs at xhigh; a rework-only review after a valid head r
   }
 });
 
-test('the verdict schema lists head', async () => {
-  const { calls } = await run(ARGS, [built, accept]);
-  assert.match(calls[1].opts.schema.properties.head.description, /git log -1 --format=%H/);
-  assert.match(calls[1].prompt, /head \(the commit you reviewed, from `git log -1 --format=%H`\)/);
+test('the verdict schema lists head as the staged tree from git write-tree', async () => {
+  const { calls, sweepCalls } = await run(ARGS, [built, accept]);
+  assert.match(calls[1].opts.schema.properties.head.description, /git write-tree/);
+  assert.match(calls[1].prompt, /head \(the staged tree you reviewed: the output of `git write-tree`, run once more if it fails on `index\.lock`\)/);
+  assert.ok(!('head' in sweepCalls[0].opts.schema.properties), 'the sweep lens records no head');
 });
 
 test('the builder schema and the rework brief carry the deviations field', async () => {
@@ -430,6 +431,9 @@ test('every escalation carries status, baseRef, the last verdict, and what to do
     assert.ok(Array.isArray(result.deviations), `${reason} must carry deviations`);
     assert.equal(result.verdict ? result.verdict.verdict : null, last, `${reason} last verdict`);
     assert.ok(typeof result.next === 'string' && result.next.trim().length > 20, `${reason} must carry an actionable next`);
+    assert.match(result.next, /`git diff --cached <baseRef>`/, `${reason} next points at the staged diff`);
+    assert.match(result.next, /staged/, `${reason} next says the work is staged`);
+    assert.doesNotMatch(result.next, /\.\.HEAD/, `${reason} next no longer points at commits`);
     nexts.set(reason, result.next);
   }
   // Derived from build.js, not a literal count: escalate() has no fallback, so a reason added
@@ -443,17 +447,34 @@ test('every escalation carries status, baseRef, the last verdict, and what to do
   assert.equal(new Set(nexts.values()).size, nexts.size, 'each reason needs its own next action, not one generic line');
 });
 
-// The tests run against the working tree but the review reads the commits, so work left
-// uncommitted would pass both unless each brief checks the tree.
-test('every brief checks the working tree for uncommitted work', async () => {
-  const { calls } = await run(ARGS, [built, rework, built, accept]);
+// The tests run against the working tree but the review reads the staged diff, so work left
+// unstaged would pass both unless each brief checks the tree.
+const UNSTAGED = /Run `git diff --name-only` and `git ls-files --others --exclude-standard` before `npm test`; every path either prints is must-fix/;
+const MOVED = /If `git rev-parse HEAD` differs from `git rev-parse abc1234`, the builder committed: the verdict is BLOCKED, with that as the blocker\./;
+test('every brief checks the working tree for unstaged work, and a review blocks on a moved HEAD', async () => {
+  const h = 'a1b2c3d';
+  const { calls } = await run(ARGS, [built, { ...rework, head: h }, built, accept]);
   for (const { prompt, opts } of calls) {
-    assert.match(prompt, /git status --porcelain/, `${opts.label} brief must check the tree`);
+    assert.match(prompt, /git diff --name-only/, `${opts.label} brief must check the tree`);
+    assert.match(prompt, /git ls-files --others --exclude-standard/, `${opts.label} brief must check untracked files`);
   }
-  assert.match(calls[0].prompt, /Before you report done, `git status --porcelain` must print nothing/);
-  assert.match(calls[1].prompt, /Run `git status --porcelain` before `npm test`; every path it prints is must-fix/);
-  assert.match(calls[2].prompt, /start with `git status --porcelain` and `git diff abc1234\.\.HEAD`/);
-  assert.doesNotMatch(calls[2].prompt, /earlier commits are already on the branch/);
+  assert.match(calls[0].prompt, /Before you report done, `git diff --name-only` and `git ls-files --others --exclude-standard` must both print nothing/);
+  for (const i of [1, 3]) {
+    assert.match(calls[i].prompt, UNSTAGED, `${calls[i].opts.label} makes unstaged and untracked paths must-fix`);
+    assert.match(calls[i].prompt, MOVED, `${calls[i].opts.label} makes a moved HEAD BLOCKED`);
+    assert.doesNotMatch(calls[i].prompt, /every path it prints is must-fix/);
+  }
+  assert.match(calls[2].prompt, /start with `git diff --cached abc1234`/);
+});
+
+test('the builder stages paths by name and never commits', async () => {
+  const { calls } = await run(ARGS, [built, rework, built, accept]);
+  for (const i of [0, 2]) {
+    const p = calls[i].prompt;
+    assert.match(p, /stage every path the change needs by name with `git add -- <path>\.\.\.`, never `git add` with `-A`, `--all` or `\.`/);
+    assert.match(p, /Never commit: this brief authorizes no commit/);
+    assert.doesNotMatch(p, /authorizes those commits|Commit to `|then commit\./);
+  }
 });
 
 // A third value, so the override is still proved once the default is Opus.
@@ -512,10 +533,11 @@ test('the lens briefs split the review: the sweep lens sweeps only, the spec len
   assert.equal(sweep.opts.label, 'review:1:sweep');
   for (const { opts } of [spec, sweep]) assert.equal(opts.agentType, 'fabflows:refuter');
   assert.doesNotMatch(sweep.prompt, /npm test/, 'the sweep lens runs no test command');
-  assert.doesNotMatch(sweep.prompt, /git status --porcelain/, 'the sweep lens does not check the tree');
-  assert.match(sweep.prompt, /head \(the commit you reviewed, from `git log -1 --format=%H`\)/);
+  assert.doesNotMatch(sweep.prompt, /git status --porcelain|git diff --name-only|git ls-files/, 'the sweep lens does not check the tree');
+  assert.doesNotMatch(sweep.prompt, /git rev-parse/, 'the sweep lens does not check HEAD');
+  assert.doesNotMatch(sweep.prompt, /git write-tree/, 'only the spec lens runs git write-tree');
   assert.match(sweep.prompt, /A probe prints to stdout only and never redirects to a file/);
-  assert.match(sweep.prompt, /git diff abc1234\.\.HEAD/);
+  assert.match(sweep.prompt, /git diff --cached abc1234`/);
   assert.match(sweep.prompt, /sweep-only brief/, 'refuter.md keys its exception on the words sweep-only');
   assert.match(sweep.prompt, SWEEP);
   assert.ok(sweep.prompt.includes(`<spec>\n${ARGS.spec}\n</spec>`));
@@ -523,7 +545,9 @@ test('the lens briefs split the review: the sweep lens sweeps only, the spec len
   assert.match(spec.prompt, /Another reviewer sweeps the callees at the same time: do not sweep them; a callee problem you notice anyway is a note\./);
   assert.doesNotMatch(spec.prompt, SWEEP);
   assert.doesNotMatch(spec.prompt, /A function the diff calls but does not change is in scope/);
-  assert.match(spec.prompt, /Run `git status --porcelain` before `npm test`; every path it prints is must-fix/);
+  assert.match(spec.prompt, UNSTAGED);
+  assert.match(spec.prompt, MOVED);
+  assert.match(spec.prompt, /git write-tree/);
 });
 
 // The sweep lens runs on Sonnet at high effort; the spec lens and a later single reviewer keep
@@ -609,7 +633,7 @@ test('a later round with no valid head gives the spec lens the unfixed-earlier-i
   assert.match(calls[3].prompt, UNFIXED);
 });
 
-test('merge: must-fix is spec then sweep, the report has both, and head survives only when both agree', async () => {
+test('merge: must-fix is spec then sweep, the report has both, and head comes from the spec lens', async () => {
   const h = 'a1b2c3d';
   const { result, calls, sweepCalls } = await run(ARGS, [built, { ...rework, head: h }, built, accept], [{ ...sweepRework, head: h }]);
   const merged = result.rounds[0].review;
@@ -625,9 +649,11 @@ test('merge: must-fix is spec then sweep, the report has both, and head survives
   assert.equal(result.status, 'accepted');
 
   const split = await run(ARGS, [built, { ...rework, head: h }, built, accept], [{ ...sweepRework, head: 'deadbee' }]);
-  assert.equal(split.result.rounds[0].review.head, undefined, 'heads disagree: no head');
-  assert.equal(split.sweepCalls.length, 2, 'so the next round sweeps again');
-  assert.equal(split.calls[3].opts.label, 'review:2:spec');
+  assert.equal(split.result.rounds[0].review.head, h, 'a sweep-lens head is ignored');
+  assert.equal(split.sweepCalls.length, 1, 'so the next round judges the rework only');
+  const none = await run(ARGS, [built, rework, built, accept], [{ ...sweepRework, head: h }]);
+  assert.ok(!('head' in none.result.rounds[0].review), 'no spec-lens head: no head');
+  assert.equal(none.calls[3].opts.label, 'review:2:spec', 'so the next round sweeps again');
 
   const ok = await run(ARGS, [built, accept], [accept]);
   assert.equal(ok.result.status, 'accepted');

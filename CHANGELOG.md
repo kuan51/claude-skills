@@ -250,6 +250,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.17.0** -- the build loop reviews before anything is committed (#185). The builder
+  stages each path by name and never commits; reviewers read `git diff --cached <baseRef>` and
+  record the staged tree from `git write-tree` as `head`, and a later round judges
+  `git diff --cached <head>`. On ACCEPT the lead checks the tree, re-runs the tests and makes one
+  commit with the ticket's trailers, so an accepted build lands as one reviewed commit with no
+  fix-up commits.
+
 - **docs-warden 1.0.0 (breaking)** -- decision records are gone (#167). A decision's reason is now
   one or two sentences beside the rule in `docs/CONVENTIONS.md`, or in arc42 section 9 when it
   shapes the whole system; anything smaller goes in the pull request. Removed: `adr_new.py`,
