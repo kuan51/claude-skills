@@ -1,10 +1,10 @@
 export const meta = {
   name: 'build',
   description: "Build one spec'd change on a feature branch: an Opus builder implements and commits, a fresh reviewer returns ACCEPT or REWORK, and rework is capped",
-  whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef, testCommand, and optionally reviewerModel (Opus by default). The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
+  whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef, testCommand, and optionally reviewerModel (Opus by default; the sweep lens always runs on Sonnet at high effort). The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
   phases: [
     { title: 'Build', detail: 'fabflows:editor on Opus implements the spec and commits to the branch' },
-    { title: 'Review', detail: 'a fresh fabflows:refuter reads the diff and re-runs the tests; a round that sweeps callees reviews with two concurrent refuters, one on the spec and tests, one sweeping callees' },
+    { title: 'Review', detail: 'a fresh fabflows:refuter reads the diff and re-runs the tests; a round that sweeps callees reviews with two concurrent refuters, one on the spec and tests, one sweeping callees on Sonnet at high effort' },
   ],
 }
 
@@ -306,14 +306,15 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
 
   // A round that sweeps callees splits its review into two lenses on the same commit, run at
   // once. Promise.all, not parallel(): a thrown agent() must end the run so the lead can resume
-  // it (DEC-0007), and parallel() turns a throw into null.
+  // it (DEC-0007), and parallel() turns a throw into null. The sweep lens runs on Sonnet at high
+  // effort, outside reviewerModel (#181).
   const reviewer = (lens) =>
     agent(reviewBrief(round, lens), {
       label: lens ? `review:${round}:${lens}` : `review:${round}`,
       phase: 'Review',
       agentType: 'fabflows:refuter',
-      model: reviewerModel,
-      effort: 'xhigh',
+      model: lens === 'sweep' ? 'sonnet' : reviewerModel,
+      effort: lens === 'sweep' ? 'high' : 'xhigh',
       schema: VERDICT,
     })
   let review

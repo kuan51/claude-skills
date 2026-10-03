@@ -492,16 +492,12 @@ test('a sweeping round issues both lens calls before either resolves', async () 
 });
 
 test('the lens briefs split the review: the sweep lens sweeps only, the spec lens never sweeps', async () => {
-  const { calls, sweepCalls } = await run({ ...ARGS, reviewerModel: 'sonnet' }, [built, accept]);
+  const { calls, sweepCalls } = await run(ARGS, [built, accept]);
   const spec = calls[1];
   const sweep = sweepCalls[0];
   assert.equal(spec.opts.label, 'review:1:spec');
   assert.equal(sweep.opts.label, 'review:1:sweep');
-  for (const { opts } of [spec, sweep]) {
-    assert.equal(opts.model, 'sonnet', `${opts.label} carries reviewerModel`);
-    assert.equal(opts.effort, 'xhigh', `${opts.label} effort`);
-    assert.equal(opts.agentType, 'fabflows:refuter');
-  }
+  for (const { opts } of [spec, sweep]) assert.equal(opts.agentType, 'fabflows:refuter');
   assert.doesNotMatch(sweep.prompt, /npm test/, 'the sweep lens runs no test command');
   assert.doesNotMatch(sweep.prompt, /git status --porcelain/, 'the sweep lens does not check the tree');
   assert.match(sweep.prompt, /head \(the commit you reviewed, from `git log -1 --format=%H`\)/);
@@ -515,6 +511,25 @@ test('the lens briefs split the review: the sweep lens sweeps only, the spec len
   assert.doesNotMatch(spec.prompt, SWEEP);
   assert.doesNotMatch(spec.prompt, /A function the diff calls but does not change is in scope/);
   assert.match(spec.prompt, /Run `git status --porcelain` before `npm test`; every path it prints is must-fix/);
+});
+
+// The sweep lens runs on Sonnet at high effort; the spec lens and a later single reviewer keep
+// reviewerModel at xhigh, so a reviewerModel of fable moves only those two calls (#181).
+test('the sweep lens runs on sonnet at high effort; reviewerModel reaches only the spec lens and a later reviewer', async () => {
+  const h = 'a1b2c3d';
+  for (const reviewerModel of [undefined, 'fable']) {
+    const { calls, sweepCalls } = await run({ ...ARGS, reviewerModel }, [built, { ...rework, head: h }, built, accept]);
+    const want = reviewerModel || 'opus';
+    assert.equal(sweepCalls.length, 1);
+    assert.equal(sweepCalls[0].opts.label, 'review:1:sweep');
+    assert.equal(sweepCalls[0].opts.model, 'sonnet', `sweep lens model with reviewerModel ${reviewerModel}`);
+    assert.equal(sweepCalls[0].opts.effort, 'high', 'sweep lens effort');
+    for (const { opts } of [calls[1], calls[3]]) {
+      assert.match(opts.label, /^review:(1:spec|2)$/);
+      assert.equal(opts.model, want, `${opts.label} carries reviewerModel`);
+      assert.equal(opts.effort, 'xhigh', `${opts.label} effort`);
+    }
+  }
 });
 
 const sweepFix = { location: 'src/semver.js:40', problem: 'caret on 0.M.P is too wide', evidence: 'probe', severity: 'high' };

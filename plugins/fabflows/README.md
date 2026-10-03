@@ -225,14 +225,14 @@ implements the spec on the checked-out feature branch and commits, a fresh `refu
 (Opus by default, matching the pin in `agents/refuter.md`) reviews the diff and re-runs the
 tests, and after two rework rounds the loop hands back to the lead. A round that sweeps callees
 reviews with two concurrent refuters on the same commit: one reads the diff against the spec
-and re-runs the tests, the other only sweeps callees. It never merges, pushes,
+and re-runs the tests, the other only sweeps callees, on Sonnet at high effort. It never merges, pushes,
 or reverts. While plan mode is active the lead never links or edits a ticket, commits or
 launches the loop, and approving the plan is not reading the spec. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments;
 [DEC-0004](../../docs/decisions/DEC-0004-fable-leads-fabflows-opus-builds-and-reviews-in-a-determinis.md)
 records the original design and
 [DEC-0016](../../docs/decisions/DEC-0016-harden-the-fabflows-build-loop-denial-classification-reviewe.md)
 records why the reviewer moved off the lead's tier. Pass `reviewerModel: 'fable'` to restore
-the old default. The reviewer reads code the diff calls, and a must-fix that names a real bug
+the old default for every reviewer except the sweep lens, which stays on Sonnet. The reviewer reads code the diff calls, and a must-fix that names a real bug
 there lets the builder fix it even where the spec says otherwise. The builder names each spec
 sentence it crossed in `deviations`, the loop matches each entry to the must-fix it cites, and
 the lead keeps a matched fix and proposes the spec amendment to the user rather than reverting

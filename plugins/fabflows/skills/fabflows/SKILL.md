@@ -42,7 +42,7 @@ tools is already evidence. Do not re-run it to confirm it.
 | shape a rough idea or an unshaped request into a spec | `fabflows:brainstorming` | the lead asks; explorer, researcher and refuter read |
 | reproduce and narrow a self-contained failure | `fabflows:investigator` | Opus, read-only + Bash |
 | root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | none |
-| a spec'd, sizeable change | `fabflows:build` | Opus builder, Opus reviewer |
+| a spec'd, sizeable change | `fabflows:build` | Opus builder, Opus reviewer, Sonnet sweep lens |
 
 The built-in `Explore` agent inherits the lead's model, so under an expensive lead it costs
 about what searching yourself would. `fabflows:explorer` is the cheap tier.
@@ -108,7 +108,8 @@ verified and how afterwards. No log file: git records the edits.
 For a spec'd, sizeable change, `fabflows:build` runs an Opus `editor` that implements the
 spec and commits on the feature branch, then a fresh `refuter` (Opus by default) that reads
 the diff against the spec and re-runs the tests; a round that sweeps callees reviews with two
-concurrent refuters, one on the spec and tests and one sweeping callees. REWORK sends the must-fix list to a fresh
+concurrent refuters, one on the spec and tests and one sweeping callees on Sonnet at high
+effort, outside `reviewerModel`. REWORK sends the must-fix list to a fresh
 builder, up to two rework rounds. Offer it, or launch it when the session opened with
 `using-fabflows`. It never merges, pushes, or reverts.
 
