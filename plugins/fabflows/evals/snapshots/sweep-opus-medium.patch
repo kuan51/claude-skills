@@ -1,0 +1,13 @@
+--- a/plugins/fabflows/workflows/build.js
++++ b/plugins/fabflows/workflows/build.js
+@@ -313,8 +313,8 @@
+       label: lens ? `review:${round}:${lens}` : `review:${round}`,
+       phase: 'Review',
+       agentType: 'fabflows:refuter',
+-      model: lens === 'sweep' ? 'sonnet' : reviewerModel,
+-      effort: lens === 'sweep' ? 'high' : 'xhigh',
++      model: lens === 'sweep' ? 'opus' : reviewerModel,
++      effort: lens === 'sweep' ? 'medium' : 'xhigh',
+       schema: VERDICT,
+     })
+   let review
