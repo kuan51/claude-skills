@@ -451,9 +451,22 @@ test('every brief checks the working tree for uncommitted work', async () => {
     assert.match(prompt, /git status --porcelain/, `${opts.label} brief must check the tree`);
   }
   assert.match(calls[0].prompt, /Before you report done, `git status --porcelain` must print nothing/);
-  assert.match(calls[1].prompt, /Run `git status --porcelain` before `npm test`; every path it prints is must-fix/);
+  assert.match(calls[1].prompt, /Run `git status --porcelain` first, before `npm test`; every path it prints is must-fix/);
   assert.match(calls[2].prompt, /start with `git status --porcelain` and `git diff abc1234\.\.HEAD`/);
   assert.doesNotMatch(calls[2].prompt, /earlier commits are already on the branch/);
+});
+
+// The spec lens and a rework round's single reviewer start the tests in the background and read
+// the diff while they run (#180); the tree check stays first, so transient test files are not must-fix.
+test('a reviewer that runs the tests checks the tree first, backgrounds them and waits for their exit status', async () => {
+  const { calls } = await run(ARGS, [built, rework, built, accept]);
+  for (const i of [1, 3]) {
+    const p = calls[i].prompt;
+    assert.match(p, /Run `git status --porcelain` first, before `npm test`/, `${calls[i].opts.label} checks the tree before the tests`);
+    assert.ok(p.indexOf('git status --porcelain` first') < p.indexOf('start `npm test` with `run_in_background`'), `${calls[i].opts.label} runs status before the tests`);
+    assert.match(p, /Then start `npm test` with `run_in_background` and read the diff while it runs\./);
+    assert.match(p, /Never return a result before you have seen the test command's exit status and summary; a test run not seen to finish is BLOCKED\./);
+  }
 });
 
 // A third value, so the override is still proved once the default is Opus.
@@ -525,7 +538,7 @@ test('the lens briefs split the review: the sweep lens sweeps only, the spec len
   assert.match(spec.prompt, /Another reviewer sweeps the callees at the same time: do not sweep them; a callee problem you notice anyway is a note\./);
   assert.doesNotMatch(spec.prompt, SWEEP);
   assert.doesNotMatch(spec.prompt, /A function the diff calls but does not change is in scope/);
-  assert.match(spec.prompt, /Run `git status --porcelain` before `npm test`; every path it prints is must-fix/);
+  assert.match(spec.prompt, /Run `git status --porcelain` first, before `npm test`; every path it prints is must-fix/);
 });
 
 // The sweep lens runs on Sonnet at high effort; the spec lens and a later single reviewer keep

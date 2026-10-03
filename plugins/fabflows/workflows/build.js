@@ -187,7 +187,8 @@ function reviewBrief(round, head, lens) {
           (earlier.length ? "An earlier round's must-fix item still not fixed is must-fix, wherever its code is. " : '')
         : `This round judges the rework only, so must-fix here is limited to: an earlier round's must-fix item still not fixed, a regression in \`git diff ${head}..HEAD\`, a real bug in code that diff changed, or an uncommitted path from \`git status --porcelain\`. A new finding anywhere else is a note with its path:line, never must-fix; do not repeat round 1's callee sweep. `) +
       (earlier.length ? "A change an earlier round's must-fix demanded is not a departure from the spec, even where the spec says that code keeps working as it does, unless it deletes, skips or weakens a test, weakens a validation or a security check, installs something, or edits a file neither the change nor the code it calls touches; judge whether it fixes the item. " : '') +
-      `Run \`git status --porcelain\` before \`${a.testCommand}\`; every path it prints is must-fix -- it is uncommitted, so the diff does not contain it.`,
+      `Run \`git status --porcelain\` first, before \`${a.testCommand}\`; every path it prints is must-fix -- it is uncommitted, so the diff does not contain it. ` +
+      `Then start \`${a.testCommand}\` with \`run_in_background\` and read the diff while it runs. Never return a result before you have seen the test command's exit status and summary; a test run not seen to finish is BLOCKED.`,
   ].join('\n')
 }
 

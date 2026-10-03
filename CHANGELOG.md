@@ -250,6 +250,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.16.2** -- the build loop's spec lens, and the single reviewer of a rework-only
+  round, now run `git status --porcelain` first, then start the test command in the background and
+  read the diff while it runs (#180). They never return before seeing the test command's exit
+  status and summary; a test run not seen to finish is `BLOCKED`. The refuter waits for a
+  background test run only when its brief says to start one.
+
 - **fabflows 0.16.1** -- when both review lenses name the same `path:line`, the build loop merges
   the sweep lens's finding into the spec lens's (#178), so one defect reaches the builder as one
   must-fix item. The sweep lens now gives a finding's location as the diff line that calls the
