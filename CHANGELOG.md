@@ -8,6 +8,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.16.1** -- when both review lenses name the same `path:line`, the build loop merges
+  the sweep lens's finding into the spec lens's (#178), so one defect reaches the builder as one
+  must-fix item. The merged item carries both problems and both evidences at the higher severity,
+  and the review report lists each merge. Only an exact trimmed location matches. The stored
+  `lenses` keep each lens's own findings unmerged.
 - **fabflows 0.16.0** -- a build-loop review round that sweeps callees now runs two reviewers at
   once on the same commit (#176): a spec lens that judges the diff against the spec and runs the
   tests, and a sweep lens that only sweeps the functions the diff calls. The script merges their
