@@ -183,7 +183,8 @@ function reviewBrief(round, head, lens) {
       ": a wrong result on an input the code's domain has, not a difference from another library or a stricter standard" +
       '; everything else is a note. ' +
       (lens === 'spec'
-        ? 'Another reviewer sweeps the callees at the same time: do not sweep them; a callee problem you notice anyway is a note. '
+        ? 'Another reviewer sweeps the callees at the same time: do not sweep them; a callee problem you notice anyway is a note. ' +
+          (earlier.length ? "An earlier round's must-fix item still not fixed is must-fix, wherever its code is. " : '')
         : `This round judges the rework only, so must-fix here is limited to: an earlier round's must-fix item still not fixed, a regression in \`git diff ${head}..HEAD\`, a real bug in code that diff changed, or an uncommitted path from \`git status --porcelain\`. A new finding anywhere else is a note with its path:line, never must-fix; do not repeat round 1's callee sweep. `) +
       (earlier.length ? "A change an earlier round's must-fix demanded is not a departure from the spec, even where the spec says that code keeps working as it does, unless it deletes, skips or weakens a test, weakens a validation or a security check, installs something, or edits a file neither the change nor the code it calls touches; judge whether it fixes the item. " : '') +
       `Run \`git status --porcelain\` before \`${a.testCommand}\`; every path it prints is must-fix -- it is uncommitted, so the diff does not contain it.`,
@@ -216,11 +217,11 @@ function merge(lenses) {
   if (both.some(([, r]) => !r)) return null
   const report = both.map(([n, r]) => `## ${n} lens\n\n${r.report}`).join('\n\n')
   const blocked = both.filter(([, r]) => r.verdict === 'BLOCKED')
-  if (blocked.length) return { verdict: 'BLOCKED', blocker: blocked.map(([n, r]) => `${n} lens: ${r.blocker || ''}`.trim()).join('; '), mustFix: [], report }
+  if (blocked.length) return { verdict: 'BLOCKED', blocker: blocked.map(([n, r]) => `${n} lens: ${(r.blocker || '').trim() || 'no reason given'}`).join('; '), mustFix: [], report }
   const contradiction =
     both.find(([, r]) => r.verdict === 'ACCEPT' && r.mustFix.length) ||
     both.find(([, r]) => r.verdict === 'REWORK' && !r.mustFix.length)
-  if (contradiction) return { ...contradiction[1], report: `${contradiction[0]} lens: ${contradiction[1].report}` }
+  if (contradiction) return { ...contradiction[1], report }
   const [s, w] = [lenses.spec, lenses.sweep]
   const mustFix = [...s.mustFix, ...w.mustFix]
   const same = typeof s.head === 'string' && typeof w.head === 'string' && s.head.trim() === w.head.trim()
@@ -239,9 +240,9 @@ const NEXT = {
   unexplained: 'The builder named no reason. Read its report if it has one, then run `git status --porcelain` and `git log <baseRef>..HEAD` to see what it left, and take the work over.',
   'builder-failed': 'The builder returned nothing. Check `git log <baseRef>..HEAD` for a partial commit, then take the work over rather than relaunching.',
   'reviewer-failed': 'The reviewer returned nothing. The builder\'s commits are on the branch: run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` keeps the one that came back, so review only what the missing lens covered.',
-  'reviewer-blocked': 'The review never ran. Fix what verdict.blocker names (a missing dependency is the user\'s to install), then run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the loop.',
-  'accept-with-must-fix': 'The reviewer contradicted itself: it accepted while listing must-fix items. Read verdict.mustFix and decide yourself; do not relaunch on a contradiction.',
-  'rework-without-must-fix': 'The reviewer asked for rework without naming anything to fix. Read verdict.report and decide yourself; do not relaunch on a contradiction.',
+  'reviewer-blocked': 'A reviewer could not review. Fix what verdict.blocker names (a missing dependency is the user\'s to install), then run `fabflows:refuter` yourself on `<baseRef>..HEAD` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` holds the other lens\'s finished review, so review again only what the blocked lens covered.',
+  'accept-with-must-fix': 'The reviewer contradicted itself: it accepted while listing must-fix items. Read verdict.mustFix and decide yourself; do not relaunch on a contradiction. In a round reviewed by two lenses, the last round\'s `lenses` holds each lens\'s own verdict and must-fix items.',
+  'rework-without-must-fix': 'The reviewer asked for rework without naming anything to fix. Read verdict.report and decide yourself; do not relaunch on a contradiction. In a round reviewed by two lenses, the last round\'s `lenses` holds each lens\'s own verdict and must-fix items.',
   'rework-cap': 'Two rework rounds did not satisfy the reviewer. Read verdict.mustFix and the rounds, and take the work over rather than raising the cap. A matched entry in deviations still in the diff stands: never revert it on the spec\'s text alone; propose the spec amendment to the user.',
 }
 

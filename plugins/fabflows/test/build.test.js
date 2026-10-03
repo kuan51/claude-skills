@@ -575,14 +575,38 @@ test('merge: a BLOCKED lens blocks the review, its blocker prefixed by the lens 
   assert.ok(over.result.rounds[0].lenses.spec && over.result.rounds[0].lenses.sweep);
 });
 
-test('merge: a contradicting lens escalates with its own result, report prefixed by the lens name', async () => {
+test('merge: a contradicting lens escalates with its own verdict and must-fix, and both lens reports', async () => {
   const acc = await run(ARGS, [built, rework], [{ ...accept, mustFix: [sweepFix] }]);
   assert.equal(acc.result.reason, 'accept-with-must-fix', 'ACCEPT with must-fix wins over a clean REWORK');
+  assert.equal(acc.result.verdict.verdict, 'ACCEPT');
   assert.deepEqual(acc.result.verdict.mustFix, [sweepFix]);
-  assert.equal(acc.result.verdict.report, 'sweep lens: r');
+  assert.equal(acc.result.verdict.report, '## spec lens\n\nr\n\n## sweep lens\n\nr');
+  assert.match(acc.result.next, /`lenses`/);
   const rw = await run(ARGS, [built, { ...rework, mustFix: [] }], [sweepRework]);
   assert.equal(rw.result.reason, 'rework-without-must-fix');
-  assert.equal(rw.result.verdict.report, 'spec lens: r');
+  assert.equal(rw.result.verdict.verdict, 'REWORK');
+  assert.deepEqual(rw.result.verdict.mustFix, []);
+  assert.equal(rw.result.verdict.report, '## spec lens\n\nr\n\n## sweep lens\n\nsw');
+  assert.match(rw.result.next, /`lenses`/);
+});
+
+test('merge: a BLOCKED lens with an empty blocker says no reason given; the blocked next names lenses', async () => {
+  const r = await run(ARGS, [built, accept], [{ ...reviewBlocked, blocker: '' }]);
+  assert.equal(r.result.reason, 'reviewer-blocked');
+  assert.equal(r.result.verdict.blocker, 'sweep lens: no reason given');
+  assert.deepEqual(r.result.verdict.mustFix, []);
+  assert.match(r.result.next, /`lenses`/);
+  assert.match(r.result.next, /A reviewer could not review/);
+  assert.doesNotMatch(r.result.next, /never ran/);
+});
+
+test('a later round with no valid head gives the spec lens the unfixed-earlier-item sentence; round 1 does not', async () => {
+  const UNFIXED = /An earlier round's must-fix item still not fixed is must-fix, wherever its code is\./;
+  const { calls } = await run(ARGS, [built, rework, built, accept]);
+  assert.equal(calls[1].opts.label, 'review:1:spec');
+  assert.doesNotMatch(calls[1].prompt, UNFIXED);
+  assert.equal(calls[3].opts.label, 'review:2:spec');
+  assert.match(calls[3].prompt, UNFIXED);
 });
 
 test('merge: must-fix is spec then sweep, the report has both, and head survives only when both agree', async () => {
