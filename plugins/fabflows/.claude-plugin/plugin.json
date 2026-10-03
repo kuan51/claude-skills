@@ -1,6 +1,6 @@
 {
   "name": "fabflows",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "Routes work from an expensive lead model to tool-scoped workers on Haiku, Sonnet and Opus, and makes the lead re-verify their reports. Adds a build loop where an Opus builder implements a spec and fresh reviewers return ACCEPT or REWORK, brainstorming to write that spec, tickets in GitHub Issues, Jira or Linear, and audit trace reports. An ACTIVE guard hook asks before package installs and blocks default-branch commits, destructive commands and credential-file access. It fails open.",
   "author": {
     "name": "claude-skills"

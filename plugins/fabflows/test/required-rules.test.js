@@ -186,6 +186,13 @@ const FAMILIES = [
     ruleFree: 'A sweep-only brief may ACCEPT. A missing test command is BLOCKED.',
   },
   {
+    name: 'a background test run: never return before its exit status',
+    pattern: all('\\bbackground\\b', NOT, '\\breturn\\b', '\\bexit status\\b'),
+    files: [agent('refuter')],
+    paraphrase: 'Its exit status comes first: never return while a test command started in the background still runs.',
+    ruleFree: 'Start the test command in the background. Return its exit status.',
+  },
+  {
     name: 'plan mode: no ticket write, commit or build launch',
     pattern: all('\\bplan mode\\b', NOT, '\\btickets?\\b', '\\bcommit(?:s|ted|ting)?\\b', '\\bbuild\\b'),
     files: [skill('fabflows'), skill('using-fabflows')],

@@ -250,6 +250,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.17.1** -- the build loop's spec lens, and the single reviewer of a rework-only
+  round, still check the tree for unstaged and untracked paths before the tests, then start the
+  test command in the background and read the diff while it runs (#180). They never return before
+  seeing the test command's exit status and summary; a test run not seen to finish is `BLOCKED`.
+  The refuter waits for a background test run only when its brief says to start one.
+
 - **fabflows 0.17.0** -- the build loop reviews before anything is committed (#185). The builder
   stages each path by name and never commits; reviewers read `git diff --cached <baseRef>` and
   record the staged tree from `git write-tree` as `head`, and a later round judges

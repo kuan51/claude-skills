@@ -485,6 +485,21 @@ test('the builder stages paths by name and never commits', async () => {
   }
 });
 
+// The spec lens and a rework round's single reviewer start the tests in the background and read
+// the diff while they run (#180); the tree check stays first, so transient test files are not must-fix.
+test('a reviewer that runs the tests checks the tree first, backgrounds them and waits for their exit status', async () => {
+  const { calls } = await run(ARGS, [built, { ...rework, head: H }, built, accept]);
+  assert.equal(calls[1].opts.label, 'review:1:spec');
+  assert.equal(calls[3].opts.label, 'review:2');
+  for (const i of [1, 3]) {
+    const p = calls[i].prompt;
+    assert.match(p, UNSTAGED, `${calls[i].opts.label} checks the tree before the tests`);
+    assert.ok(p.indexOf('git ls-files --others --exclude-standard :/` before') < p.indexOf('start `npm test` with `run_in_background`'), `${calls[i].opts.label} checks the tree before starting the tests`);
+    assert.match(p, /Then start `npm test` with `run_in_background` and read the diff while it runs\./);
+    assert.match(p, /Never return a result before you have seen the test command's exit status and summary; a test run not seen to finish is BLOCKED\./);
+  }
+});
+
 // A third value, so the override is still proved once the default is Opus.
 test('reviewerModel overrides the Opus default', async () => {
   const { calls } = await run({ ...ARGS, reviewerModel: 'sonnet' }, [built, accept]);
