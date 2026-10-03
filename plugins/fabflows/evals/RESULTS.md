@@ -8,7 +8,7 @@ under `docs/specs/` refer to that record.
 [#123](https://github.com/kuan51/claude-skills/issues/123) records iteration 1 of this one: the
 baseline against no skill and against superpowers. [#133](https://github.com/kuan51/claude-skills/issues/133) records iteration 2, the lean start.
 [#120](https://github.com/kuan51/claude-skills/issues/120) records iteration 3, the agent rules, which were not adopted.
-[#140](https://github.com/kuan51/claude-skills/issues/140) records iteration 4, the Haiku pre-flight, which was not adopted either. [#145](https://github.com/kuan51/claude-skills/issues/145) records iteration 5, the review-callees rule for the refuter, which was not adopted. [#146](https://github.com/kuan51/claude-skills/issues/146) records iteration 6, the rework permission, which was not adopted. [#148](https://github.com/kuan51/claude-skills/issues/148) records iteration 7, the lead gate, which landed with both earlier patches in 0.14.0. [#154](https://github.com/kuan51/claude-skills/issues/154) records iteration 8, the case sweep and the rework-only later rounds, which landed in 0.15.0.
+[#140](https://github.com/kuan51/claude-skills/issues/140) records iteration 4, the Haiku pre-flight, which was not adopted either. [#145](https://github.com/kuan51/claude-skills/issues/145) records iteration 5, the review-callees rule for the refuter, which was not adopted. [#146](https://github.com/kuan51/claude-skills/issues/146) records iteration 6, the rework permission, which was not adopted. [#148](https://github.com/kuan51/claude-skills/issues/148) records iteration 7, the lead gate, which landed with both earlier patches in 0.14.0. [#154](https://github.com/kuan51/claude-skills/issues/154) records iteration 8, the case sweep and the rework-only later rounds, which landed in 0.15.0. [#177](https://github.com/kuan51/claude-skills/issues/177) records iteration 9, rework-only reviews at high effort, which landed in 0.15.3.
 
 ## Iteration 1: the baseline against no skill and superpowers
 
@@ -1448,4 +1448,100 @@ node plugins/fabflows/evals/harness/run.js --iteration 8 --tasks 8 --arms loop -
 node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-8
 (cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-8 --skill-name fabflows)
 python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-8 <skill-creator> <abs>/runs/iteration-8/notes.json
+```
+
+## Iteration 9: rework-only reviews at high effort
+
+Tracked in [#177](https://github.com/kuan51/claude-skills/issues/177). A later review round
+that judges only the rework since a valid head runs at `high` effort, not `xhigh`. Does it
+still judge each earlier must-fix item, and does it spend at least 20% fewer tokens?
+
+The data is in `runs/iteration-9/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Prior
+
+In iteration 8 every run took two rounds, and no round-2 review raised a must-fix item. Round 2
+ran at the same `xhigh` effort as round 1, which sweeps callees.
+
+### Setup
+
+- **The plugins.** `control` is master's fabflows 0.15.2 at `a5d726c`, copied with `git archive`
+  to `runs/snapshots/master-0.15.2/`. `rework-high` is 0.15.3 at `6b25f90`: `workflows/build.js`
+  computes the previous review's head once a round and passes `effort: head ? 'high' : 'xhigh'`
+  to the review call.
+- **Runs.** Task 8's `loop` arm only, lead claude-fable-5-1 at medium effort, one session at a
+  time, caps 120 turns, $15 list price and 30 minutes a run. Five runs a configuration, the
+  control first, then the variant, on the same day. No run was replaced.
+- **Effort, checked.** Each agent transcript records the effort it ran at. Round 2 ran at `high`
+  in all five `rework-high` runs and at `xhigh` in all five `control` runs; round 1 ran at `xhigh`
+  in all ten.
+- **Clean room.** As iterations 2 to 8.
+
+### Runs
+
+Round-2 tokens and seconds are the `review:2` agent's `tokens` and `durationMs` in `metrics.json`.
+
+| Run | Config | Cost | Time s | Hidden suite | Round-1 must-fix | Round 2 | Round-2 tokens | Round-2 s |
+|---|---|---|---|---|---|---|---|---|
+| 1 | control | $2.3822 | 459 | 9/9 | 2 | ACCEPT, both fixed | 26,503 | 70.3 |
+| 2 | control | $2.5871 | 503 | 7/9 | 3 | ACCEPT, all three fixed | 31,305 | 106.2 |
+| 3 | control | $2.3507 | 466 | 9/9 | 2 | ACCEPT, both fixed | 27,119 | 88.2 |
+| 4 | control | $2.5452 | 478 | 9/9 | 2 | ACCEPT, both fixed | 28,680 | 80.0 |
+| 5 | control | $2.7191 | 558 | 9/9 | 3 | ACCEPT, all three fixed | 28,057 | 86.4 |
+| 1 | rework-high | $2.1144 | 387 | 9/9 | 2 | ACCEPT, both fixed | 17,075 | 25.1 |
+| 2 | rework-high | $2.4989 | 502 | 9/9 | 4 | ACCEPT, all four fixed | 25,089 | 54.2 |
+| 3 | rework-high | $2.2500 | 400 | 9/9 | 2 | ACCEPT, both fixed | 20,346 | 38.4 |
+| 4 | rework-high | $2.1603 | 385 | 9/9 | 2 | ACCEPT, both fixed | 25,381 | 42.7 |
+| 5 | rework-high | $2.0167 | 345 | 9/9 | 1 | ACCEPT, fixed | 15,703 | 26.7 |
+
+### What the runs show
+
+- **Round 2 still judges every earlier item.** Each `rework-high` round-2 report names every
+  round-1 item as `round 1, item I` and marks it fixed, with a quoted probe, and raises no
+  must-fix item. The control's reports do the same.
+- **Round 2 costs less.** Mean round-2 tokens fall from 28,333 to 20,719 (26.9% lower), and
+  mean round-2 time from 86.2 s to 37.4 s.
+- **The whole run costs less too, within noise.** $2.21 a run against $2.52; 404 s against 493 s.
+  Five runs a side cannot separate a run's cost from its spread, so this is reported, not barred.
+- **Control run 2 shipped the planted defect.** Its round-1 review raised three must-fix items
+  (input validation, `<*` wildcards, `Number()` precision) and never named `caret()`, so the
+  hidden suite failed 2 of 9 (`caret-on-zero`). The grader's "named" row passed it anyway, on a
+  finding that cites `src/index.js` (the regex noted in iteration 8). The other nine round-1
+  reviews named `caret()` as must-fix item 1 at `src/index.js:89`, by hand. Round 1 ran at
+  `xhigh` in both configurations, so this miss is not the change's.
+
+### Verdict
+
+The change stays. The bar passes:
+
+| Bar | Result |
+|---|---|
+| Every variant run passes the hidden suite 9/9 | Holds: 5 of 5 |
+| Every variant workflow returns `accepted` (round 2 ACCEPT with no must-fix) | Holds: 5 of 5 |
+| No tool call denied | Holds: 5 of 5 |
+| Every round-2 report states fixed, not fixed or regressed per earlier item (by hand) | Holds: 5 of 5 |
+| Mean round-2 reviewer tokens at least 20% below the control's | Holds: 20,719 against 28,333, 26.9% lower |
+
+### Cost of this iteration
+
+$23.6247 at list price for 10 runs: $12.5843 for the control ($2.5169 a run) and $11.0404 for
+the variant ($2.2081 a run).
+
+### Confounds
+
+- **One fixture.** Task 8's round 2 never raised a must-fix in this iteration or in iteration
+  8, so these runs cannot show a regression that only `xhigh` would catch (accepted in #177).
+- **Five runs a side.** The token gap is larger than either side's spread (control 26,503 to
+  31,305; variant 15,703 to 25,381), but the ranges touch near 25,000.
+
+### Commands
+
+```bash
+git archive a5d726c plugins/fabflows | tar -x -C <scratch>   # then copy .claude-plugin agents hooks skills workflows README.md
+node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --plugin-dir plugins/fabflows/evals/runs/snapshots/master-0.15.2 --config-name control --repeats 5 --parallel 1 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 9 --tasks 8 --arms loop --plugin-dir plugins/fabflows --config-name rework-high --repeats 5 --parallel 1 --confirm
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-9
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-9 --skill-name fabflows)
+python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-9 <skill-creator> <notes.json>
 ```
