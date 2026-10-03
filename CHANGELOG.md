@@ -250,11 +250,22 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
-- **fabflows 0.16.2** -- the build loop's spec lens, and the single reviewer of a rework-only
-  round, now run `git status --porcelain` first, then start the test command in the background and
-  read the diff while it runs (#180). They never return before seeing the test command's exit
-  status and summary; a test run not seen to finish is `BLOCKED`. The refuter waits for a
-  background test run only when its brief says to start one.
+- **fabflows 0.17.1** -- the build loop's spec lens, and the single reviewer of a rework-only
+  round, still check the tree for unstaged and untracked paths before the tests, then start the
+  test command in the background and read the diff while it runs (#180). They never return before
+  seeing the test command's exit status and summary; a test run not seen to finish is `BLOCKED`.
+  The refuter waits for a background test run only when its brief says to start one.
+
+- **fabflows 0.17.0** -- the build loop reviews before anything is committed (#185). The builder
+  stages each path by name and never commits; reviewers read `git diff --cached <baseRef>` and
+  record the staged tree from `git write-tree` as `head`, and a later round judges
+  `git diff --cached <head>`. On ACCEPT the lead checks the tree, re-runs the tests and makes one
+  commit with the ticket's trailers, so an accepted build lands as one reviewed commit with no
+  fix-up commits. The builder stages files by their own path, never a directory or glob; every
+  `git ls-files --others --exclude-standard` check runs on `:/`; an ACCEPT without a full tree
+  hash as `head` escalates as `accept-without-head`; and every escalation's `next` names
+  `git status --porcelain` and `git diff <baseRef>`, since unstaged work is hidden from
+  `git diff --cached`.
 
 - **fabflows 0.16.1** -- when both review lenses name the same `path:line`, the build loop merges
   the sweep lens's finding into the spec lens's (#178), so one defect reaches the builder as one
