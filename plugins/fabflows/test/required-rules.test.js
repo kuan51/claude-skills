@@ -172,6 +172,20 @@ const FAMILIES = [
     ruleFree: 'Judge the rework diff in a later round. A real bug is never a note.',
   },
   {
+    name: 'the refuter skips the callee sweep when another reviewer sweeps them',
+    pattern: all('\\bunless\\b', '\\banother reviewer\\b', '\\bsweeps?\\b'),
+    files: [agent('refuter')],
+    paraphrase: 'Unless another reviewer sweeps them, sweep the callees.',
+    ruleFree: 'Another reviewer reads the report. Sweep the callees unless told otherwise.',
+  },
+  {
+    name: 'a sweep-only brief: ACCEPT means no must-fix, and a missing test command is not BLOCKED',
+    pattern: all('\\bsweep-only\\b', '\\bACCEPT\\b', '\\bmissing test command\\b', NOT, '\\bBLOCKED\\b'),
+    files: [agent('refuter')],
+    paraphrase: 'In a sweep-only brief a missing test command is not BLOCKED, and ACCEPT means the sweep found nothing.',
+    ruleFree: 'A sweep-only brief may ACCEPT. A missing test command is BLOCKED.',
+  },
+  {
     name: 'plan mode: no ticket write, commit or build launch',
     pattern: all('\\bplan mode\\b', NOT, '\\btickets?\\b', '\\bcommit(?:s|ted|ting)?\\b', '\\bbuild\\b'),
     files: [skill('fabflows'), skill('using-fabflows')],

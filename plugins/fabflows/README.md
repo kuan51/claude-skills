@@ -227,10 +227,12 @@ do reach Claude through the GitHub tools, the same accepted path as ticket bodie
 `fabflows:build` takes one spec'd change through build and review: an Opus `editor`
 implements the spec on the checked-out feature branch and commits, a fresh `refuter`
 (Opus by default, matching the pin in `agents/refuter.md`) reviews the diff and re-runs the
-tests, and after two rework rounds the loop hands back to the lead. It never merges, pushes,
+tests, and after two rework rounds the loop hands back to the lead. A round that sweeps callees
+reviews with two concurrent refuters on the same commit: one reads the diff against the spec
+and re-runs the tests, the other only sweeps callees, on Sonnet at high effort. It never merges, pushes,
 or reverts. While plan mode is active the lead never links or edits a ticket, commits or
 launches the loop, and approving the plan is not reading the spec. The [skill](skills/fabflows/SKILL.md) carries the preconditions and arguments.
-Pass `reviewerModel: 'fable'` to review on the lead's Fable tier instead. The reviewer reads code the diff calls, and a must-fix that names a real bug
+Pass `reviewerModel: 'fable'` to review on the lead's Fable tier instead, for every reviewer except the sweep lens, which stays on Sonnet. The reviewer reads code the diff calls, and a must-fix that names a real bug
 there lets the builder fix it even where the spec says otherwise. The builder names each spec
 sentence it crossed in `deviations`, the loop matches each entry to the must-fix it cites, and
 the lead keeps a matched fix and proposes the spec amendment to the user rather than reverting

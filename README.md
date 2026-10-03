@@ -93,7 +93,7 @@ first session.
   - **Workers.** Six agents, each pinned to a tier (`explorer` and `researcher` on Haiku,
     `editor` and `test-runner` on Sonnet, `refuter` and `investigator` on Opus) and scoped to the
     smallest tool list that does its job.
-  - **Build loop.** `fabflows:build` has an Opus builder implement a spec and a fresh reviewer
+  - **Build loop.** `fabflows:build` has an Opus builder implement a spec and fresh reviewers
     return ACCEPT or REWORK. `using-fabflows` is the entrypoint skill that puts a session on it.
   - **Brainstorming.** `brainstorming` turns a rough idea into a spec the build loop can take,
     with the refuter attacking the draft before it is written.

@@ -12,15 +12,26 @@ const source = fs.readFileSync(SCRIPT, 'utf8');
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 const body = source.replace(/^export const meta\b/m, 'const meta');
 
-async function run(args, replies = []) {
+// A round that sweeps callees also starts a sweep lens. Its reply comes from `sweeps` when given,
+// otherwise it is a clean ACCEPT on the head the spec lens just reported, so the merged review
+// equals the spec lens's verdict and the older tests keep their reply lists. `calls` leaves the
+// sweep calls out, so their indices stay as they were; `sweepCalls` has them.
+async function run(args, replies = [], sweeps = []) {
   const calls = [];
+  const sweepCalls = [];
+  let last;
   const agent = async (prompt, opts) => {
+    if (/:sweep$/.test(opts.label)) {
+      sweepCalls.push({ prompt, opts });
+      return sweeps.length ? sweeps.shift() : { verdict: 'ACCEPT', mustFix: [], report: 's', head: last && last.head };
+    }
     calls.push({ prompt, opts });
-    return replies.shift();
+    last = replies.shift();
+    return last;
   };
   const fn = new AsyncFunction('agent', 'log', 'args', body);
   const result = await fn(agent, () => {}, args);
-  return { result, calls };
+  return { result, calls, sweepCalls };
 }
 
 const ARGS = { spec: 'Add a --dry-run flag.', branch: 'feat/dry-run', baseRef: 'abc1234', testCommand: 'npm test' };
@@ -134,10 +145,12 @@ test('round 1 sweeps callees by their cases; rounds 2 and 3 judge only the rewor
   const h1 = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
   const h2 = 'deadbee';
   // A reviewer that pastes `git log -1 --format=%H` output leaves a newline on it: still a head.
-  const { calls } = await run(ARGS, [built, { ...rework, head: `${h1}\n` }, built, { ...rework, head: h2 }, built, accept]);
+  const { calls, sweepCalls } = await run(ARGS, [built, { ...rework, head: `${h1}\n` }, built, { ...rework, head: h2 }, built, accept]);
   const [r1, r2, r3] = [calls[1].prompt, calls[3].prompt, calls[5].prompt];
-  assert.match(r1, SWEEP);
-  assert.match(r1, /The report names the callees you swept and the cases you probed\./);
+  assert.equal(sweepCalls.length, 1, 'only round 1 sweeps');
+  assert.match(sweepCalls[0].prompt, SWEEP);
+  assert.match(sweepCalls[0].prompt, /naming the callees you swept and the cases you probed\./);
+  assert.doesNotMatch(r1, SWEEP, 'the spec lens leaves the sweep to the sweep lens');
   assert.doesNotMatch(r1, /judges the rework only|limited to/);
   assert.doesNotMatch(r1, PER_ITEM);
   for (const [brief, prev] of [[r2, h1], [r3, h2]]) {
@@ -154,10 +167,15 @@ test('round 1 sweeps callees by their cases; rounds 2 and 3 judge only the rewor
 
 test('an invalid or missing head makes the next round judge the whole diff as round 1 does', async () => {
   for (const head of [undefined, '', 'HEAD', 'DEADBEEF', 'abc12', 'abc1234; rm -rf /', 'g'.repeat(40), '0'.repeat(41), 42]) {
-    const { calls } = await run(ARGS, [built, { ...rework, head }, built, accept]);
+    const { calls, sweepCalls } = await run(ARGS, [built, { ...rework, head }, built, accept]);
     const brief = calls[3].prompt;
     assert.match(brief, /the boundary is unknown: judge the whole diff as round 1 does/, JSON.stringify(head));
-    assert.match(brief, SWEEP);
+    assert.equal(sweepCalls.length, 2, `round 2 sweeps again: ${JSON.stringify(head)}`);
+    assert.equal(sweepCalls[1].opts.label, 'review:2:sweep');
+    assert.match(sweepCalls[1].prompt, SWEEP);
+    // refuter.md sweeps a later round only when its brief says the boundary is unknown.
+    assert.match(sweepCalls[1].prompt, /the boundary is unknown/, 'a later sweep lens says why it sweeps');
+    assert.doesNotMatch(sweepCalls[0].prompt, /the boundary is unknown/, 'round 1 needs no reason');
     assert.match(brief, PER_ITEM);
     assert.doesNotMatch(brief, /limited to/);
     assert.equal(brief.match(/git diff [^`]*\.\.HEAD/g).length, 1, `only the baseRef diff: ${JSON.stringify(head)}`);
@@ -258,7 +276,7 @@ test('escalates when a review accepts but still lists must-fix items', async () 
 test('escalates when the reviewer could not review, in any round', async () => {
   const first = await run(ARGS, [built, reviewBlocked]);
   assert.equal(first.result.reason, 'reviewer-blocked');
-  assert.equal(first.result.verdict.blocker, 'npm is not installed');
+  assert.equal(first.result.verdict.blocker, 'spec lens: npm is not installed');
   assert.equal(first.calls.length, 2);
 
   const later = await run(ARGS, [built, rework, built, reviewBlocked]);
@@ -266,7 +284,7 @@ test('escalates when the reviewer could not review, in any round', async () => {
   assert.equal(later.result.rounds.length, 2);
   assert.equal(later.calls.length, 4);
 
-  // Must-fix items sent with BLOCKED are not rework: the review never ran.
+  // Must-fix items sent with BLOCKED are not rework: the review is incomplete.
   const withItems = await run(ARGS, [built, { ...reviewBlocked, mustFix: rework.mustFix }]);
   assert.equal(withItems.result.reason, 'reviewer-blocked');
   assert.equal(withItems.calls.length, 2);
@@ -445,8 +463,9 @@ test('reviewerModel overrides the Opus default', async () => {
 });
 
 test('every call pins effort, requires a prose report, and carries the spec and all four brief parts', async () => {
-  const { calls } = await run(ARGS, [built, rework, built, accept]);
-  for (const { prompt, opts } of calls) {
+  const { calls, sweepCalls } = await run(ARGS, [built, rework, built, accept]);
+  assert.ok(sweepCalls.length, 'the sweep lens must be among the calls checked');
+  for (const { prompt, opts } of [...calls, ...sweepCalls]) {
     assert.ok(opts.effort, `${opts.label} must pass effort`);
     assert.ok(opts.schema.required.includes('report'), `${opts.label} schema must require report`);
     assert.equal(opts.schema.properties.report.minLength, 1, `${opts.label} report must not be empty`);
@@ -462,4 +481,166 @@ test('every call pins effort, requires a prose report, and carries the spec and 
 // which `.gitattributes` prevents; this catches a stray byte committed by any other route.
 test('build.js carries no control characters, so Workflow accepts it on every platform', () => {
   assert.match(source, /^[\t\n\x20-\x7e]*$/);
+});
+
+// The split review: a round that sweeps callees starts a spec lens and a sweep lens at once.
+async function runWith(args, agent) {
+  const fn = new AsyncFunction('agent', 'log', 'args', body);
+  return fn(agent, () => {}, args);
+}
+
+test('a sweeping round issues both lens calls before either resolves', async () => {
+  const started = [];
+  const waiting = [];
+  const agent = (prompt, opts) => {
+    started.push(opts.label);
+    if (opts.label === 'build:1') return Promise.resolve(built);
+    return new Promise((resolve) => waiting.push(() => resolve({ ...accept, head: 'abc1234' })));
+  };
+  const pending = runWith(ARGS, agent);
+  for (let i = 0; i < 10 && waiting.length < 2; i++) await new Promise((r) => setImmediate(r));
+  assert.deepEqual(started, ['build:1', 'review:1:spec', 'review:1:sweep'], 'both lenses start before either has resolved');
+  waiting.forEach((resolve) => resolve());
+  assert.equal((await pending).status, 'accepted');
+});
+
+test('the lens briefs split the review: the sweep lens sweeps only, the spec lens never sweeps', async () => {
+  const { calls, sweepCalls } = await run(ARGS, [built, accept]);
+  const spec = calls[1];
+  const sweep = sweepCalls[0];
+  assert.equal(spec.opts.label, 'review:1:spec');
+  assert.equal(sweep.opts.label, 'review:1:sweep');
+  for (const { opts } of [spec, sweep]) assert.equal(opts.agentType, 'fabflows:refuter');
+  assert.doesNotMatch(sweep.prompt, /npm test/, 'the sweep lens runs no test command');
+  assert.doesNotMatch(sweep.prompt, /git status --porcelain/, 'the sweep lens does not check the tree');
+  assert.match(sweep.prompt, /head \(the commit you reviewed, from `git log -1 --format=%H`\)/);
+  assert.match(sweep.prompt, /A probe prints to stdout only and never redirects to a file/);
+  assert.match(sweep.prompt, /git diff abc1234\.\.HEAD/);
+  assert.match(sweep.prompt, /sweep-only brief/, 'refuter.md keys its exception on the words sweep-only');
+  assert.match(sweep.prompt, SWEEP);
+  assert.ok(sweep.prompt.includes(`<spec>\n${ARGS.spec}\n</spec>`));
+  for (const part of ['Objective', 'Output', 'Tools and paths', 'Boundaries']) assert.match(sweep.prompt, new RegExp(`\\*\\*${part}:\\*\\*`));
+  assert.match(spec.prompt, /Another reviewer sweeps the callees at the same time: do not sweep them; a callee problem you notice anyway is a note\./);
+  assert.doesNotMatch(spec.prompt, SWEEP);
+  assert.doesNotMatch(spec.prompt, /A function the diff calls but does not change is in scope/);
+  assert.match(spec.prompt, /Run `git status --porcelain` before `npm test`; every path it prints is must-fix/);
+});
+
+// The sweep lens runs on Sonnet at high effort; the spec lens and a later single reviewer keep
+// reviewerModel at xhigh, so a reviewerModel of fable moves only those two calls (#181).
+test('the sweep lens runs on sonnet at high effort; reviewerModel reaches only the spec lens and a later reviewer', async () => {
+  const h = 'a1b2c3d';
+  for (const reviewerModel of [undefined, 'fable']) {
+    const { calls, sweepCalls } = await run({ ...ARGS, reviewerModel }, [built, { ...rework, head: h }, built, accept]);
+    const want = reviewerModel || 'opus';
+    assert.equal(sweepCalls.length, 1);
+    assert.equal(sweepCalls[0].opts.label, 'review:1:sweep');
+    assert.equal(sweepCalls[0].opts.model, 'sonnet', `sweep lens model with reviewerModel ${reviewerModel}`);
+    assert.equal(sweepCalls[0].opts.effort, 'high', 'sweep lens effort');
+    // The spec lens sweeps nothing but judges round 1 at xhigh; the rework-only reviewer runs at high (#182).
+    for (const [{ opts }, effort] of [[calls[1], 'xhigh'], [calls[3], 'high']]) {
+      assert.match(opts.label, /^review:(1:spec|2)$/);
+      assert.equal(opts.model, want, `${opts.label} carries reviewerModel`);
+      assert.equal(opts.effort, effort, `${opts.label} effort`);
+    }
+  }
+});
+
+const sweepFix = { location: 'src/semver.js:40', problem: 'caret on 0.M.P is too wide', evidence: 'probe', severity: 'high' };
+const sweepRework = { verdict: 'REWORK', mustFix: [sweepFix], report: 'sw' };
+
+test('merge: a null lens fails the review and lenses keeps the one that came back', async () => {
+  const a1 = await run(ARGS, [built, null], [accept]);
+  assert.equal(a1.result.reason, 'reviewer-failed');
+  assert.equal(a1.result.rounds[0].review, null);
+  assert.deepEqual(a1.result.rounds[0].lenses, { spec: null, sweep: accept });
+  assert.match(a1.result.next, /`lenses`/);
+  const a2 = await run(ARGS, [built, accept], [null]);
+  assert.equal(a2.result.reason, 'reviewer-failed');
+  assert.deepEqual(a2.result.rounds[0].lenses, { spec: accept, sweep: null });
+  const a3 = await run(ARGS, [built, null], [reviewBlocked]);
+  assert.equal(a3.result.reason, 'reviewer-failed', 'null wins over BLOCKED');
+});
+
+test('merge: a BLOCKED lens blocks the review, its blocker prefixed by the lens name', async () => {
+  const sw = await run(ARGS, [built, accept], [{ ...reviewBlocked, blocker: 'node -e was denied' }]);
+  assert.equal(sw.result.reason, 'reviewer-blocked');
+  assert.equal(sw.result.verdict.verdict, 'BLOCKED');
+  assert.equal(sw.result.verdict.blocker, 'sweep lens: node -e was denied');
+  const both = await run(ARGS, [built, { ...reviewBlocked, mustFix: rework.mustFix }], [{ ...reviewBlocked, blocker: 'node -e was denied' }]);
+  assert.equal(both.result.verdict.blocker, 'spec lens: npm is not installed; sweep lens: node -e was denied');
+  assert.deepEqual(both.result.verdict.mustFix, [], 'a blocked review carries no must-fix');
+  const over = await run(ARGS, [built, { ...accept, mustFix: rework.mustFix }], [reviewBlocked]);
+  assert.equal(over.result.reason, 'reviewer-blocked', 'BLOCKED wins over a contradiction');
+  assert.ok(over.result.rounds[0].lenses.spec && over.result.rounds[0].lenses.sweep);
+});
+
+test('merge: a contradicting lens escalates with its own verdict and must-fix, and both lens reports', async () => {
+  const acc = await run(ARGS, [built, rework], [{ ...accept, mustFix: [sweepFix] }]);
+  assert.equal(acc.result.reason, 'accept-with-must-fix', 'ACCEPT with must-fix wins over a clean REWORK');
+  assert.equal(acc.result.verdict.verdict, 'ACCEPT');
+  assert.deepEqual(acc.result.verdict.mustFix, [sweepFix]);
+  assert.equal(acc.result.verdict.report, '## spec lens\n\nr\n\n## sweep lens\n\nr');
+  assert.match(acc.result.next, /`lenses`/);
+  const rw = await run(ARGS, [built, { ...rework, mustFix: [] }], [sweepRework]);
+  assert.equal(rw.result.reason, 'rework-without-must-fix');
+  assert.equal(rw.result.verdict.verdict, 'REWORK');
+  assert.deepEqual(rw.result.verdict.mustFix, []);
+  assert.equal(rw.result.verdict.report, '## spec lens\n\nr\n\n## sweep lens\n\nsw');
+  assert.match(rw.result.next, /`lenses`/);
+});
+
+test('merge: a BLOCKED lens with an empty blocker says no reason given; the blocked next names lenses', async () => {
+  const r = await run(ARGS, [built, accept], [{ ...reviewBlocked, blocker: '' }]);
+  assert.equal(r.result.reason, 'reviewer-blocked');
+  assert.equal(r.result.verdict.blocker, 'sweep lens: no reason given');
+  assert.deepEqual(r.result.verdict.mustFix, []);
+  assert.match(r.result.next, /`lenses`/);
+  assert.match(r.result.next, /A reviewer could not review/);
+  assert.doesNotMatch(r.result.next, /never ran/);
+});
+
+test('a later round with no valid head gives the spec lens the unfixed-earlier-item sentence; round 1 does not', async () => {
+  const UNFIXED = /An earlier round's must-fix item still not fixed is must-fix, wherever its code is\./;
+  const { calls } = await run(ARGS, [built, rework, built, accept]);
+  assert.equal(calls[1].opts.label, 'review:1:spec');
+  assert.doesNotMatch(calls[1].prompt, UNFIXED);
+  assert.equal(calls[3].opts.label, 'review:2:spec');
+  assert.match(calls[3].prompt, UNFIXED);
+});
+
+test('merge: must-fix is spec then sweep, the report has both, and head survives only when both agree', async () => {
+  const h = 'a1b2c3d';
+  const { result, calls, sweepCalls } = await run(ARGS, [built, { ...rework, head: h }, built, accept], [{ ...sweepRework, head: h }]);
+  const merged = result.rounds[0].review;
+  assert.equal(merged.verdict, 'REWORK');
+  assert.deepEqual(merged.mustFix, [...rework.mustFix, sweepFix]);
+  assert.equal(merged.head, h);
+  assert.match(merged.report, /^## spec lens\n\nr\n\n## sweep lens\n\nsw$/);
+  assert.ok(result.rounds[0].lenses, 'a split round stores its lenses');
+  assert.ok(!('lenses' in result.rounds[1]), 'a rework-only round stores one review');
+  assert.match(calls[2].prompt, /^1\. src\/cli\.js:10 .*\n2\. src\/semver\.js:40 -- caret on 0\.M\.P is too wide/m);
+  assert.equal(sweepCalls.length, 1, 'a later round with a valid head makes one review call');
+  assert.equal(calls[3].opts.label, 'review:2');
+  assert.equal(result.status, 'accepted');
+
+  const split = await run(ARGS, [built, { ...rework, head: h }, built, accept], [{ ...sweepRework, head: 'deadbee' }]);
+  assert.equal(split.result.rounds[0].review.head, undefined, 'heads disagree: no head');
+  assert.equal(split.sweepCalls.length, 2, 'so the next round sweeps again');
+  assert.equal(split.calls[3].opts.label, 'review:2:spec');
+
+  const ok = await run(ARGS, [built, accept], [accept]);
+  assert.equal(ok.result.status, 'accepted');
+  assert.equal(ok.result.verdict.verdict, 'ACCEPT');
+  assert.deepEqual(ok.result.verdict.mustFix, []);
+});
+
+test('a throw from either lens ends the run', async () => {
+  for (const lens of ['spec', 'sweep']) {
+    const agent = async (prompt, opts) => {
+      if (opts.label === `review:1:${lens}`) throw new Error(`${lens} died`);
+      return opts.label === 'build:1' ? built : accept;
+    };
+    await assert.rejects(runWith(ARGS, agent), new RegExp(`${lens} died`));
+  }
 });
