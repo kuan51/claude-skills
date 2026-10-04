@@ -1,4 +1,4 @@
-# lockstep: add `lockstep upgrades`
+# lockstep: Add `lockstep upgrades`
 
 `lockstep` is a zero-dependency Node.js library and command-line tool that parses semantic
 versions and version ranges and resolves a package manifest against a registry snapshot into a
@@ -46,7 +46,7 @@ each followed by a newline. Versions are printed exactly as the lockfile and the
 them. Transitive dependencies, the other entries under the lockfile's `packages`, are out of
 scope: they are never reported.
 
-The command uses the four library functions named above; it adds no exports.
+The command uses the four library functions named above. It adds no exports.
 
 Exit codes:
 

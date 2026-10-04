@@ -1932,6 +1932,9 @@ $12.0299 at list price for 5 runs.
 - **A different machine from the reference.** Iteration 11 ran in a 4-CPU container, this one on
   a workstation. Both ratios compare two lenses within the same run, which cancels most of that,
   but not all.
+- **The fixture's wording changed after the runs.** To pass CI's Vale step, `SPEC.md`'s heading
+  now reads "Add" for "add" and one semicolon became a full stop (line 49). The runs saw the
+  earlier wording; no rule or example changed.
 
 ### Commands
 
