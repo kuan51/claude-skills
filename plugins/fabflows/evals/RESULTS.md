@@ -1838,3 +1838,110 @@ The two snapshots are staged with the `patch -p3` recipe under Skill variants in
 `evals/README.md`, copying from `<scratch>/sweep/plugins/fabflows`, which is #181 as built at `16f06a4`, not from
 `plugins/fabflows`. The merge of #182 rewrote the lines the patches change, so they no longer apply to
 later commits, and `sweep-sonnet-high` is that same tree unpatched.
+
+## Iteration 13: the sweep lens on a multi-callee change
+
+Tracked in [#179](https://github.com/kuan51/claude-skills/issues/179). Task 8 plants one defect in
+one callee, so it cannot show whether the sweep lens is ever round 1's slow lens. Splitting the
+sweep into one reviewer per callee would cost a listing agent and N reviewers. This iteration
+measures first, on task 22 (`review-catch-wide`): a spec'd `lockstep upgrades` command that calls
+four unchanged exported functions directly, `parseVersion`, `compareVersions`, `parseRange` and
+`maxSatisfying`, each with one planted defect on a case the fixture's spec never names.
+
+The data is in `runs/iteration-13/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked. Iteration 12, #180's
+background-test runs on task 8, is recorded in
+[PR #190](https://github.com/kuan51/claude-skills/pull/190), not here.
+
+### Decision rule and reference point
+
+Set by #179 before the runs: if the sweep lens's round-1 `durationMs` is at least 1.3 × the spec
+lens's in at least 4 of 5 runs, file a spec for one sweeper per callee; otherwise close the idea.
+
+The reference is task 8 in iteration 11's `sweep-sonnet-high` arm: the sweep lens took 0.67 to
+0.95 × the spec lens's round-1 time over 8 runs, mean 0.80.
+
+### Setup
+
+- **The plugin.** fabflows 0.17.1 from the branch for #179 at `d0e05c6`, which changes no plugin
+  code against master `6a90b18`: #176's split lenses, #181's Sonnet sweep, #187's staged review and
+  #180's background tests.
+- **Runs.** Task 22's `loop` arm, lead claude-fable-5-1 at medium effort, caps 120 turns, $15 list
+  price and 30 minutes a run. 5 runs, one at a time, 01:30 to 02:01 UTC on 2026-10-04.
+- **Machine.** The owner's Windows 11 workstation, as iteration 12, not iteration 11's 4-CPU
+  container. The workflow still ran both round-1 lenses at once.
+
+### Runs
+
+Round-1 times are each agent's `durationMs` from `metrics.json`, by the `review:1:spec` and
+`review:1:sweep` labels. "Tests" is when the spec lens started its background test run and when
+its transcript shows the exit status, in seconds from the agent's start. The defects named are
+round 1's must-fix items, counted by hand from the workflow journal.
+
+| Run | Cost | Time s | Rounds | Spec lens s | Sweep lens s | Sweep ÷ spec | Tests | Defects named in round 1 | Hidden suite |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | $2.5484 | 359 | 2 | 133 | 65 | 0.49 | 6, 12 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 2 | $2.4438 | 368 | 2 | 131 | 59 | 0.45 | 6, 13 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 3 | $2.2651 | 371 | 2 | 135 | 56 | 0.41 | 7, 16 | `compareVersions` (sweep) | 12/16 |
+| 4 | $2.4560 | 340 | 2 | 136 | 42 | 0.31 | 4, 10 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 5 | $2.3166 | 349 | 2 | 144 | 54 | 0.38 | 4, 11 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| Mean | $2.4060 | 357 | 2 | 135.8 | 55.2 | 0.41 | | | |
+
+Every run returned REWORK from both round-1 lenses and ACCEPT from the round-2 reviewer. In run 5
+the lead's session ended on an API error after the workflow accepted, before it committed, so that
+run also fails the clean-tree and commit checks.
+
+### What the runs show
+
+- **The sweep lens was never the slow lens.** It took 0.31 to 0.49 × the spec lens's time, mean
+  0.41, against task 8's 0.80. With four callees instead of one, the spec lens grew from about
+  90 s (iteration 11) to 136 s, and the sweep lens did not grow: 55 s against 72 s.
+- **The spec lens's time went to the command's input checks, not the tests.** Its background test
+  run finished 10 to 16 s in. 6 of its 7 must-fix items were about values in the input files that
+  `parseVersion` and `parseRange` let through (a JSON object where a version or range string
+  belongs). It named none of the four planted defects.
+- **The sweep found two of the four defects.** It named `compareVersions` in 5 of 5 runs and
+  `parseVersion` in 4 of 5. It never named `parseRange`'s `||` without spaces, which shipped in
+  every run. It never named `maxSatisfying`'s skipped last version, because the round-1 builder
+  had already fixed it (stated as a deviation in runs 4 and 5; inferred in runs 1 to 3 from its
+  report and the passing defect test).
+- **#180's background tests held.** In all 10 test-running reviews the test command started in the
+  background 4 to 7 s in, the reviewer saw its exit status before answering, quoted the summary
+  line, and no transcript has a polling loop.
+- **The grader's "review named the planted defect" row read 0 of 5, as designed.** Task 22 anchors
+  `defectPattern` to the hidden `defect:` test names, so the hand count above is the measure.
+
+### Verdict
+
+The sweep lens reached 1.3 × the spec lens in 0 of 5 runs. Per #179's rule, the one-sweeper-per-
+callee idea is closed. Round 1 waits on the spec lens, as iteration 11 found on task 8. The finding
+worth carrying forward is coverage, not speed: no run's sweep listed `parseRange`'s range syntax
+far enough to probe `||` without spaces.
+
+### Cost of this iteration
+
+$12.0299 at list price for 5 runs.
+
+### Confounds
+
+- **One fixture.** This is evidence for one four-callee change in one codebase, not proof for
+  diffs that reach more callees or harder defects.
+- **The sweep had less to find than planned.** With `maxSatisfying` fixed before review and
+  `parseRange` never probed, a sweep that probed every case might run longer. It would need about
+  3 × its measured time to reach the 1.3 bar.
+- **A different machine from the reference.** Iteration 11 ran in a 4-CPU container, this one on
+  a workstation. Both ratios compare two lenses within the same run, which cancels most of that,
+  but not all.
+
+### Commands
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 13 --tasks 22 --arms loop --plugin-dir plugins/fabflows --config-name wide-0171 --confirm
+node analyze180.js plugins/fabflows/evals/runs/iteration-13/eval-22-review-catch-wide/wide-0171
+node wait180.js plugins/fabflows/evals/runs/iteration-13/eval-22-review-catch-wide/wide-0171
+node mustfix179.js plugins/fabflows/evals/runs/iteration-13/eval-22-review-catch-wide/wide-0171
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-13 --skill-name fabflows)
+```
+
+The three extraction scripts ran unchanged over all five runs; their source is in the pull request
+for #179.
