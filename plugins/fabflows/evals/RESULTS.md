@@ -1918,6 +1918,17 @@ callee idea is closed. Round 1 waits on the spec lens, as iteration 11 found on 
 worth carrying forward is coverage, not speed: no run's sweep listed `parseRange`'s range syntax
 far enough to probe `||` without spaces.
 
+**Correction (2026-10-04, [#194](https://github.com/kuan51/claude-skills/issues/194)).** The last
+sentence above is wrong. Every run's sweep lens reached `||` without spaces and dismissed it. Runs 1,
+2 and 5 probed it and called it strictness, a note: "These are stricter than node-semver ... Not a
+wrong result, so not must-fix" (run 1), "Not a bug, only strictness" (run 2), "Same class of note"
+as a stricter-than-standard difference (run 5). Run 3 probed it and listed it as a correct
+rejection: "'1.0.0||2.0.0' ... are all rejected". Run 4 listed it unprobed: "These look stricter or
+different from node-semver rather than wrong, so they are at most notes." So the gap was
+judgement, not listing: the reviewers took `parseRange`'s own checks as its domain. The confound
+below that says `parseRange` was never probed is wrong for the same reason. Iteration 14 tests a
+fix for the judgement and finds that the note is defensible.
+
 ### Cost of this iteration
 
 $12.0299 at list price for 5 runs.
@@ -1948,3 +1959,128 @@ node mustfix179.js plugins/fabflows/evals/runs/iteration-13/eval-22-review-catch
 
 The three extraction scripts ran unchanged over all five runs; their source is in the pull request
 for #179.
+
+## Iteration 14: a domain sentence in the must-fix definition
+
+Tracked in [#194](https://github.com/kuan51/claude-skills/issues/194). Iteration 13's sweep lens
+reached `parseRange`'s `||` without spaces in every run and filed it as a note, because it took the
+callee's own grammar as its domain (see the correction above). This iteration tests one fix: a
+sentence added after every statement of the must-fix definition.
+
+> Judge code's domain by the inputs it is given in use, never by its own checks: a form those
+> inputs really carry that the code rejects or misreads is a wrong result, whether or not a spec or
+> another library writes it down; a value they never carry in practice, such as an extreme number,
+> stays a note.
+
+The change was not merged: it failed its first bar.
+
+The data is in `runs/iteration-14/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Decision rule
+
+Set by #194 before the runs. The sentence passes when all four bars hold:
+
+1. Round 1's sweep lens names `parseRange`'s `||` defect as must-fix in at least 3 of 5 runs.
+2. It names `compareVersions` in at least 4 of 5 and `parseVersion` in at least 3 of 5.
+3. The sweep lens's round-1 `durationMs` is below the spec lens's in 5 of 5.
+4. At most 2 review rounds in at least 4 of 5 runs, and every run ends `accepted`.
+
+### Setup
+
+- **The plugin.** fabflows 0.17.2 at commit `c328daa`, never merged: master `bafba91` plus the
+  sentence in four places. Those are `reviewBrief`, `sweepBrief` and the builder's rework brief in
+  `workflows/build.js`, and the must-fix bullet in `agents/refuter.md`.
+- **Runs.** Task 22's `loop` arm, lead `opus` at medium effort, caps 120 turns, $15 list price and
+  30 minutes a run. 5 runs, one at a time, 06:35 to 07:04 UTC on 2026-10-04.
+- **The lead.** A first launch on the Fable lead stopped at its first API call in all 5 runs, on
+  the account's Fable usage limit. It cost $0 and left no data, so its output was deleted and the
+  batch ran again with `--model opus`. The builder, spec lens and sweep lens keep their pinned
+  models (Opus, Opus and Sonnet), so every bar measures the same agents as iteration 13.
+- **Machine.** The owner's Windows 11 workstation, as iteration 13.
+
+### Runs
+
+Round-1 times are each agent's `durationMs` from `metrics.json`, by the `review:1:spec` and
+`review:1:sweep` labels. The defects named are round 1's must-fix items, counted by hand from the
+workflow journal.
+
+| Run | Cost | Time s | Rounds | Spec lens s | Sweep lens s | Sweep ÷ spec | Defects named in round 1 | Hidden suite |
+|---|---|---|---|---|---|---|---|---|
+| 1 | $1.5703 | 282 | 2 | 112 | 58 | 0.52 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 2 | $1.5669 | 302 | 2 | 122 | 52 | 0.42 | `compareVersions` (sweep) | 12/16 |
+| 3 | $1.4752 | 343 | 2 | 139 | 51 | 0.36 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 4 | $1.7039 | 465 | 2 | 138 | 63 | 0.46 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 5 | $1.5063 | 292 | 2 | 99 | 56 | 0.57 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| Mean | $1.5645 | 337 | 2 | 122.3 | 55.9 | 0.47 | | |
+
+In every run the round-1 sweep lens returned REWORK, the spec lens ACCEPT, and the round-2 reviewer
+ACCEPT. The workflow's `accepted` result is in the lead transcript of runs 1, 2 and 5. In runs 3 and
+4 it is inferred from the journal's round-2 ACCEPT and the committed, clean tree.
+
+| Bar | Needed | Iteration 13 | Iteration 14 | Result |
+|---|---|---|---|---|
+| 1. `parseRange` must-fix in round 1 | 3 of 5 | 0 of 5 | 0 of 5 | Fails |
+| 2. `compareVersions`, `parseVersion` | 4 and 3 of 5 | 5 and 4 | 5 and 4 | Holds |
+| 3. Sweep lens faster than spec lens | 5 of 5 | 5 of 5 | 5 of 5 | Holds |
+| 4. At most 2 rounds, ends `accepted` | 4 of 5, all | 5 of 5 | 5 of 5 | Holds |
+
+### What the runs show
+
+- **Every sweep probed the case and kept it a note.** Each probed `^1.0.0||^2.0.0` or
+  `^1.2.3||^2.0.0` and saw `parseRange` throw. Run 1 called it "probably out of this domain, since
+  lockstep's own docs and tests use spaced '||'". Run 2 wrote "it is not clear manifests in this
+  project carry it". Run 3 wrote "These are stricter than node-semver. Note only." Run 4 wrote
+  "Node-semver accepts both, but this grammar looks deliberate: the existing test uses ' || '".
+  Run 5 probed it and raised only the other two defects.
+- **The sentence moved the reasoning, not the verdict.** The reviewers stopped citing the code's
+  grammar and cited the project's own tests and docs, or doubt about real inputs, instead. Nothing
+  in the fixture says which forms real manifests carry, so "really carry" stayed undecided.
+- **The spec lens changed in a way #194 did not ask for.** It returned REWORK in 5 of 5 runs in
+  iteration 13, 6 of its 7 items about input values, and ACCEPT in 5 of 5 here. In run 2 it used
+  the new clause on a case the fixture's `SPEC.md` names, an invalid version or range in an input
+  file: "Such files do not occur in practice." Several builders also added object checks of their
+  own, so not all of the drop is the sentence.
+- **No must-fix item fell outside the four planted defects.** `maxSatisfying`'s skipped last
+  version was again fixed by the round-1 builder in every run.
+- **The finding never reached the user, in either iteration.** Round 1's reports name `||` without
+  spaces in 10 of 10 runs across iterations 13 and 14. The final verdict's report names it in 0 of
+  10, and no lead's closing summary mentions it. The fabflows skill tells the lead to read the
+  notes in the final verdict's report, and in a two-round run that is the round-2 reviewer's, which
+  sweeps no callees.
+
+### Verdict
+
+The sentence failed bar 1 and changed the spec lens, so it is not merged. The reviewers' note on
+`||` without spaces is defensible. Nothing in the fixture states npm's range grammar, its code,
+tests and docs all use the spaced form, and the eval's own reference rejects `>= 1.2.3`, the same
+kind of strictness. A must-fix would also change `resolve` and `check`, which the fixture's spec
+keeps as they are. The gap worth fixing is delivery: the build loop finds the case every time and
+the user never hears of it. #194 now covers that, with task 22 graded on whether the finding
+reaches the user.
+
+### Cost of this iteration
+
+$7.8225 at list price for 5 runs on an Opus lead, against iteration 13's $12.0299 on Fable. The
+failed Fable launch cost $0.
+
+### Confounds
+
+- **The lead model.** Opus here, Fable in iteration 13. The lead passes `SPEC.md` to the loop and
+  gates the commit; the agents every bar measures run on the same pinned models. The lower cost is
+  one task on one day, not a lead-model result.
+- **One fixture**, as iteration 13.
+- **Builder variation.** Part of the spec lens's drop to no must-fix items comes from builders that
+  check input shapes themselves.
+
+### Commands
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 22 --arms loop --plugin-dir plugins/fabflows --config-name domain-0172-opus --model opus --confirm
+node count194.js plugins/fabflows/evals/runs/iteration-14/eval-22-review-catch-wide/domain-0172-opus
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-14 --skill-name fabflows)
+```
+
+`count194.js` reads each run's `metrics.json` and workflow journal and writes nothing. Run over
+iteration 13's runs, it reproduces that iteration's round-1 times exactly. Its source is in the
+pull request for #194. The plugin at `c328daa` was checked out when the runs started.
