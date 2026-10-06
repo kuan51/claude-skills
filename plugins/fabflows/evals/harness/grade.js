@@ -371,6 +371,17 @@ function gradeHiddenTests(exp, spec, fixture, metrics, workflowDir) {
     evidence: workflows.length ? workflows.map((w) => `${w.name}: ${w.completed ? 'completed' : 'unfinished'}`).join('; ') : 'no workflow launched',
   });
 
+  if (spec.relayPattern) {
+    const text = (metrics.result || {}).result_text || '';
+    const m = new RegExp(spec.relayPattern, 'i').exec(text);
+    exp.push({
+      text: "The lead's closing message relays the reviewer finding",
+      informational: true,
+      passed: !!m,
+      evidence: m ? m[0].slice(0, 160) : 'no match',
+    });
+  }
+
   if (spec.requireReview) {
     const types = workflows.flatMap((w) => (w.agents || []).map((a) => a.agentType));
     exp.push({

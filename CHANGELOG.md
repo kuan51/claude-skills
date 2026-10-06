@@ -250,6 +250,13 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 0.17.3** -- on an accepted build, the lead now reads every round's review report in
+  full, not only the final verdict's, and relays in its closing message each reviewer note that
+  names a wrong or doubtful result in code, one line each (#194). Eval iterations 13 and 14 found
+  round 1 naming `parseRange` rejecting unspaced `||` in 10 of 10 runs and no closing message
+  mentioning it. The eval grader gains an optional `relayPattern`, an informational row that flags
+  closing messages matching it for a person to read; task 22 sets it to any `||`. 0.17.2 is
+  skipped: iteration 14's record names it for the unmerged must-fix change.
 - **fabflows 0.17.1** -- the build loop's spec lens, and the single reviewer of a rework-only
   round, still check the tree for unstaged and untracked paths before the tests, then start the
   test command in the background and read the diff while it runs (#180). They never return before

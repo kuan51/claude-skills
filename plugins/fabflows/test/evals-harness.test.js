@@ -285,6 +285,35 @@ test('grade reads the two halves of the review question from the workflow journa
   assert.equal(accept['The build round shipped the planted defect'], false);
 });
 
+test("grade reports whether the lead's closing message relays the reviewer finding, only when relayPattern is set", () => {
+  const { grade } = require('../evals/harness/grade.js');
+  const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
+  const t8 = cfg.tasks.find((t) => t.id === 8);
+  const ROW = "The lead's closing message relays the reviewer finding";
+  const fixture = path.join(OUTDATED, 'solution');
+  const run = (relayPattern, result) => {
+    const task = { ...t8, grade: { ...t8.grade, testCommand: 'node -e 0', ...(relayPattern ? { relayPattern } : {}) } };
+    const metrics = { result, lead: { output: 0 }, totals: { output: 0 }, workers: {}, workflows: [], hooks: {} };
+    return grade({ task, fixture, metrics, timing: {}, maxTurns: 10 }).expectations.find((e) => e.text === ROW);
+  };
+  const hit = run('unspaced', { result_text: 'Reviewer notes not acted on: unspaced input' });
+  assert.equal(hit.passed, true);
+  assert.equal(hit.informational, true);
+  assert.equal(hit.evidence, 'unspaced');
+  const miss = run('unspaced', { result_text: 'All done.' });
+  assert.equal(miss.passed, false);
+  assert.equal(miss.evidence, 'no match');
+  assert.equal(run(null, { result_text: 'unspaced' }), undefined);
+  assert.equal(run('unspaced', undefined).passed, false);
+});
+
+test("task 22's relayPattern flags any || in the closing message", () => {
+  const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
+  const re = new RegExp(cfg.tasks.find((t) => t.id === 22).grade.relayPattern, 'i');
+  for (const s of ['parseRange rejects `||` without spaces', 'unspaced `||` is rejected', 'parseRange throws on `^1.0.0||^2.0.0`.']) assert.ok(re.test(s), s);
+  for (const s of ['Added `lockstep upgrades`; `npm test` passes.', 'The command calls `parseRange` for each package.', 'Committed as 3a09e70; the tree is clean.']) assert.ok(!re.test(s), s);
+});
+
 test('metrics record the cache-write split, each Skill load, SessionStart hook text and where each init plugin came from', () => {
   const events = parseTranscript(fs.readFileSync(path.join(__dirname, 'fixtures', 'transcript-cache-split.jsonl'), 'utf8'));
   const m = computeMetrics(events);

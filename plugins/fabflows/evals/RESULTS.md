@@ -1918,6 +1918,17 @@ callee idea is closed. Round 1 waits on the spec lens, as iteration 11 found on 
 worth carrying forward is coverage, not speed: no run's sweep listed `parseRange`'s range syntax
 far enough to probe `||` without spaces.
 
+**Correction (2026-10-04, [#194](https://github.com/kuan51/claude-skills/issues/194)).** The last
+sentence above is wrong. Every run's sweep lens reached `||` without spaces and dismissed it. Runs 1,
+2 and 5 probed it and called it strictness, a note: "These are stricter than node-semver ... Not a
+wrong result, so not must-fix" (run 1), "Not a bug, only strictness" (run 2), "Same class of note"
+as a stricter-than-standard difference (run 5). Run 3 probed it and listed it as a correct
+rejection: "'1.0.0||2.0.0' ... are all rejected". Run 4 listed it unprobed: "These look stricter or
+different from node-semver rather than wrong, so they are at most notes." So the gap was
+judgement, not listing: the reviewers took `parseRange`'s own checks as its domain. The confound
+below that says `parseRange` was never probed is wrong for the same reason. Iteration 14 tests a
+fix for the judgement and finds that the note is defensible.
+
 ### Cost of this iteration
 
 $12.0299 at list price for 5 runs.
@@ -1948,3 +1959,246 @@ node mustfix179.js plugins/fabflows/evals/runs/iteration-13/eval-22-review-catch
 
 The three extraction scripts ran unchanged over all five runs; their source is in the pull request
 for #179.
+
+## Iteration 14: a domain sentence in the must-fix definition
+
+Tracked in [#194](https://github.com/kuan51/claude-skills/issues/194). Iteration 13's sweep lens
+reached `parseRange`'s `||` without spaces in every run and filed it as a note, because it took the
+callee's own grammar as its domain (see the correction above). This iteration tests one fix: a
+sentence added after every statement of the must-fix definition.
+
+> Judge code's domain by the inputs it is given in use, never by its own checks: a form those
+> inputs really carry that the code rejects or misreads is a wrong result, whether or not a spec or
+> another library writes it down; a value they never carry in practice, such as an extreme number,
+> stays a note.
+
+The change was not merged: it failed its first bar.
+
+The data is in `runs/iteration-14/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Decision rule
+
+Set by #194 before the runs. The sentence passes when all four bars hold:
+
+1. Round 1's sweep lens names `parseRange`'s `||` defect as must-fix in at least 3 of 5 runs.
+2. It names `compareVersions` in at least 4 of 5 and `parseVersion` in at least 3 of 5.
+3. The sweep lens's round-1 `durationMs` is below the spec lens's in 5 of 5.
+4. At most 2 review rounds in at least 4 of 5 runs, and every run ends `accepted`.
+
+### Setup
+
+- **The plugin.** fabflows 0.17.2 at commit `c328daa`, never merged: master `bafba91` plus the
+  sentence in four places. Those are `reviewBrief`, `sweepBrief` and the builder's rework brief in
+  `workflows/build.js`, and the must-fix bullet in `agents/refuter.md`.
+- **Runs.** Task 22's `loop` arm, lead `opus` at medium effort, caps 120 turns, $15 list price and
+  30 minutes a run. 5 runs, one at a time, 06:35 to 07:04 UTC on 2026-10-04.
+- **The lead.** A first launch on the Fable lead stopped at its first API call in all 5 runs, on
+  the account's Fable usage limit. It cost $0 and left no data, so its output was deleted and the
+  batch ran again with `--model opus`. The builder, spec lens and sweep lens keep their pinned
+  models (Opus, Opus and Sonnet), so every bar measures the same agents as iteration 13.
+- **Machine.** The owner's Windows 11 workstation, as iteration 13.
+
+### Runs
+
+Round-1 times are each agent's `durationMs` from `metrics.json`, by the `review:1:spec` and
+`review:1:sweep` labels. The defects named are round 1's must-fix items, counted by hand from the
+workflow journal.
+
+| Run | Cost | Time s | Rounds | Spec lens s | Sweep lens s | Sweep ÷ spec | Defects named in round 1 | Hidden suite |
+|---|---|---|---|---|---|---|---|---|
+| 1 | $1.5703 | 282 | 2 | 112 | 58 | 0.52 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 2 | $1.5669 | 302 | 2 | 122 | 52 | 0.42 | `compareVersions` (sweep) | 12/16 |
+| 3 | $1.4752 | 343 | 2 | 139 | 51 | 0.36 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 4 | $1.7039 | 465 | 2 | 138 | 63 | 0.46 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| 5 | $1.5063 | 292 | 2 | 99 | 56 | 0.57 | `compareVersions`, `parseVersion` (sweep) | 14/16 |
+| Mean | $1.5645 | 337 | 2 | 122.3 | 55.9 | 0.47 | | |
+
+In every run the round-1 sweep lens returned REWORK, the spec lens ACCEPT, and the round-2 reviewer
+ACCEPT. The workflow's `accepted` result is in the lead transcript of runs 1, 2 and 5. In runs 3 and
+4 it is inferred from the journal's round-2 ACCEPT and the committed, clean tree.
+
+| Bar | Needed | Iteration 13 | Iteration 14 | Result |
+|---|---|---|---|---|
+| 1. `parseRange` must-fix in round 1 | 3 of 5 | 0 of 5 | 0 of 5 | Fails |
+| 2. `compareVersions`, `parseVersion` | 4 and 3 of 5 | 5 and 4 | 5 and 4 | Holds |
+| 3. Sweep lens faster than spec lens | 5 of 5 | 5 of 5 | 5 of 5 | Holds |
+| 4. At most 2 rounds, ends `accepted` | 4 of 5, all | 5 of 5 | 5 of 5 | Holds |
+
+### What the runs show
+
+- **Every sweep probed the case and kept it a note.** Each probed `^1.0.0||^2.0.0` or
+  `^1.2.3||^2.0.0` and saw `parseRange` throw. Run 1 called it "probably out of this domain, since
+  lockstep's own docs and tests use spaced '||'". Run 2 wrote "it is not clear manifests in this
+  project carry it". Run 3 wrote "These are stricter than node-semver. Note only." Run 4 wrote
+  "Node-semver accepts both, but this grammar looks deliberate: the existing test uses ' || '".
+  Run 5 probed it and raised only the other two defects.
+- **The sentence moved the reasoning, not the verdict.** The reviewers stopped citing the code's
+  grammar and cited the project's own tests and docs, or doubt about real inputs, instead. Nothing
+  in the fixture says which forms real manifests carry, so "really carry" stayed undecided.
+- **The spec lens changed in a way #194 did not ask for.** It returned REWORK in 5 of 5 runs in
+  iteration 13, 6 of its 7 items about input values, and ACCEPT in 5 of 5 here. In run 2 it used
+  the new clause on a case the fixture's `SPEC.md` names, an invalid version or range in an input
+  file: "Such files do not occur in practice." Several builders also added object checks of their
+  own, so not all of the drop is the sentence.
+- **No must-fix item fell outside the four planted defects.** `maxSatisfying`'s skipped last
+  version was again fixed by the round-1 builder in every run.
+- **The finding never reached the user, in either iteration.** Round 1's reports name `||` without
+  spaces in 10 of 10 runs across iterations 13 and 14. The final verdict's report names it in 0 of
+  10, and no lead's closing summary mentions it. The fabflows skill tells the lead to read the
+  notes in the final verdict's report, and in a two-round run that is the round-2 reviewer's, which
+  sweeps no callees.
+
+### Verdict
+
+The sentence failed bar 1 and changed the spec lens, so it is not merged. The reviewers' note on
+`||` without spaces is defensible. Nothing in the fixture states npm's range grammar, its code,
+tests and docs all use the spaced form, and the eval's own reference rejects `>= 1.2.3`, the same
+kind of strictness. A must-fix would also change `resolve` and `check`, which the fixture's spec
+keeps as they are. The gap worth fixing is delivery: the build loop finds the case every time and
+the user never hears of it. #194 now covers that, with task 22 graded on whether the finding
+reaches the user.
+
+### Cost of this iteration
+
+$7.8225 at list price for 5 runs on an Opus lead, against iteration 13's $12.0299 on Fable. The
+failed Fable launch cost $0.
+
+### Confounds
+
+- **The lead model.** Opus here, Fable in iteration 13. The lead passes `SPEC.md` to the loop and
+  gates the commit; the agents every bar measures run on the same pinned models. The lower cost is
+  one task on one day, not a lead-model result.
+- **One fixture**, as iteration 13.
+- **Builder variation.** Part of the spec lens's drop to no must-fix items comes from builders that
+  check input shapes themselves.
+
+### Commands
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 14 --tasks 22 --arms loop --plugin-dir plugins/fabflows --config-name domain-0172-opus --model opus --confirm
+node count194.js plugins/fabflows/evals/runs/iteration-14/eval-22-review-catch-wide/domain-0172-opus
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-14 --skill-name fabflows)
+```
+
+`count194.js` reads each run's `metrics.json` and workflow journal and writes nothing. Run over
+iteration 13's runs, it reproduces that iteration's round-1 times exactly. Its source is in the
+pull request for #194. The plugin at `c328daa` was checked out when the runs started.
+
+## Iteration 15: relaying reviewer notes to the user
+
+Tracked in [#194](https://github.com/kuan51/claude-skills/issues/194). Iteration 14 showed that the
+build loop's round-1 reviewers find problems they do not make must-fix, and that the user never
+hears of them: the lead read only the final verdict's notes. fabflows 0.17.3 tells the lead to read
+every round's review report in full and to list, in its closing message, each note that names a
+wrong or doubtful result in code.
+
+The bar was inconclusive: no run gave it a case to count. The change is kept on the behaviour the
+runs show, by the owner's decision.
+
+The data is in `runs/iteration-15/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Decision rule
+
+Set by #194 before the runs. Among the runs whose round-1 report files `parseRange`'s `||` without
+spaces as a note, the closing message relays the finding in every one, judged by hand, with at
+least 2 such runs. Fewer than 2 such runs makes the eval inconclusive.
+
+### Setup
+
+- **The plugin.** fabflows 0.17.3 at commit `deab978`: master `bafba91` plus the new instruction in
+  the build-loop paragraph of `skills/fabflows/SKILL.md`. The reviewers are master's, as in
+  iteration 13.
+- **Runs.** Task 22's `loop` arm, lead `opus` at medium effort, caps 120 turns, $15 list price and
+  30 minutes a run. 5 runs planned, one at a time, from 02:35 UTC on 2026-10-06.
+- **Run 5 was stopped.** The owner stopped it about a minute in, once runs 1 to 4 had settled the
+  bar as inconclusive. It has no grade and is left out of every figure below.
+- **Machine.** The owner's Windows 11 workstation, as iterations 13 and 14.
+
+### Runs
+
+Round-1 times are each agent's `durationMs` from `metrics.json`. The defects named are round 1's
+must-fix items, counted by hand from the workflow journal. Lead output is the lead's own output
+tokens.
+
+| Run | Cost | Time s | Rounds | Spec lens s | Sweep lens s | Defects named in round 1 | Hidden suite | Lead output |
+|---|---|---|---|---|---|---|---|---|
+| 1 | $4.2113 | 682 | 2 | 267 | 182 | `compareVersions` (sweep) | 12/16 | 11,793 |
+| 2 | $2.6994 | 439 | 1 | 229 | 143 | none | 10/16 | 10,471 |
+| 3 | $2.0992 | 430 | 2 | 147 | 61 | `compareVersions`, `parseVersion` (sweep) | 14/16 | 4,505 |
+| 4 | $1.9902 | 424 | 2 | 140 | 61 | `compareVersions`, `parseVersion` (sweep) | 14/16 | 4,416 |
+| Mean | $2.7500 | 494 | 1.75 | 195.8 | 111.7 | | | 7,796 |
+
+Every run ended `accepted`. That status is in run 1's lead transcript. In runs 2 to 4 it is
+inferred from the journal's final ACCEPT and the committed, clean tree. Run 2's two round-1
+reviewers both returned ACCEPT, so it had one round and shipped three planted defects.
+
+| Bar | Needed | Iteration 15 | Result |
+|---|---|---|---|
+| Runs whose round 1 files `\|\|` without spaces as a note | at least 2 | 0 of 4 | Inconclusive |
+
+### What the runs show
+
+- **No run reached the case.** Each round-1 sweep tried `||` only with spaces, such as
+  `'^1.0.0 || ^2.0.0'`, and found it correct. In iterations 13 and 14 the round-1 sweep reached
+  the unspaced case in 5 of 5 runs each. This change does not touch the reviewers, and the cause is
+  not known.
+- **Every closing message listed the notes.** All 4 have a "Reviewer notes not acted on" list.
+  Across iterations 13 and 14, one closing message in 10 had a notes line: iteration 13's run 1,
+  with two notes and not the `||` case.
+- **By hand, the closing messages carried 13 of 16 notes that name a wrong or doubtful result.**
+  Run 1 carried 2 of 2, run 2 2 of 3, run 3 4 of 6 and run 4 5 of 5. Some went in the message's
+  "needs your decision" part rather than the list. Each call is a judgement on the report's text.
+- **Run 2 missed the note that mattered most.** Its spec lens filed `compareVersions` ranking
+  `1.0.0-alpha.1` equal to `1.0.0-alpha` as a note: "a wrong result on an input a registry can
+  have". Its sweep had accepted, so the defect shipped and the user was not told. The lead read
+  the report with `grep -o "NOTES ...[^\"]{0,3500}"`, which stops at the first quote mark. It saw
+  only the first of four notes.
+- **Run 3 missed two.** One was the sweep's `>= 1.2.0` rejected while npm accepts it, the same kind
+  of case as `||`. The other was the spec lens's changed usage text for `resolve` and `check`.
+- **Two lists held an item they should not have.** Run 4 listed a style note, temp folders the tests
+  never delete. Run 2 listed the object passthrough in `parseVersion` and `parseRange`, which both
+  reviewers had probed and called correct.
+- **The lead wrote more.** Mean lead output was 7,796 tokens against iteration 14's 3,939. Runs 1
+  and 2 account for most of it: 25 and 26 turns, against 13 and 12 in runs 3 and 4.
+- **The spec lens raised input checks again.** It returned REWORK in runs 3 and 4 with 3 must-fix
+  items about input values the new command does not check, none of them planted. That is
+  closer to iteration 13, with the same reviewers, than to iteration 14.
+
+### Verdict
+
+Inconclusive on the bar, so the eval neither passes nor fails the change. The behaviour #194 asked
+for is visible in every run: the user now sees the reviewers' notes, and in 2 of 4 runs that
+included every wrong or doubtful result. The weak point is how the lead reads a report. A lead that
+greps or slices the text can still drop a note, as run 2's did, so a structured `notes` field in the
+reviewers' verdict (out of scope in #194) is the fix to weigh next. The owner kept 0.17.3 on this
+evidence.
+
+### Cost of this iteration
+
+$11.0001 at list price for runs 1 to 4, against iteration 14's $7.8225 for 5 runs. Run 5's partial
+session has no metrics and is not counted.
+
+### Confounds
+
+- **One phrase was cut before the runs.** The draft said to read each report "in full ... and never
+  a truncated slice". The second half was cut as saying the same thing twice, so the runs read only
+  "in full". Whether it would have stopped run 2's `grep` is untested. Iteration 14's leads read
+  through truncating scripts with no such instruction.
+- **The lead's extra output is not all from this change.** The leads of runs 1 and 2 also ran the
+  command end to end on the spec's example and its error paths, which the change does not ask for.
+- **One fixture**, as iterations 13 and 14, and 4 runs rather than 5.
+
+### Commands
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 15 --tasks 22 --arms loop --plugin-dir plugins/fabflows --config-name relay-0173-opus --model opus --confirm
+node count194.js plugins/fabflows/evals/runs/iteration-15/eval-22-review-catch-wide/relay-0173-opus
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-15
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-15 --skill-name fabflows)
+```
+
+The notes were counted by hand from each run's journal and `outputs/result.md`, with two read-only
+helper scripts like `count194.js`. Their source is in the pull request for #194. Run 5's partial
+directory was moved out of the iteration before `summarize.js` ran.
