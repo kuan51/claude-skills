@@ -441,7 +441,8 @@
         "testCommand": "npm test",
         "hidden": "fixtures/lockstep-wide/hidden",
         "rootEnv": "LOCKSTEP_ROOT",
-        "defectPattern": "^defect: (parseVersion|compareVersions|parseRange|maxSatisfying) "
+        "defectPattern": "^defect: (parseVersion|compareVersions|parseRange|maxSatisfying) ",
+        "relayPattern": "\\|\\|"
       }
     }
   ]
