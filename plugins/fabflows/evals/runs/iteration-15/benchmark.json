@@ -1,0 +1,731 @@
+{
+  "metadata": {
+    "skill_name": "fabflows",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-10-06T03:16:31Z",
+    "evals_run": [
+      22
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 22,
+      "configuration": "relay-0173-opus",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8077,
+        "passed": 21,
+        "failed": 5,
+        "total": 26,
+        "time_seconds": 682.3,
+        "tokens": 2591262,
+        "tool_calls": 21,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=25"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=25"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 811.4895"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "1 commit(s): feat(cli): add lockstep upgrades subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "The lead's closing message relays the reviewer finding",
+          "informational": true,
+          "passed": false,
+          "evidence": "no match"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, ACCEPT, ACCEPT"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: caret and tilde ranges are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: the spec's example prints left-pad only and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: the highest satisfying version listed last in the registry is reported",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: a range joined by || without spaces is honoured",
+          "passed": false,
+          "evidence": "error: error: invalid range component \"1.0.0||^2.0.0\" | + actual - expected | + '' | - 'a 1.0.0 2.1.0\\n'"
+        },
+        {
+          "text": "hidden: upgrades: a longer prerelease of the same version counts as newer",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: a locked version with a leading zero in its build metadata is accepted",
+          "passed": false,
+          "evidence": "error: error: numeric identifier \"007\" has a leading zero | + actual - expected | + '' | - 'a 1.0.0+build.007 1.1.0\\n'"
+        },
+        {
+          "text": "hidden: upgrades: up-to-date, unlisted and transitive packages print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: lines come in ascending name order",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: usage and input errors exit 1 with nothing on stdout",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: parseVersion accepts a leading zero in build metadata",
+          "passed": false,
+          "evidence": "error: 'numeric identifier \"007\" has a leading zero'"
+        },
+        {
+          "text": "hidden: defect: compareVersions ranks a longer prerelease above its prefix",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: parseRange splits || without spaces",
+          "passed": false,
+          "evidence": "error: 'invalid range component \"1.0.0||^2.0.0\"'"
+        },
+        {
+          "text": "hidden: defect: maxSatisfying considers the last version in the list",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "defect tests after the run: not ok defect: parseVersion accepts a leading zero in build metadata; ok defect: compareVersions ranks a longer prerelease above its prefix; not ok defect: pars"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": false,
+          "evidence": "must-fix items: 1, none matched"
+        },
+        {
+          "text": "Hidden acceptance suite: 12/16 tests pass",
+          "passed": false,
+          "evidence": "exit 1; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 22,
+      "configuration": "relay-0173-opus",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.7308,
+        "passed": 19,
+        "failed": 7,
+        "total": 26,
+        "time_seconds": 439.3,
+        "tokens": 1769897,
+        "tool_calls": 22,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=26"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=26"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 898.9238"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "1 commit(s): feat(cli): add lockstep upgrades subcommand"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "The lead's closing message relays the reviewer finding",
+          "informational": true,
+          "passed": false,
+          "evidence": "no match"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": false,
+          "evidence": "verdicts: ACCEPT, ACCEPT"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: caret and tilde ranges are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: the spec's example prints left-pad only and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: the highest satisfying version listed last in the registry is reported",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: a range joined by || without spaces is honoured",
+          "passed": false,
+          "evidence": "error: error: invalid range component \"1.0.0||^2.0.0\" | + actual - expected | + '' | - 'a 1.0.0 2.1.0\\n'"
+        },
+        {
+          "text": "hidden: upgrades: a longer prerelease of the same version counts as newer",
+          "passed": false,
+          "evidence": "error: Expected values to be strictly equal: | + actual - expected | + '' | - 'a 2.0.0-rc 2.0.0-rc.1\\n'"
+        },
+        {
+          "text": "hidden: upgrades: a locked version with a leading zero in its build metadata is accepted",
+          "passed": false,
+          "evidence": "error: error: numeric identifier \"007\" has a leading zero | + actual - expected | + '' | - 'a 1.0.0+build.007 1.1.0\\n'"
+        },
+        {
+          "text": "hidden: upgrades: up-to-date, unlisted and transitive packages print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: lines come in ascending name order",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: usage and input errors exit 1 with nothing on stdout",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: parseVersion accepts a leading zero in build metadata",
+          "passed": false,
+          "evidence": "error: 'numeric identifier \"007\" has a leading zero'"
+        },
+        {
+          "text": "hidden: defect: compareVersions ranks a longer prerelease above its prefix",
+          "passed": false,
+          "evidence": "error: Expected values to be strictly equal: | 0 !== -1"
+        },
+        {
+          "text": "hidden: defect: parseRange splits || without spaces",
+          "passed": false,
+          "evidence": "error: 'invalid range component \"1.0.0||^2.0.0\"'"
+        },
+        {
+          "text": "hidden: defect: maxSatisfying considers the last version in the list",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "defect tests after the run: not ok defect: parseVersion accepts a leading zero in build metadata; not ok defect: compareVersions ranks a longer prerelease above its prefix; not ok defect: "
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": false,
+          "evidence": "no must-fix items"
+        },
+        {
+          "text": "Hidden acceptance suite: 10/16 tests pass",
+          "passed": false,
+          "evidence": "exit 1; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 22,
+      "configuration": "relay-0173-opus",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.8846,
+        "passed": 23,
+        "failed": 3,
+        "total": 26,
+        "time_seconds": 429.7,
+        "tokens": 1401852,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=13"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=13"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 1131.5127"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "1 commit(s): feat(cli): add lockstep upgrades command"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "The lead's closing message relays the reviewer finding",
+          "informational": true,
+          "passed": false,
+          "evidence": "no match"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: caret and tilde ranges are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: the spec's example prints left-pad only and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: the highest satisfying version listed last in the registry is reported",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: a range joined by || without spaces is honoured",
+          "passed": false,
+          "evidence": "error: error: invalid range component \"1.0.0||^2.0.0\" | + actual - expected | + '' | - 'a 1.0.0 2.1.0\\n'"
+        },
+        {
+          "text": "hidden: upgrades: a longer prerelease of the same version counts as newer",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: a locked version with a leading zero in its build metadata is accepted",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: up-to-date, unlisted and transitive packages print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: lines come in ascending name order",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: usage and input errors exit 1 with nothing on stdout",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: parseVersion accepts a leading zero in build metadata",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: compareVersions ranks a longer prerelease above its prefix",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: parseRange splits || without spaces",
+          "passed": false,
+          "evidence": "error: 'invalid range component \"1.0.0||^2.0.0\"'"
+        },
+        {
+          "text": "hidden: defect: maxSatisfying considers the last version in the list",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "defect tests after the run: ok defect: parseVersion accepts a leading zero in build metadata; ok defect: compareVersions ranks a longer prerelease above its prefix; not ok defect: parseRan"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": false,
+          "evidence": "must-fix items: 4, none matched"
+        },
+        {
+          "text": "Hidden acceptance suite: 14/16 tests pass",
+          "passed": false,
+          "evidence": "exit 1; 2 test files"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 22,
+      "configuration": "relay-0173-opus",
+      "run_number": 4,
+      "result": {
+        "pass_rate": 0.8846,
+        "passed": 23,
+        "failed": 3,
+        "total": 26,
+        "time_seconds": 424,
+        "tokens": 1455794,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Run finished without error",
+          "passed": true,
+          "evidence": "is_error=false subtype=success stop=end_turn/completed turns=12"
+        },
+        {
+          "text": "No tool call was denied",
+          "passed": true,
+          "evidence": "no permission denials"
+        },
+        {
+          "text": "Stayed under the turn cap (120)",
+          "passed": true,
+          "evidence": "num_turns=12"
+        },
+        {
+          "text": "Public test command passes in the fixture (npm test)",
+          "passed": true,
+          "evidence": "exit 0: \u00e2\u201e\u00b9 cancelled 0 | \u00e2\u201e\u00b9 skipped 0 | \u00e2\u201e\u00b9 todo 0 | \u00e2\u201e\u00b9 duration_ms 1088.8179"
+        },
+        {
+          "text": "Working tree is clean (work committed)",
+          "passed": true,
+          "evidence": "git status --porcelain is empty"
+        },
+        {
+          "text": "At least one commit was made on the branch",
+          "passed": true,
+          "evidence": "1 commit(s): feat(cli): add lockstep upgrades command"
+        },
+        {
+          "text": "No dependency was added",
+          "passed": true,
+          "evidence": "no dependencies, no node_modules"
+        },
+        {
+          "text": "Every launched workflow finished before the session ended",
+          "passed": true,
+          "evidence": "fabflows:build: completed"
+        },
+        {
+          "text": "The lead's closing message relays the reviewer finding",
+          "informational": true,
+          "passed": false,
+          "evidence": "no match"
+        },
+        {
+          "text": "A review round ran inside a workflow",
+          "passed": true,
+          "evidence": "workflow agents: fabflows:editor, fabflows:editor, fabflows:refuter, fabflows:refuter, fabflows:refuter"
+        },
+        {
+          "text": "The review returned REWORK on any round",
+          "informational": true,
+          "passed": true,
+          "evidence": "verdicts: REWORK, REWORK, ACCEPT"
+        },
+        {
+          "text": "hidden: regression: resolve backtracks when the highest version conflicts with a sibling",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli resolve prints the lockfile and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: cli check prints true/false with exits 0/2, and 1 on bad input",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: regression: caret and tilde ranges are unchanged",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: the spec's example prints left-pad only and exits 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: the highest satisfying version listed last in the registry is reported",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: a range joined by || without spaces is honoured",
+          "passed": false,
+          "evidence": "error: error: invalid range component \"1.0.0||^2.0.0\" | + actual - expected | + '' | - 'a 1.0.0 2.1.0\\n'"
+        },
+        {
+          "text": "hidden: upgrades: a longer prerelease of the same version counts as newer",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: a locked version with a leading zero in its build metadata is accepted",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: up-to-date, unlisted and transitive packages print nothing and exit 0",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: lines come in ascending name order",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: upgrades: usage and input errors exit 1 with nothing on stdout",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: parseVersion accepts a leading zero in build metadata",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: compareVersions ranks a longer prerelease above its prefix",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "hidden: defect: parseRange splits || without spaces",
+          "passed": false,
+          "evidence": "error: 'invalid range component \"1.0.0||^2.0.0\"'"
+        },
+        {
+          "text": "hidden: defect: maxSatisfying considers the last version in the list",
+          "passed": true,
+          "evidence": "ok"
+        },
+        {
+          "text": "The build round shipped the planted defect",
+          "informational": true,
+          "passed": true,
+          "evidence": "defect tests after the run: ok defect: parseVersion accepts a leading zero in build metadata; ok defect: compareVersions ranks a longer prerelease above its prefix; not ok defect: parseRan"
+        },
+        {
+          "text": "The review named the planted defect",
+          "informational": true,
+          "passed": false,
+          "evidence": "must-fix items: 3, none matched"
+        },
+        {
+          "text": "Hidden acceptance suite: 14/16 tests pass",
+          "passed": false,
+          "evidence": "exit 1; 2 test files"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "relay-0173-opus": {
+      "pass_rate": {
+        "mean": 0.8269,
+        "stddev": 0.0736,
+        "min": 0.7308,
+        "max": 0.8846
+      },
+      "time_seconds": {
+        "mean": 493.825,
+        "stddev": 125.8085,
+        "min": 424,
+        "max": 682.3
+      },
+      "tokens": {
+        "mean": 1804701.25,
+        "stddev": 548911.9348,
+        "min": 1401852,
+        "max": 2591262
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.83",
+      "time_seconds": "+493.8",
+      "tokens": "+1804701"
+    }
+  },
+  "notes": []
+}

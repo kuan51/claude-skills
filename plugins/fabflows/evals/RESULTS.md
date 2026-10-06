@@ -2084,3 +2084,121 @@ node count194.js plugins/fabflows/evals/runs/iteration-14/eval-22-review-catch-w
 `count194.js` reads each run's `metrics.json` and workflow journal and writes nothing. Run over
 iteration 13's runs, it reproduces that iteration's round-1 times exactly. Its source is in the
 pull request for #194. The plugin at `c328daa` was checked out when the runs started.
+
+## Iteration 15: relaying reviewer notes to the user
+
+Tracked in [#194](https://github.com/kuan51/claude-skills/issues/194). Iteration 14 showed that the
+build loop's round-1 reviewers find problems they do not make must-fix, and that the user never
+hears of them: the lead read only the final verdict's notes. fabflows 0.17.3 tells the lead to read
+every round's review report in full and to list, in its closing message, each note that names a
+wrong or doubtful result in code.
+
+The bar was inconclusive: no run gave it a case to count. The change is kept on the behaviour the
+runs show, by the owner's decision.
+
+The data is in `runs/iteration-15/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate. The transcripts are not tracked.
+
+### Decision rule
+
+Set by #194 before the runs. Among the runs whose round-1 report files `parseRange`'s `||` without
+spaces as a note, the closing message relays the finding in every one, judged by hand, with at
+least 2 such runs. Fewer than 2 such runs makes the eval inconclusive.
+
+### Setup
+
+- **The plugin.** fabflows 0.17.3 at commit `deab978`: master `bafba91` plus the new instruction in
+  the build-loop paragraph of `skills/fabflows/SKILL.md`. The reviewers are master's, as in
+  iteration 13.
+- **Runs.** Task 22's `loop` arm, lead `opus` at medium effort, caps 120 turns, $15 list price and
+  30 minutes a run. 5 runs planned, one at a time, from 02:35 UTC on 2026-10-06.
+- **Run 5 was stopped.** The owner stopped it about a minute in, once runs 1 to 4 had settled the
+  bar as inconclusive. It has no grade and is left out of every figure below.
+- **Machine.** The owner's Windows 11 workstation, as iterations 13 and 14.
+
+### Runs
+
+Round-1 times are each agent's `durationMs` from `metrics.json`. The defects named are round 1's
+must-fix items, counted by hand from the workflow journal. Lead output is the lead's own output
+tokens.
+
+| Run | Cost | Time s | Rounds | Spec lens s | Sweep lens s | Defects named in round 1 | Hidden suite | Lead output |
+|---|---|---|---|---|---|---|---|---|
+| 1 | $4.2113 | 682 | 2 | 267 | 182 | `compareVersions` (sweep) | 12/16 | 11,793 |
+| 2 | $2.6994 | 439 | 1 | 229 | 143 | none | 10/16 | 10,471 |
+| 3 | $2.0992 | 430 | 2 | 147 | 61 | `compareVersions`, `parseVersion` (sweep) | 14/16 | 4,505 |
+| 4 | $1.9902 | 424 | 2 | 140 | 61 | `compareVersions`, `parseVersion` (sweep) | 14/16 | 4,416 |
+| Mean | $2.7500 | 494 | 1.75 | 195.8 | 111.7 | | | 7,796 |
+
+Every run ended `accepted`. That status is in run 1's lead transcript. In runs 2 to 4 it is
+inferred from the journal's final ACCEPT and the committed, clean tree. Run 2's two round-1
+reviewers both returned ACCEPT, so it had one round and shipped three planted defects.
+
+| Bar | Needed | Iteration 15 | Result |
+|---|---|---|---|
+| Runs whose round 1 files `\|\|` without spaces as a note | at least 2 | 0 of 4 | Inconclusive |
+
+### What the runs show
+
+- **No run reached the case.** Each round-1 sweep tried `||` only with spaces, such as
+  `'^1.0.0 || ^2.0.0'`, and found it correct. In iterations 13 and 14 the round-1 sweep reached
+  the unspaced case in 5 of 5 runs each. This change does not touch the reviewers, and the cause is
+  not known.
+- **Every closing message listed the notes.** All 4 have a "Reviewer notes not acted on" list.
+  Across iterations 13 and 14, one closing message in 10 had a notes line: iteration 13's run 1,
+  with two notes and not the `||` case.
+- **By hand, the closing messages carried 13 of 16 notes that name a wrong or doubtful result.**
+  Run 1 carried 2 of 2, run 2 2 of 3, run 3 4 of 6 and run 4 5 of 5. Some went in the message's
+  "needs your decision" part rather than the list. Each call is a judgement on the report's text.
+- **Run 2 missed the note that mattered most.** Its spec lens filed `compareVersions` ranking
+  `1.0.0-alpha.1` equal to `1.0.0-alpha` as a note: "a wrong result on an input a registry can
+  have". Its sweep had accepted, so the defect shipped and the user was not told. The lead read
+  the report with `grep -o "NOTES ...[^\"]{0,3500}"`, which stops at the first quote mark. It saw
+  only the first of four notes.
+- **Run 3 missed two.** One was the sweep's `>= 1.2.0` rejected while npm accepts it, the same kind
+  of case as `||`. The other was the spec lens's changed usage text for `resolve` and `check`.
+- **Two lists held an item they should not have.** Run 4 listed a style note, temp folders the tests
+  never delete. Run 2 listed the object passthrough in `parseVersion` and `parseRange`, which both
+  reviewers had probed and called correct.
+- **The lead wrote more.** Mean lead output was 7,796 tokens against iteration 14's 3,939. Runs 1
+  and 2 account for most of it: 25 and 26 turns, against 13 and 12 in runs 3 and 4.
+- **The spec lens raised input checks again.** It returned REWORK in runs 3 and 4 with 3 must-fix
+  items about input values the new command does not check, none of them planted. That is
+  closer to iteration 13, with the same reviewers, than to iteration 14.
+
+### Verdict
+
+Inconclusive on the bar, so the eval neither passes nor fails the change. The behaviour #194 asked
+for is visible in every run: the user now sees the reviewers' notes, and in 2 of 4 runs that
+included every wrong or doubtful result. The weak point is how the lead reads a report. A lead that
+greps or slices the text can still drop a note, as run 2's did, so a structured `notes` field in the
+reviewers' verdict (out of scope in #194) is the fix to weigh next. The owner kept 0.17.3 on this
+evidence.
+
+### Cost of this iteration
+
+$11.0001 at list price for runs 1 to 4, against iteration 14's $7.8225 for 5 runs. Run 5's partial
+session has no metrics and is not counted.
+
+### Confounds
+
+- **One phrase was cut before the runs.** The draft said to read each report "in full ... and never
+  a truncated slice". The second half was cut as saying the same thing twice, so the runs read only
+  "in full". Whether it would have stopped run 2's `grep` is untested. Iteration 14's leads read
+  through truncating scripts with no such instruction.
+- **The lead's extra output is not all from this change.** The leads of runs 1 and 2 also ran the
+  command end to end on the spec's example and its error paths, which the change does not ask for.
+- **One fixture**, as iterations 13 and 14, and 4 runs rather than 5.
+
+### Commands
+
+```bash
+node plugins/fabflows/evals/harness/run.js --iteration 15 --tasks 22 --arms loop --plugin-dir plugins/fabflows --config-name relay-0173-opus --model opus --confirm
+node count194.js plugins/fabflows/evals/runs/iteration-15/eval-22-review-catch-wide/relay-0173-opus
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-15
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-15 --skill-name fabflows)
+```
+
+The notes were counted by hand from each run's journal and `outputs/result.md`, with two read-only
+helper scripts like `count194.js`. Their source is in the pull request for #194. Run 5's partial
+directory was moved out of the iteration before `summarize.js` ran.
