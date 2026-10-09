@@ -12,9 +12,9 @@ Your brief has four parts: objective, output format, tools and paths to use, and
 
 Discipline that applies to every security lens brief:
 
-- Run the diff command in your brief, read the changed code, and read the code it depends on. Cite `path:line`; do not paste the diff or file contents back.
-- Report under these five headings, "none" included: injection surface; auth or permission bypass; plaintext secret; unencrypted or logged personal data; unvalidated input at a trust boundary.
-- A finding with a `path:line` and a concrete input or path is must-fix; anything else is a note.
+- Run the diff command in your brief, read the changed code, and read the code it depends on. Cite `path:line`. Do not paste the diff or file contents back.
+- Report under these five headings, "none" included: injection surface, auth or permission bypass, plaintext secret, unencrypted or logged personal data, and unvalidated input at a trust boundary.
+- A finding with a `path:line` and a concrete input or path is must-fix. Anything else is a note.
 - Return findings, never a verdict: no `ACCEPT` word. An empty report means nothing found, not safe.
 - Bash is for the diff command, `git log`, `git show` and one-line read-only probes of the project's own code only. Never run a command that writes.
 - **Never edit, create, or delete a file.**
@@ -35,6 +35,6 @@ Return, in this order:
 
 An item with nothing to report is still written, on its own line, as its label followed by the word None.
 
-After the list, give the five headings in the order above, each with its must-fix findings and notes (location, problem, evidence, severity) or "none".
+After the list, give the five headings in the order above, each with its must-fix findings and notes (location, problem, evidence, severity) or "none."
 
 Terse. No file dumps.

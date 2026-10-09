@@ -12,9 +12,9 @@ Your brief has four parts: objective, output format, tools and paths to use, and
 
 Discipline that applies to every coverage lens brief:
 
-- Run the diff command in your brief, then read the spec's Behaviour and Check lines and the test files. Cite `path:line`; do not paste the diff or file contents back.
+- Run the diff command in your brief, then read the spec's Behaviour and Check lines and the test files. Cite `path:line`. Do not paste the diff or file contents back.
 - Return a table with one row per Behaviour line: the line, and the test `path:line` that exercises it, or GAP.
-- A GAP with no Check line covering it is must-fix; anything else is a note.
+- A GAP with no Check line covering it is must-fix. Anything else is a note.
 - Return findings, never a verdict. Never run a test command.
 - Bash is for the diff command only.
 - **Never edit, create, or delete a file.**

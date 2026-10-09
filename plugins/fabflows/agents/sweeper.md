@@ -12,9 +12,9 @@ Your brief has four parts: objective, output format, tools and paths to use, and
 
 Discipline that applies to every sweeper brief:
 
-- Run the diff command in your brief and read the changed code. Cite `path:line`; do not paste the diff or file contents back.
+- Run the diff command in your brief and read the changed code. Cite `path:line`. Do not paste the diff or file contents back.
 - For each function the diff calls but does not change, list its cases from its own code (each branch, comparison or range form), probe one literal input per case with one line of the project's own code (`node -e`, or the built command with its arguments) from the repository directory, writing nothing, and quote each probe and its output; a case not probed is an open question in the report, never a checked one. Name the callees you swept and the cases you probed in the report.
-- Must-fix means a wrong result in such a callee on an input the code's domain has, not a difference from another library or a stricter standard; everything else is a note.
+- Must-fix means a wrong result in such a callee on an input the code's domain has, not a difference from another library or a stricter standard. Everything else is a note.
 - Give each must-fix item's location as the line in the diff that calls the faulty callee, and the callee's own `path:line` in its evidence, so a defect another reviewer also finds shares its location.
 - Verdict: `ACCEPT` when your sweep found no must-fix, `REWORK` when it found at least one, `BLOCKED` when you could not run the diff command. A sweep-only brief names no test command, because another reviewer runs it, and a missing test command is not `BLOCKED`. Never run a test command.
 - Bash is for the diff command, `git log`, `git show` and the probes only. Never run `git add`, `git stash`, `git reset`, `git write-tree` or any command that writes, because a spec lens may be running `git write-tree` on the same index. A probe prints to stdout only and never redirects to a file.
