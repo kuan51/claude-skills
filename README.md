@@ -90,8 +90,9 @@ first session.
 - **[fabflows](plugins/fabflows/)**: orchestration for a session whose lead runs on an expensive
   model. The lead writes a proper brief for each worker and re-verifies what comes back instead
   of trusting it.
-  - **Workers.** Six agents, each pinned to a tier (`explorer` and `researcher` on Haiku,
-    `editor` and `test-runner` on Sonnet, `refuter` and `investigator` on Opus) and scoped to the
+  - **Workers.** Ten agents, each pinned to a tier (`explorer` and `researcher` on Haiku,
+    `editor`, `test-runner`, `sweeper`, `reproducer`, `security-lens` and `coverage-lens` on
+    Sonnet, `refuter` and `investigator` on Opus) and scoped to the
     smallest tool list that does its job.
   - **Build loop.** `fabflows:build` has an Opus builder implement a spec and fresh reviewers
     return ACCEPT or REWORK. `using-fabflows` is the entrypoint skill that puts a session on it.

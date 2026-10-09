@@ -8,6 +8,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 0.18.0** -- four Sonnet workers the lead can spawn by hand: `sweeper` (the build
+  loop's sweep prompt moved to its own file; the loop's sweep lens now spawns it, with its Sonnet
+  high pin unchanged), `reproducer`, `security-lens` and `coverage-lens`. The two lenses return
+  findings, never a verdict. Every existing worker keeps its text, model and effort.
+
 - **fabflows 0.16.0** -- a build-loop review round that sweeps callees now runs two reviewers at
   once on the same commit (#176): a spec lens that judges the diff against the spec and runs the
   tests, and a sweep lens that only sweeps the functions the diff calls. The script merges their

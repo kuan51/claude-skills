@@ -36,6 +36,14 @@ const FORBIDDEN_TOOLS = ['Agent'];
 //                  it is judging.
 //   - investigator: Opus at high effort for hypothesis-driven narrowing. Same tools as the
 //                  refuter for the same reason: it gathers evidence, the lead decides.
+//   - sweeper:     Sonnet at high effort: the build loop's measured sweep prompt in its own
+//                  file (RESULTS.md iterations 11 and 13: Sonnet high matched Opus on that
+//                  narrow, checkable job; Haiku could not hold a verdict). Bash runs the diff
+//                  and the probes; no Edit or Write.
+//   - reproducer:  Sonnet at low effort: runs one command and reports what it printed, no
+//                  hypotheses. Bash runs the command; no Edit or Write.
+//   - security-lens, coverage-lens: Sonnet at high effort, hand-spawned lenses that return
+//                  findings, never a verdict. Bash runs the diff; no Edit or Write.
 // Keep this in sync with plugins/fabflows/agents/*.md whenever one is added or changed.
 const EXPECTED_TOOLS = {
   explorer: 'Read, Grep, Glob',
@@ -44,6 +52,10 @@ const EXPECTED_TOOLS = {
   'test-runner': 'Read, Grep, Glob, Bash, Write',
   refuter: 'Read, Grep, Glob, Bash',
   investigator: 'Read, Grep, Glob, Bash',
+  sweeper: 'Read, Grep, Glob, Bash',
+  reproducer: 'Read, Grep, Glob, Bash',
+  'security-lens': 'Read, Grep, Glob, Bash',
+  'coverage-lens': 'Read, Grep, Glob, Bash',
 };
 const EXPECTED_MODEL = {
   explorer: 'haiku',
@@ -52,6 +64,10 @@ const EXPECTED_MODEL = {
   'test-runner': 'sonnet',
   refuter: 'opus',
   investigator: 'opus',
+  sweeper: 'sonnet',
+  reproducer: 'sonnet',
+  'security-lens': 'sonnet',
+  'coverage-lens': 'sonnet',
 };
 
 // Effort is pinned so a worker does not inherit the lead's session effort. Haiku 4.5 has no
@@ -62,6 +78,10 @@ const EXPECTED_EFFORT = {
   'test-runner': 'low',
   refuter: 'xhigh',
   investigator: 'high',
+  sweeper: 'high',
+  reproducer: 'low',
+  'security-lens': 'high',
+  'coverage-lens': 'high',
 };
 const EXPECTED_NAMES = Object.keys(EXPECTED_TOOLS);
 

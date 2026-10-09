@@ -28,7 +28,7 @@ believes it, and the run continues on a claim nobody checked.
 
 ## What's included
 
-Six workers, each pinned to a model tier and scoped to the smallest tool list that
+Ten workers, each pinned to a model tier and scoped to the smallest tool list that
 does its job:
 
 | Agent | Model | Effort | Tools | For |
@@ -39,6 +39,10 @@ does its job:
 | `fabflows:test-runner` | Sonnet | low | Read, Grep, Glob, Bash, Write | writing and running tests, reporting real output |
 | `fabflows:refuter` | Opus | xhigh | Read, Grep, Glob, Bash | reviewing a finished change against its spec, re-running its tests; or a draft spec, lens by lens |
 | `fabflows:investigator` | Opus | high | Read, Grep, Glob, Bash | reproducing and narrowing a self-contained failure |
+| `fabflows:sweeper` | Sonnet | high | Read, Grep, Glob, Bash | sweeping the functions a change calls but does not change; the build loop's sweep lens |
+| `fabflows:reproducer` | Sonnet | low | Read, Grep, Glob, Bash | running one failing command and reporting whether it reproduces |
+| `fabflows:security-lens` | Sonnet | high | Read, Grep, Glob, Bash | security findings on a staged diff, never a verdict |
+| `fabflows:coverage-lens` | Sonnet | high | Read, Grep, Glob, Bash | mapping each spec Behaviour line to the test that exercises it |
 
 Effort is pinned so a worker does not inherit the lead's session effort. Haiku 4.5 has
 no effort levels. The Haiku workers declare none. `CLAUDE_CODE_EFFORT_LEVEL`, if you
@@ -228,8 +232,8 @@ do reach Claude through the GitHub tools, the same accepted path as ticket bodie
 implements the spec on the checked-out feature branch and stages it, never committing, a fresh
 `refuter` (Opus by default, matching the pin in `agents/refuter.md`) reviews the staged diff and
 re-runs the tests, and after two rework rounds the loop hands back to the lead. A round that
-sweeps callees reviews with two concurrent refuters on the same staged tree: one reads the diff
-against the spec and re-runs the tests, the other only sweeps callees, on Sonnet at high effort.
+sweeps callees reviews with two concurrent reviewers on the same staged tree: a `refuter` reads the diff
+against the spec and re-runs the tests, and a `sweeper` only sweeps callees, on Sonnet at high effort.
 It never commits, merges, pushes, or reverts. On ACCEPT the lead checks that the staged tree is
 the one the reviewer recorded (`git write-tree` against `verdict.head`), re-runs the tests and
 makes exactly one commit with the ticket's trailers, so an accepted build lands as one reviewed
