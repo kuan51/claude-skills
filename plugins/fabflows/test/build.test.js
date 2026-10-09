@@ -554,7 +554,8 @@ test('the lens briefs split the review: the sweep lens sweeps only, the spec len
   const sweep = sweepCalls[0];
   assert.equal(spec.opts.label, 'review:1:spec');
   assert.equal(sweep.opts.label, 'review:1:sweep');
-  for (const { opts } of [spec, sweep]) assert.equal(opts.agentType, 'fabflows:refuter');
+  assert.equal(spec.opts.agentType, 'fabflows:refuter');
+  assert.equal(sweep.opts.agentType, 'fabflows:sweeper');
   assert.doesNotMatch(sweep.prompt, /npm test/, 'the sweep lens runs no test command');
   assert.doesNotMatch(sweep.prompt, /git status --porcelain|git diff --name-only|git ls-files/, 'the sweep lens does not check the tree');
   assert.doesNotMatch(sweep.prompt, /git rev-parse/, 'the sweep lens does not check HEAD');

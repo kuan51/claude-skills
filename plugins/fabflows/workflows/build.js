@@ -1,10 +1,10 @@
 export const meta = {
   name: 'build',
   description: "Build one spec'd change on a feature branch: an Opus builder implements and stages it without committing, fresh reviewers return ACCEPT or REWORK on the staged diff, rework is capped, and the lead commits the accepted tree",
-  whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef (`git rev-parse HEAD` at launch, or every review answers BLOCKED), testCommand, and optionally reviewerModel (Opus by default; the sweep lens always runs on Sonnet at high effort). The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
+  whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef (`git rev-parse HEAD` at launch, or every review answers BLOCKED), testCommand, and optionally reviewerModel (Opus by default; the sweep lens, `fabflows:sweeper`, always runs on Sonnet at high effort). The lead first checks that the working tree is clean and that branch is checked out. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
   phases: [
     { title: 'Build', detail: 'fabflows:editor on Opus implements the spec and stages each path by name, never committing' },
-    { title: 'Review', detail: 'a fresh fabflows:refuter reads the staged diff and re-runs the tests; a round that sweeps callees reviews with two concurrent refuters, one on the spec and tests, one sweeping callees on Sonnet at high effort' },
+    { title: 'Review', detail: 'a fresh fabflows:refuter reads the staged diff and re-runs the tests; a round that sweeps callees reviews with two concurrent reviewers, a fabflows:refuter on the spec and tests and a fabflows:sweeper sweeping callees on Sonnet at high effort' },
   ],
 }
 
@@ -272,8 +272,8 @@ const NEXT = {
   blocked: "Read the last round's build.blocker, or the start of its report when blocker is empty. A permission denial is the user's to resolve: never bypass it and never re-issue the denied call yourself.",
   unexplained: 'The builder named no reason. Read its report if it has one, then run `git status --porcelain` and `git diff <baseRef>` to see what it left, and take the work over.',
   'builder-failed': 'The builder returned nothing. Check what partial work it left, then take the work over rather than relaunching.',
-  'reviewer-failed': 'The reviewer returned nothing. The builder\'s work is staged, not committed: run `fabflows:refuter` yourself on `git diff --cached <baseRef>` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` keeps the one that came back, so review only what the missing lens covered.',
-  'reviewer-blocked': 'A reviewer could not review. If verdict.blocker says the builder committed, do not review: ask the user what to do with that unreviewed commit. Otherwise fix what verdict.blocker names (a missing dependency is the user\'s to install), then run `fabflows:refuter` yourself on the staged, uncommitted work in `git diff --cached <baseRef>` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` holds the other lens\'s finished review, so review again only what the blocked lens covered.',
+  'reviewer-failed': 'The reviewer returned nothing. The builder\'s work is staged, not committed: run `fabflows:refuter` yourself on `git diff --cached <baseRef>` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` keeps the one that came back, so review only what the missing lens covered (the sweep lens is `fabflows:sweeper`).',
+  'reviewer-blocked': 'A reviewer could not review. If verdict.blocker says the builder committed, do not review: ask the user what to do with that unreviewed commit. Otherwise fix what verdict.blocker names (a missing dependency is the user\'s to install), then run `fabflows:refuter` yourself on the staged, uncommitted work in `git diff --cached <baseRef>` rather than restarting the loop. In a round reviewed by two lenses, the last round\'s `lenses` holds the other lens\'s finished review, so review again only what the blocked lens covered (the sweep lens is `fabflows:sweeper`).',
   'accept-with-must-fix': 'The reviewer contradicted itself: it accepted while listing must-fix items. Read verdict.mustFix against the staged, uncommitted work in `git diff --cached <baseRef>` and decide yourself; do not relaunch on a contradiction. In a round reviewed by two lenses, the last round\'s `lenses` holds each lens\'s own verdict and must-fix items.',
   'accept-without-head': 'The reviewer accepted but recorded no full tree hash as verdict.head, so the commit gate cannot check the staged tree. Run `fabflows:refuter` yourself on the staged work in `git diff --cached <baseRef>`, recording `git write-tree`, rather than relaunching or committing unchecked.',
   'rework-without-must-fix': 'The reviewer asked for rework without naming anything to fix. Read verdict.report against the staged, uncommitted work in `git diff --cached <baseRef>` and decide yourself; do not relaunch on a contradiction. In a round reviewed by two lenses, the last round\'s `lenses` holds each lens\'s own verdict and must-fix items.',
@@ -353,7 +353,7 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
     agent(reviewBrief(round, head, lens), {
       label: lens ? `review:${round}:${lens}` : `review:${round}`,
       phase: 'Review',
-      agentType: 'fabflows:refuter',
+      agentType: lens === 'sweep' ? 'fabflows:sweeper' : 'fabflows:refuter',
       model: lens === 'sweep' ? 'sonnet' : reviewerModel,
       effort: lens === 'spec' ? 'xhigh' : 'high',
       schema: lens === 'sweep' ? SWEEP_VERDICT : VERDICT,

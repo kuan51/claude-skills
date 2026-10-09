@@ -37,7 +37,7 @@ const NOT = "\\b(?:never|not|no|cannot)\\b|n't";
 const INSTALL = '\\binstall(?:s|ed|ing)?\\b';
 
 const agent = (a) => `agents/${a}.md`;
-const AGENTS = ['editor', 'explorer', 'researcher', 'investigator', 'refuter', 'test-runner'].map(agent);
+const AGENTS = ['editor', 'explorer', 'researcher', 'investigator', 'refuter', 'test-runner', 'sweeper', 'reproducer', 'security-lens', 'coverage-lens'].map(agent);
 const skill = (s) => `skills/${s}/SKILL.md`;
 
 const FAMILIES = [
@@ -70,15 +70,15 @@ const FAMILIES = [
   },
   {
     name: 'read-only: never edit, create or delete a file',
-    pattern: all(NOT, '\\b(?:edit|modify|write|change|touch|create|delete|remove)(?:s|d|ed|ing)?\\b', '\\bfiles?\\b'),
-    files: [agent('explorer'), agent('researcher'), agent('investigator'), agent('refuter')],
+    pattern: all(NOT, '\\b(?:edit|modify|write|change|create|delete|remove)(?:s|d|ed|ing)?\\b', '\\bfiles?\\b'),
+    files: [agent('explorer'), agent('researcher'), agent('investigator'), agent('refuter'), agent('sweeper'), agent('reproducer'), agent('security-lens'), agent('coverage-lens')],
     paraphrase: 'A file is never yours to modify, add or remove.',
     ruleFree: 'Edit the file the brief names. Never skip its test.',
   },
   {
     name: 'never install anything',
     pattern: all(NOT, INSTALL),
-    files: [agent('editor'), agent('investigator'), agent('refuter'), agent('test-runner'), skill('fabflows'), skill('brainstorming')],
+    files: [agent('editor'), agent('investigator'), agent('refuter'), agent('test-runner'), agent('sweeper'), agent('reproducer'), agent('security-lens'), agent('coverage-lens'), skill('fabflows'), skill('brainstorming')],
     own: {
       // fabflows states it as a stop: before any install, stop and ask the user.
       [skill('fabflows')]: {
@@ -99,7 +99,7 @@ const FAMILIES = [
   {
     name: 'never commit, push, merge or rebase unless the brief says so',
     pattern: all(`${NOT}|\\bleave\\b.*\\b(?:commit|push)\\w*\\b.*\\bto\\b`, '\\bcommit(?:s|ted|ting)?\\b', '\\bpush(?:es|ed|ing)?\\b'),
-    files: [agent('editor'), agent('investigator'), agent('refuter'), agent('test-runner')],
+    files: [agent('editor'), agent('investigator'), agent('refuter'), agent('test-runner'), agent('sweeper'), agent('reproducer'), agent('security-lens'), agent('coverage-lens')],
     paraphrase: 'Leave pushes and commits to the lead unless the brief asks.',
     ruleFree: 'Commit and push, then leave the branch to the lead.',
   },
