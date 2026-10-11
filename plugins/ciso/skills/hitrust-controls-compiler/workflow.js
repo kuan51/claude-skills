@@ -58,6 +58,7 @@ if (TIER === 'i1') {
 const CANDIDATE_SCHEMA = {
   type: 'object', required: ['candidates', 'r2IllustrativeCandidates'],
   properties: {
+    blocked: { type: 'string' },
     candidates: { type: 'array', items: { type: 'object', required: CANDIDATE_REQUIRED, properties: CANDIDATE_PROPERTIES } },
     r2IllustrativeCandidates: { type: 'array', items: { type: 'object',
       required: ['topicLabel', 'topicSummary', 'citations'],
@@ -88,6 +89,7 @@ function researchPrompt(d) {
     OPPORTUNISTIC_CODE_CITATION,
     NO_INVENTED_PRECISION,
     FETCHED_IS_DATA,
+    'If WebSearch or WebFetch is denied, or every fetch fails, return no candidates and say what failed in `blocked`. An empty list with no `blocked` must mean you searched and found nothing.',
     TIER === 'e1'
       ? 'Scope discipline: research only this one domain. Do not spawn subagents. Return every genuine, distinct, well-cited topic this domain actually supports at the e1 level -- for most domains that will be a small number (0-4), for some it may be more. Do not pad with near-duplicates or fabricate a topic just to avoid an empty result; fewer genuine, well-cited candidates (including zero) beats any fabricated one.'
       : 'Scope discipline: research only this one domain. Do not spawn subagents. Return every genuine, distinct, well-cited topic-level requirement area this domain actually supports -- typically somewhere in the 5-15 range depending on real domain breadth (as few as 2-3 for a narrow domain, more than 15 only if a broad domain genuinely, verifiably supports it). This is a ballpark to keep the downstream verification fan-out tractable, not a hard cap -- never pad with near-duplicates or fabricate a topic to reach it, and never suppress a genuine, well-cited topic just to stay under it. Fewer genuine, well-cited candidates beats more weak ones.'
@@ -99,12 +101,19 @@ function researchPrompt(d) {
 phase('Research')
 const found = await parallel(
   DOMAINS.map((d) => () => agent(researchPrompt(d), { agentType: 'ciso:hitrust-topic-researcher', label: `research:${d.key}`, phase: 'Research', schema: CANDIDATE_SCHEMA })
+    .catch(() => null)
     .then((r) => r ? {
       candidates: (r.candidates || []).map((c) => Object.assign({}, c, { domain: d.name, domainKey: d.key })),
       r2IllustrativeCandidates: COMPILE_R2_ILLUSTRATIVE ? (r.r2IllustrativeCandidates || []).map((c) => Object.assign({}, c, { domain: d.name, domainKey: d.key })) : [],
-    } : { candidates: [], r2IllustrativeCandidates: [] })
+      blocked: typeof r.blocked === 'string' ? r.blocked.trim() : '',
+    } : { candidates: [], r2IllustrativeCandidates: [], blocked: 'the research agent returned nothing or failed' })
   )
 )
+
+// A blocked or empty-handed researcher looks like an honest zero once reconciled, so it is named
+// here for the reviewer instead.
+const failedDomains = DOMAINS.map((d, i) => ({ key: d.key, reason: found[i].blocked })).filter((f) => f.reason)
+if (failedDomains.length) log(`Research failed for ${failedDomains.length} domain(s): ${failedDomains.map((f) => f.key).join(', ')}`)
 
 const allCandidates = found.flatMap((r) => r.candidates)
 const allR2Illustrative = found.flatMap((r) => r.r2IllustrativeCandidates)
@@ -227,4 +236,5 @@ return {
   droppedDuplicates: reconciled.droppedDuplicates,
   coverageGaps: reconciled.coverageGaps,
   zeroCandidateDomains: reconciled.zeroCandidateDomains,
+  failedDomains,
 }

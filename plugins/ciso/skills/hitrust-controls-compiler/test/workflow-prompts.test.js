@@ -63,3 +63,28 @@ test('the i1 reconcile schema keeps baselineOverlapReason, so the reason reaches
   const rec = calls.find((c) => c.opts.label === 'reconcile');
   assert.ok(rec.opts.schema.properties.mergedCandidates.items.properties.baselineOverlapReason);
 });
+
+test('a domain whose research returned nothing or was blocked is in failedDomains; an honest zero is not', async () => {
+  const research = (key) => {
+    if (key === '01') return null;
+    if (key === '02') return { candidates: [], r2IllustrativeCandidates: [], blocked: 'WebFetch was denied' };
+    return { candidates: [], r2IllustrativeCandidates: [] };
+  };
+  const { calls, result } = await run(args('e1'), research);
+  assert.deepEqual(result.failedDomains, [
+    { key: '01', reason: 'the research agent returned nothing or failed' },
+    { key: '02', reason: 'WebFetch was denied' },
+  ]);
+  const research01 = calls.find((c) => c.opts.label === 'research:01');
+  assert.equal(research01.opts.schema.properties.blocked.type, 'string');
+  assert.ok(!research01.opts.schema.required.includes('blocked'), 'blocked is optional');
+  assert.match(research01.prompt, /say what failed in `blocked`/, 'the researcher is told to fill blocked');
+  const clean = await run(args('e1'));
+  assert.deepEqual(clean.result.failedDomains, []);
+  // An agent that throws (an unknown agent type, a spent budget) is named too, not a crash.
+  const thrown = await run(args('e1'), (key) => {
+    if (key === '02') throw new Error('agent type not found');
+    return { candidates: [], r2IllustrativeCandidates: [] };
+  });
+  assert.deepEqual(thrown.result.failedDomains, [{ key: '02', reason: 'the research agent returned nothing or failed' }]);
+});
