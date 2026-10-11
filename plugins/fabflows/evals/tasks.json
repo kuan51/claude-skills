@@ -208,7 +208,7 @@
             "optional": true
           },
           { "item": "Distilled answer", "pattern": "(?:the )?(?:distilled )?answer" },
-          { "item": "Local files read", "pattern": "(?:the )?(?:local )?files? (?:(?:you|i) )?read" },
+          { "item": "Local files read", "pattern": "(?:no )?(?:the )?(?:local files?(?: (?:(?:you|i) )?read)?|files? (?:(?:you|i) )?read)" },
           {
             "item": "Searches and fetches run",
             "pattern": "(?:the )?(?:exact )?(?:search(?:es|ed)|fetch(?:es|ed)|reads|sources)"

@@ -75,6 +75,8 @@ test('agent-report accepts a return item in the words its list gives it, or a li
   assert.equal(order(18, ['- Files touched: src/slug.js:5', '- Command: `npm test` exit 0 (confirmed)', '- No open questions.', '- No deviations.', '- Nothing else noticed outside the brief.']), true);
   assert.equal(order(12, ['**Local files read:** docs/retention.md:5', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none (confirmed)']), false, 'no answer line');
   assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), false, 'no local files line');
+  assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', '**Local files:** None', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true, 'a local files line that says None');
+  assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', 'No local files read.', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true, 'a line saying no local files were read');
 });
 
 test('evidence names the fixture and the home directory only by placeholder, in either slash direction', () => {
