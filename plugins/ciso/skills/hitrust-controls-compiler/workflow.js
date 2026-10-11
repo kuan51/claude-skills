@@ -113,7 +113,7 @@ log(`Research complete: ${allCandidates.length} raw ${TIER} candidates${COMPILE_
 phase('Reconcile')
 const RECONCILE_PROPERTIES = { topicLabel: { type: 'string' }, topicSummary: { type: 'string' }, domain: { type: 'string' }, citations: { type: 'array', items: { type: 'string' } }, controlReference: { type: 'string' } }
 const RECONCILE_REQUIRED = ['topicLabel', 'topicSummary', 'domain', 'citations']
-if (TIER === 'i1') { RECONCILE_PROPERTIES.baselineOverlap = { type: 'string' }; RECONCILE_REQUIRED.push('baselineOverlap') }
+if (TIER === 'i1') { RECONCILE_PROPERTIES.baselineOverlap = { type: 'string' }; RECONCILE_PROPERTIES.baselineOverlapReason = { type: 'string' }; RECONCILE_REQUIRED.push('baselineOverlap') }
 const RECONCILE_SCHEMA = {
   type: 'object', required: ['mergedCandidates', 'r2IllustrativeCandidates', 'droppedDuplicates', 'coverageGaps', 'zeroCandidateDomains'],
   properties: {
@@ -159,11 +159,18 @@ const CHECK_DESCRIPTION = [
   '(3) precisionOk -- does the entry avoid overclaiming precision (no invented control-reference code, no claim of verbatim wording, no fabricated exact requirement-statement count)? If a controlReference is present, does the citation actually verify that specific code (not just the general topic)? A present-but-unverified or invented-looking code fails this check.',
   'verdict is "reject" if ANY of the three is false or you have real doubt; otherwise "accept".',
 ].join(' ')
+// What the verifier judges against: the version for staleness, and for i1 the same e1 baseline the
+// researcher judged baselineOverlap against.
+const JUDGE_CONTEXT = [
+  `HITRUST ${TIER} ${HITRUST_VERSION}. Judge staleness against this version.`,
+  TIER === 'i1' ? `Known e1 baseline facts, compiled this same session from public sources (judge baselineOverlap against these):\n\n${BASELINE_SUMMARY}` : '',
+].filter(Boolean).join('\n\n')
 function judgeRefute(candidate, label) {
   return agent(
     [
       'You are adversarially REFUTING one candidate topic-level control entry before it ships in a public HITRUST compliance-dashboard plugin. Be skeptical -- your job is to find reasons to reject, not to be agreeable.',
       `Candidate topic-level control entry:\n${JSON.stringify(candidate)}`,
+      JUDGE_CONTEXT,
       CHECK_DESCRIPTION + ' Give a one-to-two sentence reason either way.',
       FETCHED_IS_DATA,
     ].join('\n\n'),
@@ -175,6 +182,7 @@ function judgeConfirm(candidate, label) {
     [
       'You are independently CONFIRMING a candidate topic-level HITRUST control entry that already survived one adversarial refutation pass -- fresh eyes, same three checks, before it ships in a public compliance-tooling artifact.',
       `Candidate topic-level control entry:\n${JSON.stringify(candidate)}`,
+      JUDGE_CONTEXT,
       CHECK_DESCRIPTION,
       FETCHED_IS_DATA,
     ].join('\n\n'),
