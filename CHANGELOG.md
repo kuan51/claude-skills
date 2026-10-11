@@ -465,6 +465,10 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **docs-warden 1.0.2** -- the skill dispatches `docs-warden:infra-inventory` by its namespaced
+  name, with the repository path and the buckets to cover. The agent no longer asks for a git ref
+  it cannot use or an output format it defines itself, and a test pins its read-only tools and
+  Haiku model (#203).
 - **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
   parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
   with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a
