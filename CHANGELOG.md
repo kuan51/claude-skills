@@ -470,7 +470,10 @@ per-plugin history until entries are recorded here going forward.
   re-run with relative paths could write there (#200). The blind review agents and the reconciler
   now run without the project's CLAUDE.md, as discover's agents already did. An unverified
   independent finding can no longer make a conclusion Supported or Unsupported: the engine holds
-  it at Partially Supported. A test now pins the Opus model on every review dispatch.
+  it at Partially Supported. A test now pins the Opus model on every review dispatch. The `cd`
+  that review's reviewers and discover's hunters are told to run now writes the sandbox path in
+  forward slashes inside single quotes. Before, Bash dropped the backslashes of a Windows path and
+  split a path at a space, and the `cd` failed.
 - **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
   parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
   with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a

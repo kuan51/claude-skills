@@ -171,6 +171,8 @@ for (const slice of slices) {
 
 const THESIS_BLOCK = wrap('thesis', `${A.thesis == null ? '' : A.thesis}\nDecision: ${A.decision}\nMetric: ${A.metric}\nBaseline: ${A.baseline}`)
 const THESIS_LINE = `Business thesis and decision (confirmed with the project owner):\n${THESIS_BLOCK}`
+// Bash drops unquoted backslashes and splits at a space, so the cd path is quoted in forward slashes.
+const SANDBOX_ROOT = String(A.sandboxRoot).replace(/\\/g, '/').replace(/\/+$/, '')
 
 // An agent that returns nothing, or whose call rejects, is logged and named in `dropped`, never
 // thrown on or silently left out, so an empty report cannot read as data with no patterns.
@@ -197,7 +199,7 @@ const huntResults = await parallel(
       `Your slice (the one dimension to cut the data along): ${slice.label}\nDefinition: ${slice.definition}`,
       `Other confirmed slices: check each material pattern you find within each of these, and say in the finding when it reverses within one.\n${slices.filter((o) => o !== slice).map((o) => `- ${o.label}: ${o.definition}`).join('\n') || 'none'}`,
       `Data files you may use, and ONLY these:\n${(A.dataPaths || []).map((p) => `- ${p}`).join('\n')}`,
-      `Working directory: your sandbox root is ${A.sandboxRoot}. Start every Bash command with \`cd ${A.sandboxRoot} &&\`, and read and write only inside it.`,
+      `Working directory: your sandbox root is ${SANDBOX_ROOT}. Start every Bash command with \`cd '${SANDBOX_ROOT.replace(/'/g, "'\\''")}' &&\`, and read and write only inside it.`,
     ].join('\n\n'), {
       label: `hunt:${slice.key}`,
       phase: 'Pattern Hunt',

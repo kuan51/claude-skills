@@ -159,8 +159,9 @@ function buildEdaPrompt(role, thesis, thesisShape) {
   else {
     // Bash starts in the session's directory, which is the real project, so a role that runs code
     // is told where to run it. The copy, not the sandbox root, which also holds conclusions/.
-    const copy = `${String(A.sandboxRoot).replace(/[\\/]+$/, '')}/project`
-    parts.push(`Working directory: the project copy is ${copy}. Start every Bash command with \`cd ${copy} &&\`, and read and write only inside it.`)
+    // Bash drops unquoted backslashes and splits at a space, so the path is quoted in forward slashes.
+    const copy = `${String(A.sandboxRoot).replace(/\\/g, '/').replace(/\/+$/, '')}/project`
+    parts.push(`Working directory: the project copy is ${copy}. Start every Bash command with \`cd '${copy.replace(/'/g, "'\\''")}' &&\`, and read and write only inside it.`)
   }
   if (role.persona || role.guidance) parts.push(BRIEF_RULE)
   parts.push(`Business thesis and goals (confirmed with the project owner):\n${wrap('thesis', thesis)}`)

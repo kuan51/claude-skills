@@ -248,7 +248,7 @@ test('every Bash role is told to work from the project copy; a static role is no
     { key: 'custom', label: 'Custom', paths: [`${ROOT}/data/users.csv`], persona: 'Check something else.' },
   ];
   const r = await run({ args: baseArgs({ extras }) });
-  const line = `Working directory: the project copy is ${ROOT}/project. Start every Bash command with \`cd ${ROOT}/project &&\``;
+  const line = `Working directory: the project copy is ${ROOT}/project. Start every Bash command with \`cd '${ROOT}/project' &&\``;
   for (const c of r.eda) {
     const isStatic = c.opts.agentType.endsWith('-static');
     assert.equal(c.prompt.includes(line), !isStatic, c.opts.label);
@@ -256,6 +256,18 @@ test('every Bash role is told to work from the project copy; a static role is no
   }
   assert.ok(r.eda.some((c) => c.opts.agentType.endsWith('-static')), 'the run has a static role');
   for (const c of [r.rec, ...r.cross]) assert.ok(!c.prompt.includes('Working directory:'), c.opts.label);
+});
+
+test('the cd line quotes the copy in forward slashes, so a Windows root with a space or a quote stays one path', async () => {
+  const cases = [
+    ['C:\\Users\\Jane Doe\\AppData\\Local\\Temp\\sb', "`cd 'C:/Users/Jane Doe/AppData/Local/Temp/sb/project' &&`"],
+    ["C:\\Users\\O'Brien\\AppData\\Local\\Temp\\sb", "`cd 'C:/Users/O'\\''Brien/AppData/Local/Temp/sb/project' &&`"],
+  ];
+  for (const [root, cd] of cases) {
+    const fixedRolePaths = { dataQuality: [], statistical: [], domainAlignment: [], reproducibility: [`${root}\\project\\src\\model.py`] };
+    const r = await run({ args: baseArgs({ sandboxRoot: root, fixedRolePaths, extras: [], conclusionPaths: [] }) });
+    assert.ok(edaFor(r, 'reproducibility').prompt.includes(cd), root);
+  }
 });
 
 test('an unverified independent finding never comes back Supported or Unsupported', async () => {

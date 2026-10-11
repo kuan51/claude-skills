@@ -82,7 +82,7 @@ test('one opus pattern hunter per slice, each with the thesis block, its slice a
     assert.match(c.prompt, /^Evidence hygiene:/m);
     assert.ok(c.opts.schema.properties.findings.items.required.includes('business_impact'));
     assert.match(c.prompt, /`business_impact` is required/);
-    assert.ok(c.prompt.includes(`Start every Bash command with \`cd ${ROOT} &&\``), 'cd into the sandbox');
+    assert.ok(c.prompt.includes(`Start every Bash command with \`cd '${ROOT}' &&\``), 'cd into the sandbox');
     assert.ok(c.prompt.includes('read and write only inside it'));
   }
 });
@@ -129,6 +129,18 @@ test('a Windows UNC sandbox root runs, and a doubled slash after its leading pai
   const r = await run({ args: baseArgs({ sandboxRoot: unc, dataPaths: [`${unc}\\data\\users.csv`] }) });
   assert.equal(r.hunts.length, 2);
   await refuses(baseArgs({ sandboxRoot: '//fs01/scratch/sb', dataPaths: ['//fs01/scratch//sb/data/users.csv'] }));
+});
+
+test('the cd line quotes the sandbox root in forward slashes, so a Windows root with a space or a quote stays one path', async () => {
+  const cases = [
+    ['C:\\Users\\Jane Doe\\AppData\\Local\\Temp\\sb', "`cd 'C:/Users/Jane Doe/AppData/Local/Temp/sb' &&`"],
+    ["C:\\Users\\O'Brien\\AppData\\Local\\Temp\\sb", "`cd 'C:/Users/O'\\''Brien/AppData/Local/Temp/sb' &&`"],
+  ];
+  for (const [root, cd] of cases) {
+    const r = await run({ args: baseArgs({ sandboxRoot: root, dataPaths: [`${root}\\data\\users.csv`] }) });
+    assert.equal(r.hunts.length, 2);
+    for (const c of r.hunts) assert.ok(c.prompt.includes(cd), root);
+  }
 });
 
 test('maxSlices defaults to 4 and maxCandidates to 8 when absent or invalid', async () => {
