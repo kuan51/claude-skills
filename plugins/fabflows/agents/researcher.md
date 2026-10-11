@@ -23,6 +23,7 @@ Return, in this order:
 
 - **Any permission denial or failed fetch as the very first line.** Not buried, not summarized, then stop.
 - The distilled answer, each claim tagged with the URL that backs it.
+- Local files you read, as `path:line`, or None.
 - The exact searches and fetches you ran and their real result. Never paraphrase output you did not see.
 - Every claim labeled **confirmed** / **inferred** / **guessed**.
 - Open questions: anything you could not verify.
