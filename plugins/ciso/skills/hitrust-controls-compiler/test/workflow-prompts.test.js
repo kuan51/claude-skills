@@ -104,7 +104,16 @@ test('a research agent that rejects keeps its error message in the failedDomains
 });
 
 test('research that fails for every domain with no candidate stops the run with an error that lists each reason', async () => {
-  await assert.rejects(run(args('e1'), () => null), /research failed for every domain.*01: the research agent returned nothing or failed/);
+  const reasons = { '01': null, '02': 'WebFetch was denied', '03': 'every fetch failed' };
+  await assert.rejects(
+    run(args('e1'), (key) => (reasons[key] ? { candidates: [], r2IllustrativeCandidates: [], blocked: reasons[key] } : null)),
+    (err) => {
+      for (const want of ['01: the research agent returned nothing or failed', '02: WebFetch was denied', '03: every fetch failed']) {
+        assert.ok(err.message.includes(want), `message names ${want}: ${err.message}`);
+      }
+      return true;
+    }
+  );
   // Blocked domains that still return candidates go on to reconcile, as before.
   const partial = await run(args('e1'), () => ({ candidates: [candidate('t')], r2IllustrativeCandidates: [], blocked: 'one WebFetch returned 403' }));
   assert.equal(partial.result.failedDomains.length, DOMAINS.length);
