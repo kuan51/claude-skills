@@ -468,7 +468,8 @@ per-plugin history until entries are recorded here going forward.
 - **fabflows 0.18.1** -- the `SubagentStop` contract check matches only `fabflows:<worker>`, so
   another plugin's agent or a user's own agent named `researcher` or `editor` is no longer held to
   fabflows' report contract. The editor follows its brief on a permission denial it worked
-  around, as the build loop's brief expects, and otherwise still stops. The researcher now returns
+  around, as the build loop's brief expects, and otherwise still stops. It never gets a denied
+  action done another way, with another command, tool or path. The researcher now returns
   the local files it read, or None, so its report meets the lead's contract. The benchmark was not
   re-run for the editor and researcher lines (#202).
 - **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
