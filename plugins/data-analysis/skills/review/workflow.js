@@ -330,7 +330,18 @@ const crossCompareResults = await parallel(
       agentType: 'data-analysis:thesis-auditor',
       model: 'opus',
       schema: CROSS_COMPARE_SCHEMA,
-    }).then((result) => (result ? { ...result, reconciled_topic: topic.topic, evidence: topic.evidence, verified: topic.verified } : drop(`cross-compare:${topic.topic}`)))
+    }).then((result) => {
+      if (!result) return drop(`cross-compare:${topic.topic}`)
+      // An unconditional rule the workflow can enforce is enforced here, not left to the auditor.
+      const held = !topic.verified && (result.verdict === 'Supported' || result.verdict === 'Unsupported')
+        ? {
+            verdict: 'Partially Supported',
+            discrepancy: ['The independent check was not verified by execution, so this verdict is held at Partially Supported.', result.discrepancy].filter(Boolean).join(' '),
+            to_settle: result.to_settle || 'Re-run the independent check with execution to confirm or refute it.',
+          }
+        : {}
+      return { ...result, reconciled_topic: topic.topic, evidence: topic.evidence, verified: topic.verified, ...held }
+    })
   })
 )
 

@@ -87,7 +87,8 @@ whether to save the report before any analysis runs.
   possible to recompute claims themselves. Each finding carries a `verified` flag that is true
   only when the command ran and its output is in the evidence; the report tags anything else as
   unverified so you can see which findings are empirically backed. An extra reviewer built from
-  web research cannot run commands, so its findings are always unverified.
+  web research cannot run commands, so its findings are always unverified. A conclusion checked
+  against an unverified finding is never rated Supported or Unsupported.
 - **Same rigor whoever calls it.** The review agents are pinned to Opus, so the report's quality
   does not depend on the model your session happens to be running.
 

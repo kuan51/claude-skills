@@ -252,6 +252,28 @@ test('every Bash role is told to work from the project copy; a static role is no
   for (const c of [r.rec, ...r.cross]) assert.ok(!c.prompt.includes('Working directory:'), c.opts.label);
 });
 
+test('an unverified independent finding never comes back Supported or Unsupported', async () => {
+  const verdicts = { 'topic-1': 'Unsupported', 'topic-3': 'Supported', 'topic-5': 'Not Addressed', 'topic-2': 'Unsupported' };
+  const r = await run({
+    reconciled: [topic(1), topic(2), topic(3), topic(5)],
+    crossCompare: (name) => ({ topic: name, project_claim: 'c', independent_finding: 'f', discrepancy: 'd', verdict: verdicts[name], business_impact: 'none identified', to_settle: name === 'topic-3' ? 'kept' : '' }),
+  });
+  const by = Object.fromEntries(r.result.crossCompare.map((c) => [c.reconciled_topic, c]));
+  for (const t of ['topic-1', 'topic-3']) {
+    assert.equal(by[t].verified, false, t);
+    assert.equal(by[t].verdict, 'Partially Supported', t);
+    assert.match(by[t].discrepancy, /^The independent check was not verified by execution/, t);
+    assert.ok(by[t].discrepancy.endsWith(' d'), `${t} keeps the auditor's discrepancy`);
+    assert.ok(by[t].to_settle, `${t} has to_settle`);
+  }
+  assert.equal(by['topic-3'].to_settle, 'kept', 'a given to_settle is kept');
+  assert.equal(by['topic-5'].verdict, 'Not Addressed', 'Not Addressed is left alone');
+  assert.equal(by['topic-5'].discrepancy, 'd');
+  assert.equal(by['topic-2'].verified, true);
+  assert.equal(by['topic-2'].verdict, 'Unsupported', 'a verified finding keeps its verdict');
+  assert.equal(by['topic-2'].discrepancy, 'd');
+});
+
 const parallelAll = (fns) => Promise.all(fns.map((f) => f().catch(() => null)));
 
 // Refuses before a single agent is dispatched, with a message naming every given string.
