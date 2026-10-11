@@ -235,6 +235,12 @@ test('every agentType is <plugin.json name>:<agent> with a matching agents/<agen
   }
 });
 
+test('every review dispatch is pinned to Opus', async () => {
+  const r = await run();
+  assert.ok(r.eda.length && r.rec && r.cross.length);
+  for (const c of r.calls) assert.equal(c.opts.model, 'opus', c.opts.label);
+});
+
 test('every Bash role is told to work from the project copy; a static role is not', async () => {
   const canned = cannedFromMarkdown();
   const extras = [
