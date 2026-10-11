@@ -801,6 +801,8 @@ test('SubagentStop blocks a report missing its contract fields', () => {
     allows(stop(), 'a researcher report missing only its files line');
     fs.writeFileSync(transcript, 'Local files you read: docs/a.md:3. Searched the docs and fetched https://example.com/a.');
     allows(stop(), 'a researcher report missing only confidence labels');
+    fs.writeFileSync(transcript, 'Files read: docs/a.md:3. Searched the docs and fetched https://example.com/a.');
+    allows(stop(), 'a researcher report whose files line says Files read');
     fs.writeFileSync(transcript, 'Files changed: docs/a.md:3. Ran the build, exit status 0.');
     allows(stop(), 'an editor report that says exit status');
     fs.writeFileSync(transcript, '{"search":"x","fetch":"y"}\n{"type":"text","text":"It seems fine."}');
