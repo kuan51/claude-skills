@@ -14,11 +14,19 @@ function frontmatter(text) {
   assert.ok(m, 'agent file has no frontmatter');
   const fields = {};
   for (const line of m[1].split(/\r?\n/)) {
+    assert.doesNotMatch(line, /^\s/, 'frontmatter must be flat `key: value` lines');
     const i = line.indexOf(':');
     if (i > 0) fields[line.slice(0, i).trim()] = line.slice(i + 1).trim();
   }
   return fields;
 }
+
+// A nested map, a block scalar or a continuation line could hide the real `tools:` or `model:`
+// value, so the parser refuses any indented line instead of guessing what YAML would make of it.
+test('frontmatter refuses an indented line', () => {
+  assert.throws(() => frontmatter('---\ntools: Read, Bash\nhooks:\n  tools: Read, Grep, Glob\n---\n'));
+  assert.throws(() => frontmatter('---\ntools: Read, Grep, Glob\n  , Bash\n---\n'));
+});
 
 // infra-inventory reads untrusted IaC and CI files, and the README promises it is read-only and
 // runs on Haiku. An omitted tools line would inherit every tool, so the exact list is pinned.
