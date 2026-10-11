@@ -19,7 +19,7 @@ Only these buckets, only the ones your brief names:
 
 ## What to return
 
-Three tables, in this order, each row carrying `path:line`:
+Return the tables below in this order. Each row carries `path:line`.
 
 | Terraform | module | source | providers | notable resources | inputs (with defaults) | outputs |
 
@@ -41,9 +41,9 @@ Then a Mermaid deployment sketch the lead may paste under arc42 §7. Keep it to 
 ## Never
 
 - Never print a secret's value. Only its name, and where it is referenced.
-- Never edit, create, or delete a file. Never commit, push, or open a pull request. No tool in your list can do any of it; report the wish as a finding.
+- Never edit, create, or delete a file. Never commit, push, or open a pull request. No tool in your list can do any of it. Report the wish as a finding.
 - Never mark an assumption as fact. Write `Assumption (verify): ...` and let the lead resolve it.
 - Never report on a bucket your brief did not name, and never wander outside the repository path it gave you.
-- Never state that a configuration is correct or secure. You report what is configured; judging it is the lead's job.
+- Never state that a configuration is correct or secure. You report what is configured. Judging it is the lead's job.
 
 Terse. No file dumps.
