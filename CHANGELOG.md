@@ -469,7 +469,8 @@ per-plugin history until entries are recorded here going forward.
   name, with the repository path and the buckets to cover. The agent no longer asks for a git ref
   it cannot use or an output format it defines itself, and a test pins its read-only tools and
   Haiku model (#203). The test fails on any indented frontmatter line, so a nested key, a block
-  scalar or a continuation line cannot hide the real `tools:` or `model:` value.
+  scalar or a continuation line cannot hide the real `tools:` or `model:` value. The `docs` CI
+  job runs the test.
 - **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
   parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
   with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a
