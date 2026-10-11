@@ -187,6 +187,9 @@ function assertSandboxed(paths, sandboxRoot, label) {
   if (!root) {
     throw new Error(`Refusing to run: sandboxRoot is missing or empty -- the SKILL.md sandbox step must produce a real sandbox directory and pass it as args.sandboxRoot before calling this workflow. (Checking ${label}.)`)
   }
+  if (/[<>\r\n]/.test(root)) {
+    throw new Error(`Refusing to run: sandboxRoot "${sandboxRoot}" holds "<", ">" or a line break -- a path must not carry a tag or a new line into a prompt.`)
+  }
   for (const p of paths || []) {
     if (typeof p !== 'string') {
       throw new Error(`Refusing to run: ${label} holds a non-string path -- every path must be a string inside the sandbox root "${sandboxRoot}".`)

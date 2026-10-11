@@ -476,3 +476,10 @@ test('refuses before any agent on a path holding <, >, a carriage return or a ne
     await refuses(baseArgs({ conclusionPaths: [p] }), 'conclusionPaths', p);
   }
 });
+
+test('refuses before any agent on a sandboxRoot holding <, >, a carriage return or a newline, even with no paths', async () => {
+  const none = { dataQuality: [], statistical: [], domainAlignment: [], reproducibility: [] };
+  for (const bad of ['<', '>', '\r', '\n']) {
+    await refuses(baseArgs({ sandboxRoot: `/sand${bad}box`, fixedRolePaths: none, extras: [], conclusionPaths: [] }), 'sandboxRoot');
+  }
+});

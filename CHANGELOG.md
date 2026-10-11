@@ -473,7 +473,8 @@ per-plugin history until entries are recorded here going forward.
   it at Partially Supported. A test now pins the Opus model on every review dispatch. The `cd`
   that review's reviewers and discover's hunters are told to run now writes the sandbox path in
   forward slashes inside single quotes. Before, Bash dropped the backslashes of a Windows path and
-  split a path at a space, and the `cd` failed.
+  split a path at a space, and the `cd` failed. Review now refuses a sandbox root that holds `<`,
+  `>` or a line break even when it is given no paths.
 - **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
   parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
   with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a
