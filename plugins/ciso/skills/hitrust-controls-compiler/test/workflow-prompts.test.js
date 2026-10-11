@@ -126,3 +126,8 @@ test('a verifier that throws excludes its candidate with no verdict instead of c
     assert.deepEqual(result.excluded.map((x) => [x.topicLabel, x.excludedAt, x.exclusionReason]), [['t', stage, 'no verdict returned']], stage);
   }
 });
+
+test('the researcher is told to omit blocked unless a tool was denied or every fetch failed', async () => {
+  const { calls } = await run(args('e1'));
+  assert.match(calls.find((c) => c.opts.label === 'research:01').prompt, /Unless WebSearch or WebFetch is denied or every fetch fails, omit `blocked`\./);
+});

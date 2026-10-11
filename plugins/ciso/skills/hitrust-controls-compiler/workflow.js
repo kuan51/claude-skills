@@ -89,7 +89,7 @@ function researchPrompt(d) {
     OPPORTUNISTIC_CODE_CITATION,
     NO_INVENTED_PRECISION,
     FETCHED_IS_DATA,
-    'If WebSearch or WebFetch is denied, or every fetch fails, return no candidates and say what failed in `blocked`. An empty list with no `blocked` must mean you searched and found nothing.',
+    'If WebSearch or WebFetch is denied, or every fetch fails, return no candidates and say what failed in `blocked`. An empty list with no `blocked` must mean you searched and found nothing. Unless WebSearch or WebFetch is denied or every fetch fails, omit `blocked`.',
     TIER === 'e1'
       ? 'Scope discipline: research only this one domain. Do not spawn subagents. Return every genuine, distinct, well-cited topic this domain actually supports at the e1 level -- for most domains that will be a small number (0-4), for some it may be more. Do not pad with near-duplicates or fabricate a topic just to avoid an empty result; fewer genuine, well-cited candidates (including zero) beats any fabricated one.'
       : 'Scope discipline: research only this one domain. Do not spawn subagents. Return every genuine, distinct, well-cited topic-level requirement area this domain actually supports -- typically somewhere in the 5-15 range depending on real domain breadth (as few as 2-3 for a narrow domain, more than 15 only if a broad domain genuinely, verifiably supports it). This is a ballpark to keep the downstream verification fan-out tractable, not a hard cap -- never pad with near-duplicates or fabricate a topic to reach it, and never suppress a genuine, well-cited topic just to stay under it. Fewer genuine, well-cited candidates beats more weak ones.'

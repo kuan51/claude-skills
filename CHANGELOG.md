@@ -472,7 +472,8 @@ per-plugin history until entries are recorded here going forward.
   it no longer looks like an honest zero (#201). A researcher that threw keeps its error as the
   reason. A verifier that fails now excludes its candidate instead of crashing the run. The run
   stops with an error that names the cause when every domain fails with no candidate or the
-  reconciler returns nothing.
+  reconciler returns nothing. The researcher is told to leave `blocked` out unless a tool was
+  denied or every fetch failed, so one failed fetch does not mark a healthy domain.
 - **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
   parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
   with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a
