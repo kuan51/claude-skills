@@ -100,8 +100,9 @@ function researchPrompt(d) {
 
 phase('Research')
 const found = await parallel(
-  DOMAINS.map((d) => () => agent(researchPrompt(d), { agentType: 'ciso:hitrust-topic-researcher', label: `research:${d.key}`, phase: 'Research', schema: CANDIDATE_SCHEMA })
-    .catch(() => null)
+  // Promise.resolve().then turns a synchronous throw from agent() into a rejection the .catch below sees.
+  DOMAINS.map((d) => () => Promise.resolve().then(() => agent(researchPrompt(d), { agentType: 'ciso:hitrust-topic-researcher', label: `research:${d.key}`, phase: 'Research', schema: CANDIDATE_SCHEMA }))
+    .catch((e) => ({ blocked: `the research agent threw: ${(e && e.message) || e}` }))
     .then((r) => r ? {
       candidates: (r.candidates || []).map((c) => Object.assign({}, c, { domain: d.name, domainKey: d.key })),
       r2IllustrativeCandidates: COMPILE_R2_ILLUSTRATIVE ? (r.r2IllustrativeCandidates || []).map((c) => Object.assign({}, c, { domain: d.name, domainKey: d.key })) : [],
@@ -116,6 +117,9 @@ const failedDomains = DOMAINS.map((d, i) => ({ key: d.key, reason: found[i].bloc
 if (failedDomains.length) log(`Research failed for ${failedDomains.length} domain(s): ${failedDomains.map((f) => f.key).join(', ')}`)
 
 const allCandidates = found.flatMap((r) => r.candidates)
+if (!allCandidates.length && failedDomains.length === DOMAINS.length) {
+  throw new Error(`hitrust-controls-compile: research failed for every domain and returned no candidate, so there is nothing to reconcile. ${failedDomains.map((f) => `${f.key}: ${f.reason}`).join('; ')}`)
+}
 const allR2Illustrative = found.flatMap((r) => r.r2IllustrativeCandidates)
 log(`Research complete: ${allCandidates.length} raw ${TIER} candidates${COMPILE_R2_ILLUSTRATIVE ? `, ${allR2Illustrative.length} raw r2-illustrative candidates` : ''} across ${DOMAINS.length} domains`)
 
@@ -148,6 +152,7 @@ const reconciled = await agent(
   ].filter(Boolean).join('\n\n'),
   { agentType: 'ciso:hitrust-controls-reconciler', label: 'reconcile', phase: 'Reconcile', schema: RECONCILE_SCHEMA }
 )
+if (!reconciled) throw new Error('hitrust-controls-compile: the reconcile agent returned nothing (skipped, or failed after retries), so there is nothing to verify')
 log(`Reconciled to ${reconciled.mergedCandidates.length} unique ${TIER} candidates${COMPILE_R2_ILLUSTRATIVE ? `, ${reconciled.r2IllustrativeCandidates.length} r2-illustrative candidates` : ''}; ${reconciled.droppedDuplicates.length} duplicates dropped; ${reconciled.coverageGaps.length} coverage gaps flagged; ${reconciled.zeroCandidateDomains.length} zero-candidate domains noted`)
 
 phase('Verify-Refute')
@@ -200,15 +205,16 @@ function judgeConfirm(candidate, label) {
 }
 
 async function verifyAll(candidates, tag) {
-  const refuted = await parallel(candidates.map((c) => () =>
+  // parallel() holds null for a verifier that threw. Keep its candidate with no verdict, so it is excluded.
+  const refuted = (await parallel(candidates.map((c) => () =>
     judgeRefute(c, `refute:${tag}:${c.topicLabel}`).then((v) => ({ c, v }))
-  ))
+  ))).map((x, i) => x || { c: candidates[i], v: null })
   const survivors1 = refuted.filter((x) => x.v && x.v.verdict === 'accept')
   const excluded1 = refuted.filter((x) => !x.v || x.v.verdict !== 'accept')
 
-  const confirmed = await parallel(survivors1.map((x) => () =>
+  const confirmed = (await parallel(survivors1.map((x) => () =>
     judgeConfirm(x.c, `confirm:${tag}:${x.c.topicLabel}`).then((v) => ({ c: x.c, v }))
-  ))
+  ))).map((x, i) => x || { c: survivors1[i].c, v: null })
   const survivors2 = confirmed.filter((x) => x.v && x.v.verdict === 'accept')
   const excluded2 = confirmed.filter((x) => !x.v || x.v.verdict !== 'accept')
 

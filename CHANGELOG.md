@@ -469,7 +469,10 @@ per-plugin history until entries are recorded here going forward.
   staleness against, and for i1 the e1 baseline summary the researchers judged overlap against.
   The reconcile schema now carries each topic's overlap reason. A domain whose researcher was
   blocked, returned nothing or failed is listed in `failedDomains` for a second research pass, so
-  it no longer looks like an honest zero (#201).
+  it no longer looks like an honest zero (#201). A researcher that threw keeps its error as the
+  reason. A verifier that fails now excludes its candidate instead of crashing the run. The run
+  stops with an error that names the cause when every domain fails with no candidate or the
+  reconciler returns nothing.
 - **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
   parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
   with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a

@@ -66,8 +66,11 @@ released.
 
    The run returns
    `{ tier, hitrustVersion, domains, shipped, excluded, droppedDuplicates, coverageGaps, zeroCandidateDomains, failedDomains }`.
-   `failedDomains` lists `{ key, reason }` for each domain whose researcher was blocked or returned
-   nothing, so its empty result is not an honest zero.
+   `failedDomains` lists `{ key, reason }` for each domain whose researcher was blocked, threw or
+   returned nothing, so its empty result is not an honest zero. A researcher that threw keeps its
+   error message in the reason. A verifier that fails excludes its candidate with the reason
+   `no verdict returned`. The run stops with an error instead of returning when every domain fails
+   and none returns a candidate, or when the reconciler returns nothing.
    Every candidate may optionally carry a `controlReference` (such as `"09.g"`), populated only when a
    fetched public citation actually verifies that specific code for that topic, never invented; most
    candidates will legitimately have none.
