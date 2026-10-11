@@ -242,4 +242,9 @@ test('the SubagentStop contract check matches every worker', () => {
       `hooks.json SubagentStop must match fabflows:${name}, or that worker's report goes unchecked`
     );
   }
+  // Plugin hooks run session-wide, so an unanchored matcher would hold another plugin's or the
+  // user's own `researcher` or `editor` to a contract it was never given.
+  for (const other of ['researcher', 'editor', 'other:researcher', 'other:editor', 'xfabflows:editor', 'fabflows:researcher-x']) {
+    assert.ok(!matchers.some((re) => re.test(other)), `hooks.json SubagentStop must not match ${other}`);
+  }
 });
