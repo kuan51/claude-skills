@@ -79,6 +79,10 @@ whether to save the report before any analysis runs.
   folder outside the copy that holds a notebook stops the run. The README and any reports are
   still in the copy, so only the instruction to use just the files given keeps a reviewer that
   can run commands from opening them.
+- **Withholds the project's CLAUDE.md.** The reviewers and the reconciler run without it, since
+  it can state the project's conclusions. Each reviewer that can run commands is told to work
+  from the project copy and to read and write only inside it. That working-directory rule is an
+  instruction, not an enforced boundary.
 - **Real verification, not just reading.** Reviewers execute code against the raw data where
   possible to recompute claims themselves. Each finding carries a `verified` flag that is true
   only when the command ran and its output is in the evidence; the report tags anything else as

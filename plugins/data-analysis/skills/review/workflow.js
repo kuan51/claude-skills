@@ -156,6 +156,12 @@ function buildEdaPrompt(role, thesis, thesisShape) {
     if (thesisShape === 'vague') parts.push('Thesis shape: vague')
   }
   if (role.static) parts.push(STATIC_RULE)
+  else {
+    // Bash starts in the session's directory, which is the real project, so a role that runs code
+    // is told where to run it. The copy, not the sandbox root, which also holds conclusions/.
+    const copy = `${String(A.sandboxRoot).replace(/[\\/]+$/, '')}/project`
+    parts.push(`Working directory: the project copy is ${copy}. Start every Bash command with \`cd ${copy} &&\`, and read and write only inside it.`)
+  }
   if (role.persona || role.guidance) parts.push(BRIEF_RULE)
   parts.push(`Business thesis and goals (confirmed with the project owner):\n${wrap('thesis', thesis)}`)
   if (role.persona) {

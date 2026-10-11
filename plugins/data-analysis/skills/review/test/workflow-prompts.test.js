@@ -235,6 +235,23 @@ test('every agentType is <plugin.json name>:<agent> with a matching agents/<agen
   }
 });
 
+test('every Bash role is told to work from the project copy; a static role is not', async () => {
+  const canned = cannedFromMarkdown();
+  const extras = [
+    { key: 'fairness', label: 'Fairness', paths: [`${ROOT}/data/users.csv`], persona: canned.fairness },
+    { key: 'custom', label: 'Custom', paths: [`${ROOT}/data/users.csv`], persona: 'Check something else.' },
+  ];
+  const r = await run({ args: baseArgs({ extras }) });
+  const line = `Working directory: the project copy is ${ROOT}/project. Start every Bash command with \`cd ${ROOT}/project &&\``;
+  for (const c of r.eda) {
+    const isStatic = c.opts.agentType.endsWith('-static');
+    assert.equal(c.prompt.includes(line), !isStatic, c.opts.label);
+    if (isStatic) assert.ok(!c.prompt.includes('Working directory:'), c.opts.label);
+  }
+  assert.ok(r.eda.some((c) => c.opts.agentType.endsWith('-static')), 'the run has a static role');
+  for (const c of [r.rec, ...r.cross]) assert.ok(!c.prompt.includes('Working directory:'), c.opts.label);
+});
+
 const parallelAll = (fns) => Promise.all(fns.map((f) => f().catch(() => null)));
 
 // Refuses before a single agent is dispatched, with a message naming every given string.
