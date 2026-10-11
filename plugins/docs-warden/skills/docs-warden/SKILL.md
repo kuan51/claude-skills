@@ -85,7 +85,8 @@ Triggered by "scaffold docs," "set up documentation," "document this repo."
      `Vocab = Project` has no vocabulary directory to load.
    - **`service` and `firmware` archetypes:** when the repo has Terraform,
      Kubernetes or CI configuration and an architecture document is being filled,
-     dispatch the `infra-inventory` agent and paste its tables under arc42 §7,
+     dispatch `docs-warden:infra-inventory` with the repository path and which of
+     Terraform, Kubernetes/Helm and CI to cover, and paste its tables under arc42 §7,
      keeping its `Assumption (verify):` lines verbatim. It is read-only and reports
      what is configured, not what the README claims.
 5. Seed `docs/GLOSSARY.md`: see **Glossary seeding** below.
@@ -125,7 +126,8 @@ documented behavior.
    they describe.
 4. Propose specific edits. Do not rewrite wholesale. When the change touched
    Terraform, Kubernetes or CI configuration and an architecture document
-   describes it, dispatch the `infra-inventory` agent and propose the edit from
+   describes it, dispatch `docs-warden:infra-inventory` with the repository path,
+   the buckets the change touched and the changed paths, and propose the edit from
    its tables, keeping its `Assumption (verify):` lines verbatim.
 5. Regenerate everything marked `generated: true`, plus
    `scripts/domain_model.py <repo> --write`.

@@ -112,10 +112,12 @@ any CI step that runs `adr_index.py --check`. The script is gone.
 
 ```bash
 python3 test/test_scripts.py
+node --test test/*.test.js
 ```
 
-Assert-based, no framework; prints one line per check and exits non-zero on any
-failure. `test/fixtures/` contains two small synthetic repos the scripts run against:
+`test_scripts.py` is assert-based, no framework; it prints one line per check and exits
+non-zero on any failure. The node test pins the `infra-inventory` agent's tools, model
+and dispatch name. `test/fixtures/` contains two small synthetic repos the scripts run against:
 one IT-tooling, one regulated. All fixture data is synthetic, with no PHI,
 real personal data, or secrets.
 
