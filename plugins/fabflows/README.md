@@ -469,9 +469,9 @@ with a quote still open at the end is split everywhere, which errs toward deny.
 
 A `SubagentStop` hook checks that a worker's final report actually includes its contract
 fields, and sends it back to be re-emitted if two or more are missing. A researcher's
-searches and fetches, and an `exit status`, count as its commands. It checks only fabflows'
-own workers (`fabflows:<name>`), so another plugin's agent or your own with the same name is
-left alone.
+searches and fetches, and an `exit status`, count as its commands, and a `Files read` or
+`Local files you read` line counts as its files. It checks only fabflows' own workers
+(`fabflows:<name>`), so another plugin's agent or your own with the same name is left alone.
 
 ### Known gaps
 
