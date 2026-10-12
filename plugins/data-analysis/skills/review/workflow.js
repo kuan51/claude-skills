@@ -156,6 +156,13 @@ function buildEdaPrompt(role, thesis, thesisShape) {
     if (thesisShape === 'vague') parts.push('Thesis shape: vague')
   }
   if (role.static) parts.push(STATIC_RULE)
+  else {
+    // Bash starts in the session's directory, which is the real project, so a role that runs code
+    // is told where to run it. The copy, not the sandbox root, which also holds conclusions/.
+    // Bash drops unquoted backslashes and splits at a space, so the path is quoted in forward slashes.
+    const copy = `${String(A.sandboxRoot).replace(/\\/g, '/').replace(/\/+$/, '')}/project`
+    parts.push(`Working directory: the project copy is ${copy}. Start every Bash command with \`cd '${copy.replace(/'/g, "'\\''")}' &&\`, and read and write only inside it.`)
+  }
   if (role.persona || role.guidance) parts.push(BRIEF_RULE)
   parts.push(`Business thesis and goals (confirmed with the project owner):\n${wrap('thesis', thesis)}`)
   if (role.persona) {
@@ -179,6 +186,9 @@ function assertSandboxed(paths, sandboxRoot, label) {
   const root = String(sandboxRoot || '').replace(/\\/g, '/').replace(/\/+$/, '')
   if (!root) {
     throw new Error(`Refusing to run: sandboxRoot is missing or empty -- the SKILL.md sandbox step must produce a real sandbox directory and pass it as args.sandboxRoot before calling this workflow. (Checking ${label}.)`)
+  }
+  if (/[<>\r\n]/.test(root)) {
+    throw new Error(`Refusing to run: sandboxRoot "${sandboxRoot}" holds "<", ">" or a line break -- a path must not carry a tag or a new line into a prompt.`)
   }
   for (const p of paths || []) {
     if (typeof p !== 'string') {
@@ -324,7 +334,18 @@ const crossCompareResults = await parallel(
       agentType: 'data-analysis:thesis-auditor',
       model: 'opus',
       schema: CROSS_COMPARE_SCHEMA,
-    }).then((result) => (result ? { ...result, reconciled_topic: topic.topic, evidence: topic.evidence, verified: topic.verified } : drop(`cross-compare:${topic.topic}`)))
+    }).then((result) => {
+      if (!result) return drop(`cross-compare:${topic.topic}`)
+      // An unconditional rule the workflow can enforce is enforced here, not left to the auditor.
+      const held = !topic.verified && (result.verdict === 'Supported' || result.verdict === 'Unsupported')
+        ? {
+            verdict: 'Partially Supported',
+            discrepancy: ['The independent check was not verified by execution, so this verdict is held at Partially Supported.', result.discrepancy].filter(Boolean).join(' '),
+            to_settle: result.to_settle || 'Re-run the independent check with execution to confirm or refute it.',
+          }
+        : {}
+      return { ...result, reconciled_topic: topic.topic, evidence: topic.evidence, verified: topic.verified, ...held }
+    })
   })
 )
 
