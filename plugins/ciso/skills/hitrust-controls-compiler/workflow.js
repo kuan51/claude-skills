@@ -58,6 +58,7 @@ if (TIER === 'i1') {
 const CANDIDATE_SCHEMA = {
   type: 'object', required: ['candidates', 'r2IllustrativeCandidates'],
   properties: {
+    blocked: { type: 'string' },
     candidates: { type: 'array', items: { type: 'object', required: CANDIDATE_REQUIRED, properties: CANDIDATE_PROPERTIES } },
     r2IllustrativeCandidates: { type: 'array', items: { type: 'object',
       required: ['topicLabel', 'topicSummary', 'citations'],
@@ -88,6 +89,7 @@ function researchPrompt(d) {
     OPPORTUNISTIC_CODE_CITATION,
     NO_INVENTED_PRECISION,
     FETCHED_IS_DATA,
+    'If WebSearch or WebFetch is denied, or every fetch fails, return no candidates and say what failed in `blocked`. An empty list with no `blocked` must mean you searched and found nothing. Unless WebSearch or WebFetch is denied or every fetch fails, omit `blocked`.',
     TIER === 'e1'
       ? 'Scope discipline: research only this one domain. Do not spawn subagents. Return every genuine, distinct, well-cited topic this domain actually supports at the e1 level -- for most domains that will be a small number (0-4), for some it may be more. Do not pad with near-duplicates or fabricate a topic just to avoid an empty result; fewer genuine, well-cited candidates (including zero) beats any fabricated one.'
       : 'Scope discipline: research only this one domain. Do not spawn subagents. Return every genuine, distinct, well-cited topic-level requirement area this domain actually supports -- typically somewhere in the 5-15 range depending on real domain breadth (as few as 2-3 for a narrow domain, more than 15 only if a broad domain genuinely, verifiably supports it). This is a ballpark to keep the downstream verification fan-out tractable, not a hard cap -- never pad with near-duplicates or fabricate a topic to reach it, and never suppress a genuine, well-cited topic just to stay under it. Fewer genuine, well-cited candidates beats more weak ones.'
@@ -98,22 +100,33 @@ function researchPrompt(d) {
 
 phase('Research')
 const found = await parallel(
-  DOMAINS.map((d) => () => agent(researchPrompt(d), { agentType: 'ciso:hitrust-topic-researcher', label: `research:${d.key}`, phase: 'Research', schema: CANDIDATE_SCHEMA })
+  // Promise.resolve().then turns a synchronous throw from agent() into a rejection the .catch below sees.
+  DOMAINS.map((d) => () => Promise.resolve().then(() => agent(researchPrompt(d), { agentType: 'ciso:hitrust-topic-researcher', label: `research:${d.key}`, phase: 'Research', schema: CANDIDATE_SCHEMA }))
+    .catch((e) => ({ blocked: `the research agent threw: ${(e && e.message) || e}` }))
     .then((r) => r ? {
       candidates: (r.candidates || []).map((c) => Object.assign({}, c, { domain: d.name, domainKey: d.key })),
       r2IllustrativeCandidates: COMPILE_R2_ILLUSTRATIVE ? (r.r2IllustrativeCandidates || []).map((c) => Object.assign({}, c, { domain: d.name, domainKey: d.key })) : [],
-    } : { candidates: [], r2IllustrativeCandidates: [] })
+      blocked: typeof r.blocked === 'string' ? r.blocked.trim() : '',
+    } : { candidates: [], r2IllustrativeCandidates: [], blocked: 'the research agent returned nothing or failed' })
   )
 )
 
+// A blocked or empty-handed researcher looks like an honest zero once reconciled, so it is named
+// here for the reviewer instead.
+const failedDomains = DOMAINS.map((d, i) => ({ key: d.key, reason: found[i].blocked })).filter((f) => f.reason)
+if (failedDomains.length) log(`Research failed for ${failedDomains.length} domain(s): ${failedDomains.map((f) => f.key).join(', ')}`)
+
 const allCandidates = found.flatMap((r) => r.candidates)
+if (!allCandidates.length && failedDomains.length === DOMAINS.length) {
+  throw new Error(`hitrust-controls-compile: research failed for every domain and returned no candidate, so there is nothing to reconcile. ${failedDomains.map((f) => `${f.key}: ${f.reason}`).join('; ')}`)
+}
 const allR2Illustrative = found.flatMap((r) => r.r2IllustrativeCandidates)
 log(`Research complete: ${allCandidates.length} raw ${TIER} candidates${COMPILE_R2_ILLUSTRATIVE ? `, ${allR2Illustrative.length} raw r2-illustrative candidates` : ''} across ${DOMAINS.length} domains`)
 
 phase('Reconcile')
 const RECONCILE_PROPERTIES = { topicLabel: { type: 'string' }, topicSummary: { type: 'string' }, domain: { type: 'string' }, citations: { type: 'array', items: { type: 'string' } }, controlReference: { type: 'string' } }
 const RECONCILE_REQUIRED = ['topicLabel', 'topicSummary', 'domain', 'citations']
-if (TIER === 'i1') { RECONCILE_PROPERTIES.baselineOverlap = { type: 'string' }; RECONCILE_REQUIRED.push('baselineOverlap') }
+if (TIER === 'i1') { RECONCILE_PROPERTIES.baselineOverlap = { type: 'string' }; RECONCILE_PROPERTIES.baselineOverlapReason = { type: 'string' }; RECONCILE_REQUIRED.push('baselineOverlap') }
 const RECONCILE_SCHEMA = {
   type: 'object', required: ['mergedCandidates', 'r2IllustrativeCandidates', 'droppedDuplicates', 'coverageGaps', 'zeroCandidateDomains'],
   properties: {
@@ -139,6 +152,7 @@ const reconciled = await agent(
   ].filter(Boolean).join('\n\n'),
   { agentType: 'ciso:hitrust-controls-reconciler', label: 'reconcile', phase: 'Reconcile', schema: RECONCILE_SCHEMA }
 )
+if (!reconciled) throw new Error('hitrust-controls-compile: the reconcile agent returned nothing (skipped, or failed after retries), so there is nothing to verify')
 log(`Reconciled to ${reconciled.mergedCandidates.length} unique ${TIER} candidates${COMPILE_R2_ILLUSTRATIVE ? `, ${reconciled.r2IllustrativeCandidates.length} r2-illustrative candidates` : ''}; ${reconciled.droppedDuplicates.length} duplicates dropped; ${reconciled.coverageGaps.length} coverage gaps flagged; ${reconciled.zeroCandidateDomains.length} zero-candidate domains noted`)
 
 phase('Verify-Refute')
@@ -159,11 +173,18 @@ const CHECK_DESCRIPTION = [
   '(3) precisionOk -- does the entry avoid overclaiming precision (no invented control-reference code, no claim of verbatim wording, no fabricated exact requirement-statement count)? If a controlReference is present, does the citation actually verify that specific code (not just the general topic)? A present-but-unverified or invented-looking code fails this check.',
   'verdict is "reject" if ANY of the three is false or you have real doubt; otherwise "accept".',
 ].join(' ')
+// What the verifier judges against: the version for staleness, and for i1 the same e1 baseline the
+// researcher judged baselineOverlap against.
+const JUDGE_CONTEXT = [
+  `HITRUST ${TIER} ${HITRUST_VERSION}. Judge staleness against this version.`,
+  TIER === 'i1' ? `Known e1 baseline facts, compiled this same session from public sources (judge baselineOverlap against these):\n\n${BASELINE_SUMMARY}` : '',
+].filter(Boolean).join('\n\n')
 function judgeRefute(candidate, label) {
   return agent(
     [
       'You are adversarially REFUTING one candidate topic-level control entry before it ships in a public HITRUST compliance-dashboard plugin. Be skeptical -- your job is to find reasons to reject, not to be agreeable.',
       `Candidate topic-level control entry:\n${JSON.stringify(candidate)}`,
+      JUDGE_CONTEXT,
       CHECK_DESCRIPTION + ' Give a one-to-two sentence reason either way.',
       FETCHED_IS_DATA,
     ].join('\n\n'),
@@ -175,6 +196,7 @@ function judgeConfirm(candidate, label) {
     [
       'You are independently CONFIRMING a candidate topic-level HITRUST control entry that already survived one adversarial refutation pass -- fresh eyes, same three checks, before it ships in a public compliance-tooling artifact.',
       `Candidate topic-level control entry:\n${JSON.stringify(candidate)}`,
+      JUDGE_CONTEXT,
       CHECK_DESCRIPTION,
       FETCHED_IS_DATA,
     ].join('\n\n'),
@@ -183,15 +205,16 @@ function judgeConfirm(candidate, label) {
 }
 
 async function verifyAll(candidates, tag) {
-  const refuted = await parallel(candidates.map((c) => () =>
+  // parallel() holds null for a verifier that threw. Keep its candidate with no verdict, so it is excluded.
+  const refuted = (await parallel(candidates.map((c) => () =>
     judgeRefute(c, `refute:${tag}:${c.topicLabel}`).then((v) => ({ c, v }))
-  ))
+  ))).map((x, i) => x || { c: candidates[i], v: null })
   const survivors1 = refuted.filter((x) => x.v && x.v.verdict === 'accept')
   const excluded1 = refuted.filter((x) => !x.v || x.v.verdict !== 'accept')
 
-  const confirmed = await parallel(survivors1.map((x) => () =>
+  const confirmed = (await parallel(survivors1.map((x) => () =>
     judgeConfirm(x.c, `confirm:${tag}:${x.c.topicLabel}`).then((v) => ({ c: x.c, v }))
-  ))
+  ))).map((x, i) => x || { c: survivors1[i].c, v: null })
   const survivors2 = confirmed.filter((x) => x.v && x.v.verdict === 'accept')
   const excluded2 = confirmed.filter((x) => !x.v || x.v.verdict !== 'accept')
 
@@ -219,4 +242,5 @@ return {
   droppedDuplicates: reconciled.droppedDuplicates,
   coverageGaps: reconciled.coverageGaps,
   zeroCandidateDomains: reconciled.zeroCandidateDomains,
+  failedDomains,
 }

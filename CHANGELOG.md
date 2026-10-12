@@ -471,6 +471,15 @@ per-plugin history until entries are recorded here going forward.
   Haiku model (#203). The test fails on any indented frontmatter line, so a nested key, a block
   scalar or a continuation line cannot hide the real `tools:` or `model:` value. The `docs` CI
   job runs the test.
+- **ciso 1.3.3** -- the HITRUST compiler's verifiers are told the tier and version to judge
+  staleness against, and for i1 the e1 baseline summary the researchers judged overlap against.
+  The reconcile schema now carries each topic's overlap reason. A domain whose researcher was
+  blocked, returned nothing or failed is listed in `failedDomains` for a second research pass, so
+  it no longer looks like an honest zero (#201). A researcher that threw keeps its error as the
+  reason. A verifier that fails now excludes its candidate instead of crashing the run. The run
+  stops with an error that names the cause when every domain fails with no candidate or the
+  reconciler returns nothing. The researcher is told to leave `blocked` out unless a tool was
+  denied or every fetch failed, so one failed fetch does not mark a healthy domain.
 - **data-analysis 1.2.2** -- review's reviewers that run code are told to start every command
   from the project copy. Bash starts in the session's directory, which is the real project, so a
   re-run with relative paths could write there (#200). The blind review agents and the reconciler
