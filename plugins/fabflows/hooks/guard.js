@@ -821,9 +821,9 @@ function subagentStop(input) {
 
   // The tail is raw JSONL, where `"command"` and `"output"` appear as keys in every tool
   // call. A word followed by a quote is a key, not prose, and does not count. A researcher
-  // reports searches and fetches rather than commands.
+  // reports searches and fetches rather than commands, and the local files it read.
   const groups = [
-    [/files?\s+(touched|changed)|modified files/i, 'files touched'],
+    [/files?\s+(touched|changed|((you|I)\s+)?read\b)|modified files/i, 'files touched'],
     [/\b(command|output|(search|fetch)\w*)\b(?!")|exit (code|status)/i, 'commands and their real output'],
     [/\bconfirmed\b|\binferred\b|\bguessed\b/i, 'confidence labels'],
   ];

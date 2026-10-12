@@ -465,6 +465,15 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.18.1** -- the `SubagentStop` contract check matches only `fabflows:<worker>`, so
+  another plugin's agent or a user's own agent named `researcher` or `editor` is no longer held to
+  fabflows' report contract. The editor follows its brief on a permission denial it worked
+  around, as the build loop's brief expects, and otherwise still stops. It never gets a denied
+  action done another way, with another command, tool or path. The researcher now returns
+  the local files it read, or None, so its report meets the lead's contract, and the
+  `SubagentStop` check counts that line as its files. Benchmark task 12 now grades that line.
+  Benchmark iteration 17 found no regression on the editor's and researcher's agent tasks
+  (#202).
 - **docs-warden 1.0.2** -- the skill dispatches `docs-warden:infra-inventory` by its namespaced
   name, with the repository path and the buckets to cover. The agent no longer asks for a git ref
   it cannot use or an output format it defines itself, and a test pins its read-only tools and

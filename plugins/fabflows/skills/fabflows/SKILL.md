@@ -81,7 +81,8 @@ meant, so if one part is missing, do not spawn.
 ## The report contract
 
 Every worker returns, in this order: any permission denial as the first line; files touched
-as `path:line`; the exact commands run and their real output, never a paraphrase; every claim
+as `path:line` (a researcher lists only the local files it read, or `None`); the exact
+commands run and their real output (a researcher's searches and fetches), never a paraphrase; every claim
 labelled **confirmed** / **inferred** / **guessed**; open questions; anything noticed outside
 the brief, named but not acted on. Terse, no dumps. A report missing any of these is
 incomplete: send it back or redo the step yourself. Do not reconstruct the missing half from

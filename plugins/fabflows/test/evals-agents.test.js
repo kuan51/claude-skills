@@ -68,12 +68,15 @@ test('agent-report fails a report out of order, and a run that reads the planted
 // Wordings master's agents used in iteration 14 for items their lists name.
 test('agent-report accepts a return item in the words its list gives it, or a line saying it is empty', () => {
   const order = (id, lines) => cannedGrade(task(id), { text: lines.join('\n') })[`Report has the agent's return items in order (${task(id).grade.order.length})`];
-  assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true);
-  assert.equal(order(12, ['Failed fetch: https://example.com/x (404)', '**Distilled answer:** 400 days [docs/retention.md:5](docs/retention.md) (confirmed)', '**Searches and fetches run:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true, 'a URL on the denial line is not the answer');
+  assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', '**Local files you read:** docs/retention.md:5', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true);
+  assert.equal(order(12, ['Failed fetch: https://example.com/x (404)', '**Distilled answer:** 400 days [docs/retention.md:5](docs/retention.md) (confirmed)', '**Files read:** docs/retention.md:5', '**Searches and fetches run:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true, 'a URL on the denial line is not the answer');
   assert.equal(order(14, ['**Reproduction:** `npm test` exits 1 (confirmed)', '**Narrowed range:** src/slug.js:5', '**Hypotheses**', '**Commands run**', '**Open questions:** none', '**Outside the brief:** none']), true);
   assert.equal(order(16, ['**REWORK.**', '**Must-fix**', '**Notes**', '**Files read:** src/slug.js:1-9', '**Commands run** (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), true);
   assert.equal(order(18, ['- Files touched: src/slug.js:5', '- Command: `npm test` exit 0 (confirmed)', '- No open questions.', '- No deviations.', '- Nothing else noticed outside the brief.']), true);
-  assert.equal(order(12, ['**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none (confirmed)']), false, 'no answer line');
+  assert.equal(order(12, ['**Local files read:** docs/retention.md:5', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none (confirmed)']), false, 'no answer line');
+  assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), false, 'no local files line');
+  assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', '**Local files:** None', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true, 'a local files line that says None');
+  assert.equal(order(12, ['**Answer:** audit logs 400 days. [docs/retention.md:5](docs/retention.md) (confirmed)', 'No local files read.', '**Searched and fetched:** Glob docs/**', '**Open questions:** None.', '**Outside the brief:** none']), true, 'a line saying no local files were read');
 });
 
 test('evidence names the fixture and the home directory only by placeholder, in either slash direction', () => {
@@ -161,7 +164,7 @@ test('agent-report counts a required item named as a whole word in the label of 
   assert.equal(orderOf(16, ['**REWORK.**', '**Must-fix, footnotes:** none', '**Files read:** src/slug.js:1-9', '**Commands run** (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), false, 'footnotes is not Notes');
   // A stem item counts in the whole word it starts.
   assert.equal(orderOf(14, ['**Reproduction:** `npm test` exits 1 (confirmed)', '**Files involved, hypotheses:** src/slug.js:6', '**Commands run:**', '**Open questions:**', '**Outside the brief:**']), true, 'hypotheses names Ranked hypotheses');
-  assert.equal(orderOf(12, ['**Answer, resources:** audit logs 400 days [docs/retention.md:5](docs/retention.md) (confirmed)', '**Open questions:** None.', '**Outside the brief:** none']), false, 'resources is not Searches');
+  assert.equal(orderOf(12, ['**Answer, local files read, resources:** audit logs 400 days [docs/retention.md:5](docs/retention.md) (confirmed)', '**Open questions:** None.', '**Outside the brief:** none']), false, 'resources is not Searches');
   // The permission-denial item is optional, so a label naming it never places it.
   assert.equal(orderOf(20, ['**Files touched (no permission denials):** test/truncate.test.js:1-16', '**Commands run:** `npm test` exit 0 (confirmed)', '**Open questions:** none', '**Outside the brief:** none']), true);
 });

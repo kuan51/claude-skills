@@ -208,9 +208,10 @@
             "optional": true
           },
           { "item": "Distilled answer", "pattern": "(?:the )?(?:distilled )?answer" },
+          { "item": "Local files read", "pattern": "(?:no )?(?:the )?(?:local files?(?: (?:(?:you|i) )?read)?|files? (?:(?:you|i) )?read)" },
           {
             "item": "Searches and fetches run",
-            "pattern": "(?:the )?(?:exact )?(?:search(?:es|ed)|fetch(?:es|ed)|reads|files read|sources)"
+            "pattern": "(?:the )?(?:exact )?(?:search(?:es|ed)|fetch(?:es|ed)|reads|sources)"
           },
           { "item": "Claims labeled", "pattern": "confirmed|inferred|guessed", "anywhere": true },
           { "item": "Open questions", "pattern": "(?:no )?open questions?" },

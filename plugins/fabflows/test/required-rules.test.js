@@ -104,6 +104,13 @@ const FAMILIES = [
     ruleFree: 'Commit and push, then leave the branch to the lead.',
   },
   {
+    name: 'a denied action is never done another way',
+    pattern: all(NOT, '\\bden(?:y|ies|ied|ials?)\\b', '\\banother way\\b'),
+    files: [agent('editor')],
+    paraphrase: 'Another way to the same result is never taken once a call is denied.',
+    ruleFree: 'If a call is denied, find another way. Never give up.',
+  },
+  {
     name: 'the build loop never merges, pushes or reverts',
     pattern: all('\\bnever\\b', '\\bmerg(?:e|es|ed|ing)\\b', '\\bpush(?:es|ed|ing)?\\b'),
     files: [skill('fabflows'), 'skills/fabflows/references/build-loop.md'],

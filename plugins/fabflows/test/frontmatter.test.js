@@ -154,6 +154,15 @@ test('every agent body carries the report contract and the injection clause', ()
   }
 });
 
+test('the editor stops on a denial its brief does not cover', () => {
+  const editor = fs.readFileSync(path.join(AGENTS_DIR, 'editor.md'), 'utf8');
+  assert.match(
+    editor,
+    /a denial you worked around, follow the brief\. Otherwise stop\./,
+    'editor.md must stop on a permission denial unless its brief says how to handle one it worked around'
+  );
+});
+
 test('every skill has valid frontmatter', () => {
   const skills = fs.readdirSync(SKILLS_DIR, { withFileTypes: true }).filter((d) => d.isDirectory());
   assert.ok(skills.length > 0, 'plugin must ship at least one skill');
@@ -241,5 +250,10 @@ test('the SubagentStop contract check matches every worker', () => {
       matchers.some((re) => re.test(`fabflows:${name}`)),
       `hooks.json SubagentStop must match fabflows:${name}, or that worker's report goes unchecked`
     );
+  }
+  // Plugin hooks run session-wide, so an unanchored matcher would hold another plugin's or the
+  // user's own `researcher` or `editor` to a contract it was never given.
+  for (const other of ['researcher', 'editor', 'other:researcher', 'other:editor', 'xfabflows:editor', 'fabflows:researcher-x']) {
+    assert.ok(!matchers.some((re) => re.test(other)), `hooks.json SubagentStop must not match ${other}`);
   }
 });
