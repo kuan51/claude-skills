@@ -65,7 +65,12 @@ released.
      Dual-pass because everything here is released publicly with no severity gate.
 
    The run returns
-   `{ tier, hitrustVersion, domains, shipped, excluded, droppedDuplicates, coverageGaps, zeroCandidateDomains }`.
+   `{ tier, hitrustVersion, domains, shipped, excluded, droppedDuplicates, coverageGaps, zeroCandidateDomains, failedDomains }`.
+   `failedDomains` lists `{ key, reason }` for each domain whose researcher was blocked, threw or
+   returned nothing, so its empty result is not an honest zero. A researcher that threw keeps its
+   error message in the reason. A verifier that fails excludes its candidate with the reason
+   `no verdict returned`. The run stops with an error instead of returning when every domain fails
+   and none returns a candidate, or when the reconciler returns nothing.
    Every candidate may optionally carry a `controlReference` (such as `"09.g"`), populated only when a
    fetched public citation actually verifies that specific code for that topic, never invented; most
    candidates will legitimately have none.
@@ -77,7 +82,8 @@ released.
    (candidates that failed verification, with a reason each) yourself before assembling the released
    files. The workflow's agents never get final say on what actually gets released; a human reviews it
    first, matching this repo's `harden-scan.js` precedent of "the calling session writes, never the
-   agents." For i1, treat `zeroCandidateDomains` as a real coverage-gap signal worth a second research
+   agents." For either tier, give every domain in `failedDomains` a second research pass before
+   release. For i1, treat `zeroCandidateDomains` as a real coverage-gap signal worth a second research
    pass on that domain. For e1, a domain appearing in `zeroCandidateDomains` is normal and does not by
    itself need a second pass. Only investigate it further if the reconciler also flagged it in
    `coverageGaps` (meaning it looked wrong, not just thin). Spot-check citation diversity (if one
