@@ -472,7 +472,8 @@ per-plugin history until entries are recorded here going forward.
   action done another way, with another command, tool or path. The researcher now returns
   the local files it read, or None, so its report meets the lead's contract, and the
   `SubagentStop` check counts that line as its files. Benchmark task 12 now grades that line.
-  The benchmark was not re-run for the editor and researcher lines (#202).
+  Benchmark iteration 17 found no regression on the editor's and researcher's agent tasks
+  (#202).
 - **ciso 1.3.2** -- dashboard anchor ids are built once, by two helpers, from slugged
   parts joined with `_` (`cat_<cert>_<tier>_<domain>`, `section_<cert>_<tier>`). Joining raw keys
   with `-` let tier `a` with domain `b-01` and tier `a-b` with domain `01` share one id, so a

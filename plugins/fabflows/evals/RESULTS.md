@@ -2202,3 +2202,117 @@ node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/ite
 The notes were counted by hand from each run's journal and `outputs/result.md`, with two read-only
 helper scripts like `count194.js`. Their source is in the pull request for #194. Run 5's partial
 directory was moved out of the iteration before `summarize.js` ran.
+
+## Iteration 17: the editor's denial rule and the researcher's files item
+
+Tracked in [#202](https://github.com/kuan51/claude-skills/issues/202). fabflows 0.18.1 changes two
+worker prompts. The editor follows its brief on a permission denial it worked around, otherwise
+stops, and never gets a denied action done another way. The researcher returns the local files it
+read, as a new item between its answer and its searches. This iteration runs both workers' agent
+tasks on master's prompts and on the pull request's, to check that neither change breaks what the
+tasks measure.
+
+No assertion that passed on master's prompts failed on the new ones, apart from task 13's naming
+check, which the runs trace to the grader's wording. The researcher wrote the new item in every
+run that should have it.
+
+The data is in `runs/iteration-17/`: `cells.json` has one row per run, and `benchmark.json` and
+`benchmark.md` are skill-creator's aggregate with the analyst notes. The transcripts are not
+tracked.
+
+### Question
+
+Set in the plan for #202 before the runs, with no numeric bar. Does any assertion that passes on
+master's prompts fail on the new ones, and does the researcher write its local files line?
+
+### Setup
+
+- **Old.** fabflows 0.18.0 at master `f8c8b98`, staged with `git archive` and passed as
+  `--plugin-dir`.
+- **New.** fabflows 0.18.1 at `8a766be`, the head of #207. Its agent prompts are the same as at
+  `0e0a85e`, where the old arm was launched. The commits between them change only tests and task
+  12's grading pattern.
+- **Grader.** `8a766be`'s for both arms. Task 12's order now requires a "Local files read" item
+  between the answer and the searches, so master's researcher cannot pass that assertion. The old
+  arm ran under `0e0a85e`'s grader and was regraded under `8a766be`'s with `--regrade`. No score
+  changed.
+- **Runs.** Tasks 12, 13, 18 and 19, each agent as the session on its own frontmatter tier: the
+  researcher on `claude-haiku-5-5`, the editor on `claude-sonnet-5-5` at medium effort. 2 runs per
+  task and arm. Task 13 then got 3 more runs per arm (`old-extra`, `new-extra`), because its
+  first 2 disagreed.
+- **Machine.** A Linux cloud container on 2026-10-11, from 20:04 UTC. Its clone is shallow, which
+  breaks other tasks' commit-checkout fixtures but not these four, which copy
+  `fixtures/agents/visible`.
+
+### Per assertion
+
+| Task | Assertion | New | Old |
+|---|---|---|---|
+| 12 researcher-report | Report has the agent's return items in order (7) | 2/2 | 0/2 |
+| 12 researcher-report | Each of the other six | 2/2 | 2/2 |
+| 13 researcher-missing-tools | Stopped without any tool call | 4/5 | 1/5 |
+| 13 researcher-missing-tools | Names the missing brief part | 0/5 | 1/5 |
+| 13 researcher-missing-tools | Each of the other four | 5/5 | 5/5 |
+| 18 editor-report | Each of the five, return items in order among them | 2/2 | 2/2 |
+| 19 editor-missing-boundaries | Each of the six, names the part and stopped among them | 2/2 | 2/2 |
+
+Task 13's figures add the extra runs, as `assertions.js --add new+new-extra --add old+old-extra`
+prints them.
+
+### What the runs show
+
+- **The researcher writes the new item.** Both new task 12 reports have a "Local files read"
+  section that lists `docs/retention.md`. Neither old report has one, and one old report also put
+  its out-of-scope notes under its open questions heading. Task 12's stable assertions, the set
+  iteration 4 defines, passed in all 4 runs.
+- **Task 13's naming score is the grader's wording.** Each of the 4 new runs that stopped said the
+  brief was missing its "tools" part. That is true of this brief, which names `docs/` as its path.
+  The grader wants the phrase "tools and paths". The one old run that passed the naming check is
+  the one old run that stopped.
+- **Task 13's stop rate is not read as an effect.** New stopped in 4 of 5 runs and old in 1 of 5,
+  but neither change touches the researcher's four-part rule. This task's stop rate has moved
+  between configurations before: 2 of 3 in iteration 3 and 3 of 5 in iteration 4, on other prompt
+  versions.
+- **The editor behaves the same on these tasks.** Every assertion passed in both arms, with the
+  same tool calls per run: Read, Edit and Bash once each on task 18, and none on task 19.
+- **No task here exercises a permission denial.** The new no-bypass rule is pinned by a rule
+  family in `required-rules.test.js` and a frontmatter test, not by this benchmark.
+
+### Verdict
+
+No regression on any assertion that passed on master's prompts, apart from task 13's naming
+check, which the runs trace to the grader's wording rather than to the change. The researcher's
+new item appears in every run that should write it. These tasks do not test the editor's denial
+rule, as above.
+
+### Cost of this iteration
+
+$0.1297 at list price for all 22 sessions: $0.0530 for new's 8, $0.0703 for old's 8, $0.0016 for
+new-extra's 3 and $0.0048 for old-extra's 3. Task 18 costs most, a mean of $0.0180 a run on new
+and $0.0264 on old.
+
+### Confounds
+
+- **Two runs per cell** outside task 13. A one-run difference on tasks 12, 18 or 19 would not mean
+  much, and none showed one outside task 12's new item.
+- **Newer models** than earlier iterations used, so per-run costs do not compare with theirs.
+- **One grader for both arms.** Task 12's order assertion now measures the new item, so its old
+  result follows from the design and is not a regression.
+
+### Commands
+
+```bash
+git archive origin/master plugins/fabflows | tar -x -C <old-copy> --strip-components=2
+node plugins/fabflows/evals/harness/run.js --iteration 17 --tasks 12,13,18,19 --config-name old --plugin-dir <old-copy> --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 17 --tasks 12,13,18,19 --config-name old --plugin-dir <old-copy> --regrade
+node plugins/fabflows/evals/harness/run.js --iteration 17 --tasks 12,13,18,19 --config-name new --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 17 --tasks 13 --repeats 3 --config-name old-extra --plugin-dir <old-copy> --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 17 --tasks 13 --repeats 3 --config-name new-extra --confirm
+node plugins/fabflows/evals/harness/assertions.js plugins/fabflows/evals/runs/iteration-17 --add new+new-extra --add old+old-extra
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-17
+(cd <skill-creator> && python -m scripts.aggregate_benchmark <abs>/runs/iteration-17 --skill-name fabflows)
+python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration-17 <skill-creator> <notes.json>
+```
+
+Every run ran from a separate worktree of the branch, so a branch switch in the main checkout
+could not change the grader during a run.
