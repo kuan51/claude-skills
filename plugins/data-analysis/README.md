@@ -79,11 +79,16 @@ whether to save the report before any analysis runs.
   folder outside the copy that holds a notebook stops the run. The README and any reports are
   still in the copy, so only the instruction to use just the files given keeps a reviewer that
   can run commands from opening them.
+- **Withholds the project's CLAUDE.md.** The reviewers and the reconciler run without it, since
+  it can state the project's conclusions. Each reviewer that can run commands is told to work
+  from the project copy and to read and write only inside it. That working-directory rule is an
+  instruction, not an enforced boundary.
 - **Real verification, not just reading.** Reviewers execute code against the raw data where
   possible to recompute claims themselves. Each finding carries a `verified` flag that is true
   only when the command ran and its output is in the evidence; the report tags anything else as
   unverified so you can see which findings are empirically backed. An extra reviewer built from
-  web research cannot run commands, so its findings are always unverified.
+  web research cannot run commands, so its findings are always unverified. A conclusion checked
+  against an unverified finding is never rated Supported or Unsupported.
 - **Same rigor whoever calls it.** The review agents are pinned to Opus, so the report's quality
   does not depend on the model your session happens to be running.
 
@@ -117,9 +122,9 @@ whether to save the report before any analysis runs.
 - **Never modifies the project.** Agents see only a disposable copy holding the data files and
   data docs, and the engine refuses to run if any path lies outside it.
 - **Never sees a prior conclusion.** Code, notebooks and reports are left out of the copy.
-- **Withholds the project's CLAUDE.md.** The pattern hunters and the so-what auditor run without
-  it. Each hunter is told to work from the sandbox copy and to read and write only inside it. That
-  working-directory rule is an instruction, not an enforced boundary.
+- **Withholds the project's CLAUDE.md.** The pattern hunters, the reconciler and the so-what
+  auditor run without it. Each hunter is told to work from the sandbox copy and to read and
+  write only inside it. That working-directory rule is an instruction, not an enforced boundary.
 - **No causes from correlations.** Patterns are descriptive; a candidate rises above that only
   when its evidence rules out confounding, and one not verified by execution stays descriptive.
 - **Single run, said so.** Patterns are not re-run to check they recur, and the report says to
