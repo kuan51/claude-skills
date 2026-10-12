@@ -235,6 +235,63 @@ test('every agentType is <plugin.json name>:<agent> with a matching agents/<agen
   }
 });
 
+test('every review dispatch is pinned to Opus', async () => {
+  const r = await run();
+  assert.ok(r.eda.length && r.rec && r.cross.length);
+  for (const c of r.calls) assert.equal(c.opts.model, 'opus', c.opts.label);
+});
+
+test('every Bash role is told to work from the project copy; a static role is not', async () => {
+  const canned = cannedFromMarkdown();
+  const extras = [
+    { key: 'fairness', label: 'Fairness', paths: [`${ROOT}/data/users.csv`], persona: canned.fairness },
+    { key: 'custom', label: 'Custom', paths: [`${ROOT}/data/users.csv`], persona: 'Check something else.' },
+  ];
+  const r = await run({ args: baseArgs({ extras }) });
+  const line = `Working directory: the project copy is ${ROOT}/project. Start every Bash command with \`cd '${ROOT}/project' &&\``;
+  for (const c of r.eda) {
+    const isStatic = c.opts.agentType.endsWith('-static');
+    assert.equal(c.prompt.includes(line), !isStatic, c.opts.label);
+    if (isStatic) assert.ok(!c.prompt.includes('Working directory:'), c.opts.label);
+  }
+  assert.ok(r.eda.some((c) => c.opts.agentType.endsWith('-static')), 'the run has a static role');
+  for (const c of [r.rec, ...r.cross]) assert.ok(!c.prompt.includes('Working directory:'), c.opts.label);
+});
+
+test('the cd line quotes the copy in forward slashes, so a Windows root with a space or a quote stays one path', async () => {
+  const cases = [
+    ['C:\\Users\\Jane Doe\\AppData\\Local\\Temp\\sb', "`cd 'C:/Users/Jane Doe/AppData/Local/Temp/sb/project' &&`"],
+    ["C:\\Users\\O'Brien\\AppData\\Local\\Temp\\sb", "`cd 'C:/Users/O'\\''Brien/AppData/Local/Temp/sb/project' &&`"],
+  ];
+  for (const [root, cd] of cases) {
+    const fixedRolePaths = { dataQuality: [], statistical: [], domainAlignment: [], reproducibility: [`${root}\\project\\src\\model.py`] };
+    const r = await run({ args: baseArgs({ sandboxRoot: root, fixedRolePaths, extras: [], conclusionPaths: [] }) });
+    assert.ok(edaFor(r, 'reproducibility').prompt.includes(cd), root);
+  }
+});
+
+test('an unverified independent finding never comes back Supported or Unsupported', async () => {
+  const verdicts = { 'topic-1': 'Unsupported', 'topic-3': 'Supported', 'topic-5': 'Not Addressed', 'topic-2': 'Unsupported' };
+  const r = await run({
+    reconciled: [topic(1), topic(2), topic(3), topic(5)],
+    crossCompare: (name) => ({ topic: name, project_claim: 'c', independent_finding: 'f', discrepancy: 'd', verdict: verdicts[name], business_impact: 'none identified', to_settle: name === 'topic-3' ? 'kept' : '' }),
+  });
+  const by = Object.fromEntries(r.result.crossCompare.map((c) => [c.reconciled_topic, c]));
+  for (const t of ['topic-1', 'topic-3']) {
+    assert.equal(by[t].verified, false, t);
+    assert.equal(by[t].verdict, 'Partially Supported', t);
+    assert.match(by[t].discrepancy, /^The independent check was not verified by execution/, t);
+    assert.ok(by[t].discrepancy.endsWith(' d'), `${t} keeps the auditor's discrepancy`);
+    assert.ok(by[t].to_settle, `${t} has to_settle`);
+  }
+  assert.equal(by['topic-3'].to_settle, 'kept', 'a given to_settle is kept');
+  assert.equal(by['topic-5'].verdict, 'Not Addressed', 'Not Addressed is left alone');
+  assert.equal(by['topic-5'].discrepancy, 'd');
+  assert.equal(by['topic-2'].verified, true);
+  assert.equal(by['topic-2'].verdict, 'Unsupported', 'a verified finding keeps its verdict');
+  assert.equal(by['topic-2'].discrepancy, 'd');
+});
+
 const parallelAll = (fns) => Promise.all(fns.map((f) => f().catch(() => null)));
 
 // Refuses before a single agent is dispatched, with a message naming every given string.
@@ -417,5 +474,12 @@ test('refuses before any agent on a path holding <, >, a carriage return or a ne
     await refuses(baseArgs({ fixedRolePaths: { ...fixed, dataQuality: [p] } }), 'fixedRolePaths.dataQuality', p);
     await refuses(baseArgs({ extras: [{ key: 'fairness', label: 'F', paths: [p], persona: 'p' }] }), 'extras.fairness', p);
     await refuses(baseArgs({ conclusionPaths: [p] }), 'conclusionPaths', p);
+  }
+});
+
+test('refuses before any agent on a sandboxRoot holding <, >, a carriage return or a newline, even with no paths', async () => {
+  const none = { dataQuality: [], statistical: [], domainAlignment: [], reproducibility: [] };
+  for (const bad of ['<', '>', '\r', '\n']) {
+    await refuses(baseArgs({ sandboxRoot: `/sand${bad}box`, fixedRolePaths: none, extras: [], conclusionPaths: [] }), 'sandboxRoot');
   }
 });
