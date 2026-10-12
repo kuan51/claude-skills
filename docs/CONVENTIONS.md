@@ -60,7 +60,9 @@ plugin.
   `node --test "plugins/ciso/**/*.test.js"` and
   `node --test "plugins/data-analysis/**/*.test.js"`.
 - `docs-warden`'s Python scripts are checked with
-  `python3 plugins/docs-warden/test/test_scripts.py` (assert-based, no framework).
+  `python3 plugins/docs-warden/test/test_scripts.py` (assert-based, no framework),
+  and its agent's frontmatter and dispatch name with
+  `node --test "plugins/docs-warden/test/*.test.js"`.
 - `fabflows`'s suite covers its hook as well as its manifests:
   `node --test "plugins/fabflows/test/*.test.js"`, plus the offline bats suite
   for the ticket and PR flows: `bats plugins/fabflows/test/pm`. Keep to `test/`:
