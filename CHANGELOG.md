@@ -474,6 +474,12 @@ per-plugin history until entries are recorded here going forward.
   `SubagentStop` check counts that line as its files. Benchmark task 12 now grades that line.
   Benchmark iteration 17 found no regression on the editor's and researcher's agent tasks
   (#202).
+- **docs-warden 1.0.2** -- the skill dispatches `docs-warden:infra-inventory` by its namespaced
+  name, with the repository path and the buckets to cover. The agent no longer asks for a git ref
+  it cannot use or an output format it defines itself, and a test pins its read-only tools and
+  Haiku model (#203). The test fails on any indented frontmatter line, so a nested key, a block
+  scalar or a continuation line cannot hide the real `tools:` or `model:` value. The `docs` CI
+  job runs the test.
 - **ciso 1.3.3** -- the HITRUST compiler's verifiers are told the tier and version to judge
   staleness against, and for i1 the e1 baseline summary the researchers judged overlap against.
   The reconcile schema now carries each topic's overlap reason. A domain whose researcher was

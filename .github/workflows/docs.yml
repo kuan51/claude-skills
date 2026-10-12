@@ -1,7 +1,8 @@
 # Lints and audits the documentation on every pull request: markdownlint,
 # the fabflows prompt security rules guard, the marketplace manifest tests
 # (test/*.test.js), the fabflows build-loop and frontmatter tests
-# (build.test.js, frontmatter.test.js), docs-warden's audit (which also
+# (build.test.js, frontmatter.test.js), docs-warden's agent frontmatter
+# test (agents-frontmatter.test.js), docs-warden's audit (which also
 # checks that generated documents are current), then Vale on the changed
 # files, as .pre-commit-config.yaml runs it, then self-tests of the
 # vale-warn-gate script and the Prompting style, then a report of every
@@ -59,6 +60,11 @@ jobs:
       - name: fabflows build and frontmatter
         if: ${{ !cancelled() }}
         run: node --test plugins/fabflows/test/build.test.js plugins/fabflows/test/frontmatter.test.js
+      # docs-warden's infra-inventory agent keeps its read-only tools and Haiku
+      # model, and the skill dispatches it by its namespaced name.
+      - name: docs-warden agent frontmatter
+        if: ${{ !cancelled() }}
+        run: node --test plugins/docs-warden/test/agents-frontmatter.test.js
       # Before Vale is installed or synced, on purpose. With no vale on PATH,
       # audit's lint row skips its repo-wide Vale run (the step below lints
       # the changed files), and `vale sync` has not yet put untracked package
