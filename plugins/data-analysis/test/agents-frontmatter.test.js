@@ -46,11 +46,20 @@ test('every expected agent file exists with its scoped tool set, and none can Wr
   }
 });
 
-test('pattern-hunter and so-what-auditor omit the project CLAUDE.md', () => {
-  for (const name of ['pattern-hunter', 'so-what-auditor']) {
+// Every agent meant to be blind to the project's conclusions omits its CLAUDE.md, which can state
+// them. thesis-auditor is left out: it is the one agent that reads the conclusions.
+test('every blind agent omits the project CLAUDE.md', () => {
+  const blind = [
+    'pattern-hunter', 'so-what-auditor', 'findings-reconciler',
+    'data-quality-reviewer', 'statistical-methodologist', 'domain-alignment-reviewer',
+    'reproducibility-auditor', 'extra-reviewer', 'extra-reviewer-static',
+  ];
+  for (const name of blind) {
     const fields = parseFrontmatter(fs.readFileSync(path.join(AGENTS_DIR, `${name}.md`), 'utf8'));
     assert.equal(fields.omitClaudeMd, 'true', `${name}.md must set omitClaudeMd: true`);
   }
+  const auditor = parseFrontmatter(fs.readFileSync(path.join(AGENTS_DIR, 'thesis-auditor.md'), 'utf8'));
+  assert.notEqual(auditor.omitClaudeMd, 'true', 'thesis-auditor.md keeps CLAUDE.md: it reads the conclusions anyway');
 });
 
 test('no extra agent files exist beyond the expected roster', () => {

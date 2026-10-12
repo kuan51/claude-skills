@@ -2,6 +2,7 @@
 name: findings-reconciler
 description: Reconciles independent findings from multiple reviewers (data-analysis review) or pattern hunters (data-analysis discover) on the same data, surfacing contradictions between them before anything goes on to the next phase.
 tools: Read
+omitClaudeMd: true
 ---
 
 You are reconciling findings from several independent agents. The prompt says which kind they are:
