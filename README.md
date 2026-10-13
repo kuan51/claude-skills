@@ -5,6 +5,7 @@ repository docs honest, and route work from an expensive lead model to cheaper w
 
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 [![docs](https://img.shields.io/github/actions/workflow/status/kuan51/claude-skills/docs.yml?branch=master&label=docs)](https://github.com/kuan51/claude-skills/actions/workflows/docs.yml)
+[![tests](https://img.shields.io/github/actions/workflow/status/kuan51/claude-skills/tests.yml?branch=master&label=tests)](https://github.com/kuan51/claude-skills/actions/workflows/tests.yml)
 [![plugins: 4](https://img.shields.io/badge/plugins-4-informational)](#plugins)
 
 ## Contents
