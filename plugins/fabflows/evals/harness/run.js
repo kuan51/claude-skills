@@ -419,8 +419,7 @@ function prepareFixture(fixture, branch, spec, setup = [], remote = FIXTURE_REMO
     fs.cpSync(path.join(EVALS, spec.from), fixture, { recursive: true, filter: (p) => path.basename(p) !== 'node_modules' });
     git(fixture, ['init', '-q'], 'init');
     git(fixture, ['add', '-A'], 'add');
-    // The repo identity is set below, after this commit, so this one names its own.
-    git(fixture, ['-c', 'user.name=bench', '-c', 'user.email=bench@localhost', 'commit', '-q', '-m', 'bench: fixture'], 'fixture commit');
+    git(fixture, ['commit', '-q', '-m', 'bench: fixture'], 'fixture commit');
     git(fixture, ['checkout', '-q', '-b', branch], 'checkout');
   } else {
     throw new Error(`unknown fixture kind ${JSON.stringify(spec.kind)}`);
