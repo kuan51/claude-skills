@@ -1,6 +1,6 @@
 ---
 name: review
-description: Use when asked to independently review, audit, or sanity-check whether a data science project's stated conclusions actually hold up -- re-derives findings from its raw data and code from scratch, blind to the project's own report, then explicitly checks whether the report's claims match and lists what the data supports that the report never claimed. Use this instead of a generic exploratory-data-analysis or statistical-analysis skill whenever the ask is to verify or grade existing conclusions rather than to produce a first analysis.
+description: Use when asked to independently review, audit, or sanity-check whether a data science project's stated conclusions actually hold up, or whether its approach is cohesive and actually matches its stated goal -- re-derives findings from its raw data and code from scratch, blind to the project's own report, then explicitly checks whether the report's claims match and lists what the data supports that the report never claimed. Use this instead of a generic exploratory-data-analysis or statistical-analysis skill whenever the ask is to verify or grade existing conclusions rather than to produce a first analysis.
 ---
 
 # Data Analysis Review
