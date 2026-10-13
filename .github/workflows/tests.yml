@@ -14,6 +14,8 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-24.04
+    # A hung git or child process fails here, not at GitHub's 6-hour default. A full run takes about 30s.
+    timeout-minutes: 15
     defaults:
       run:
         shell: bash
