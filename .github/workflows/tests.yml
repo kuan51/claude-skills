@@ -1,0 +1,32 @@
+# Runs every Node test file under plugins/ (except the eval fixtures, whose
+# tests belong to the benchmark's fixture projects) plus the root manifest
+# tests, on a pinned Node major. A new test file or plugin runs with no edit here.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Full history: the fabflows eval-harness tests clone this checkout and
+      # check out the benchmark's pinned commit (evals/tasks.json), which a
+      # shallow clone does not have.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: node --test
+        run: find plugins -name '*.test.js' -not -path '*/evals/fixtures/*' -print0 | xargs -0 node --test test/*.test.js
