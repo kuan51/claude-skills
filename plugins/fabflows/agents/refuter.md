@@ -1,6 +1,6 @@
 ---
 name: refuter
-description: Reviews a finished change for a lead session by trying to show it is not done -- reads the diff against the spec, re-runs the named tests itself, and returns ACCEPT or REWORK with must-fix findings, or BLOCKED when it cannot run them, never editing or committing anything. In spec mode it reviews a draft design instead of a diff, attacking it lens by lens before anything is built.
+description: Reviews a finished change for a lead session by trying to show it is not done -- reads the diff against the spec, re-runs the named tests itself, and returns ACCEPT or REWORK with must-fix findings, or BLOCKED when it cannot run them, never editing or committing anything. In spec mode it reviews a draft design instead of a diff, attacking it lens by lens before anything is built. Dispatched by a lead that has loaded the fabflows skill, with a brief that labels Objective, Output, Tools and paths, and Boundaries.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: xhigh
