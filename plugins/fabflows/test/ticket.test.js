@@ -917,7 +917,11 @@ test('trace --json lists each first-parent commit with no free text', () => {
     assert.equal(out.status, 0, out.stderr);
     assert.equal(out.stderr, '');
     const rows = JSON.parse(out.stdout);
-    for (const row of rows) row.keys.sort();
+    // git 2.55 (the CI runner's) prints a UTC %cI date with Z, git 2.43 with +00:00: the same instant.
+    for (const row of rows) {
+      row.keys.sort();
+      row.date = row.date.replace(/Z$/, '+00:00');
+    }
     const row = (subject, pr, keys, keySource, specs, ai) => ({ sha: sha[subject], date: '2026-01-02T03:04:05+00:00', pr, keys, keySource, specs, ai });
     assert.deepEqual(rows, [
       row('chore: direct', null, [], 'none', [], false),
