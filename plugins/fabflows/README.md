@@ -539,7 +539,8 @@ plugin, and the cost of the wrong default there is far higher than a missed trip
 A call that was not blocked is not a call that was approved. The real containment on
 a worker is its tool allowlist: `fabflows:researcher`, the agent most exposed to
 untrusted web content, has no Bash and no Write at all, and no hook is needed to enforce
-that.
+that. It still holds Read, Grep and the web tools, so a page that talks it into reading a local
+file could send that text out in a fetched URL. Its prompt, not its allowlist, is what stops that.
 
 ## Disabling it
 

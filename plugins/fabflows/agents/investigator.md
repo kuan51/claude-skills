@@ -1,6 +1,6 @@
 ---
 name: investigator
-description: Reproduces and narrows one self-contained, reproducible failure for a lead session -- runs the failing command, traces it to file:line, and returns ranked hypotheses with evidence, leaving the root-cause decision and the fix to the lead.
+description: Reproduces and narrows one self-contained, reproducible failure for a lead session -- runs the failing command, traces it to file:line, and returns ranked hypotheses with evidence, leaving the root-cause decision and the fix to the lead. Dispatched by a lead that has loaded the fabflows skill, with a brief that labels Objective, Output, Tools and paths, and Boundaries.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high

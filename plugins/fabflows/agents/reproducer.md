@@ -1,6 +1,6 @@
 ---
 name: reproducer
-description: Runs one failing command for a lead session and reports whether it reproduces, with the exit status, summary and failing lines verbatim and the narrowest path:line the output itself points at -- no hypotheses, no re-runs with other inputs, never editing anything.
+description: Runs one failing command for a lead session and reports whether it reproduces, with the exit status, summary and failing lines verbatim and the narrowest path:line the output itself points at -- no hypotheses, no re-runs with other inputs, never editing anything. Dispatched by a lead that has loaded the fabflows skill, with a brief that labels Objective, Output, Tools and paths, and Boundaries.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 effort: low

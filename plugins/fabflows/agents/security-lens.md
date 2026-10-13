@@ -1,6 +1,6 @@
 ---
 name: security-lens
-description: Reads a staged diff and the code it depends on for a lead session and returns security findings only -- injection surface, auth or permission bypass, plaintext secret, unencrypted or logged personal data, unvalidated input at a trust boundary -- each with a path:line and a concrete input, never a verdict and never editing anything.
+description: Reads a staged diff and the code it depends on for a lead session and returns security findings only -- injection surface, auth or permission bypass, plaintext secret, unencrypted or logged personal data, unvalidated input at a trust boundary -- each with a path:line and a concrete input, never a verdict and never editing anything. Dispatched by a lead that has loaded the fabflows skill, with a brief that labels Objective, Output, Tools and paths, and Boundaries.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 effort: high

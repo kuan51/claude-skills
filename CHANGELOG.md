@@ -465,6 +465,16 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.18.3** -- the low-severity fabflows findings from the plugin-agent audit (#199):
+  the sweeper carries on past a denied probe instead of ending with no verdict rule, the
+  test-runner puts new cases in a new file because `Write` replaces a whole file, the editor
+  counts a created file's lines with `wc -l` (`git diff --stat` prints nothing for one), the
+  coverage lens treats an unstaged test file as a note rather than coverage, the researcher moves
+  to the next source after a failed fetch and stops only on a denial, and eight worker
+  descriptions say they need the fabflows four-part brief. The benchmark tasks that measured
+  these agents were not re-run. The "Missing:" reply for explorer, researcher and refuter waits
+  on #143.
+
 - **fabflows 0.18.2** -- `ticket.js trace` writes a UTC commit date as `+00:00` whatever the
   git version: git 2.55 prints it with `Z` and older git with `+00:00`, so the same range traced
   on two machines gave different dates. The eval harness also commits a `dir` fixture on a
