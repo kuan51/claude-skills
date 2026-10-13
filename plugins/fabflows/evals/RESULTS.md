@@ -2316,3 +2316,101 @@ python plugins/fabflows/evals/harness/annotate_benchmark.py <abs>/runs/iteration
 
 Every run ran from a separate worktree of the branch, so a branch switch in the main checkout
 could not change the grader during a run.
+
+## Iteration 18: the background test run on a slow suite
+
+Tracked in [#189](https://github.com/kuan51/claude-skills/issues/189). #180 has the spec lens
+start the test command in the background and read the diff while it runs, but every fixture's
+suite finishes in about 0.4 s, so iteration 12 could only check that nothing regressed. This
+iteration adds task 23 (`review-catch-slow`): task 8 as it is, with one test appended by `setup`
+that waits 60 s and then passes. The hidden suite, the planted defect and the caps are task 8's.
+
+The data is in `runs/iteration-18/`: `cells.json` has one row per run. The transcripts are not
+tracked.
+
+### Decision rule
+
+Set by #189 before the runs: the variant's mean round-1 spec lens `durationMs` is at least 15%
+below the control's, and every variant run passes hidden 9/9, returns `accepted`, has no denied
+tool call, and keeps the appended test unchanged in its final tree. The slower round-1 lens is
+reported beside it, not gated, because round-1 wall time is the slower of the two lenses.
+
+### Setup
+
+- **The plugin.** fabflows 0.18.2 from the branch for #189 at `3cf8f67`, whose plugin code is
+  master `1536a10` plus the task 23 entry. The variant is that plugin as it is. The control is a
+  scratch copy of it with the two sentences #180 added to the spec lens's brief in
+  `workflows/build.js` removed, so the lens runs the test command in the foreground and the arms
+  differ in nothing else.
+- **Runs.** Task 23's `loop` arm, lead claude-fable-5-1 at medium effort, caps 120 turns, $15
+  list price and 30 minutes a run. 5 control runs, then 5 variant runs, one at a time, 03:29 to
+  05:19 UTC on 2026-10-13.
+- **Machine.** A 4-CPU cloud container, not the owner's workstation, so the absolute times are
+  not comparable with iterations 12 and 13. Both arms ran on the same machine in one sitting.
+
+### Runs
+
+Round-1 times are each agent's `durationMs` from `metrics.json`, by the `review:1:spec` and
+`review:1:sweep` labels. "Tests" is how the spec lens ran `npm test`, read from its transcript:
+in the foreground (fg) or with `run_in_background` (bg). Every run took two rounds: REWORK from
+round 1, ACCEPT from round 2.
+
+| Arm | Run | Cost | Time s | Spec lens s | Sweep lens s | Tests | Hidden suite |
+|---|---|---|---|---|---|---|---|
+| control | 1 | $1.9729 | 632 | 193 | 59 | fg, fg | 9/9 |
+| control | 2 | $2.1598 | 625 | 162 | 61 | fg | 9/9 |
+| control | 3 | $1.8760 | 648 | 200 | 67 | fg, fg | 9/9 |
+| control | 4 | $2.2506 | 664 | 175 | 65 | fg | 9/9 |
+| control | 5 | $2.0277 | 626 | 208 | 69 | fg, fg | 9/9 |
+| control | Mean | $2.0574 | 639 | 187.6 | 64.2 | | |
+| variant | 1 | $2.1277 | 488 | 107 | 57 | bg | 9/9 |
+| variant | 2 | $2.4612 | 512 | 94 | 60 | bg | 9/9 |
+| variant | 3 | $2.3424 | 603 | 95 | 49 | bg | 9/9 |
+| variant | 4 | $2.3291 | 545 | 94 | 45 | bg | 9/9 |
+| variant | 5 | $2.2061 | 582 | 99 | 57 | bg | 9/9 |
+| variant | Mean | $2.2933 | 546 | 97.8 | 53.6 | | |
+
+All 10 runs pass the grader 19/19: hidden 9/9, a clean committed tree, no denied tool call, and
+a review that named the planted defect. Every final tree still holds the appended test with its
+60 s wait unchanged, and every variant spec-lens transcript shows that test at 60014 ms or more.
+
+### What the runs show
+
+- **The gate holds.** The variant's spec lens took 97.8 s against the control's 187.6 s, 47.9%
+  less, and the spec lens was the slower round-1 lens in every run of both arms, so round-1 wall
+  time fell by the same amount.
+- **The saving is the suite's run time.** The spec lens on task 8 took about 90 s in iteration 11.
+  With a 60 s suite in the foreground it took 188 s, two runs of the suite in three of the five
+  control runs. In the background it took 98 s: the lens reads the diff while the suite runs and
+  the wait is hidden.
+- **Total time fell 14.6%**, 639 s to 546 s, which is round 1's saving. Nothing else changed.
+- **Cost rose 11.5%**, $2.06 to $2.29 a run. The variant's spec lens used more turns while the
+  suite ran: it read more of the diff instead of waiting. Not gated, and within one run's spread.
+
+### Verdict
+
+Adopted as measured: #180's background run stays, and task 23 stays in `tasks.json` as the task
+that can show it. The cost increase is recorded, not acted on.
+
+### Cost of this iteration
+
+10 runs, $21.75 at list price, about 1 h 50 min of wall time.
+
+### Confounds
+
+- **The control is an edit, not an old release.** Reverting #180's two sentences on top of
+  0.18.2 isolates the background run from #187's staged review and the later agent changes, which
+  master at #180's parent would not.
+- **One sitting, one machine.** A different box would move the absolute times, not the arms'
+  difference, which the same-machine design is for.
+- **The duration check is best-effort in the control.** Two control transcripts tail the test
+  output, so the slow test's `duration_ms` is not in them. The final-tree check covers all ten.
+
+### Commands
+
+```bash
+cp -r plugins/fabflows <control-copy>   # then remove #180's two sentences from workflows/build.js
+node plugins/fabflows/evals/harness/run.js --iteration 18 --tasks 23 --arms loop --config-name control-foreground --plugin-dir <control-copy> --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 18 --tasks 23 --arms loop --config-name variant-background --confirm
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-18
+```
