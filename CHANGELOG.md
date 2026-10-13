@@ -465,6 +465,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows 0.18.2** -- `ticket.js trace` writes a UTC commit date as `+00:00` whatever the
+  git version: git 2.55 prints it with `Z` and older git with `+00:00`, so the same range traced
+  on two machines gave different dates. The eval harness also commits a `dir` fixture on a
+  machine with no global git identity, such as a GitHub runner (#219).
+
 - **fabflows 0.18.1** -- the `SubagentStop` contract check matches only `fabflows:<worker>`, so
   another plugin's agent or a user's own agent named `researcher` or `editor` is no longer held to
   fabflows' report contract. The editor follows its brief on a permission denial it worked

@@ -381,7 +381,8 @@ function traceRows(from, to, cwd) {
     const pr = MERGE_PR.exec(cut) || TRAILING_PR.exec(cut);
     return {
       sha: HEX.test(c.sha) ? c.sha : null,
-      date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}(Z|[+-][0-9]{2}:[0-9]{2})$/.test(c.date) ? c.date : null,
+      // git 2.55 prints a UTC %cI date with Z, git 2.43 with +00:00: one form, so a trace reads the same on both.
+      date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}(Z|[+-][0-9]{2}:[0-9]{2})$/.test(c.date) ? c.date.replace(/Z$/, '+00:00') : null,
       pr: pr ? Number(pr[1]) : null,
       keys: uniq([...own, ...brought, ...subject]),
       keySource: own.length ? 'commit' : brought.length ? 'merged' : subject.length ? 'subject' : 'none',
