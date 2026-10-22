@@ -798,12 +798,17 @@ test('a missing or unsafe worktree starts nothing; a path with a space passes', 
     '/home/u/re\u0007po/.claude/worktrees/a',
     '/home/u/repo;x/.claude/worktrees/a',
     '/home/u/repo/.claude/worktrees/a b',
+    'C:\\u\\repo\\.claude\\worktrees\\a',
+    'C:u/repo/.claude/worktrees/a',
+    '1:/u/repo/.claude/worktrees/a',
   ]) {
     const { result, calls } = await run({ ...ARGS, worktree }, [built, accept]);
     assert.equal(result.status, 'not-started', worktree);
     assert.equal(result.reason, 'bad-worktree', worktree);
     assert.equal(calls.length, 0, `no agent may run: ${worktree}`);
   }
+  const windows = await run({ ...ARGS, worktree: 'C:/u/repo/.claude/worktrees/dry-run' }, [built, accept]);
+  assert.equal(windows.result.status, 'accepted', 'a Git for Windows path passes');
   const spaced = '/home/u/my repo/.claude/worktrees/dry-run';
   const { result, calls } = await run({ ...ARGS, worktree: spaced }, [built, accept]);
   assert.equal(result.status, 'accepted');
@@ -824,9 +829,9 @@ test('every builder and reviewer brief names the worktree in its first check', a
   assert.ok(m.prompt.includes(`**Boundaries:** ${first} If either does not, report blocked and change nothing.`));
 });
 
-test('no tasks or one task make the same calls as a plain build', async () => {
+test('no tasks make the same calls as a plain build', async () => {
   const plain = await run(ARGS, [built, rework, built, accept]);
-  for (const tasks of [undefined, null, [], [TASKS[0]]]) {
+  for (const tasks of [undefined, null, []]) {
     const { result, calls, sweepCalls } = await run({ ...ARGS, tasks }, [built, rework, built, accept]);
     assert.equal(result.status, 'accepted', JSON.stringify(tasks));
     assert.deepEqual(calls.map((c) => [c.prompt, c.opts]), plain.calls.map((c) => [c.prompt, c.opts]), JSON.stringify(tasks));
@@ -890,6 +895,7 @@ test('bad tasks start nothing and list every problem', async () => {
   const cases = [
     'x',
     { name: 'a' },
+    [t('a', ['a.js'])],
     [t('a', ['a.js']), 'b'],
     [t('a', ['a.js']), null],
     [t('a', ['a']), t('b', ['b']), t('c', ['c']), t('d', ['d']), t('e', ['e'])],
@@ -949,6 +955,11 @@ test('a failed merge escalates merge-blocked with no review', async () => {
     { ...merged, applied: [{ name: 'cli', paths: ['.env'] }] },
     { ...merged, applied: [{ name: 'nope', paths: [] }] },
     { ...merged, applied: undefined },
+    { ...merged, applied: [] },
+    { ...merged, applied: [merged.applied[0]] },
+    { ...merged, applied: [merged.applied[0], merged.applied[0]] },
+    { ...merged, applied: [merged.applied[1], merged.applied[0]] },
+    { ...merged, applied: [...merged.applied, merged.applied[1]] },
     { ...merged, head: 'abc1234' },
   ]) {
     const { result, calls, sweepCalls } = await run(TARGS, [taskDone('cli', 1), taskDone('lib', 2), m, accept]);
@@ -960,4 +971,25 @@ test('a failed merge escalates merge-blocked with no review', async () => {
   }
   const partial = await run(TARGS, [taskDone('cli', 1), taskDone('lib', 2), { status: 'blocked', blocker: 'b', report: 'm', applied: [{ name: 'cli', paths: ['src/cli.js'] }] }]);
   assert.match(partial.result.next, /brought in, staged in the build's worktree: cli\. Temporary worktrees that remain on disk: lib on branch worktree-lib;/);
+});
+
+test('a task file can name a directory, and the merge check ignores case as the clash check does', async () => {
+  const tasks = [{ ...TASKS[0], files: ['src/cli'] }, { ...TASKS[1], files: ['src/Lib.js'] }];
+  const ok = { ...merged, applied: [{ name: 'cli', paths: ['src/cli/a.js', 'src/cli/b/c.js'] }, { name: 'lib', paths: ['src/lib.js'] }] };
+  const { result, calls } = await run({ ...ARGS, tasks }, [taskDone('cli', 1), taskDone('lib', 2), ok, accept]);
+  assert.equal(result.status, 'accepted');
+  assert.match(calls[0].prompt, /Edit only your task's files, or files under them where one names a directory: `src\/cli`\./);
+  const sibling = { ...merged, applied: [{ name: 'cli', paths: ['src/client.js'] }, { name: 'lib', paths: ['src/lib.js'] }] };
+  const out = await run({ ...ARGS, tasks }, [taskDone('cli', 1), taskDone('lib', 2), sibling, accept]);
+  assert.equal(out.result.reason, 'merge-blocked', 'a directory entry covers only paths under it');
+});
+
+test('the merge brief defines the worktree name and can be resumed', async () => {
+  const { calls } = await run(TARGS, [taskDone('cli', 1), taskDone('lib', 2), merged, accept]);
+  const brief = calls[2].prompt;
+  assert.ok(!brief.includes('<name>'), 'no undefined placeholder');
+  assert.match(brief, /ends in `\/\.claude\/worktrees\/` followed by one name of only A-Za-z0-9\._- characters/);
+  assert.match(brief, /a resumed merge finds the tasks it already brought in staged/);
+  assert.match(brief, /no such entry means it is already removed: a note/);
+  assert.doesNotMatch(brief, /check that `git status --porcelain` prints nothing/);
 });

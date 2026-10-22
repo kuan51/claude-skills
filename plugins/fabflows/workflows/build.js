@@ -52,13 +52,13 @@ if (/^(main|master)$/i.test(a.branch)) {
 
 // Isolation is the first line of defence, the guard the backstop: every agent proves it runs in
 // this worktree. The path reaches briefs as a command's expected output, so shell syntax is refused.
-const wtName = (a.worktree.match(/^\/(?:.*\/)?\.claude\/worktrees\/([A-Za-z0-9._-]+)$/) || [])[1]
+const wtName = (a.worktree.match(/^(?:[A-Za-z]:)?\/(?:.*\/)?\.claude\/worktrees\/([A-Za-z0-9._-]+)$/) || [])[1]
 if (!wtName || wtName === '.' || wtName === '..' || a.worktree.split('/').includes('..') || /[\x00-\x1f\x7f`$;&|<>()\\"'*?[\]!{}]/.test(a.worktree)) {
   log(`refusing worktree ${JSON.stringify(a.worktree)}`)
   return {
     status: 'not-started',
     reason: 'bad-worktree',
-    next: 'Pass worktree as the output of `git rev-parse --show-toplevel` inside the build\'s worktree: an absolute path ending in `/.claude/worktrees/<name>`, where <name> uses only A-Za-z0-9._-, with no `..` segment, control character or shell metacharacter. Enter the worktree with EnterWorktree first if the session is not in one.',
+    next: 'Pass worktree as the output of `git rev-parse --show-toplevel` inside the build\'s worktree: an absolute path (`/`, or a drive letter and `:/` as Git for Windows prints it) ending in `/.claude/worktrees/<name>`, where <name> uses only A-Za-z0-9._-, with no `..` segment, control character or shell metacharacter. Enter the worktree with EnterWorktree first if the session is not in one.',
   }
 }
 
@@ -68,7 +68,7 @@ const taskProblems = []
 if (!Array.isArray(tasks) || tasks.some((t) => !t || typeof t !== 'object' || Array.isArray(t))) {
   taskProblems.push('tasks is not an array of objects')
 } else {
-  if (tasks.length > 4) taskProblems.push(`${tasks.length} tasks: at most 4`)
+  if (tasks.length === 1 || tasks.length > 4) taskProblems.push(`${tasks.length} tasks: a build with tasks needs 2 to 4; leave tasks out for one builder`)
   const names = new Set()
   const owned = []
   tasks.forEach((t, i) => {
@@ -101,7 +101,7 @@ if (taskProblems.length) {
     status: 'not-started',
     reason: 'bad-tasks',
     problems: taskProblems,
-    next: 'Fix every problem listed and run again: at most 4 tasks, each with a unique name of A-Za-z0-9._-, a non-empty objective, and relative files that no other task shares, ignoring case, or contains as a directory.',
+    next: 'Fix every problem listed and run again: 2 to 4 tasks, or none for one builder, each with a unique name of A-Za-z0-9._-, a non-empty objective, and relative files that no other task shares, ignoring case, or contains as a directory.',
   }
 }
 const isParallel = tasks.length >= 2
@@ -342,7 +342,7 @@ function taskBrief(t) {
     '',
     `**Tools and paths:** Read, Edit, Write, Grep, Glob, and Bash in this worktree. Run \`${a.testCommand}\` to prove the change.`,
     '',
-    `**Boundaries:** First run \`git reset --keep ${a.baseRef}\`, then report blocked and change nothing unless \`git rev-parse --abbrev-ref HEAD\` prints a name starting with \`worktree-\` and \`git rev-parse HEAD\` prints \`${a.baseRef}\`. Edit only your task's files: ${files}. Run \`${a.testCommand}\`; a failure caused only by another task's work being absent is a note, not a blocker. Stage your files by their own path with \`git add -- <file>...\`: never a directory, a glob, a pathspec such as \`:/\`, or \`-A\`, \`--all\` or \`.\`, and delete anything else you created. Report done only when \`git diff --name-only\` and \`git ls-files --others --exclude-standard :/\` both print nothing. Never commit: this brief authorizes no commit, and the lead commits the reviewed change. Never push, merge, rebase, or reset beyond that first \`git reset --keep\`. If your task turns out to be wrong or impossible, report blocked instead of redesigning it. Change only what your task requires.`,
+    `**Boundaries:** First run \`git reset --keep ${a.baseRef}\`, then report blocked and change nothing unless \`git rev-parse --abbrev-ref HEAD\` prints a name starting with \`worktree-\` and \`git rev-parse HEAD\` prints \`${a.baseRef}\`. Edit only your task's files, or files under them where one names a directory: ${files}. Run \`${a.testCommand}\`; a failure caused only by another task's work being absent is a note, not a blocker. Stage your files by their own path with \`git add -- <file>...\`: never a directory, a glob, a pathspec such as \`:/\`, or \`-A\`, \`--all\` or \`.\`, and delete anything else you created. Report done only when \`git diff --name-only\` and \`git ls-files --others --exclude-standard :/\` both print nothing. Never commit: this brief authorizes no commit, and the lead commits the reviewed change. Never push, merge, rebase, or reset beyond that first \`git reset --keep\`. If your task turns out to be wrong or impossible, report blocked instead of redesigning it. Change only what your task requires.`,
   ].join('\n')
 }
 
@@ -358,11 +358,11 @@ function mergeBrief(done) {
     ...list,
     '</tasks>',
     '',
-    "**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- name there the tasks already brought in; leave blocker out when done), applied (one entry per task brought in: its name and the paths `git restore` brought in), head (the output of `git write-tree` after the last task), and report -- your usual report contract in prose.",
+    "**Output:** The structured result: status (done, or blocked with what stopped you in blocker -- name there the tasks already brought in; leave blocker out when done), applied (one entry per task, in task order: its name and the paths `git restore` brought in), head (the output of `git write-tree` after the last task), and report -- your usual report contract in prose.",
     '',
     `**Tools and paths:** Read, and Bash for these commands only, each run on its own with no pipe: \`git rev-parse --show-toplevel\`, \`git rev-parse --abbrev-ref HEAD\`, \`git status --porcelain\`, \`git diff --no-renames --name-only ${a.baseRef} <tree>\`, \`git restore --source=<tree> --staged --worktree -- <paths>\`, \`git worktree list --porcelain\`, \`git worktree remove --force <path>\`, \`git branch -d <branch>\` and \`git write-tree\`.`,
     '',
-    `**Boundaries:** ${WHERE} If either does not, report blocked and change nothing. Then check that \`git status --porcelain\` prints nothing. For each task in order: list \`git diff --no-renames --name-only ${a.baseRef} <tree>\` and report blocked if any path is not one of that task's files; run \`git restore --source=<tree> --staged --worktree -- <those paths>\` (a task with no paths is a note); find the task's worktree as the \`git worktree list --porcelain\` entry on \`refs/heads/<branch>\`, check its path ends in \`/.claude/worktrees/<name>\`, and run \`git worktree remove --force <path>\` and \`git branch -d <branch>\` (a refusal of the branch delete is a note). On any failed check or command, stop, report blocked, name the tasks already brought in, and leave the remaining temporary worktrees in place. Never commit, push, merge, rebase, or reset, and never edit a file by hand.`,
+    `**Boundaries:** ${WHERE} If either does not, report blocked and change nothing. Then check that every path \`git status --porcelain\` prints is one of the tasks' files or under one, ignoring case: a resumed merge finds the tasks it already brought in staged. For each task in order: list \`git diff --no-renames --name-only ${a.baseRef} <tree>\` and report blocked if any path is neither one of that task's files nor under one, ignoring case; run \`git restore --source=<tree> --staged --worktree -- <those paths>\` (a task with no paths is a note); find the task's worktree as the \`git worktree list --porcelain\` entry on \`refs/heads/<branch>\` (no such entry means it is already removed: a note, so skip to the branch delete), check its path ends in \`/.claude/worktrees/\` followed by one name of only A-Za-z0-9._- characters, run \`git worktree remove --force <path>\`, then \`git branch -d <branch>\` (a refusal of the branch delete is a note). On any failed check or command, stop, report blocked, name the tasks already brought in, and leave the remaining temporary worktrees in place. Never commit, push, merge, rebase, or reset, and never edit a file by hand.`,
   ].join('\n')
 }
 
@@ -463,6 +463,13 @@ function escalate(reason, detail) {
   return { status: 'escalate', reason, baseRef: a.baseRef, rounds, verdict, deviations: deviations(), next: `${NEXT[reason]}${detail ? ` ${detail}` : ''} ${UNCOMMITTED}` }
 }
 
+// A path is a task's when it is one of its files or under one, ignoring case, as the clash check
+// compares them: an entry can name a directory, and git may print a file in another case.
+function owns(t, p) {
+  const x = typeof p === 'string' ? p.toLowerCase() : ''
+  return t.files.some((f) => x === f.toLowerCase() || x.startsWith(`${f.toLowerCase()}/`))
+}
+
 // Round 1 of a build with tasks: the task builders at once (Promise.all, as for the review lenses,
 // so a thrown agent ends the run), then one merge agent in the build's worktree. Returns the round's
 // build summary, task results and merge result, or the escalation that ends the loop.
@@ -499,10 +506,9 @@ async function runTasks() {
     schema: MERGE,
   })
   const applied = merged && Array.isArray(merged.applied) ? merged.applied : null
-  const inScope = applied && applied.every((e) => {
-    const t = e && tasks.find((x) => x.name === e.name)
-    return t && Array.isArray(e.paths) && e.paths.every((p) => t.files.includes(p))
-  })
+  // Every task once, in task order, so a partial or empty list never reaches review.
+  const inScope = applied && applied.length === tasks.length && applied.every((e, i) =>
+    e && e.name === tasks[i].name && Array.isArray(e.paths) && e.paths.every((p) => owns(tasks[i], p)))
   if (!merged || merged.status !== 'done' || (merged.blocker || '').trim() || !inScope || !fullHash(merged.head)) {
     rounds.push({ round: 1, build: null, tasks: results, merge: merged, review: null })
     const inNames = (applied || []).map((e) => e && e.name).filter((n) => tasks.some((t) => t.name === n))

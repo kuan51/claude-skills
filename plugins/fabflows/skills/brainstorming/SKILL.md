@@ -193,7 +193,7 @@ and why.
 Tasks is optional. Write it only when the change splits into two to four tasks whose files are
 disjoint and no task's objective depends on code another task writes; otherwise leave the
 section out. Each name uses only `A-Za-z0-9._-`, and each file is a path relative to the
-repository root. The build runs each task at once in its own worktree. In a ticket, Tasks sits
+repository root. A directory covers the files under it. The build runs each task at once in its own worktree. In a ticket, Tasks sits
 before Links, so the approval fingerprint covers it.
 
 Full tier writes it to `docs/specs/<YYYY-MM-DD>-<slug>.md`. Never share a filename with a

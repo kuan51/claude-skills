@@ -279,7 +279,8 @@ isolation is the first line of defence and the guard the backstop, since Claude 
 commands from a worktree session that reach into the main checkout. The lead enters it with
 EnterWorktree before it links a ticket, because ticket links are keyed by branch name, and passes
 its `git rev-parse --show-toplevel` as the required `worktree` arg. The script refuses a
-`worktree` that is not an absolute path ending in `/.claude/worktrees/<name>` or that carries
+`worktree` that is not an absolute path (`/`, or `C:/` as Git for Windows prints it) ending in
+`/.claude/worktrees/<name>` or that carries
 shell syntax, and every builder and reviewer first checks that it runs in that worktree on that
 branch. Separate specs can build in parallel, one session and one worktree each. A repo
 whose tests need gitignored files, such as a `.env` or `node_modules`, sets `.worktreeinclude`
@@ -290,7 +291,9 @@ A spec whose `## Tasks` section lists two to four tasks with disjoint files can 
 its own, so no builder sees another's edits or shares an index. Each hands back a tree hash and
 its branch, which the script checks before one Sonnet merge agent restores each task's paths
 into the build's worktree with `git restore --source=<tree>`, with no piped command, and
-removes the temporary worktrees. Review and rework then run as for one builder. The Workflow tool
+removes the temporary worktrees. A task's file can name a directory, which covers the files
+under it, and the script then checks that the merge brought in every task, each only within
+its own files, before any review. Review and rework then run as for one builder. The Workflow tool
 runs at most min(16, CPUs - 2) agents at once, so on a machine with few CPUs the task builders
 queue rather than run together.
 

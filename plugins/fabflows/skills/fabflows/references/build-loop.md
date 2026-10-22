@@ -14,7 +14,8 @@ may already have left work, so read `git status --porcelain` and `git diff <base
 on, relaunch in a new turn of the same session with the `scriptPath` and run ID its launch
 returned, passing the run ID as `resumeFromRunId` and the same args, from the same worktree.
 Finished rounds replay from cache. A throw in a round 1 with `tasks` can leave the task builders'
-temporary worktrees on disk: `git worktree list` shows them. Never restart with a fresh `baseRef`: the tree is not clean, which the launch requires,
+temporary worktrees on disk: `git worktree list` shows them. A resumed merge agent accepts the
+tasks it already staged and skips a worktree it already removed. Never restart with a fresh `baseRef`: the tree is not clean, which the launch requires,
 and the earlier rounds' heads and must-fix items are lost.
 
 Staged work lost to a stash, checkout or restore can be recovered from the newest recorded review

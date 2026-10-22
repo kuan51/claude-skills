@@ -15,7 +15,8 @@ per-plugin history until entries are recorded here going forward.
   reviewer first checks that it runs there on the feature branch. An optional `tasks` arg, from
   a spec's new `## Tasks` section, builds two to four tasks with disjoint files at once, each
   in a temporary worktree, then one merge agent restores each task's tree into the build's
-  worktree before the review. Breaking: a build without `worktree` does not start, and a repo
+  worktree before the review; a task's file may name a directory, and a resumed merge carries
+  on from the tasks it already staged. Breaking: a build without `worktree` does not start, and a repo
   whose tests need gitignored files must set `.worktreeinclude` or
   `worktree.symlinkDirectories`.
 

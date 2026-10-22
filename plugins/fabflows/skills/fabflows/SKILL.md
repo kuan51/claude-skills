@@ -144,7 +144,8 @@ inside the build's worktree, confirm `git status --porcelain` prints nothing and
 `spec`, `branch`, `baseRef` (from `git rev-parse HEAD` in the worktree), `testCommand` and
 `worktree` (from `git rev-parse --show-toplevel` in the worktree), and optionally
 `reviewerModel` and `tasks`. Build `tasks` from the spec's `## Tasks` section of the checked
-ticket text, one `{ name, files, objective }` per bullet; with two to four tasks, round 1 builds
+ticket text, one `{ name, files, objective }` per bullet, and leave it out when there is no such
+section; with two to four tasks, round 1 builds
 each at once in its own temporary worktree and merges them into the build's worktree before the
 review. Pass these as an object, `Workflow({ name: 'fabflows:build', args: { spec, branch,
 baseRef, testCommand, worktree } })`, not as a string.
