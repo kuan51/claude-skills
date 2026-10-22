@@ -96,7 +96,9 @@ first session.
     Sonnet, `refuter` and `investigator` on Opus) and scoped to the
     smallest tool list that does its job.
   - **Build loop.** `fabflows:build` has an Opus builder implement a spec and fresh reviewers
-    return ACCEPT or REWORK. `using-fabflows` is the entrypoint skill that puts a session on it.
+    return ACCEPT or REWORK. Each build runs in its own git worktree, and a spec's independent
+    tasks build at once, each in a temporary worktree. `using-fabflows` is the entrypoint skill
+    that puts a session on it.
   - **Brainstorming.** `brainstorming` turns a rough idea into a spec the build loop can take,
     with the refuter attacking the draft before it is written.
   - **Tickets.** `fabflows-setup` and `ticket` keep specs in a GitHub Issues, Jira or Linear

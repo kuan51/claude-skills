@@ -99,11 +99,17 @@ which the user sees in the raw text. Other servers are untested.
 ## Decisions
 - <decision> (<reason>)
 
+## Tasks
+- <name>: <objective> (files: <a>, <b>)
+
 ## Links
 - Branch: <branch> · PR: <url>
 ```
 
 Out of scope replaces a spec's Deferred: each cut item names the ticket that will carry it.
+Tasks is optional: write it only when `fabflows:brainstorming` says to, two to four tasks with
+disjoint files, none depending on code another writes. It sits before Links, so the approval
+fingerprint covers it.
 
 When compliance is on (`.claude/fabflows.json` has a non-empty `compliance.frameworks`), add
 a `## Compliance` section before `Links`:

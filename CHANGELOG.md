@@ -8,6 +8,18 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 1.0.0** -- every `fabflows:build` runs in its own git worktree under
+  `.claude/worktrees/`, so isolation is the first line of defence and the guard the backstop.
+  The lead sets the worktree up with EnterWorktree before it links a ticket, and the workflow
+  now requires a `worktree` arg (`git rev-parse --show-toplevel` inside it); every builder and
+  reviewer first checks that it runs there on the feature branch. An optional `tasks` arg, from
+  a spec's new `## Tasks` section, builds two to four tasks with disjoint files at once, each
+  in a temporary worktree, then one merge agent restores each task's tree into the build's
+  worktree before the review; a task's file may name a directory, and a resumed merge carries
+  on from the tasks it already staged. Breaking: a build without `worktree` does not start, and a repo
+  whose tests need gitignored files must set `.worktreeinclude` or
+  `worktree.symlinkDirectories`.
+
 - **fabflows 0.18.0** -- four Sonnet workers the lead can spawn by hand: `sweeper` (the build
   loop's sweep prompt moved to its own file; the loop's sweep lens now spawns it, with its Sonnet
   high pin unchanged), `reproducer`, `security-lens` and `coverage-lens`. The two lenses return

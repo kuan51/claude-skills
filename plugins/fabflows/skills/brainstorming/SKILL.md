@@ -183,9 +183,18 @@ and why.
 ## Decisions
 - <decision> (<reason>)
 
+## Tasks
+- <name>: <objective> (files: <a>, <b>)
+
 ## Deferred
 - <cut item>
 ```
+
+Tasks is optional. Write it only when the change splits into two to four tasks whose files are
+disjoint and no task's objective depends on code another task writes; otherwise leave the
+section out. Each name uses only `A-Za-z0-9._-`, and each file is a path relative to the
+repository root. A directory covers the files under it. The build runs each task at once in its own worktree. In a ticket, Tasks sits
+before Links, so the approval fingerprint covers it.
 
 Full tier writes it to `docs/specs/<YYYY-MM-DD>-<slug>.md`. Never share a filename with a
 plan or a task file: the spec is the design record, and a later file overwriting it
@@ -236,5 +245,7 @@ In plan mode, these steps run after ExitPlanMode.
 4. The build's `spec` is `ticket.js normalize < <file>` of that same file: the ticket text as
    written, minus HTML comments, invisible and control characters, and the Links section. Do
    not add the commit trailers to it: keep `Refs: <key>` and `Spec: <specHash>`, both from
-   `ticket.js status`, for the one commit you make after the build is accepted.
+   `ticket.js status`, for the one commit you make after the build is accepted. When that text
+   has a `## Tasks` section, the build's `tasks` are its bullets, one `{ name, files, objective }`
+   each.
 5. Delete the scratch files once `check` passes.
