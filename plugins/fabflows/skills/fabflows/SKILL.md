@@ -127,13 +127,27 @@ said yes. While plan mode is active, never run `ticket.js link`, edit a ticket, 
 launch `fabflows:build`, and the approval at ExitPlanMode is not that yes, and until
 then the spec goes in the plan file.
 
+Every build runs in its own git worktree under `.claude/worktrees/`, on the feature branch:
+isolation is the first line of defence and the guard the backstop. Set it up when work on a
+change starts, before you link a ticket, since ticket links are keyed by branch name. For a new
+branch, run EnterWorktree with a `name`, then `git branch -m <feature branch>`, then link the
+ticket. To resume a branch whose worktree exists, run EnterWorktree with its `path`. When the
+feature branch exists only checked out in the main checkout, ask the user before running
+anything there; with a yes, run `git switch <default branch>` (tree clean) and
+`git worktree add .claude/worktrees/<name> <feature branch>`, then EnterWorktree `path`. Apart
+from that one step, nothing touches the main checkout.
+
 Before starting: write the spec (the behaviour, how to check it, what is out of scope),
 or take the one `fabflows:brainstorming` wrote when the request arrived unshaped;
-confirm `git status --porcelain` prints nothing and `git rev-parse --abbrev-ref HEAD` prints
-the feature branch, never the default branch; pass `spec`, `branch`, `baseRef` (from
-`git rev-parse HEAD`) and `testCommand`, and optionally `reviewerModel`. Pass these as an
-object, `Workflow({ name: 'fabflows:build', args: { spec, branch, baseRef, testCommand } })`,
-not as a string.
+inside the build's worktree, confirm `git status --porcelain` prints nothing and
+`git rev-parse --abbrev-ref HEAD` prints the feature branch, never the default branch; pass
+`spec`, `branch`, `baseRef` (from `git rev-parse HEAD` in the worktree), `testCommand` and
+`worktree` (from `git rev-parse --show-toplevel` in the worktree), and optionally
+`reviewerModel` and `tasks`. Build `tasks` from the spec's `## Tasks` section of the checked
+ticket text, one `{ name, files, objective }` per bullet; with two to four tasks, round 1 builds
+each at once in its own temporary worktree and merges them into the build's worktree before the
+review. Pass these as an object, `Workflow({ name: 'fabflows:build', args: { spec, branch,
+baseRef, testCommand, worktree } })`, not as a string.
 
 On `accepted`, run the gate yourself: `git write-tree` equals `verdict.head`, and
 `git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; re-run
