@@ -275,13 +275,13 @@ inside the script, because git, the args and the run journal already hold its hi
 resume carries on where a catch would end it.
 
 Every build runs in one git worktree under `.claude/worktrees/`, on the feature branch, so
-isolation is the first line of defence and the guard the backstop: Claude Code refuses git
+isolation is the first line of defence and the guard the backstop, since Claude Code refuses git
 commands from a worktree session that reach into the main checkout. The lead enters it with
 EnterWorktree before it links a ticket, because ticket links are keyed by branch name, and passes
 its `git rev-parse --show-toplevel` as the required `worktree` arg. The script refuses a
 `worktree` that is not an absolute path ending in `/.claude/worktrees/<name>` or that carries
 shell syntax, and every builder and reviewer first checks that it runs in that worktree on that
-branch. Separate specs can build at the same time, one session and one worktree each. A repo
+branch. Separate specs can build in parallel, one session and one worktree each. A repo
 whose tests need gitignored files, such as a `.env` or `node_modules`, sets `.worktreeinclude`
 or `worktree.symlinkDirectories`, which Claude Code applies to the worktrees it creates.
 
