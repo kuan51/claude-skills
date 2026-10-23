@@ -301,6 +301,10 @@ per-plugin history until entries are recorded here going forward.
   `agents/refuter.md` keeps its xhigh pin for a refuter launched outside the loop. Not yet
   measured: the eval in #227 waits on #224 and the other speed changes.
 
+- **fabflows 2.0.2** -- `fabflows:build` rework rounds (2 and 3) build on Sonnet at high effort
+  instead of Opus at medium, since a rework builder only fixes a short must-fix list on staged
+  work (#228). Round 1 and the task builders stay on Opus.
+
 - **fabflows 2.0.1** -- on an accepted build, the lead's commit gate now starts `testCommand`
   with `run_in_background` right after the tree checks, and reads the review reports, the diff
   stat and an earlier must-fix item while it runs (#229). It still commits only after it has

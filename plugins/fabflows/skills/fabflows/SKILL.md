@@ -46,7 +46,7 @@ tools is already evidence. Do not re-run it to confirm it.
 | security findings on a staged diff | `fabflows:security-lens` | Sonnet, read-only + Bash |
 | map spec lines to tests | `fabflows:coverage-lens` | Sonnet, read-only + Bash |
 | root-cause decision, hard debugging, architecture, cross-file refactor | the lead does it | none |
-| a spec'd, sizeable change | `fabflows:build` | Opus builder, Opus reviewer, Sonnet sweep lens (`fabflows:sweeper`) |
+| a spec'd, sizeable change | `fabflows:build` | Opus round-1 builder, Sonnet rework builder, Opus reviewer, Sonnet sweep lens (`fabflows:sweeper`) |
 
 The built-in `Explore` agent inherits the lead's model, so under an expensive lead it costs
 about what searching yourself would. `fabflows:explorer` is the cheap tier.
@@ -119,7 +119,7 @@ spec and stages it on the feature branch without committing, then a fresh `refut
 default) that reads the staged diff against the spec and re-runs the tests; a round that sweeps callees reviews with two
 concurrent reviewers, a `refuter` on the spec and tests and a `sweeper` sweeping callees on Sonnet at high
 effort, outside `reviewerModel`. REWORK sends the must-fix list to a fresh
-builder, up to two rework rounds. Offer it, or launch it when the session opened with
+builder on Sonnet at high effort, since fixing a short list on staged work is a narrow job, up to two rework rounds. Offer it, or launch it when the session opened with
 `using-fabflows`. It never commits, merges, pushes, or reverts: you make the one commit.
 
 Launch `fabflows:build` only after the user has read the spec text, whoever wrote it, and
