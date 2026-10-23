@@ -267,6 +267,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 1.0.1** -- a build-loop round that sweeps callees now runs its spec lens at high
+  effort, not xhigh (#227), so every build-loop reviewer runs at high. The spec lens stopped
+  sweeping callees in 0.16.0 and has been round 1's slowest step in every measured run since.
+  `agents/refuter.md` keeps its xhigh pin for a refuter launched outside the loop. Not yet
+  measured: the eval in #227 waits on #224, #226, #233 and #234.
+
 - **fabflows 0.17.3** -- on an accepted build, the lead now reads every round's review report in
   full, not only the final verdict's, and relays in its closing message each reviewer note that
   names a wrong or doubtful result in code, one line each (#194). Eval iterations 13 and 14 found
