@@ -301,6 +301,11 @@ per-plugin history until entries are recorded here going forward.
   `agents/refuter.md` keeps its xhigh pin for a refuter launched outside the loop. Not yet
   measured: the eval in #227 waits on #224, #226 and the other speed changes.
 
+- **fabflows 2.0.1** -- on an accepted build, the lead's commit gate now starts `testCommand`
+  with `run_in_background` right after the tree checks, and reads the review reports, the diff
+  stat and an earlier must-fix item while it runs (#229). It still commits only after it has
+  seen the run's exit status and summary. The re-run stays: only its wait moves.
+
 - **fabflows 0.17.3** -- on an accepted build, the lead now reads every round's review report in
   full, not only the final verdict's, and relays in its closing message each reviewer note that
   names a wrong or doubtful result in code, one line each (#194). Eval iterations 13 and 14 found
