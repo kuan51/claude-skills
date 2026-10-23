@@ -39,7 +39,7 @@ disagrees with them.
   [review](../plugins/data-analysis/skills/review/references/evals.md) and
   [discover](../plugins/data-analysis/skills/discover/references/evals.md).
   No result recorded.
-- **fabflows' `ticket`, `trace` and `fabflows-setup` skills.** Only in fabflows' own trigger
-  list run by hand,
-  [plugins/fabflows/evals/trigger-corpus.json](../plugins/fabflows/evals/trigger-corpus.json).
+- **fabflows-tickets' `ticket`, `trace` and `setup` skills.** Only in fabflows-tickets' own
+  trigger list run by hand,
+  [plugins/fabflows-tickets/evals/trigger-corpus.json](../plugins/fabflows-tickets/evals/trigger-corpus.json).
   No result recorded.

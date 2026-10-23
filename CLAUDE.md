@@ -27,12 +27,15 @@ Run this before finishing any change that touches a plugin's manifest:
 node --test "test/*.test.js"
 ```
 
-The fabflows ticket and PR flows also have an offline bats suite: `bats plugins/fabflows/test/pm`.
+The fabflows-tickets ticket and PR flows also have an offline bats suite: `bats plugins/fabflows-tickets/test/pm`.
 
 `test/marketplace-consistency.test.js` fails if the two manifests disagree on version or name, if a
-registered plugin's `source` path doesn't exist, if a plugin under `plugins/` isn't registered, or
-if a plugin description is over 499 characters (Claude desktop and claude.ai refuse over 500). CI
-runs it on every pull request.
+registered plugin's `source` path doesn't exist, if a plugin under `plugins/` isn't registered, if
+a plugin description is over 499 characters (Claude desktop and claude.ai refuse over 500), or if
+a plugin's `dependencies` entry names an unregistered plugin, has no `version`, or has a caret
+range its dependency's current version does not satisfy (only caret ranges are understood).
+`test/cross-plugin-skills.test.js` fails if a fabflows skill names a `fabflows-tickets:<skill>`
+that does not exist. CI runs both on every pull request.
 
 ## When to bump
 
@@ -83,7 +86,7 @@ dropping its `installed_plugins.json` entry, and checking the marketplace clone 
 `docs/` follows the docs-warden layout (`docs/CONVENTIONS.md` for current state,
 `docs/GLOSSARY.md`, `docs/SECURITY.md`,
 `docs/specs/` for fabflows design records; when `.claude/fabflows.json` names a tracker, the
-spec lives in the linked ticket instead, and the approval fingerprint plus each commit's `Spec:`
+spec lives in the linked ticket instead (kept by the `fabflows-tickets` plugin), and the approval fingerprint plus each commit's `Spec:`
 trailer replace the "never overwritten" guarantee). `.docs-warden.yml` at the root drives it. The
 `docs-warden` plugin in this repo is also the installed tool: invoke the `docs-warden:docs-warden`
 skill and it picks the mode, or run its scripts directly from the installed plugin, never from a
@@ -113,7 +116,7 @@ Rules that bite here:
   `freshness.py` still runs only by hand. CI also runs the self-test of
   `plugins/fabflows/evals/prose/vale-warn-gate.sh`, and the self-test of the `Prompting` style
   (`test_prompting_style.sh`). A last step prints every `Prompting` suggestion in the fabflows
-  agents and skills and never fails the job.
+  agents and skills and the fabflows-tickets skills, and never fails the job.
 - **CI runs every plugin's Node tests** (`.github/workflows/tests.yml`, Node 24): every
   `*.test.js` under `plugins/` outside `evals/fixtures/`, plus `test/*.test.js`. A new test
   file runs with no workflow edit. It checks out full history, because the fabflows eval-harness
