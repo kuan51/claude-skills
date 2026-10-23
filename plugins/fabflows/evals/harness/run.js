@@ -85,7 +85,9 @@ function cleanRoomSettings(home = os.homedir()) {
       else console.warn(`clean room: synced plugin folder ${org}/${d} has no readable plugin.json name, so it cannot be turned off and may still load`);
     }
   }
-  return { enabledPlugins: off, advisorModel: '' };
+  // A worktree made with EnterWorktree starts from HEAD (the bench branch and its setup commit),
+  // not origin/<default>, which the fixture's unresolvable remote never fetched.
+  return { enabledPlugins: off, advisorModel: '', worktree: { baseRef: 'head' } };
 }
 
 // A task may raise the caps (a build loop runs long); everything else keeps the defaults.
@@ -400,6 +402,9 @@ function git(fixture, args, what, mayFail = false) {
   if (r.status !== 0 && !mayFail) throw new Error(`${what} failed: ${r.stderr}`);
 }
 
+// The bench branch's starting commit, which gradedCheckout finds by this subject.
+const SETUP_SUBJECT = 'bench: environment note and task setup';
+
 // spec.kind "repo" clones this repo at spec.ref, a commit pinned before the benchmark existed
 // so no fixture carries the tasks, graders or results; "dir" copies <evals>/<spec.from> into a
 // fresh repository (a greenfield task). setup: [{ file, find, replace }] edits applied and
@@ -447,7 +452,7 @@ function prepareFixture(fixture, branch, spec, setup = [], remote = FIXTURE_REMO
   // A dir fixture has no CLAUDE.md yet, so the note creates it and `add -A` picks it up.
   fs.appendFileSync(path.join(fixture, 'CLAUDE.md'), ENV_NOTE);
   git(fixture, ['add', '-A'], 'setup add');
-  git(fixture, ['commit', '-q', '-m', 'bench: environment note and task setup'], 'setup commit');
+  git(fixture, ['commit', '-q', '-m', SETUP_SUBJECT], 'setup commit');
 }
 
 function writeJson(p, data) {
@@ -520,6 +525,28 @@ function compactTranscript(events) {
   return lines.join('\n');
 }
 
+// The checkout a session's work is graded in, relative to the fixture: the one with the bench
+// branch checked out, else the one worktree under .claude/worktrees/ whose HEAD has commits the
+// setup commit does not, else the main checkout ('.'). Two committed worktrees grade '.' and fail visibly.
+function gradedCheckout(fixture, branch) {
+  const g = (...args) => spawnSync('git', ['-C', fixture, ...args], { encoding: 'utf8' });
+  const list = g('worktree', 'list', '--porcelain');
+  if (list.status !== 0) return '.';
+  const root = fs.realpathSync(fixture);
+  const rel = (d) => path.relative(root, fs.existsSync(d) ? fs.realpathSync(d) : d).split(path.sep).join('/') || '.';
+  const trees = list.stdout.split(/\r?\n\r?\n/).filter((b) => b.trim()).map((b) => ({
+    dir: (b.match(/^worktree (.+)$/m) || [])[1],
+    head: (b.match(/^HEAD ([0-9a-f]+)$/m) || [])[1],
+    branch: (b.match(/^branch (.+)$/m) || [])[1],
+  }));
+  const onBranch = trees.find((t) => t.branch === `refs/heads/${branch}`);
+  if (onBranch) return rel(onBranch.dir);
+  // The bench branch may be gone (renamed), so its starting commit is found by the setup subject.
+  const start = g('rev-list', '-1', '--all', '--fixed-strings', `--grep=${SETUP_SUBJECT}`).stdout.trim();
+  const committed = trees.filter((t) => t.head && start && rel(t.dir).startsWith('.claude/worktrees/') && Number(g('rev-list', '--count', `${start}..${t.head}`).stdout) > 0);
+  return committed.length === 1 ? rel(committed[0].dir) : '.';
+}
+
 function measureAndGrade(a, cell, runDir, fixture) {
   const transcript = path.join(runDir, 'transcript.jsonl');
   const probe = path.join(runDir, 'hook-probe.jsonl');
@@ -531,11 +558,13 @@ function measureAndGrade(a, cell, runDir, fixture) {
   fs.mkdirSync(outputs, { recursive: true });
   fs.writeFileSync(path.join(outputs, 'result.md'), metrics.result.result_text || '(no result text)');
   fs.writeFileSync(path.join(runDir, 'transcript.md'), compactTranscript(events));
+  const checkout = gradedCheckout(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`);
+  const graded = path.join(fixture, checkout);
   // The fixture's state when the session ended. A regrade keeps what the run recorded, since the
   // temp fixture may since have been cleaned or reused; it fills in only a file that is missing.
   const state = { 'git-status.txt': ['status', '--porcelain'], 'git-diff.patch': ['diff'], 'git-head.txt': ['log', '-1', '--format=%s'] };
   for (const [file, args] of Object.entries(state)) {
-    if (!a.regrade || !fs.existsSync(path.join(outputs, file))) fs.writeFileSync(path.join(outputs, file), spawnSync('git', ['-C', fixture, ...args], { encoding: 'utf8' }).stdout || '');
+    if (!a.regrade || !fs.existsSync(path.join(outputs, file))) fs.writeFileSync(path.join(outputs, file), spawnSync('git', ['-C', graded, ...args], { encoding: 'utf8' }).stdout || '');
   }
   const saved = { status: fs.readFileSync(path.join(outputs, 'git-status.txt'), 'utf8'), head: fs.readFileSync(path.join(outputs, 'git-head.txt'), 'utf8') };
 
@@ -553,7 +582,7 @@ function measureAndGrade(a, cell, runDir, fixture) {
   // An arm may add grade options (task 8's loop arm sets requireReview).
   const task = { ...cell.task, grade: { ...cell.task.grade, ...(armsFor(cell.task)[cell.arm].grade || {}) } };
   const shimLog = cell.task.agent ? path.join(runDir, 'shim.log') : null;
-  const grading = grade({ task, fixture, metrics, timing, maxTurns: capsFor(cell.task).maxTurns, workflowDir, events, shimLog, saved });
+  const grading = { ...grade({ task, fixture: graded, metrics, timing, maxTurns: capsFor(cell.task).maxTurns, workflowDir, events, shimLog, saved }), checkout };
   writeJson(path.join(runDir, 'grading.json'), grading);
   const slim = { ...metrics, result: { ...metrics.result } };
   delete slim.result.result_text;

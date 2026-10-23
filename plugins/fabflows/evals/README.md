@@ -93,8 +93,25 @@ Results are summarised in `RESULTS.md`. Raw runs under `runs/` are gitignored.
    bare task and loads superpowers (see [The superpowers arm](#the-superpowers-arm)). The arm
    order rotates each repeat, so no arm always runs first and pays the first cache write.
 3. Streams the session to `transcript.jsonl`, then snapshots `git status`, `git diff`, the
-   final result text, and runs the task's test command in the clone.
+   final result text, and runs the task's test command in the graded checkout.
 4. Writes `metrics.json`, `timing.json` and `grading.json` per run.
+
+### The graded checkout
+
+A loop arm runs its build in a git worktree under the fixture's `.claude/worktrees/`, and the
+lead commits there, so the main checkout may not hold the work. Each loop prefix gives the
+lead the user's yes to set that worktree up, and `EnterWorktree` is in `allowedTools`. After
+the session, `git worktree list --porcelain` picks the checkout to grade:
+
+1. The checkout that has the run's `bench/t<id>-<config>-r<run>` branch checked out.
+2. Otherwise, the one worktree under `.claude/worktrees/` whose HEAD has commits that the setup
+   commit lacks.
+3. Otherwise, the main checkout. Two or more committed worktrees also land here, so the run
+   fails visibly instead of the harness guessing.
+
+The saved git state, the test command, the clean-tree check, the commit count and the hidden
+suite all read that checkout. `grading.json` records it as `checkout`, relative to the fixture
+(`.` for the main checkout).
 
 ### The clean room
 
@@ -111,6 +128,10 @@ advisor tool whose instructions tell the lead to consult it before substantive w
 room drops the system prompt to about 37k tokens and leaves the arm's plugin as the only
 difference between the arms. `--bare` would be cleaner still but requires an API key, and
 `--safe-mode` drops `--plugin-dir` plugins too.
+
+The settings also set `worktree.baseRef` to `head`, so a worktree made with `EnterWorktree`
+starts from the bench branch and its setup commit, not from `origin/<default>`, which the
+fixture's unresolvable remote never fetched.
 
 Every arm loads project settings only (`--setting-sources project`), so the maintainer's own
 `CLAUDE.md` and user settings stay out. A `CLAUDE.md` that names fabflows would prime the
