@@ -61,6 +61,14 @@ call. `ticket.js status` prints the current branch's link, `ticket.js prs` print
 link with a recorded PR (key, URL, tracker and PR, never a branch name), and
 `ticket.js clear --pr '<url>'` forgets a link after its branch is gone.
 
+**A fresh clone.** Links are local, so a new clone or project thread starts with none.
+After each approval Claude adds a `- Spec: <hash>` bullet to the ticket's Links section, so
+the approved fingerprint is visible on the tracker. In a new clone, `ticket.js recover`
+rebuilds the link from the ticket text. It records the approval only when that Links Spec,
+the text's fingerprint and the newest `Refs:` plus `Spec:` commit trailer on the branch all
+agree. Otherwise Claude shows you the text and asks you to approve it again. The steps are
+under "Recover a link" in `fabflows-tickets:ticket`.
+
 - SessionStart prints this branch's line: the linked ticket, a link found only in a `Refs:` trailer
   (unconfirmed, so Claude asks first), or a reminder that the branch has none. At startup
   only (not resume, clear or compact), on any checkout, it adds a line naming the other
