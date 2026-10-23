@@ -125,6 +125,90 @@ test('a regrade creates nothing for a cell that never ran', async () => {
   assert.deepEqual(run.takenRunDirs({ ...a, regrade: false }, [cell]), []);
 });
 
+// A loop arm's build commits in a worktree under .claude/worktrees/, so the grade reads the
+// checkout holding the bench branch, else the one committed worktree, else the main checkout.
+test('the grade reads the checkout that holds the bench branch or the one committed worktree', async (t) => {
+  // Dropped so the hidden suite's child reports as a standalone run the grader can parse.
+  const context = process.env.NODE_TEST_CONTEXT;
+  delete process.env.NODE_TEST_CONTEXT;
+  t.after(() => {
+    if (context !== undefined) process.env.NODE_TEST_CONTEXT = context;
+  });
+  const solution = path.join(__dirname, '..', 'evals', 'fixtures', 'lockstep-outdated', 'solution');
+  const g = (cwd, ...args) => {
+    const r = spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
+    assert.equal(r.status, 0, `git ${args.join(' ')}: ${r.stderr}`);
+    return r.stdout;
+  };
+  const commitSolution = (dir) => {
+    fs.cpSync(solution, dir, { recursive: true });
+    g(dir, 'add', '-A');
+    g(dir, 'commit', '-q', '-m', 'feat: lockstep outdated');
+  };
+  // checks is false for a run that grades the main checkout with no work in it, so it fails.
+  const gradeWith = async (arrange, checks = true) => {
+    const a = baseArgs({ regrade: true });
+    const [cell] = run.buildCells({ tasks: [8], arms: ['inline'], repeats: 1 });
+    const dir = run.runDirFor(a, cell);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(SAMPLE, path.join(dir, 'transcript.jsonl'));
+    const branch = `bench/t8-${cell.config}-r1`;
+    const fixture = path.join(TMP, 'fabflows-bench', `i${iteration}`, `t8-${cell.config}-r1`);
+    run.prepareFixture(fixture, branch, cell.task.fixture, cell.task.setup || []);
+    const main = g(fixture, 'for-each-ref', '--format=%(refname:short)', 'refs/heads').split('\n').find((b) => b && b !== branch);
+    arrange({ fixture, branch, main });
+    const { failed } = await run.runAll(a, [cell], () => assert.fail('a regrade never launches a session'));
+    assert.deepEqual(failed, []);
+    const grading = readJson(path.join(dir, 'grading.json'));
+    if (!checks) return grading.checkout;
+    const find = (re) => grading.expectations.find((e) => re.test(e.text));
+    assert.equal(find(/^Hidden acceptance suite: /).passed, true, find(/^Hidden acceptance suite: /).evidence);
+    assert.equal(find(/^Working tree is clean/).passed, true);
+    assert.match(find(/^At least one commit/).evidence, /^1 commit\(s\)/);
+    assert.equal(fs.readFileSync(path.join(dir, 'outputs', 'git-head.txt'), 'utf8').trim(), 'feat: lockstep outdated');
+    return grading.checkout;
+  };
+
+  // The bench branch in a worktree, the main checkout back on the default branch.
+  assert.equal(await gradeWith(({ fixture, branch, main }) => {
+    g(fixture, 'checkout', '-q', main);
+    g(fixture, 'worktree', 'add', '-q', '.claude/worktrees/x', branch);
+    commitSolution(path.join(fixture, '.claude', 'worktrees', 'x'));
+  }), '.claude/worktrees/x');
+  // No worktree: the main checkout, as before.
+  assert.equal(await gradeWith(({ fixture }) => commitSolution(fixture)), '.');
+  // The bench branch renamed in its worktree: the one committed worktree.
+  assert.equal(await gradeWith(({ fixture, branch, main }) => {
+    g(fixture, 'checkout', '-q', main);
+    const y = path.join(fixture, '.claude', 'worktrees', 'y');
+    g(fixture, 'worktree', 'add', '-q', '.claude/worktrees/y', branch);
+    g(y, 'branch', '-m', 'feature');
+    commitSolution(y);
+  }), '.claude/worktrees/y');
+  // The bench branch left empty in the main checkout, one committed worktree on another branch.
+  assert.equal(await gradeWith(({ fixture }) => {
+    g(fixture, 'worktree', 'add', '-q', '-b', 'feature', '.claude/worktrees/z');
+    commitSolution(path.join(fixture, '.claude', 'worktrees', 'z'));
+  }), '.claude/worktrees/z');
+  // The bench branch empty and two committed worktrees: the main checkout, which fails visibly.
+  assert.equal(await gradeWith(({ fixture }) => {
+    for (const w of ['p', 'q']) {
+      g(fixture, 'worktree', 'add', '-q', '-b', `feature-${w}`, `.claude/worktrees/${w}`);
+      commitSolution(path.join(fixture, '.claude', 'worktrees', w));
+    }
+  }, false), '.');
+});
+
+test('a loop arm may enter the build worktree: EnterWorktree allowed, the yes in every loop prefix, worktrees based on HEAD', () => {
+  const tasks = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'evals', 'tasks.json'), 'utf8'));
+  assert.ok(tasks.allowedTools.includes('EnterWorktree'));
+  // A loop arm is any arm whose prompt sends the lead through the build loop (task 24 names its arms parallel and single).
+  const loops = tasks.tasks.flatMap((t) => Object.entries(t.arms || {}).filter(([, arm]) => (arm.promptPrefix || '').includes('through the fabflows:build loop')).map(([name, arm]) => ({ id: t.id, name, arm })));
+  assert.ok(loops.length >= 6);
+  for (const l of loops) assert.ok(l.arm.promptPrefix.includes("You have the user's yes to set up the build's worktree as that skill describes."), `task ${l.id} arm ${l.name}`);
+  assert.deepEqual(run.cleanRoomSettings(tmp('home-')).worktree, { baseRef: 'head' });
+});
+
 test('the baseline matrix: 54 cells for tasks 1-6 at 3 repeats, 18 per arm, 6 for task 7 at 2, and the first arm rotates', () => {
   const cells = run.buildCells({ tasks: [1, 2, 3, 4, 5, 6], arms: null, repeats: 3 });
   assert.equal(cells.length, 54);

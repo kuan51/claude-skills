@@ -2,7 +2,7 @@
   "skill_name": "fabflows",
   "lead": { "model": "fable", "effort": "medium" },
   "caps": { "maxTurns": 80, "maxBudgetUsd": 10, "runTimeoutMinutes": 25 },
-  "allowedTools": ["Read", "Edit", "Write", "Grep", "Glob", "Bash", "Agent", "Skill", "Workflow", "TaskCreate", "TaskGet", "TaskList", "TaskUpdate", "TaskOutput", "TaskStop", "NotebookEdit"],
+  "allowedTools": ["Read", "Edit", "Write", "Grep", "Glob", "Bash", "Agent", "Skill", "Workflow", "TaskCreate", "TaskGet", "TaskList", "TaskUpdate", "TaskOutput", "TaskStop", "NotebookEdit", "EnterWorktree"],
   "fixture": { "kind": "repo", "ref": "3fbe15b" },
   "arms": {
     "with_skill": {
@@ -115,7 +115,7 @@
       "repeats": 5,
       "arms": {
         "inline": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first, then do this task.\n\n", "disallowedTools": ["Agent", "Workflow"] },
-        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself.\n\n", "grade": { "requireReview": true } }
+        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. You have the user's yes to set up the build's worktree as that skill describes.\n\n", "grade": { "requireReview": true } }
       },
       "prompt": "Add the `lockstep outdated` command specified in SPEC.md to this repository. Write its tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
       "grade": {
@@ -134,7 +134,7 @@
       "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 60 },
       "repeats": 3,
       "arms": {
-        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself.\n\n", "grade": { "requireReview": true } }
+        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. You have the user's yes to set up the build's worktree as that skill describes.\n\n", "grade": { "requireReview": true } }
       },
       "prompt": "Add the `lockstep update` command specified in SPEC.md to this repository. Write its tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
       "grade": {
@@ -432,7 +432,7 @@
       "arms": {
         "loop": {
           "pluginDir": "plugins/fabflows",
-          "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself.\n\n",
+          "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. You have the user's yes to set up the build's worktree as that skill describes.\n\n",
           "grade": { "requireReview": true }
         }
       },
@@ -455,7 +455,7 @@
       "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 30 },
       "repeats": 5,
       "arms": {
-        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself.\n\n", "grade": { "requireReview": true } }
+        "loop": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. You have the user's yes to set up the build's worktree as that skill describes.\n\n", "grade": { "requireReview": true } }
       },
       "prompt": "Add the `lockstep outdated` command specified in SPEC.md to this repository. Write its tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
       "grade": {
@@ -474,8 +474,8 @@
       "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 30 },
       "repeats": 5,
       "arms": {
-        "parallel": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. If SPEC.md has a `## Tasks` section, pass its bullets as the build's `tasks`.\n\n", "maxConcurrentAgents": 4 },
-        "single": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. If SPEC.md has a `## Tasks` section, pass its bullets as the build's `tasks`.\n\n", "maxConcurrentAgents": 4, "setup": [{ "file": "SPEC.md", "find": "\n## Tasks\n\n- `outdated`: the `lockstep outdated` command and its tests (files: `src/commands/outdated.js`, `test/outdated.test.js`)\n- `upgrades`: the `lockstep upgrades` command and its tests (files: `src/commands/upgrades.js`, `test/upgrades.test.js`)\n", "replace": "" }] }
+        "parallel": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. If SPEC.md has a `## Tasks` section, pass its bullets as the build's `tasks`. You have the user's yes to set up the build's worktree as that skill describes.\n\n", "maxConcurrentAgents": 4 },
+        "single": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. If SPEC.md has a `## Tasks` section, pass its bullets as the build's `tasks`. You have the user's yes to set up the build's worktree as that skill describes.\n\n", "maxConcurrentAgents": 4, "setup": [{ "file": "SPEC.md", "find": "\n## Tasks\n\n- `outdated`: the `lockstep outdated` command and its tests (files: `src/commands/outdated.js`, `test/outdated.test.js`)\n- `upgrades`: the `lockstep upgrades` command and its tests (files: `src/commands/upgrades.js`, `test/upgrades.test.js`)\n", "replace": "" }] }
       },
       "prompt": "Add the `lockstep outdated` and `lockstep upgrades` commands specified in SPEC.md to this repository. Write their tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
       "grade": {
