@@ -170,6 +170,10 @@ function readWorkflowAgent(dir, agentId) {
   }
   // meta.model is an alias ("opus"); the message model is the real id, so it wins when present.
   acc.model = acc.model || meta.model || null;
+  // The first request's cache split shows whether this agent reused a sibling's prompt prefix.
+  const first = (byMessage.values().next().value || {}).usage || {};
+  acc.firstRead = first.cache_read_input_tokens || 0;
+  acc.firstWrite = first.cache_creation_input_tokens || 0;
   return acc;
 }
 
@@ -330,7 +334,7 @@ function computeMetrics(events, opts = {}) {
       const f = dir ? readWorkflowAgent(dir, a.agentId) : null;
       a.agentType = (f && f.agentType) || a.agentType || null;
       a.model = (f && f.model) || a.model || null;
-      for (const k of ['messages', 'input', 'cacheRead', 'cacheWrite', 'cacheWrite1h', 'cacheWrite5m', 'output', 'thinking']) a[k] = f ? f[k] : null;
+      for (const k of ['messages', 'input', 'cacheRead', 'cacheWrite', 'cacheWrite1h', 'cacheWrite5m', 'output', 'thinking', 'firstRead', 'firstWrite']) a[k] = f ? f[k] : null;
       const w = workerByType(a.agentType || `workflow:${a.label}`);
       w.spawnIds.add(a.agentId);
       w.model = w.model || a.model;

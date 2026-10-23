@@ -72,3 +72,16 @@ test('a workflow whose transcript dir is gone keeps the agent with null file-der
   assert.equal(w.spawns, 1);
   assert.equal(w.output, null, 'no exact output and a model absent from modelUsage under that id, so nothing to derive');
 });
+
+test("a workflow agent's firstRead and firstWrite come from the first request in its file", (t) => {
+  const os = require('node:os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wf-first-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, 'wf_fixture'));
+  const msg = (id, read, write) => JSON.stringify({ agentId: 'ed17or0001', type: 'assistant', message: { model: 'claude-opus-4-1-20250805', id, usage: { input_tokens: 2, cache_read_input_tokens: read, cache_creation_input_tokens: write, output_tokens: 5 } } });
+  fs.writeFileSync(path.join(dir, 'wf_fixture', 'agent-ed17or0001.jsonl'), `${msg('msg_a', 7000, 1200)}\n${msg('msg_b', 8200, 300)}\n`);
+  const a = computeMetrics(events(), { testCommand: 'npm test', workflowDir: dir }).workflows[0].agents[0];
+  assert.equal(a.firstRead, 7000);
+  assert.equal(a.firstWrite, 1200);
+  assert.equal(a.cacheRead, 7000 + 8200, 'the totals still sum both requests');
+});

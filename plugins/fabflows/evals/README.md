@@ -46,6 +46,17 @@ means and named. Each `cells.json` row also carries `cache_write_1h` and `cache_
 `synced_plugin_count`. The names of synced plugins are printed, never written to
 `cells.json`: an organization's plugin names may be private.
 
+A row's `workflow_agents` lists every workflow agent the run launched, sorted by label, with
+its `durationMs`, `tokens`, `cacheRead` and `cacheWrite`. `firstRead` and `firstWrite` are
+the cache read and write of the agent's first request: a `firstRead` that covers the system
+prompt means the agent reused a sibling's prompt prefix, and one near zero means it wrote its
+own. For each arm with workflow runs, `summarize.js` then prints the mean seconds of each
+stage per task: each round's build (the slowest task builder plus the merge agent, in a round
+with tasks), each round's review (the slower lens, in a split review), and the lead, which is
+the run's `sec` minus the stages because nothing clocks the lead outside the workflow. A
+stage's mean counts only the runs that reached it. A run with a workflow agent that has no
+`durationMs`, such as one killed mid-workflow, is left out of the stage table and named.
+
 The other two are skill-creator's, run with `<skill-creator>` set to that skill's directory.
 The aggregator sorts configurations by name and takes the first two as its delta, which with
 three arms gives superpowers minus with_skill. `annotate_benchmark.py` puts with_skill and
