@@ -151,10 +151,12 @@ review. Pass these as an object, `Workflow({ name: 'fabflows:build', args: { spe
 baseRef, testCommand, worktree } })`, not as a string.
 
 On `accepted`, run the gate yourself: `git write-tree` equals `verdict.head`, and
-`git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; re-run
-`testCommand`, read `git diff --cached --stat <baseRef>`, and check that one must-fix from an
-earlier round is really fixed. Then make exactly one commit of the staged tree on the feature
-branch, with the ticket's `Refs:`/`Spec:` lines, and check that `git rev-parse HEAD^{tree}`
+`git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; then
+start `testCommand` with `run_in_background`, and while it runs read the round reports (below),
+read `git diff --cached --stat <baseRef>`, and check that one must-fix from an earlier round is
+really fixed. Never commit before you have seen the test run's exit status and summary: a run
+not seen to finish blocks the commit, as it does for the reviewers. Then make exactly one
+commit of the staged tree on the feature branch, with the ticket's `Refs:`/`Spec:` lines, and check that `git rev-parse HEAD^{tree}`
 equals `verdict.head` and `git status --porcelain` prints nothing. If a commit hook refuses the
 commit or changes the tree, stop and tell the user: never amend it or fix it unreviewed. Read every round's review report in full
 (`rounds[i].review.report`), not only the final verdict's, since a
