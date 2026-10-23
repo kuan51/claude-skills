@@ -188,9 +188,10 @@ test('the grade reads the checkout that holds the bench branch or the one commit
 test('a loop arm may enter the build worktree: EnterWorktree allowed, the yes in every loop prefix, worktrees based on HEAD', () => {
   const tasks = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'evals', 'tasks.json'), 'utf8'));
   assert.ok(tasks.allowedTools.includes('EnterWorktree'));
-  const loops = tasks.tasks.filter((t) => t.arms && t.arms.loop);
-  assert.ok(loops.length >= 4);
-  for (const t of loops) assert.ok(t.arms.loop.promptPrefix.includes("You have the user's yes to set up the build's worktree as that skill describes."), `task ${t.id}`);
+  // A loop arm is any arm whose prompt sends the lead through the build loop (task 24 names its arms parallel and single).
+  const loops = tasks.tasks.flatMap((t) => Object.entries(t.arms || {}).filter(([, arm]) => (arm.promptPrefix || '').includes('through the fabflows:build loop')).map(([name, arm]) => ({ id: t.id, name, arm })));
+  assert.ok(loops.length >= 6);
+  for (const l of loops) assert.ok(l.arm.promptPrefix.includes("You have the user's yes to set up the build's worktree as that skill describes."), `task ${l.id} arm ${l.name}`);
   assert.deepEqual(run.cleanRoomSettings(tmp('home-')).worktree, { baseRef: 'head' });
 });
 
