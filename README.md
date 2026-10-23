@@ -104,7 +104,8 @@ first session.
   - **Guard hook.** An active hook asks before package installs and runners such as `npx` and
     denies them in workers. It lets a `pypdf` install into a scratchpad through, for reading a PDF.
     It also blocks commits and pushes to a default branch, destructive commands, and credential
-    reads and writes. Read the plugin's README, including its "Known gaps" section, before
+    reads and writes. In a build worktree it trims a worker's test output to the failures.
+    Read the plugin's README, including its "Known gaps" section, before
     installing.
   - **Measured.** In iteration 1 ([#123](https://github.com/kuan51/claude-skills/issues/123)),
     a fabflows run's list price was 36.6% above no skill and 15.7% above superpowers. Quality

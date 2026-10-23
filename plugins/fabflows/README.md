@@ -6,7 +6,7 @@ the lead prove what those workers claim.
 > **This plugin installs an active hook.** Once enabled, a `PreToolUse` hook runs on
 > every `Bash`, `PowerShell`, `Monitor`, `Read`, `Grep`, `Edit`, `Write`, and `NotebookEdit`
 > call in your session
-> and can block it. It asks before package installs and package runners, and blocks commits and pushes on a default branch,
+> and can block it, or rewrite a worker's test command so only its failures print. It asks before package installs and package runners, and blocks commits and pushes on a default branch,
 > destructive shell commands, reads and writes of credential files, and writes to live
 > Claude Code configuration. Read [Guard rules](#guard-rules) before you install it,
 > including its [known gaps](#known-gaps). It behaves like a tripwire. It offers no
