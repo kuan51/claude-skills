@@ -1,9 +1,9 @@
 export const meta = {
   name: 'build',
-  description: "Build one spec'd change on a feature branch: an Opus builder implements and stages it without committing, fresh reviewers return ACCEPT or REWORK on the staged diff, rework is capped, and the lead commits the accepted tree",
+  description: "Build one spec'd change on a feature branch: an Opus builder implements and stages it without committing (rework rounds build on Sonnet at high effort, since they fix a short must-fix list), fresh reviewers return ACCEPT or REWORK on the staged diff, rework is capped, and the lead commits the accepted tree",
   whenToUse: "Run by the fabflows lead after the user approves a build loop for a spec'd, sizeable change, or opened the session with using-fabflows. args is an object: spec, branch, baseRef (`git rev-parse HEAD` at launch, or every review answers BLOCKED), testCommand, worktree (`git rev-parse --show-toplevel` inside the build's worktree under `.claude/worktrees/`), and optionally reviewerModel (Opus by default; the sweep lens, `fabflows:sweeper`, always runs on Sonnet at high effort) and tasks (two to four `{ name, files, objective }` with disjoint files, each built at once in its own temporary worktree, then merged into the build's worktree). The lead first enters the build's worktree with EnterWorktree and checks that the working tree is clean and that branch is checked out there. With no args, do not call it: ask the fabflows lead to prepare the spec and settings.",
   phases: [
-    { title: 'Build', detail: 'fabflows:editor on Opus implements the spec and stages each path by name, never committing' },
+    { title: 'Build', detail: 'fabflows:editor on Opus implements the spec in round 1, and on Sonnet at high effort fixes the must-fix list in a rework round; it stages each path by name, never committing' },
     { title: 'Review', detail: 'a fresh fabflows:refuter reads the staged diff and re-runs the tests; a round that sweeps callees reviews with two concurrent reviewers, a fabflows:refuter on the spec and tests and a fabflows:sweeper sweeping callees on Sonnet at high effort' },
   ],
 }
@@ -430,7 +430,7 @@ const NEXT = {
 const UNCOMMITTED = "The builder's work is uncommitted, staged or not: `git status --porcelain` and `git diff <baseRef>` show it."
 
 // The lead's commit gate on accepted: the workflow has no shell, so the lead commits.
-const ACCEPTED_NEXT = 'Run the commit gate: `git write-tree` equals verdict.head, and `git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; re-run testCommand; make exactly one commit of the staged tree on the feature branch with the ticket\'s `Refs:`/`Spec:` lines when the branch is linked, per `fabflows-tickets:ticket`; then `git rev-parse HEAD^{tree}` equals verdict.head and `git status --porcelain` prints nothing. If a commit hook refuses the commit or changes the tree, stop and tell the user: never amend it or fix it unreviewed.'
+const ACCEPTED_NEXT = 'Run the commit gate: `git write-tree` equals verdict.head, and `git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; then start testCommand with `run_in_background`, and while it runs read every round\'s review report and `git diff --cached --stat <baseRef>` and check that one must-fix from an earlier round is really fixed; never commit before you have seen the test run\'s exit status and summary, since a run not seen to finish blocks the commit; make exactly one commit of the staged tree on the feature branch with the ticket\'s `Refs:`/`Spec:` lines when the branch is linked, per `fabflows-tickets:ticket`; then `git rev-parse HEAD^{tree}` equals verdict.head and `git status --porcelain` prints nothing. If a commit hook refuses the commit or changes the tree, stop and tell the user: never amend it or fix it unreviewed.'
 
 // A builder's deviation is data: it stands only when it cites a must-fix the builder was
 // actually sent, which is the previous round's review. Rework round r is build round r + 1 and
@@ -524,12 +524,14 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
   const par = round === 1 && isParallel ? await runTasks() : null
   if (par && par.escalation) return par.escalation
   const extra = par ? { tasks: par.tasks, merge: par.merge } : {}
+  // Round 1 builds the whole spec on Opus; a rework round fixes a short must-fix list on staged
+  // work, a narrow job like the sweep lens's, so it runs on Sonnet at high effort (#228, #181).
   const build = par ? par.build : await agent(buildBrief(round, mustFix), {
     label: `build:${round}`,
     phase: 'Build',
     agentType: 'fabflows:editor',
-    model: 'opus',
-    effort: 'medium',
+    model: round === 1 ? 'opus' : 'sonnet',
+    effort: round === 1 ? 'medium' : 'high',
     schema: BUILD,
   })
   if (!build) {

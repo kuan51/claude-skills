@@ -92,6 +92,18 @@ test('accepts on the first round: Opus editor builds, Opus refuter reviews', asy
   assert.match(calls[1].prompt, /git diff --cached abc1234`/);
 });
 
+// Round 1 builds the whole spec on Opus; rework rounds fix a must-fix list on Sonnet at high (#228).
+test('round 1 builds on opus at medium; rework rounds 2 and 3 build on sonnet at high', async () => {
+  const { result, calls } = await run(ARGS, [built, { ...rework, head: H }, built, { ...rework, head: H }, built, accept]);
+  assert.equal(result.status, 'accepted');
+  const builds = calls.filter((c) => /^build:/.test(c.opts.label));
+  assert.deepEqual(builds.map((c) => [c.opts.label, c.opts.agentType, c.opts.model, c.opts.effort]), [
+    ['build:1', 'fabflows:editor', 'opus', 'medium'],
+    ['build:2', 'fabflows:editor', 'sonnet', 'high'],
+    ['build:3', 'fabflows:editor', 'sonnet', 'high'],
+  ]);
+});
+
 test('trims the settings before they reach a brief', async () => {
   const { calls } = await run({ ...ARGS, branch: ' feat/dry-run ', baseRef: 'abc1234\n' }, [built, accept]);
   assert.match(calls[0].prompt, /and `feat\/dry-run`\. If either/);
@@ -760,6 +772,9 @@ test('an ACCEPT with a missing or short head escalates as accept-without-head; a
     const { result } = await run(ARGS, [built, { ...accept, head }]);
     assert.equal(result.status, 'accepted', JSON.stringify(head));
     assert.match(result.next, /`git write-tree` equals verdict\.head/);
+    assert.match(result.next, /start testCommand with `run_in_background`/);
+    assert.ok(result.next.indexOf('git ls-files --others --exclude-standard :/` print nothing') < result.next.indexOf('start testCommand with `run_in_background`'), 'the tree checks come before the test run starts');
+    assert.match(result.next, /never commit before you have seen the test run's exit status and summary/);
     assert.match(result.next, /exactly one commit of the staged tree/);
     assert.match(result.next, /`git rev-parse HEAD\^\{tree\}` equals verdict\.head/);
     assert.match(result.next, /commit hook refuses the commit or changes the tree, stop and tell the user/);

@@ -295,6 +295,15 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 2.0.2** -- `fabflows:build` rework rounds (2 and 3) build on Sonnet at high effort
+  instead of Opus at medium, since a rework builder only fixes a short must-fix list on staged
+  work (#228). Round 1 and the task builders stay on Opus.
+
+- **fabflows 2.0.1** -- on an accepted build, the lead's commit gate now starts `testCommand`
+  with `run_in_background` right after the tree checks, and reads the review reports, the diff
+  stat and an earlier must-fix item while it runs (#229). It still commits only after it has
+  seen the run's exit status and summary. The re-run stays: only its wait moves.
+
 - **fabflows 0.17.3** -- on an accepted build, the lead now reads every round's review report in
   full, not only the final verdict's, and relays in its closing message each reviewer note that
   names a wrong or doubtful result in code, one line each (#194). Eval iterations 13 and 14 found
