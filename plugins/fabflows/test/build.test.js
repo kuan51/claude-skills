@@ -772,6 +772,9 @@ test('an ACCEPT with a missing or short head escalates as accept-without-head; a
     const { result } = await run(ARGS, [built, { ...accept, head }]);
     assert.equal(result.status, 'accepted', JSON.stringify(head));
     assert.match(result.next, /`git write-tree` equals verdict\.head/);
+    assert.match(result.next, /start testCommand with `run_in_background`/);
+    assert.ok(result.next.indexOf('git ls-files --others --exclude-standard :/` print nothing') < result.next.indexOf('start testCommand with `run_in_background`'), 'the tree checks come before the test run starts');
+    assert.match(result.next, /never commit before you have seen the test run's exit status and summary/);
     assert.match(result.next, /exactly one commit of the staged tree/);
     assert.match(result.next, /`git rev-parse HEAD\^\{tree\}` equals verdict\.head/);
     assert.match(result.next, /commit hook refuses the commit or changes the tree, stop and tell the user/);

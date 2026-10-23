@@ -410,6 +410,43 @@ test('summarize.js leaves out a cell with metrics.json but no grading.json, and 
   assert.equal(rows[0].arm, 'with_skill');
 });
 
+test('summarize.js lists the workflow agents per row and prints each stage in mean seconds, the lead as sec minus the stages', (t) => {
+  const os = require('node:os');
+  const iterDir = fs.mkdtempSync(path.join(os.tmpdir(), 'summarize-'));
+  t.after(() => fs.rmSync(iterDir, { recursive: true, force: true }));
+  const e1 = 'eval-1-wide-search';
+  const withAgents = (run, agents) => {
+    writeCell(iterDir, e1, 'with_skill', run, { cost: 1.5 });
+    const dir = path.join(iterDir, e1, 'with_skill', run);
+    const m = JSON.parse(fs.readFileSync(path.join(dir, 'metrics.json'), 'utf8'));
+    m.workflows = [{ name: 'fabflows:build', agents }];
+    fs.writeFileSync(path.join(dir, 'metrics.json'), JSON.stringify(m));
+    fs.writeFileSync(path.join(dir, 'timing.json'), JSON.stringify({ duration_ms: 500000 }));
+  };
+  const ag = (label, sec, extra = {}) => ({ label, agentId: label, agentType: 'fabflows:editor', model: 'm', state: 'done', tokens: 10, durationMs: sec * 1000, cacheRead: 1, cacheWrite: 2, firstRead: null, firstWrite: null, ...extra });
+  // Round 1 split into two tasks and a merge, reviewed by two lenses; round 2 a rework.
+  withAgents('run-1', [
+    ag('task:b', 150, { firstRead: 8800, firstWrite: 200 }), ag('task:a', 100, { firstRead: 0, firstWrite: 9000 }), ag('merge:1', 20),
+    ag('review:1:spec', 60), ag('review:1:sweep', 40), ag('build:2', 80), ag('review:2', 30),
+  ]);
+  withAgents('run-2', [ag('build:1', 10), { ...ag('review:1', 0), durationMs: null }]); // killed mid-workflow
+  writeCell(iterDir, e1, 'without_skill', 'run-1', { cost: 1.0 }); // no workflow
+
+  const r = spawnSync(process.execPath, [path.join(EVALS, 'harness', 'summarize.js'), iterDir], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  // build 1 = slowest task 150 + merge 20; review 1 = slower lens 60; lead = 500 - 170 - 60 - 80 - 30.
+  assert.match(r.stdout, /mean seconds per stage \(with_skill\):[\s\S]*'wide-search'\s*│\s*1\s*│\s*'170'\s*│\s*'60'\s*│\s*'80'\s*│\s*'30'\s*│\s*'160'/);
+  assert.doesNotMatch(r.stdout, /mean seconds per stage \(without_skill\)/, 'a run with no workflow prints no stage row');
+  assert.match(r.stdout, /left out of the stage table:\s+wide-search\/with_skill\/run-2 \(a workflow agent has no durationMs\)/);
+
+  const rows = JSON.parse(fs.readFileSync(path.join(iterDir, 'cells.json'), 'utf8'));
+  const row = rows.find((x) => x.arm === 'with_skill' && x.run === 'run-1');
+  assert.deepEqual(row.workflow_agents.map((a) => a.label), ['build:2', 'merge:1', 'review:1:spec', 'review:1:sweep', 'review:2', 'task:a', 'task:b']);
+  assert.deepEqual(row.workflow_agents[5], { label: 'task:a', agentType: 'fabflows:editor', model: 'm', tokens: 10, durationMs: 100000, cacheRead: 1, cacheWrite: 2, firstRead: 0, firstWrite: 9000 });
+  assert.deepEqual([row.workflow_agents[6].firstRead, row.workflow_agents[6].firstWrite], [8800, 200]);
+  assert.deepEqual(rows.find((x) => x.arm === 'without_skill').workflow_agents, []);
+});
+
 test('annotate_benchmark.py orders the arms, sets the delta to with_skill minus without_skill over shared evals, adds dollars, true run counts, and lists agent models apart from the lead', (t) => {
   const py = spawnSync('python', ['--version'], { encoding: 'utf8' });
   if (py.error || py.status !== 0) {
