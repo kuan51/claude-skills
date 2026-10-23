@@ -130,7 +130,10 @@ and skill: each arm listed only Claude Code's built-in ones plus its own plugin'
 run before each baseline checks both again.
 
 Every run sets `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` (recorded in `run.json`), so
-runs do not have the 600 s ceiling on waiting for background work in print mode.
+runs do not have the 600 s ceiling on waiting for background work in print mode. An arm with
+`maxConcurrentAgents` (a whole number from 1 to 16) also sets
+`CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`, the most workflow agents that run at once, and
+`run.json` records it.
 
 ### The superpowers arm
 
@@ -198,6 +201,7 @@ several events that repeat its usage) and reports:
 | 9 | `update-minimal` | `fabflows:build` loop arm only, `repeats: 3` | A brownfield fixture (`fixtures/lockstep-update/visible`: the `dep-resolver` reference plus a spec for `lockstep update`, a minimal-change re-resolution with a unique answer under rules U1 to U3). Graded by a hidden suite (`fixtures/lockstep-update/hidden`) against a brute-force oracle on small registries and a hand-checked 16-package case with a 10 s timeout, plus `resolve` and `check` regression cases. No planted defect: the review's REWORK row is the signal. Caps 120 turns, $15, 30 min. |
 | 22 | `review-catch-wide` | `fabflows:build` loop arm only, `repeats: 5` | A brownfield fixture (`fixtures/lockstep-wide/visible`: the `dep-resolver` reference plus a spec for `lockstep upgrades`, which calls four library functions directly) with one planted defect in each of those callees, none named by the spec: `parseVersion` rejects a leading zero in build metadata, `compareVersions` ties a prerelease with its longer extension, `parseRange` splits `\|\|` only when it has spaces around it, and `maxSatisfying` skips the last version in its list. Graded by a hidden suite (`fixtures/lockstep-wide/hidden`) with one `defect: <callee>` test per defect, all four failing on the fixture as given. The "review named the planted defect" row is informational for this task: round 1's must-fix items are counted by hand. Caps 120 turns, $15, 30 min. |
 | 23 | `review-catch-slow` | `fabflows:build` loop arm only, `repeats: 5` | Task 8 as it is (same fixture, prompt, hidden suite and grade), with one test appended by `setup` to the end of `test/lockstep.test.js` that waits 60 s (`setTimeout`) and then passes, so the suite runs about 60 s instead of 0.4 s. It exists to measure the spec lens running the test command in the background while it reads the diff. Task 8's own numbers stay comparable because task 8 is untouched. Caps 120 turns, $15, 30 min. |
+| 24 | `parallel-tasks` | `fabflows:build` loop, `parallel` arm (the spec's `## Tasks` passed as the build's `tasks`) against `single` (the same spec with that section deleted by the arm's `setup`, so one builder builds it), `repeats: 5` | A brownfield fixture (`fixtures/lockstep-pair/visible`: the clean `lockstep-update` copy, a bin that loads any other command from `src/commands/<name>.js`, and a spec for both `lockstep outdated` and `lockstep upgrades`, one module each, ending in a two-bullet `## Tasks` section with disjoint files). No planted defect, so the arms differ only in how round 1 is built. Both arms set `maxConcurrentAgents: 4`, which the harness passes as `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`, so the machine's CPU count does not set the cap. Graded by a hidden suite (`fixtures/lockstep-pair/hidden`) that requires the `lockstep-outdated` and `lockstep-wide` suites as they are. Caps 120 turns, $15, 30 min. |
 
 Tasks 1 to 4 are short chains. Tasks 5 and 6 carry evidence large enough that the skill's own
 rule ("delegate when it keeps a large volume out of the lead") should apply, while the graded
@@ -287,7 +291,8 @@ other providers' forms), and for the network (client certificates, proxy host re
 watchdogs and timeouts). A harness launched outside a cloud session logs in as before. Each name
 is exact, because a prefix would keep session variables too, such as `CLAUDE_CODE_USE_CCR_V2`.
 `ANTHROPIC_*`, `AWS_*`, proxy and certificate variables are not touched. The harness sets
-`FABFLOWS_PROBE` and `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS` after the removal.
+`FABFLOWS_PROBE`, `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS` and, for an arm that names a cap,
+`CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` after the removal.
 
 Each run's `run.json` records `droppedEnv`, the sorted names `lockedEnv` removed, the GitHub
 lockout's included. It holds names only, never values.

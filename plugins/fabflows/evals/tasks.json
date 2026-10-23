@@ -465,6 +465,25 @@
         "rootEnv": "LOCKSTEP_ROOT",
         "defectPattern": "caret-on-zero|satisfies|src/index\\.js"
       }
+    },
+    {
+      "id": 24,
+      "name": "parallel-tasks",
+      "routing": "fabflows:build (two commands in disjoint files, built as two parallel tasks or by one builder)",
+      "fixture": { "kind": "dir", "from": "fixtures/lockstep-pair/visible" },
+      "caps": { "maxTurns": 120, "maxBudgetUsd": 15, "runTimeoutMinutes": 30 },
+      "repeats": 5,
+      "arms": {
+        "parallel": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. If SPEC.md has a `## Tasks` section, pass its bullets as the build's `tasks`.\n\n", "maxConcurrentAgents": 4 },
+        "single": { "pluginDir": "plugins/fabflows", "promptPrefix": "Invoke the fabflows:using-fabflows skill first. Then do this task through the fabflows:build loop: take SPEC.md as the spec and launch the loop as that skill describes. Do not implement the change yourself. If SPEC.md has a `## Tasks` section, pass its bullets as the build's `tasks`.\n\n", "maxConcurrentAgents": 4, "setup": [{ "file": "SPEC.md", "find": "\n## Tasks\n\n- `outdated`: the `lockstep outdated` command and its tests (files: `src/commands/outdated.js`, `test/outdated.test.js`)\n- `upgrades`: the `lockstep upgrades` command and its tests (files: `src/commands/upgrades.js`, `test/upgrades.test.js`)\n", "replace": "" }] }
+      },
+      "prompt": "Add the `lockstep outdated` and `lockstep upgrades` commands specified in SPEC.md to this repository. Write their tests too. `npm test` must pass when you are done. Commit your work on the current branch and leave the working tree clean. Finish with a short summary of what you built and how you verified it.",
+      "grade": {
+        "kind": "hidden-tests",
+        "testCommand": "npm test",
+        "hidden": "fixtures/lockstep-pair/hidden",
+        "rootEnv": "LOCKSTEP_ROOT"
+      }
     }
   ]
 }
