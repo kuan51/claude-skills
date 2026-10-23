@@ -119,7 +119,10 @@ and skill: each arm listed only Claude Code's built-in ones plus its own plugin'
 run before each baseline checks both again.
 
 Every run sets `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` (recorded in `run.json`), so
-runs do not have the 600 s ceiling on waiting for background work in print mode.
+runs do not have the 600 s ceiling on waiting for background work in print mode. An arm with
+`maxConcurrentAgents` (a whole number from 1 to 16) also sets
+`CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`, the most workflow agents that run at once, and
+`run.json` records it.
 
 ### The superpowers arm
 
@@ -277,7 +280,8 @@ other providers' forms), and for the network (client certificates, proxy host re
 watchdogs and timeouts). A harness launched outside a cloud session logs in as before. Each name
 is exact, because a prefix would keep session variables too, such as `CLAUDE_CODE_USE_CCR_V2`.
 `ANTHROPIC_*`, `AWS_*`, proxy and certificate variables are not touched. The harness sets
-`FABFLOWS_PROBE` and `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS` after the removal.
+`FABFLOWS_PROBE`, `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS` and, for an arm that names a cap,
+`CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` after the removal.
 
 Each run's `run.json` records `droppedEnv`, the sorted names `lockedEnv` removed, the GitHub
 lockout's included. It holds names only, never values.
