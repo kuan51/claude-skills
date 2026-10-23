@@ -1,7 +1,7 @@
 ---
 name: trace
-compatibility: Claude Code with the fabflows plugin enabled. Needs its ticket.js hook, the AskUserQuestion and Write tools, the GitHub MCP server for pull requests, and the tracker's MCP server for tickets. Not portable to Claude.ai or the API.
-description: 'Write an audit trace report for a range of merged changes: every first-parent commit with its pull request, PR author and approvers, ticket, approved spec hash, Compliance section and flags such as no-ticket, spec-changed or self-approved. Runs ticket.js trace, enriches it from GitHub and the tracker, writes trace.md and trace.csv outside the repo, and never commits them. Use when an auditor or the user wants merged changes traced to tickets, specs and approvals. Triggers on "/fabflows:trace", "trace report", "audit trail for this release", "which merges have no ticket", "change evidence for SOC 2", "trace changes since the last tag".'
+compatibility: Claude Code with the fabflows and fabflows-tickets plugins enabled. Needs its ticket.js hook, the AskUserQuestion and Write tools, the GitHub MCP server for pull requests, and the tracker's MCP server for tickets. Not portable to Claude.ai or the API.
+description: 'Write an audit trace report for a range of merged changes: every first-parent commit with its pull request, PR author and approvers, ticket, approved spec hash, Compliance section and flags such as no-ticket, spec-changed or self-approved. Runs ticket.js trace, enriches it from GitHub and the tracker, writes trace.md and trace.csv outside the repo, and never commits them. Use when an auditor or the user wants merged changes traced to tickets, specs and approvals. Triggers on "/fabflows-tickets:trace", "trace report", "audit trail for this release", "which merges have no ticket", "change evidence for SOC 2", "trace changes since the last tag".'
 ---
 
 # Trace
@@ -11,7 +11,7 @@ approval. This skill writes that list as `trace.md` and `trace.csv`, one row per
 first-parent commit on the default branch.
 
 `ticket.js` means `node "${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js"`. Tracker tools are the ones
-in `fabflows:ticket`'s tool table. Run this in the main thread: it asks the user questions.
+in `fabflows-tickets:ticket`'s tool table. Run this in the main thread: it asks the user questions.
 
 ## 1. Ask for the range
 

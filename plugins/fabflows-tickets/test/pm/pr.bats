@@ -55,7 +55,7 @@ web_link() {
   [[ $output == deny* ]]
   open_pr "Closes ABC-1"
   run -0 post_tool mcp__github__create_pull_request "$input"
-  [ "$output" = "fabflows: update ticket ABC-1: Links, web link, assignees and status, per fabflows:ticket." ]
+  [ "$output" = "fabflows: update ticket ABC-1: Links, web link, assignees and status, per fabflows-tickets:ticket." ]
 }
 
 @test "ticket.js pr records the URL, and the web link is added once" {

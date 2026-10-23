@@ -1,7 +1,7 @@
 ---
-name: fabflows-setup
-compatibility: Claude Code with the fabflows plugin enabled. Needs the AskUserQuestion and ToolSearch tools and, for a tracker, that tracker's MCP server. Not portable to Claude.ai or the API.
-description: 'Choose where this repository keeps its specs: a GitHub Issues, Jira or Linear ticket, or docs/specs/ as before. Asks where specs live, checks that the tracker''s MCP tools are connected, asks for the project, an optional parent epic or story and optional compliance frameworks, and writes .claude/fabflows.json for fabflows:ticket and fabflows:brainstorming to read. Never connects a server and never handles a secret. Triggers on "/fabflows-setup", "set up fabflows", "connect fabflows to Jira", "use GitHub issues for specs", "configure the tracker", "where should specs live".'
+name: setup
+compatibility: Claude Code with the fabflows and fabflows-tickets plugins enabled. Needs the AskUserQuestion and ToolSearch tools and, for a tracker, that tracker's MCP server. Not portable to Claude.ai or the API.
+description: 'Choose where this repository keeps its specs: a GitHub Issues, Jira or Linear ticket, or docs/specs/ as before. Asks where specs live, checks that the tracker''s MCP tools are connected, asks for the project, an optional parent epic or story and optional compliance frameworks, and writes .claude/fabflows.json for fabflows-tickets:ticket and fabflows:brainstorming to read. Never connects a server and never handles a secret. Triggers on "/fabflows-tickets:setup", "set up fabflows", "connect fabflows to Jira", "use GitHub issues for specs", "configure the tracker", "where should specs live".'
 ---
 
 # fabflows setup
@@ -21,7 +21,7 @@ the removal. Stop: `fabflows:brainstorming` keeps writing to `docs/specs/`.
 
 ## 2. Check the tools are loaded
 
-Search with ToolSearch for the tracker's tools, named in `fabflows:ticket`'s tool table:
+Search with ToolSearch for the tracker's tools, named in `fabflows-tickets:ticket`'s tool table:
 `issue_write` for GitHub, `getJiraIssue` or `jira_get_issue` for Jira (also search
 `discover` and `execute`: some Atlassian servers expose only those two), `save_issue` for
 Linear, the tracker's name for Other.
@@ -49,7 +49,7 @@ epic or story (`ABC-7`) for Jira, an issue (`#7`, or `owner/repo#7` in another r
 for GitHub, a parent issue (`ABC-7`) for Linear. It is optional, so offer "none" first. An
 Other tracker gets no parent.
 
-When given, read it once with the tracker's read tool from `fabflows:ticket`'s tool table
+When given, read it once with the tracker's read tool from `fabflows-tickets:ticket`'s tool table
 and check it can hold child tickets. Refuse one not found, a GitHub pull request or closed
 issue, a Jira sub-task, a Jira story or task outside `project`, since its sub-tasks must
 share its project, and a Linear issue whose status type is `completed`, `canceled` or
@@ -69,7 +69,7 @@ written as a framework: ask again, and point at the **None** option. Picking
 
 The chosen values go into `compliance.frameworks`. **None** leaves compliance off: write no
 `compliance` key. With compliance on, every ticket spec
-needs a Compliance section, per `fabflows:ticket`.
+needs a Compliance section, per `fabflows-tickets:ticket`.
 
 ## 5. Write and commit
 
@@ -90,4 +90,4 @@ For Linear, `team` holds the team key and `project` the project name:
 
 Tell the user the file will be committed, so in a public repository the site name becomes
 public. Offer to commit it on the current branch (never the default branch). Then point
-them at `fabflows:ticket` for how tickets are linked and kept current.
+them at `fabflows-tickets:ticket` for how tickets are linked and kept current.
