@@ -101,12 +101,6 @@ first session.
     that puts a session on it.
   - **Brainstorming.** `brainstorming` turns a rough idea into a spec the build loop can take,
     with the refuter attacking the draft before it is written.
-  - **Tickets.** `fabflows-setup` and `ticket` keep specs in a GitHub Issues, Jira or Linear
-    ticket. On a linked branch a hook requires the ticket's trailers on commits and its key in
-    the PR title. At session start it also reminds Claude to close tickets whose PR merged or
-    closed outside the session.
-  - **Trace.** `trace` writes an audit trace report tracing every merged change to its ticket,
-    approved spec and approvers.
   - **Guard hook.** An active hook asks before package installs and runners such as `npx` and
     denies them in workers. It lets a `pypdf` install into a scratchpad through, for reading a PDF.
     It also blocks commits and pushes to a default branch, destructive commands, and credential
@@ -117,6 +111,11 @@ first session.
     differed on one check only, a grader artifact. After the regrade in
     [#132](https://github.com/kuan51/claude-skills/issues/132), quality is the same in every arm
     (`plugins/fabflows/evals/RESULTS.md:290`). See [docs/EVALS.md](docs/EVALS.md).
+- **[fabflows-tickets](plugins/fabflows-tickets/)**: companion to fabflows. `setup` and `ticket`
+  keep specs in a GitHub Issues, Jira or Linear ticket. On a linked branch a hook requires the
+  ticket's trailers on commits and its key in the PR title, and at session start it reminds
+  Claude to close tickets whose PR merged or closed outside the session. `trace` writes an audit
+  trace report tracing every merged change to its ticket, approved spec and approvers.
 
 ## Adding a new plugin
 

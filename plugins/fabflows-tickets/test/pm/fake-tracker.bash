@@ -1,4 +1,4 @@
-# In-memory replicas of GitHub Issues, Jira and Linear, as fabflows:ticket drives them.
+# In-memory replicas of GitHub Issues, Jira and Linear, as fabflows-tickets:ticket drives them.
 # Tool names are the suffixes in skills/ticket/SKILL.md:22-27. Each takes one JSON argument
 # and prints its result as JSON. A refused call prints why on stderr, returns 1, and leaves
 # the state file ($BATS_TEST_TMPDIR/tracker.json) unchanged.
@@ -103,7 +103,7 @@ issue_write() { # {method: "create" | "update", owner, repo, issue_number, title
        else ($a.parent_owner // $a.owner) as $po | ($a.parent_repo // $a.repo) as $pr
          | ($s | gh_find($po; $pr; $a.parent_issue_number)) as $p
          # A PR is refused like a missing issue (PR #87). A closed issue is accepted (#99 under
-         # #93), so only fabflows-setup keeps it out.
+         # #93), so only fabflows-tickets:setup keeps it out.
          | if $p == null or $p.pull_request then error("Could not resolve to an Issue with the number of \($a.parent_issue_number).")
            else "\($po)/\($pr)#\($p.number)" end
        end) as $parent
@@ -161,7 +161,7 @@ createJiraIssue() { # {projectKey, issueTypeName, summary, description, parent}
     | ($s.jira.projects[$a.projectKey] // error("no project \($a.projectKey)")) as $proj
     | if ($a.issueTypeName | IN("Epic", "Story", "Task", "Sub-task")) | not then error("unknown issue type") else . end
     # Epic > Story/Task > Sub-task (skills/ticket/SKILL.md:64-66). A story or task parent must share
-    # the project, since its sub-tasks must (skills/fabflows-setup/SKILL.md:49-51); an epic may not.
+    # the project, since its sub-tasks must (skills/setup/SKILL.md:49-51); an epic may not.
     | (if $a.parent == null then
          (if $a.issueTypeName == "Sub-task" then error("a sub-task needs a parent") else null end)
        else ($s | jira_get($a.parent)) as $p

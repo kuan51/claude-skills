@@ -892,7 +892,8 @@ test('Grep checks its glob, and Read and Grep check a bare secret directory', ()
 
 test('hooks.json wires every matcher to the guard', () => {
   const cfg = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
-  // Only the guard's own entries; ticket.js has its own wiring test.
+  // ticket.js moved to fabflows-tickets, which wires it from its own hooks.json.
+  assert.doesNotMatch(fs.readFileSync(HOOKS_JSON, 'utf8'), /ticket\.js/, 'fabflows hooks.json must not name ticket.js');
   const guarded = (entries) => entries.filter((e) => e.hooks.some((h) => /guard\.js/.test(h.command)));
   // One anchored matcher, so every guarded tool is named explicitly.
   assert.deepEqual(guarded(cfg.hooks.PreToolUse).map((e) => e.matcher), ['^(Bash|PowerShell|Monitor|Read|Grep|Edit|Write|NotebookEdit)$']);

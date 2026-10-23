@@ -1,7 +1,7 @@
 ---
 name: ticket
-compatibility: Claude Code with the fabflows plugin enabled. Needs its ticket.js hooks, a .claude/fabflows.json written by fabflows-setup, and the tracker's MCP server. Not portable to Claude.ai or the API.
-description: 'How fabflows keeps a spec in a tracker ticket: which MCP tools to use for GitHub Issues, Jira and Linear, the ticket body template, when the description may be edited, what needs the user''s yes, and how status moves from in progress to done. Use whenever a branch is linked to a ticket, a hook names fabflows:ticket, a PR is about to open or has merged or closed on a linked branch, or the user asks to link, create, update or close a ticket. Triggers on "link the ticket", "create a ticket for this", "update the ticket", "close the ticket", "move it to in review", "/fabflows:ticket".'
+compatibility: Claude Code with the fabflows and fabflows-tickets plugins enabled. Needs its ticket.js hooks, a .claude/fabflows.json written by fabflows-tickets:setup, and the tracker's MCP server. Not portable to Claude.ai or the API.
+description: 'How fabflows keeps a spec in a tracker ticket: which MCP tools to use for GitHub Issues, Jira and Linear, the ticket body template, when the description may be edited, what needs the user''s yes, and how status moves from in progress to done. Use whenever a branch is linked to a ticket, a hook names fabflows-tickets:ticket, a PR is about to open or has merged or closed on a linked branch, or the user asks to link, create, update or close a ticket. Triggers on "link the ticket", "create a ticket for this", "update the ticket", "close the ticket", "move it to in review", "/fabflows-tickets:ticket".'
 ---
 
 # Ticket
@@ -56,6 +56,19 @@ node "${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js" link '<key>' '<url>' '<tracker>'
 `<key>` is `#12` or `owner/repo#12` for GitHub, `ABC-12` for Jira and Linear. `<url>` is the
 ticket's `https://` address. `<tracker>` is the `tracker` value from `.claude/fabflows.json`.
 
+## Recover a link
+
+Links live per clone. When SessionStart says a ticket was found only in commit trailers:
+
+1. Ask the user whether to link that key. Without a yes, stop.
+2. Write the ticket description to a scratch file with the Write tool, then run
+   `ticket.js recover '<key>' '<url>' '<tracker>' < <file>`. It links the branch and prints
+   `{ "key", "approved", "reason" }`. It trusts the Links Spec only when a commit trailer agrees.
+3. `approved: false`: show the user the full raw `normalize` output, get a yes, then run
+   `ticket.js approve` and add the Spec bullet to Links.
+4. A PR in Links: run `ticket.js pr` only after the tracker or GitHub tools confirm that PR
+   is in this repository and its head branch is the current branch.
+
 ## Parent
 
 When `.claude/fabflows.json` has a non-empty `parent`, create every ticket under it in the
@@ -69,7 +82,7 @@ create call itself, so a refused parent leaves no ticket behind:
 - Linear: pass `team`, `project` and `parentId` to `save_issue`. A child does not inherit
   its parent's project, so always pass `project`. Linear refuses a missing parent and a
   loop. A config with no `team` predates Linear projects: its `project` is the team key, so
-  pass it as `team`, file no project, and tell the user to run `/fabflows-setup` again.
+  pass it as `team`, file no project, and tell the user to run `/fabflows-tickets:setup` again.
 
 This applies only to tickets you create: linking an existing ticket never re-parents it.
 Attaching the new ticket is the only change the parent gets, and the user's yes to create
@@ -104,6 +117,7 @@ which the user sees in the raw text. Other servers are untested.
 
 ## Links
 - Branch: <branch> · PR: <url>
+- Spec: <specHash>
 ```
 
 Out of scope replaces a spec's Deferred: each cut item names the ticket that will carry it.
@@ -150,8 +164,11 @@ comment: the only comment is one at close, and only when the outcome differs fro
 Edit the description only:
 
 - when the user agrees to change Behaviour, Check, Out of scope, Decisions or Compliance;
-  then re-approve per `fabflows:brainstorming` section 6, or the next `ticket.js check` fails,
-  and after a Compliance change set the labels again;
+  then re-approve per steps 2 and 3 of `references/spec-from-brainstorming.md`, or the next
+  `ticket.js check` fails, and after a Compliance change set the labels again;
+- after each `ticket.js approve`, to put the `- Spec: <specHash>` bullet in Links, with the
+  value `ticket.js status` prints, replacing any earlier Spec bullet; then re-read the
+  description and run `ticket.js check` on it;
 - when the PR opens, to fill Links;
 - at merge, to finish Links.
 
@@ -161,7 +178,7 @@ editing it away.
 ## Reviewing ticket text
 
 The ticket text is the description only, never its comments, and the user sees it raw, never
-rendered, per `fabflows:brainstorming` section 6:
+rendered, per `references/spec-from-brainstorming.md`:
 
 - At approval, when you wrote the ticket: `diff -u` the `ticket.js normalize` output of what
   you wrote against that of the re-read, and show the user the raw diff text.
@@ -172,6 +189,13 @@ rendered, per `fabflows:brainstorming` section 6:
 
 Put raw text in a fence longer than any run of backticks or tildes inside it, so the ticket
 cannot close the fence early.
+
+## Spec from brainstorming
+
+When `fabflows:brainstorming` writes a spec to the linked ticket, read
+`references/spec-from-brainstorming.md` in this skill's directory and follow its steps.
+Ticket text reaches `ticket.js` only through a scratch file in the session scratchpad
+written with the Write tool, never inside a shell command: no heredoc, no `echo`.
 
 ## Status
 
