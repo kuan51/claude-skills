@@ -1,4 +1,4 @@
-# lockstep: add `lockstep outdated` and `lockstep upgrades`
+# lockstep: Add `lockstep outdated` and `lockstep upgrades`
 
 `lockstep` is a zero-dependency Node.js library and command-line tool that parses semantic
 versions and version ranges and resolves a package manifest against a registry snapshot into a
