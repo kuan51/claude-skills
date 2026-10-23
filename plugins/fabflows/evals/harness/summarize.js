@@ -66,6 +66,9 @@ for (const evalDir of fs.readdirSync(iterDir).filter((d) => d.startsWith('eval-'
         verification_runs: m.lead.verificationRuns,
         hook_payloads: Object.entries(m.hooks.probe || {}).filter(([k]) => !k.startsWith('synthetic') && k !== 'unparseable').reduce((s, [, n]) => s + n, 0),
         tools: m.lead.toolCalls,
+        workflow_agents: (m.workflows || []).flatMap((wf) => wf.agents)
+          .map((a) => Object.fromEntries(['label', 'agentType', 'model', 'tokens', 'durationMs', 'cacheRead', 'cacheWrite', 'firstRead', 'firstWrite'].map((k) => [k, a[k] ?? null])))
+          .sort((a, b) => String(a.label).localeCompare(String(b.label))),
       });
     }
   }
@@ -128,4 +131,50 @@ if (leftOut.length) {
 for (const arm of arms) {
   console.log(`\nworkers spawned and lead tools (${arm}):`);
   for (const r of rows.filter((r) => r.arm === arm)) console.log(`  ${r.task}/${r.run}: ${JSON.stringify(r.workers)}  lead tools ${JSON.stringify(r.tools)}`);
+}
+
+// Seconds per stage of one run's workflow. A round with tasks builds in its slowest task builder
+// plus the merge agent; a two-lens review takes the slower lens. The lead is the run's sec minus
+// the stages, since the transcript has no clock for the lead outside the workflow.
+function stagesOf(r) {
+  const build = {};
+  const review = {};
+  for (const a of r.workflow_agents) {
+    const [kind, n] = a.label.split(':');
+    const round = kind === 'task' || kind === 'merge' ? 1 : Number(n);
+    if (kind === 'review') review[round] = Math.max(review[round] || 0, a.durationMs);
+    if (!['build', 'task', 'merge'].includes(kind)) continue;
+    const b = build[round] || (build[round] = { build: 0, task: null, merge: 0 });
+    if (kind === 'build') b.build = a.durationMs;
+    if (kind === 'task') b.task = Math.max(b.task || 0, a.durationMs);
+    if (kind === 'merge') b.merge = a.durationMs;
+  }
+  const stages = {};
+  for (const [round, b] of Object.entries(build)) stages[`build ${round}`] = (b.task !== null ? b.task + b.merge : b.build) / 1000;
+  for (const round of Object.keys(review)) stages[`review ${round}`] = review[round] / 1000;
+  stages.lead = r.sec - Object.values(stages).reduce((s, x) => s + x, 0);
+  return stages;
+}
+const stageLeftOut = [];
+const order = (k) => (k === 'lead' ? Infinity : Number(k.split(' ')[1]) * 2 + (k.startsWith('review') ? 1 : 0));
+for (const arm of arms) {
+  const timed = [];
+  for (const r of rows.filter((x) => x.arm === arm && x.workflow_agents.length)) {
+    if (r.workflow_agents.some((a) => typeof a.durationMs !== 'number')) stageLeftOut.push(`${r.task}/${arm}/${r.run} (a workflow agent has no durationMs)`);
+    else timed.push({ task: r.task, stages: stagesOf(r) });
+  }
+  if (!timed.length) continue;
+  const keys = [...new Set(timed.flatMap((t) => Object.keys(t.stages)))].sort((a, b) => order(a) - order(b));
+  const stageTable = [];
+  for (const task of [...new Set(timed.map((t) => t.task))]) {
+    const ts = timed.filter((t) => t.task === task);
+    // A stage's mean counts only the runs that reached it.
+    stageTable.push({ task, n: ts.length, ...Object.fromEntries(keys.filter((k) => ts.some((t) => k in t.stages)).map((k) => [k, mean(ts.filter((t) => k in t.stages).map((t) => t.stages[k])).toFixed(0)])) });
+  }
+  console.log(`\nmean seconds per stage (${arm}):`);
+  console.table(stageTable);
+}
+if (stageLeftOut.length) {
+  console.log('\nleft out of the stage table:');
+  for (const s of stageLeftOut) console.log(`  ${s}`);
 }
