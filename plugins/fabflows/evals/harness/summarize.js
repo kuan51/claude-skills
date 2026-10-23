@@ -4,7 +4,8 @@
 // tokens by category, context sizes, worker tokens, list cost, duration, verification re-runs
 // and guard hook payloads, cache writes by lifetime, Skill and SessionStart hook text, spawns
 // and synced plugins; then each arm's mean cost against without_skill, and with_skill against
-// superpowers. `node summarize.js <iteration-dir>`.
+// superpowers; then, for each arm with workflow runs, the mean seconds of each build-loop stage.
+// `node summarize.js <iteration-dir>`.
 
 const fs = require('node:fs');
 const path = require('node:path');
