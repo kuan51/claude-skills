@@ -249,8 +249,10 @@ judge only the rework since the staged tree the previous review read: an earlier
 not fixed, a regression or a real bug in that rework diff, or unstaged work. A new finding
 elsewhere is a note the lead reads.
 
-Opus builds because the builder gets the full spec up front and writes most of the output, so
-the loop overrides `editor`'s Sonnet pin. The build-then-review order and the rework cap live
+Round 1 builds on Opus because the builder gets the full spec up front and writes most of the output, so
+the loop overrides `editor`'s Sonnet pin. A rework builder does neither: it fixes a short must-fix list on
+work already staged, so rounds 2 and 3 build on Sonnet at high effort, the setting that halved the sweep
+lens's time with quality unchanged (#181). The build-then-review order and the rework cap live
 in the workflow script, so they hold whatever the lead remembers, and the loop never merges, so
 merging stays a human pull request. The loop reviews on Opus by default because iteration 5
 measured the Fable reviewer at $1.33 against $0.70 on Opus. Structured `status` and `blocker`

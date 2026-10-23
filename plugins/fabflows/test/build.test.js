@@ -92,6 +92,18 @@ test('accepts on the first round: Opus editor builds, Opus refuter reviews', asy
   assert.match(calls[1].prompt, /git diff --cached abc1234`/);
 });
 
+// Round 1 builds the whole spec on Opus; rework rounds fix a must-fix list on Sonnet at high (#228).
+test('round 1 builds on opus at medium; rework rounds 2 and 3 build on sonnet at high', async () => {
+  const { result, calls } = await run(ARGS, [built, { ...rework, head: H }, built, { ...rework, head: H }, built, accept]);
+  assert.equal(result.status, 'accepted');
+  const builds = calls.filter((c) => /^build:/.test(c.opts.label));
+  assert.deepEqual(builds.map((c) => [c.opts.label, c.opts.agentType, c.opts.model, c.opts.effort]), [
+    ['build:1', 'fabflows:editor', 'opus', 'medium'],
+    ['build:2', 'fabflows:editor', 'sonnet', 'high'],
+    ['build:3', 'fabflows:editor', 'sonnet', 'high'],
+  ]);
+});
+
 test('trims the settings before they reach a brief', async () => {
   const { calls } = await run({ ...ARGS, branch: ' feat/dry-run ', baseRef: 'abc1234\n' }, [built, accept]);
   assert.match(calls[0].prompt, /and `feat\/dry-run`\. If either/);
