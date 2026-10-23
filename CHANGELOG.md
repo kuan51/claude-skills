@@ -13,7 +13,7 @@ per-plugin history until entries are recorded here going forward.
   with only path arguments inside the worktree) in a `.claude/worktrees/` worktree is rewritten
   to write its full output to `.fabflows/test-output/<tool_use_id>.log`, git-ignored, and print
   it whole only up to 80 lines; longer output prints the failing lines, the last 20 lines and
-  the log path, with the original exit status. The rewrite is auto-approved. The lead's calls,
+  the log path, with the original exit status. The guard approves the rewrite without a prompt. The lead's calls,
   any command with a flag or shell operator, and PowerShell and Monitor are unchanged.
 
 - **fabflows-tickets 1.1.0** -- a fresh clone or project thread can rebuild its ticket link.

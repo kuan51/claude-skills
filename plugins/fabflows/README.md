@@ -356,7 +356,7 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   `error`, `assert`, `✖` or `✗` with 4 lines after each (at most 150), the last 20 lines and the
   log path, and the original exit status is kept. The rewrite is allowed without a prompt,
   because the original command is its first step and the rest only reads the log; your deny and
-  ask rules still apply to each step. The cost: a test runner runs project code the worker can
+  ask rules still apply to each step. In exchange, a test runner runs project code the worker can
   edit (a `package.json` script, `conftest.py`), and that code is approved too. Rewriting before
   the call is the only option, because a failing call's output cannot be replaced afterwards.
 
