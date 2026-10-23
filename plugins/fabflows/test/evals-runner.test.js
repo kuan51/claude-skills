@@ -328,3 +328,51 @@ test('a missing superpowers copy stops only a run that would launch the arm', ()
   assert.equal(run.pluginSources({ ...withIt, confirm: false }, cells, home).superpowers.src, null, 'a dry run reports it and carries on');
   assert.doesNotThrow(() => run.pluginSources({ ...withIt, confirm: true, regrade: true }, cells, home), 'a regrade');
 });
+
+// Task 7's cells with the arm swapped for one that carries the given fields.
+const armCells = (arm, repeats = 1) => run.buildCells({ tasks: [7], arms: ['without_skill'], repeats })
+  .map((c) => ({ ...c, task: { ...c.task, arms: { without_skill: { promptPrefix: '', ...arm } } } }));
+
+test("an arm's maxConcurrentAgents reaches the session as CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS over the parent's, and run.json records it", async (t) => {
+  const saved = process.env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS;
+  process.env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS = '9';
+  t.after(() => {
+    if (saved === undefined) delete process.env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS;
+    else process.env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS = saved;
+  });
+  const a = baseArgs();
+  const [capped] = armCells({ maxConcurrentAgents: 4 });
+  const [plain] = run.buildCells({ tasks: [7], arms: ['without_skill'], repeats: 2 }).slice(1);
+  const seen = [];
+  const { spawnSession } = standIn('error', (opts) => seen.push(opts.env));
+  await run.runAll(a, [capped, plain], spawnSession);
+  assert.equal(seen.length, 2);
+  assert.equal(seen[0].CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS, '4');
+  assert.equal(readJson(path.join(run.runDirFor(a, capped), 'run.json')).env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS, '4');
+  assert.equal('CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS' in seen[1], false, "an arm without it does not pass the parent's");
+  assert.equal(readJson(path.join(run.runDirFor(a, plain), 'run.json')).env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS, undefined);
+});
+
+test('a maxConcurrentAgents of 0, 17 or "4" is refused before the launch', async () => {
+  for (const bad of [0, 17, '4']) {
+    const a = baseArgs();
+    const [cell] = armCells({ maxConcurrentAgents: bad });
+    const { calls, spawnSession } = standIn('error');
+    const { failed } = await run.runAll(a, [cell], spawnSession);
+    assert.equal(calls.length, 0, `${JSON.stringify(bad)} was launched`);
+    assert.equal(failed.length, 1);
+    assert.match(readJson(path.join(run.runDirFor(a, cell), 'error.json')).message, /maxConcurrentAgents must be a whole number from 1 to 16/);
+  }
+});
+
+test("an arm's setup is applied after the task's own", async () => {
+  const a = baseArgs();
+  const [cell] = armCells({ setup: [{ file: 'SPEC.md', find: 'task-level marker', replace: 'arm-level marker' }] });
+  cell.task = { ...cell.task, setup: [{ file: 'SPEC.md', find: '# lockstep: a flat dependency resolver', replace: '# task-level marker' }] };
+  let spec = null;
+  const { spawnSession } = standIn('error', (opts) => {
+    spec = fs.readFileSync(path.join(opts.cwd, 'SPEC.md'), 'utf8');
+  });
+  await run.runAll(a, [cell], spawnSession);
+  assert.ok(spec.startsWith('# arm-level marker\n'), spec.slice(0, 80));
+});

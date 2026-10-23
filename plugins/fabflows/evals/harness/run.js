@@ -622,8 +622,16 @@ function runCell(a, cell, settingsPath, spawnSession = spawn) {
   // Set after the removal, which would otherwise take them. A ceiling of '0' lifts the 600 s cap
   // on waiting for background work in print mode.
   Object.assign(env, { FABFLOWS_PROBE: probePath, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0' });
-  at('fixture', () => prepareFixture(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, cell.task.setup || []));
-  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, TMPDIR: env.TMPDIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, droppedEnv, plugin: (a.pluginRecords || {})[cell.config] || null, startedAt: new Date().toISOString() });
+  // An arm may set the workflow agent cap, so the machine's CPU count does not set it (task 24).
+  const armCfg = armsFor(cell.task)[cell.arm];
+  const cap = armCfg.maxConcurrentAgents;
+  if (cap !== undefined) {
+    if (!Number.isInteger(cap) || cap < 1 || cap > 16) throw tagged('launch', new Error(`arm ${cell.arm}: maxConcurrentAgents must be a whole number from 1 to 16, got ${JSON.stringify(cap)}`));
+    env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS = String(cap);
+  }
+  // An arm's setup runs after the task's own.
+  at('fixture', () => prepareFixture(fixture, `bench/t${cell.task.id}-${cell.config}-r${cell.run}`, cell.task.fixture || CONFIG.fixture, [...(cell.task.setup || []), ...(armCfg.setup || [])]));
+  writeJson(path.join(runDir, 'run.json'), { cwd: fixture, command: [command, ...args], env: { FABFLOWS_PROBE: env.FABFLOWS_PROBE, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: env.CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS: env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS, GH_CONFIG_DIR: env.GH_CONFIG_DIR, TMPDIR: env.TMPDIR, PATH: cell.task.agent ? env.PATH.split(path.delimiter)[0] : undefined }, droppedEnv, plugin: (a.pluginRecords || {})[cell.config] || null, startedAt: new Date().toISOString() });
 
   const caps = capsFor(cell.task);
   return new Promise((resolve, reject) => {

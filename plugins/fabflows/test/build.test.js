@@ -209,15 +209,15 @@ test('an invalid or missing head makes the next round judge the whole diff as ro
   }
 });
 
-test('a sweeping review runs at xhigh; a rework-only review after a valid head runs at high', async () => {
+test('a sweeping review runs at high; a rework-only review after a valid head runs at high', async () => {
   const first = await run(ARGS, [built, accept]);
-  assert.equal(first.calls[1].opts.effort, 'xhigh', 'round 1 sweeps');
+  assert.equal(first.calls[1].opts.effort, 'high', 'round 1 sweeps');
   const valid = await run(ARGS, [built, { ...rework, head: H }, built, accept]);
-  assert.equal(valid.calls[1].opts.effort, 'xhigh');
+  assert.equal(valid.calls[1].opts.effort, 'high');
   assert.equal(valid.calls[3].opts.effort, 'high', 'a later round after a valid head');
   for (const head of [undefined, 'HEAD', 'abc12', 'deadbee']) {
     const { calls } = await run(ARGS, [built, { ...rework, head }, built, accept]);
-    assert.equal(calls[3].opts.effort, 'xhigh', `no valid head sweeps: ${JSON.stringify(head)}`);
+    assert.equal(calls[3].opts.effort, 'high', `no valid head sweeps: ${JSON.stringify(head)}`);
   }
 });
 
@@ -605,7 +605,7 @@ test('the lens briefs split the review: the sweep lens sweeps only, the spec len
 });
 
 // The sweep lens runs on Sonnet at high effort; the spec lens and a later single reviewer keep
-// reviewerModel at xhigh, so a reviewerModel of fable moves only those two calls (#181).
+// reviewerModel at high, so a reviewerModel of fable moves only those two calls (#181).
 test('the sweep lens runs on sonnet at high effort; reviewerModel reaches only the spec lens and a later reviewer', async () => {
   const h = H;
   for (const reviewerModel of [undefined, 'fable']) {
@@ -615,8 +615,8 @@ test('the sweep lens runs on sonnet at high effort; reviewerModel reaches only t
     assert.equal(sweepCalls[0].opts.label, 'review:1:sweep');
     assert.equal(sweepCalls[0].opts.model, 'sonnet', `sweep lens model with reviewerModel ${reviewerModel}`);
     assert.equal(sweepCalls[0].opts.effort, 'high', 'sweep lens effort');
-    // The spec lens sweeps nothing but judges round 1 at xhigh; the rework-only reviewer runs at high (#182).
-    for (const [{ opts }, effort] of [[calls[1], 'xhigh'], [calls[3], 'high']]) {
+    // The spec lens sweeps nothing but judges round 1 at high (#227); the rework-only reviewer runs at high (#182).
+    for (const [{ opts }, effort] of [[calls[1], 'high'], [calls[3], 'high']]) {
       assert.match(opts.label, /^review:(1:spec|2)$/);
       assert.equal(opts.model, want, `${opts.label} carries reviewerModel`);
       assert.equal(opts.effort, effort, `${opts.label} effort`);
