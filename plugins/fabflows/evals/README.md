@@ -103,7 +103,8 @@ lead commits there, so the main checkout may not hold the work. Each loop prefix
 lead the user's yes to set that worktree up, and `EnterWorktree` is in `allowedTools`. After
 the session, `git worktree list --porcelain` picks the checkout to grade:
 
-1. The checkout that has the run's `bench/t<id>-<config>-r<run>` branch checked out.
+1. The checkout that has the run's `bench/t<id>-<config>-r<run>` branch checked out, when its
+   HEAD has commits that the setup commit lacks.
 2. Otherwise, the one worktree under `.claude/worktrees/` whose HEAD has commits that the setup
    commit lacks.
 3. Otherwise, the main checkout. Two or more committed worktrees also land here, so the run

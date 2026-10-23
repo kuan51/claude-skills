@@ -145,7 +145,8 @@ test('the grade reads the checkout that holds the bench branch or the one commit
     g(dir, 'add', '-A');
     g(dir, 'commit', '-q', '-m', 'feat: lockstep outdated');
   };
-  const gradeWith = async (arrange) => {
+  // checks is false for a run that grades the main checkout with no work in it, so it fails.
+  const gradeWith = async (arrange, checks = true) => {
     const a = baseArgs({ regrade: true });
     const [cell] = run.buildCells({ tasks: [8], arms: ['inline'], repeats: 1 });
     const dir = run.runDirFor(a, cell);
@@ -159,6 +160,7 @@ test('the grade reads the checkout that holds the bench branch or the one commit
     const { failed } = await run.runAll(a, [cell], () => assert.fail('a regrade never launches a session'));
     assert.deepEqual(failed, []);
     const grading = readJson(path.join(dir, 'grading.json'));
+    if (!checks) return grading.checkout;
     const find = (re) => grading.expectations.find((e) => re.test(e.text));
     assert.equal(find(/^Hidden acceptance suite: /).passed, true, find(/^Hidden acceptance suite: /).evidence);
     assert.equal(find(/^Working tree is clean/).passed, true);
@@ -183,6 +185,18 @@ test('the grade reads the checkout that holds the bench branch or the one commit
     g(y, 'branch', '-m', 'feature');
     commitSolution(y);
   }), '.claude/worktrees/y');
+  // The bench branch left empty in the main checkout, one committed worktree on another branch.
+  assert.equal(await gradeWith(({ fixture }) => {
+    g(fixture, 'worktree', 'add', '-q', '-b', 'feature', '.claude/worktrees/z');
+    commitSolution(path.join(fixture, '.claude', 'worktrees', 'z'));
+  }), '.claude/worktrees/z');
+  // The bench branch empty and two committed worktrees: the main checkout, which fails visibly.
+  assert.equal(await gradeWith(({ fixture }) => {
+    for (const w of ['p', 'q']) {
+      g(fixture, 'worktree', 'add', '-q', '-b', `feature-${w}`, `.claude/worktrees/${w}`);
+      commitSolution(path.join(fixture, '.claude', 'worktrees', w));
+    }
+  }, false), '.');
 });
 
 test('a loop arm may enter the build worktree: EnterWorktree allowed, the yes in every loop prefix, worktrees based on HEAD', () => {

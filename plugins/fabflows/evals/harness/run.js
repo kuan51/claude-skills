@@ -526,8 +526,8 @@ function compactTranscript(events) {
 }
 
 // The checkout a session's work is graded in, relative to the fixture: the one with the bench
-// branch checked out, else the one worktree under .claude/worktrees/ whose HEAD has commits the
-// setup commit does not, else the main checkout ('.'). Two committed worktrees grade '.' and fail visibly.
+// branch checked out when it has commits the setup commit does not, else the one such worktree
+// under .claude/worktrees/, else the main checkout ('.'). Two committed worktrees grade '.' and fail visibly.
 function gradedCheckout(fixture, branch) {
   const g = (...args) => spawnSync('git', ['-C', fixture, ...args], { encoding: 'utf8' });
   const list = g('worktree', 'list', '--porcelain');
@@ -539,11 +539,13 @@ function gradedCheckout(fixture, branch) {
     head: (b.match(/^HEAD ([0-9a-f]+)$/m) || [])[1],
     branch: (b.match(/^branch (.+)$/m) || [])[1],
   }));
-  const onBranch = trees.find((t) => t.branch === `refs/heads/${branch}`);
-  if (onBranch) return rel(onBranch.dir);
   // The bench branch may be gone (renamed), so its starting commit is found by the setup subject.
   const start = g('rev-list', '-1', '--all', '--fixed-strings', `--grep=${SETUP_SUBJECT}`).stdout.trim();
-  const committed = trees.filter((t) => t.head && start && rel(t.dir).startsWith('.claude/worktrees/') && Number(g('rev-list', '--count', `${start}..${t.head}`).stdout) > 0);
+  const hasCommits = (t) => t.head && start && Number(g('rev-list', '--count', `${start}..${t.head}`).stdout) > 0;
+  // An empty bench branch is skipped: a lead on the new-branch path leaves it in the main checkout.
+  const onBranch = trees.find((t) => t.branch === `refs/heads/${branch}`);
+  if (onBranch && hasCommits(onBranch)) return rel(onBranch.dir);
+  const committed = trees.filter((t) => rel(t.dir).startsWith('.claude/worktrees/') && hasCommits(t));
   return committed.length === 1 ? rel(committed[0].dir) : '.';
 }
 
