@@ -30,12 +30,18 @@ In plan mode, these steps run after ExitPlanMode.
    - You did not write it (the user or someone else did): show the user the full raw
      `normalize` output of the read file.
 
-   Get a yes. Only then run `ticket.js approve < <read file>`.
+   Get a yes. Only then run `ticket.js approve < <read file>`, then record the fingerprint:
+   edit the ticket's Links section to carry a `- Spec: <specHash>` bullet, with the
+   `specHash` that `ticket.js status` prints, replacing any earlier Spec bullet. Re-read the
+   description into a new file and run `ticket.js check < <file>`, so a tracker round trip
+   that changed fingerprinted text is caught at once. The Links line is for visibility only:
+   a new clone trusts it only when a commit's `Spec:` trailer agrees.
 3. Before `fabflows:build`, re-read the ticket description into a new file and run
    `ticket.js check < <file>`. On a failure, `check` prints the path of the approved text it
    verified: run `diff -u '<that path>' <normalized new file>`, show the user the raw diff, and
-   get a new yes, then `ticket.js approve` that file and check again. When `check` says the
-   approved text was tampered with, show the full raw `normalize` output instead.
+   get a new yes, then `ticket.js approve` that file, record the fingerprint in Links as in
+   step 2, and check again. When `check` says the approved text was tampered with, show the
+   full raw `normalize` output instead.
 4. The build's `spec` is `ticket.js normalize < <file>` of that same file: the ticket text as
    written, minus HTML comments, invisible and control characters, and the Links section. Do
    not add the commit trailers to it: keep `Refs: <key>` and `Spec: <specHash>`, both from

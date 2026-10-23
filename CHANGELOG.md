@@ -8,6 +8,17 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows-tickets 1.1.0** -- a fresh clone or project thread can rebuild its ticket link.
+  After each approval the ticket skill writes the approved fingerprint into the ticket's Links
+  section as a `- Spec: <specHash>` bullet. The new `ticket.js recover '<key>' '<url>'
+  '<tracker>' < <file>` records the link from the ticket description, after the user's yes,
+  and records the approval only when the description's fingerprint, its Links `Spec:` and the
+  `Spec:` trailer of the newest first-parent commit carrying `Refs: <key>` agree in a clone
+  that is not shallow. It refuses on a branch that already has a link or when Links names
+  another branch, never records a PR, and prints fixed reason codes, never ticket text. The
+  skill's new "Recover a link" section, which the SessionStart trailer line now points at,
+  runs the normal approval when `recover` says `approved: false`.
+
 - **fabflows 2.0.0** -- ticketing moves to a new companion plugin, **fabflows-tickets 1.0.0**,
   which depends on fabflows `^2.0`; fabflows itself names no dependency. Sessions in a repo
   with no tracker no longer load three ticket skill descriptions or run the ticket hook on every

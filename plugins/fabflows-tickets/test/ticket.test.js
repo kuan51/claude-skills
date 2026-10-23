@@ -365,7 +365,7 @@ test('linking: other branch, Refs trailers with and without origin/HEAD', () => 
       r.git('commit', '-q', '--allow-empty', '-m', 'bad again\n\nRefs: $(echo x)');
       assert.equal(
         start(r.dir),
-        'fabflows: ticket ABC-9 found in commit trailers, not confirmed: ask the user before editing it.',
+        'fabflows: ticket ABC-9 found in commit trailers, not confirmed: ask the user, then follow fabflows-tickets:ticket "Recover a link".',
         `trailer link (origin/HEAD ${originHead ? 'set' : 'unset'})`
       );
       assert.equal(shell(r.dir, 'git commit -m x').decision, 'deny', 'an unconfirmed link still needs Refs');
@@ -374,6 +374,109 @@ test('linking: other branch, Refs trailers with and without origin/HEAD', () => 
     } finally {
       r.done();
     }
+  }
+});
+
+// recover: a fresh clone rebuilds the link from the ticket text and the branch's own commits.
+const SPEC1 = 'spec SECRET-MARK\n\n## Behaviour\n- one';
+const SPEC2 = 'spec SECRET-MARK\n\n## Behaviour\n- two';
+const fp = (t) => require(TICKET).fingerprint(t);
+const ticketText = (spec, links) => `${spec}\n\n## Links\n${links}`;
+const linksFor = (spec) => `- Branch: feature · PR: https://github.com/o/r/pull/3\n* Spec: ${fp(spec)}`;
+const trailerCommit = (r, msg, spec) => r.git('commit', '-q', '--allow-empty', '-m', `${msg}\n\nRefs: ABC-1\nSpec: ${fp(spec)}`);
+// Runs recover and checks no ticket text reaches its output; on a failure it must write nothing.
+function recover(r, text) {
+  const out = cli(r.dir, ['recover', 'ABC-1', URL, 'jira'], text);
+  assert.ok(!(out.stdout + out.stderr).includes('SECRET'), `ticket text in output: ${out.stdout}${out.stderr}`);
+  if (out.status !== 0) return { status: out.status, state: fs.existsSync(r.state) ? fs.readFileSync(r.state, 'utf8') : null };
+  const state = JSON.parse(fs.readFileSync(r.state, 'utf8'));
+  const res = JSON.parse(out.stdout);
+  assert.equal(out.stdout.split('\n').length, 2, 'one JSON line');
+  assert.deepEqual(Object.keys(res), ['key', 'approved', 'reason']);
+  assert.equal(state.pr, null, 'a Links PR is never recorded');
+  assert.equal(state.specHash, res.approved ? fp(text) : null);
+  cli(r.dir, ['clear']);
+  return res;
+}
+const said = (reason) => ({ key: 'ABC-1', approved: reason === 'approved', reason });
+
+test('recover records the approval only when the text, Links Spec and newest trailer agree', () => {
+  const r = repo();
+  try {
+    const good = ticketText(SPEC1, linksFor(SPEC1));
+    assert.deepEqual(recover(r, good), said('no-matching-trailer'), 'before the first commit there is no trailer');
+    trailerCommit(r, 'build', SPEC1);
+
+    const out = cli(r.dir, ['recover', 'ABC-1', URL, 'jira'], good);
+    assert.equal(out.status, 0, out.stderr);
+    assert.deepEqual(JSON.parse(out.stdout), said('approved'));
+    assert.deepEqual(JSON.parse(fs.readFileSync(r.state, 'utf8')), { key: 'ABC-1', url: URL, tracker: 'jira', branch: 'feature', specHash: fp(SPEC1), pr: null });
+    assert.equal(fs.readFileSync(r.state.replace(/\.json$/, '.approved.md'), 'utf8'), require(TICKET).normalize(SPEC1) + '\n');
+    assert.equal(cli(r.dir, ['check'], good).status, 0, 'check passes on the same text');
+    const before = fs.readFileSync(r.state, 'utf8');
+    assert.deepEqual(recover(r, good), { status: 1, state: before }, 'a branch with a link is refused, nothing written');
+    cli(r.dir, ['clear']);
+
+    const spec = `* Spec: ${fp(SPEC1)}`;
+    assert.deepEqual(recover(r, ticketText(SPEC1, '- Branch: feature')), said('no-spec-line'), 'no Spec bullet');
+    assert.deepEqual(recover(r, ticketText(SPEC1, `${spec}\n- Spec: ${fp(SPEC1)}`)), said('no-spec-line'), 'a duplicated Spec bullet');
+    assert.deepEqual(recover(r, `${SPEC1}\n\n## Links\n${spec}\n\n## Links\n- Branch: feature`), said('no-spec-line'), 'a Spec in an earlier Links section');
+    assert.deepEqual(recover(r, ticketText(SPEC1, `\`\`\`\n${spec}\n\`\`\``)), said('no-spec-line'), 'a Spec inside a fence');
+    assert.deepEqual(recover(r, ticketText(SPEC1, `- Spec: sha256:${'x'.repeat(64)}`)), said('no-spec-line'), 'an invalid Spec');
+
+    assert.deepEqual(recover(r, ticketText(SPEC2, linksFor(SPEC1))), said('text-changed'), 'text edited after approval');
+    assert.deepEqual(recover(r, ticketText(SPEC2, linksFor(SPEC2))), said('no-matching-trailer'), 'Links Spec edited to match');
+
+    trailerCommit(r, 're-approved', SPEC2);
+    assert.deepEqual(recover(r, good), said('no-matching-trailer'), 'an older approval pasted back: the newest trailer wins');
+    assert.deepEqual(recover(r, ticketText(SPEC2, linksFor(SPEC2))), said('approved'));
+
+    assert.deepEqual(recover(r, ticketText(SPEC2, `- Spec: ${fp(SPEC2)}`)), said('approved'), 'a missing Branch is ignored');
+    assert.deepEqual(recover(r, ticketText(SPEC2, `- Branch: feat ure · Spec: ${fp(SPEC2)}`)), said('approved'), 'an invalid Branch is ignored');
+    assert.deepEqual(recover(r, ticketText(SPEC2, `- Branch: other · Spec: ${fp(SPEC2)}`)), { status: 1, state: null }, 'another branch writes nothing');
+
+    assert.deepEqual(recover(r, `${SPEC2}\n<!-- open\n\n## Links\n${linksFor(SPEC2)}`), said('refused-text'), 'an unclosed <!--');
+    fs.mkdirSync(path.join(r.dir, '.claude'));
+    fs.writeFileSync(path.join(r.dir, '.claude', 'fabflows.json'), JSON.stringify({ compliance: { frameworks: ['soc2'] } }));
+    assert.deepEqual(recover(r, ticketText(SPEC2, linksFor(SPEC2))), said('refused-text'), 'no Compliance section with compliance on');
+  } finally {
+    r.done();
+  }
+});
+
+test('recover reads only first-parent Refs+Spec trailers in base..HEAD of a full clone', () => {
+  const good = ticketText(SPEC1, linksFor(SPEC1));
+  const cases = {
+    'a Spec trailer without Refs: <key>': (r) => r.git('commit', '-q', '--allow-empty', '-m', `x\n\nRefs: ABC-2\nSpec: ${fp(SPEC1)}`),
+    "a commit reached only through a merge's second parent": (r) => {
+      r.git('checkout', '-q', '-b', 'side', 'main');
+      trailerCommit(r, 'side', SPEC1);
+      r.git('checkout', '-q', 'feature');
+      r.git('merge', '-q', '--no-ff', '-m', 'merge side', 'side');
+    },
+    'a commit outside <base>..HEAD': (r) => {
+      trailerCommit(r, 'build', SPEC1);
+      r.git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+    },
+  };
+  for (const [name, setup] of Object.entries(cases)) {
+    const r = repo();
+    try {
+      setup(r);
+      assert.deepEqual(recover(r, good), said('no-matching-trailer'), name);
+    } finally {
+      r.done();
+    }
+  }
+  const r = repo();
+  const clone = r.dir + '-shallow';
+  try {
+    trailerCommit(r, 'build', SPEC1);
+    execFileSync('git', ['clone', '-q', '--depth', '1', '--branch', 'feature', `file://${r.dir}`, clone], { stdio: 'ignore' });
+    assert.deepEqual(recover({ ...r, dir: clone, state: r.state.replace(r.dir, clone) }, good), said('shallow-clone'));
+  } finally {
+    r.done();
+    fs.rmSync(clone, { recursive: true, force: true });
   }
 });
 
