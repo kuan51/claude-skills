@@ -63,7 +63,7 @@ Links live per clone. When SessionStart says a ticket was found only in commit t
 1. Ask the user whether to link that key. Without a yes, stop.
 2. Write the ticket description to a scratch file with the Write tool, then run
    `ticket.js recover '<key>' '<url>' '<tracker>' < <file>`. It links the branch and prints
-   `{ "key", "approved", "reason" }`; it trusts the Links Spec only when a commit trailer agrees.
+   `{ "key", "approved", "reason" }`. It trusts the Links Spec only when a commit trailer agrees.
 3. `approved: false`: show the user the full raw `normalize` output, get a yes, then run
    `ticket.js approve` and add the Spec bullet to Links.
 4. A PR in Links: run `ticket.js pr` only after the tracker or GitHub tools confirm that PR
