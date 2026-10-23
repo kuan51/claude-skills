@@ -1,0 +1,28 @@
+{
+  "about": "Trigger-accuracy corpus for the fabflows-tickets plugin's three skills. Same shape as plugins/ciso/evals/trigger-corpus.json and run by the same manual procedure (plugins/ciso/evals/RUNBOOK.md). `setup` should load when choosing where specs live; `ticket` when linking, updating or closing a tracker ticket; `trace` when tracing merged changes to tickets, specs and approvals for an audit. The negatives share the trigger vocabulary (ticket, Jira, Linear, issue, trace, audit, set up) with an intent no fabflows-tickets skill serves.",
+  "expectedValues": ["setup", "ticket", "trace", null],
+  "categories": ["explicit", "implicit", "contextual", "disambiguation", "negative"],
+  "queries": [
+    { "query": "/fabflows-tickets:setup", "expected": "setup", "category": "explicit" },
+    { "query": "Set up fabflows so our specs go into Jira tickets instead of docs/specs", "expected": "setup", "category": "explicit" },
+    { "query": "We track everything in Linear. Can fabflows keep its specs there?", "expected": "setup", "category": "implicit" },
+    { "query": "Stop writing spec files into the repo, put them in GitHub issues from now on", "expected": "setup", "category": "contextual" },
+    { "query": "Link this branch to ABC-142 and move it to in progress", "expected": "ticket", "category": "explicit" },
+    { "query": "The PR merged but issue #58 is still open, close it out", "expected": "ticket", "category": "contextual" },
+    { "query": "Add the PR link to the ticket and move it to in review", "expected": "ticket", "category": "implicit" },
+    { "query": "We agreed to drop the CSV export, update the ticket's out of scope section", "expected": "ticket", "category": "disambiguation" },
+    { "query": "/fabflows-tickets:trace from v1.4.0 to HEAD", "expected": "trace", "category": "explicit" },
+    { "query": "The SOC 2 auditor wants every merged change since the last release with its ticket and approver", "expected": "trace", "category": "implicit" },
+    { "query": "Which merges since the last tag have no ticket or were self-approved?", "expected": "trace", "category": "contextual" },
+    { "query": "Not the ticket for this branch: I need a report tracing every merged PR to its approved spec", "expected": "trace", "category": "disambiguation" },
+    { "query": "delegate this ticket to Jane in Jira", "expected": null, "category": "negative" },
+    { "query": "trace the network route to github.com", "expected": null, "category": "negative" },
+    { "query": "print a stack trace when this function throws", "expected": null, "category": "negative" },
+    { "query": "set up a Jira account for our new hire", "expected": null, "category": "negative" },
+    { "query": "what's the difference between an epic and a story in Jira", "expected": null, "category": "negative" },
+    { "query": "audit our npm dependencies for known vulnerabilities", "expected": null, "category": "negative" },
+    { "query": "set up a GitHub Actions workflow that runs the linter", "expected": null, "category": "negative" },
+    { "query": "export our Linear issues to a CSV for the planning meeting", "expected": null, "category": "negative" },
+    { "query": "delete the local branches that already merged", "expected": null, "category": "negative" }
+  ]
+}

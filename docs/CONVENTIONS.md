@@ -24,15 +24,17 @@ yourself before running docs-warden's scripts locally).
 - `.claude-plugin/marketplace.json`: the marketplace manifest; must agree
   with each plugin's `plugin.json` on `name` and `version` (see
   [CLAUDE.md](../CLAUDE.md)).
-- `test/`: root-level tests, currently just marketplace/plugin manifest
-  consistency checks.
+- `test/`: root-level tests, currently marketplace/plugin manifest
+  consistency checks and a check that every `fabflows-tickets:<skill>` a
+  fabflows skill names exists.
 - `docs/`: this document set, plus `docs/specs/`: dated design records written
   by `fabflows:brainstorming`, one per change (`<YYYY-MM-DD>-<slug>.md`), never
   renamed or overwritten. A spec describes the behaviour, how to check it, what
   is out of scope, the decisions taken and what was deferred. When
   `.claude/fabflows.json` names a tracker, the spec lives in the linked ticket
-  instead of `docs/specs/`; a ticket can be edited, so the approval fingerprint
-  (`ticket.js approve`) and each commit's `Spec:` trailer replace the "never
+  instead of `docs/specs/`, kept by the `fabflows-tickets` plugin; a ticket can be
+  edited, so the approval fingerprint
+  (`ticket.js approve`, in `plugins/fabflows-tickets/hooks/`) and each commit's `Spec:` trailer replace the "never
   overwritten" guarantee.
 
 ## Branches and commits
@@ -64,9 +66,11 @@ plugin.
   and its agent's frontmatter and dispatch name with
   `node --test "plugins/docs-warden/test/*.test.js"`.
 - `fabflows`'s suite covers its hook as well as its manifests:
-  `node --test "plugins/fabflows/test/*.test.js"`, plus the offline bats suite
-  for the ticket and PR flows: `bats plugins/fabflows/test/pm`. Keep to `test/`:
+  `node --test "plugins/fabflows/test/*.test.js"`. Keep to `test/`:
   the tests under `evals/fixtures/` belong to the benchmark's fixture projects.
+- `fabflows-tickets`'s suite covers its ticket hook and skills:
+  `node --test "plugins/fabflows-tickets/test/*.test.js"`, plus the offline bats
+  suite for the ticket and PR flows: `bats plugins/fabflows-tickets/test/pm`.
 
 A plugin that includes a hook keeps that hook's allow and deny cases in a table its
 test suite drives directly. CI runs them with every other plugin test file

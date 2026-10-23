@@ -12,8 +12,8 @@ const has = (text, needles, file) => {
   for (const n of needles) assert.ok(text.includes(n), `${file} must name ${n}`);
 };
 
-test('fabflows-setup asks once, writes the config, and never connects a server', () => {
-  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), ['AskUserQuestion', '.claude/fabflows.json', 'never runs `claude mcp add`', '"parent"', 'filed under a parent', 'hold child tickets', 'jira_get_issue'], 'fabflows-setup/SKILL.md');
+test('setup asks once, writes the config, and never connects a server', () => {
+  has(read(PLUGIN, 'skills', 'setup', 'SKILL.md'), ['AskUserQuestion', '.claude/fabflows.json', 'never runs `claude mcp add`', '"parent"', 'filed under a parent', 'hold child tickets', 'jira_get_issue'], 'setup/SKILL.md');
 });
 
 test('ticket names every tool, every template label and each standing rule', () => {
@@ -47,33 +47,45 @@ test('ticket assigns the PR and the linked ticket to the MCP user', () => {
   ], 'ticket/SKILL.md The pull request');
 });
 
-test('brainstorming approves and checks the ticket through Write-tool files', () => {
-  has(read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md'), ['ticket.js approve', 'ticket.js check', 'written with the Write tool'], 'brainstorming/SKILL.md');
+// The steps brainstorming used to carry, and the section of ticket/SKILL.md that points at them.
+const FROM_BRAINSTORMING = path.join('skills', 'ticket', 'references', 'spec-from-brainstorming.md');
+const fromBrainstormingSection = () => {
+  const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
+  const start = ticket.indexOf('## Spec from brainstorming');
+  assert.ok(start >= 0, 'ticket/SKILL.md must have ## Spec from brainstorming');
+  const end = ticket.indexOf('\n## ', start + 1);
+  return ticket.slice(start, end < 0 ? undefined : end);
+};
+
+test('spec from brainstorming approves and checks the ticket through Write-tool files', () => {
+  has(read(PLUGIN, FROM_BRAINSTORMING), ['ticket.js approve', 'ticket.js check', 'written with the Write tool'], FROM_BRAINSTORMING);
+  // The security rule stays in the text that is always loaded, not only in the reference file.
+  has(fromBrainstormingSection(), ['references/spec-from-brainstorming.md', 'written with the Write tool', 'never inside a shell command'], 'ticket/SKILL.md Spec from brainstorming');
 });
 
-test('brainstorming and ticket show the user raw ticket text', () => {
+test('spec from brainstorming and ticket show the user raw ticket text', () => {
   const review = ['raw diff', 'description only', 'diff -u', 'did not write', 'full raw'];
-  const brainstorming = read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md');
-  has(brainstorming, [...review, 'ticket.js status'], 'brainstorming/SKILL.md');
+  const brainstorming = read(PLUGIN, FROM_BRAINSTORMING);
+  has(brainstorming, [...review, 'ticket.js status'], FROM_BRAINSTORMING);
   const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
   has(ticket, review, 'ticket/SKILL.md');
   const afterMerge = ticket.slice(ticket.indexOf('## After a PR closes'));
   has(afterMerge, ['Refs-only', 'clear --pr'], 'ticket/SKILL.md after-merge paragraph');
 });
 
-test('fabflows-setup asks for compliance frameworks', () => {
+test('setup asks for compliance frameworks', () => {
   const needles = ['compliance.frameworks', '`soc2`', '`iso27001`', '`iec62304`', 'lowercased', 'leaves compliance off', '**None** leaves compliance off', 'typed `none`', '**None** together with any framework is refused'];
-  has(read(PLUGIN, 'skills', 'fabflows-setup', 'SKILL.md'), needles, 'fabflows-setup/SKILL.md');
+  has(read(PLUGIN, 'skills', 'setup', 'SKILL.md'), needles, 'setup/SKILL.md');
 });
 
-test('ticket and brainstorming carry the Compliance section and its labels', () => {
+test('ticket and spec from brainstorming carry the Compliance section and its labels', () => {
   const ticket = read(PLUGIN, 'skills', 'ticket', 'SKILL.md');
   has(ticket, [
     '## Compliance', '- Controls:', '- Change:', '- Class:', '- Traces:', 'ticket.js labels',
     'never guesses', 'never blocks', 'before `Links`', 'Decisions or Compliance;\n  then re-approve',
     '`editJiraIssue` with `fields: { labels: [...] }`',
   ], 'ticket/SKILL.md');
-  has(read(PLUGIN, 'skills', 'brainstorming', 'SKILL.md'), ['Compliance section', 'show the user the refusal'], 'brainstorming/SKILL.md');
+  has(read(PLUGIN, FROM_BRAINSTORMING), ['Compliance section', 'show the user the refusal'], FROM_BRAINSTORMING);
 });
 
 test('trace enriches through MCP, reports flags only and keeps the report out of the repo', () => {
@@ -98,25 +110,29 @@ test('no skill or README names the old single state file', () => {
 
 test('the README names the ticket hook, the ticket skills and raw review', () => {
   const readme = read(PLUGIN, 'README.md');
-  const warning = readme.slice(0, readme.indexOf('## The problem'));
+  const warning = readme.slice(0, readme.indexOf('## Upgrading'));
   has(warning, ['ticket.js'], 'README hook warning');
-  const included = readme.slice(readme.indexOf("## What's included"), readme.indexOf('## Brainstorming'));
-  has(included, ['`fabflows-setup`', '`ticket`'], "README What's included");
+  const upgrade = readme.slice(readme.indexOf('## Upgrading'), readme.indexOf("## What's included")).replace(/\s+/g, ' ');
+  has(upgrade, ['installed and enabled wherever fabflows runs', "project's own plugin settings", 'builds stop', 'no longer checked'], 'README upgrade step');
+  const included = readme.slice(readme.indexOf("## What's included"), readme.indexOf('## Tickets'));
+  has(included, ['`setup`', '`ticket`'], "README What's included");
   const tickets = readme.slice(readme.indexOf('## Tickets'), readme.indexOf('\n## ', readme.indexOf('## Tickets') + 1));
   has(tickets, ['raw diff', 'per-branch', 'unclosed `<!--`', 'refuses', 'worktree'], 'README Tickets');
 });
 
-test('0.9.0 documents the trace report and the compliance limits', () => {
+test('fabflows-tickets documents the trace report and the compliance limits', () => {
   const plugin = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
-  const market = JSON.parse(read(ROOT, '.claude-plugin', 'marketplace.json')).plugins.find((p) => p.name === 'fabflows');
-  const bullet = read(ROOT, 'README.md').split('\n- **').find((b) => b.startsWith('[fabflows]'));
+  const market = JSON.parse(read(ROOT, '.claude-plugin', 'marketplace.json')).plugins.find((p) => p.name === 'fabflows-tickets');
+  assert.ok(market, 'marketplace.json must register fabflows-tickets');
+  const bullet = read(ROOT, 'README.md').split('\n- **').find((b) => b.startsWith('[fabflows-tickets]'));
+  assert.ok(bullet, 'the root README must have a fabflows-tickets bullet');
   for (const [text, file] of [[plugin.description, 'plugin.json'], [market.description, 'marketplace.json'], [bullet, 'root README bullet']]) {
     has(text.replace(/\s+/g, ' '), ['trace report'], file);
   }
   const readme = read(PLUGIN, 'README.md');
   assert.match(readme, /^## Compliance$/m);
   const start = readme.indexOf('\n## Compliance');
-  const section = readme.slice(start, readme.indexOf('\n## The build loop', start)).replace(/\s+/g, ' ');
+  const section = readme.slice(start, readme.indexOf('\n## Tests', start)).replace(/\s+/g, ' ');
   const limits = [
     'Labels are best-effort', 'AI authorship is detected by trailer and author name only',
     'A re-approved ticket marks earlier commits `spec-changed`', 'no proof of review quality',
@@ -129,7 +145,7 @@ test('the current version is documented', () => {
   const { version } = JSON.parse(read(PLUGIN, '.claude-plugin', 'plugin.json'));
   assert.match(read(PLUGIN, 'README.md'), /^## Tickets$/m);
   const log = read(ROOT, 'CHANGELOG.md');
-  assert.ok(log.includes(`fabflows ${version}`), `CHANGELOG.md must name fabflows ${version}`);
+  assert.ok(log.includes(`fabflows-tickets ${version}`), `CHANGELOG.md must name fabflows-tickets ${version}`);
   // The tickets entry, whichever release is current: a later bump adds its own entry.
   const start = log.indexOf('specs can live in the tracker ticket');
   assert.ok(start >= 0, 'CHANGELOG.md must describe the tickets release');
