@@ -295,6 +295,12 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 2.0.3** -- a build-loop round that sweeps callees now runs its spec lens at high
+  effort, not xhigh (#227), so every build-loop reviewer runs at high. The spec lens stopped
+  sweeping callees in 0.16.0 and has been round 1's slowest step in every measured run since.
+  `agents/refuter.md` keeps its xhigh pin for a refuter launched outside the loop. Not yet
+  measured: the eval in #227 waits on #224 and the other speed changes.
+
 - **fabflows 2.0.2** -- `fabflows:build` rework rounds (2 and 3) build on Sonnet at high effort
   instead of Opus at medium, since a rework builder only fixes a short must-fix list on staged
   work (#228). Round 1 and the task builders stay on Opus.

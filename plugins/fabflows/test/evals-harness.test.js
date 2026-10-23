@@ -16,6 +16,7 @@ const DEP_RESOLVER = path.join(EVALS, 'fixtures', 'dep-resolver');
 const OUTDATED = path.join(EVALS, 'fixtures', 'lockstep-outdated');
 const UPDATE = path.join(EVALS, 'fixtures', 'lockstep-update');
 const WIDE = path.join(EVALS, 'fixtures', 'lockstep-wide');
+const PAIR = path.join(EVALS, 'fixtures', 'lockstep-pair');
 
 test('tasks.json is well formed: unique ids, both arms or per-task arms, a prompt and a grade kind per task', () => {
   const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
@@ -140,6 +141,38 @@ test('the update-minimal fixture fails only the update and cli cases', () => {
   assert.ok(r.failed.some((n) => n.startsWith('update:')), `the update cases must fail on the fixture:\n${r.out}`);
   const other = r.failed.filter((n) => !n.startsWith('update:') && !n.startsWith('cli:'));
   assert.deepEqual(other, [], 'no other hidden test may fail on the fixture');
+});
+
+// Task 24's solution holds only the two command modules: the graded tree is the fixture with
+// them copied in, as a run that built both would leave it.
+test('the parallel-tasks hidden suite passes against visible plus its solution, and fails against visible alone', (t) => {
+  const os = require('node:os');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lockstep-pair-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.cpSync(path.join(PAIR, 'visible'), root, { recursive: true });
+  fs.cpSync(path.join(PAIR, 'solution'), root, { recursive: true });
+  const solved = runHidden(path.join(PAIR, 'hidden'), root);
+  assert.equal(solved.status, 0, `hidden suite failed against the solution:\n${solved.out}`);
+  const r = runHidden(path.join(PAIR, 'hidden'), path.join(PAIR, 'visible'));
+  assert.notEqual(r.status, 0);
+  assert.ok(r.failed.some((n) => n.startsWith('outdated:')) && r.failed.some((n) => n.startsWith('upgrades:')), `both commands' cases must fail on the fixture:\n${r.out}`);
+  assert.deepEqual(r.failed.filter((n) => !n.startsWith('outdated:') && !n.startsWith('upgrades:')), [], 'no other hidden test may fail on the fixture');
+});
+
+test("task 24: the single arm's setup deletes only SPEC.md's ## Tasks section, and the parallel arm's tasks have disjoint files", () => {
+  const cfg = JSON.parse(fs.readFileSync(path.join(EVALS, 'tasks.json'), 'utf8'));
+  const task = cfg.tasks.find((x) => x.id === 24);
+  const spec = fs.readFileSync(path.join(PAIR, 'visible', 'SPEC.md'), 'utf8');
+  const { setup } = task.arms.single;
+  assert.deepEqual(setup.map((s) => s.file), ['SPEC.md']);
+  assert.equal(task.arms.parallel.setup, undefined, 'the parallel arm takes the fixture as is');
+  const after = spec.replace(setup[0].find, setup[0].replace);
+  assert.ok(spec.includes(setup[0].find) && !after.includes('## Tasks'), 'the setup must remove the ## Tasks section');
+  assert.equal(after, spec.slice(0, spec.indexOf('\n## Tasks')), 'everything before ## Tasks stays as it is');
+  const bullets = spec.slice(spec.indexOf('\n## Tasks')).split('\n').filter((l) => l.startsWith('- '));
+  const files = bullets.map((b) => [...b.slice(b.indexOf('files:')).matchAll(/`([^`]+)`/g)].map((m) => m[1]));
+  assert.deepEqual(files, [['src/commands/outdated.js', 'test/outdated.test.js'], ['src/commands/upgrades.js', 'test/upgrades.test.js']]);
+  assert.equal(new Set(files.flat()).size, files.flat().length, 'no file is in two tasks');
 });
 
 test('cells interleave by repeat then arm, rotating the arm order, and a task sets its own repeats unless --repeats is given', () => {
