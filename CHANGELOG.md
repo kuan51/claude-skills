@@ -6,12 +6,6 @@ per-plugin history until entries are recorded here going forward.
 
 ## [Unreleased]
 
-### Changed
-
-- **fabflows 1.0.1** -- `fabflows:build` rework rounds (2 and 3) build on Sonnet at high effort
-  instead of Opus at medium, since a rework builder only fixes a short must-fix list on staged
-  work (#228). Round 1 and the task builders stay on Opus.
-
 ### Added
 
 - **fabflows 1.0.0** -- every `fabflows:build` runs in its own git worktree under
@@ -272,6 +266,10 @@ per-plugin history until entries are recorded here going forward.
   packages.
 
 ### Changed
+
+- **fabflows 1.0.1** -- `fabflows:build` rework rounds (2 and 3) build on Sonnet at high effort
+  instead of Opus at medium, since a rework builder only fixes a short must-fix list on staged
+  work (#228). Round 1 and the task builders stay on Opus.
 
 - **fabflows 0.17.3** -- on an accepted build, the lead now reads every round's review report in
   full, not only the final verdict's, and relays in its closing message each reviewer note that

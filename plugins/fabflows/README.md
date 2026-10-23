@@ -250,8 +250,8 @@ not fixed, a regression or a real bug in that rework diff, or unstaged work. A n
 elsewhere is a note the lead reads.
 
 Round 1 builds on Opus because the builder gets the full spec up front and writes most of the output, so
-the loop overrides `editor`'s Sonnet pin. A rework builder does neither: it fixes a short must-fix list on
-work already staged, so rounds 2 and 3 build on Sonnet at high effort, the setting that halved the sweep
+the loop overrides `editor`'s Sonnet pin. Rounds 2 and 3 build on Sonnet at high effort, because a
+rework builder only fixes a short must-fix list on work already staged. That setting halved the sweep
 lens's time with quality unchanged (#181). The build-then-review order and the rework cap live
 in the workflow script, so they hold whatever the lead remembers, and the loop never merges, so
 merging stays a human pull request. The loop reviews on Opus by default because iteration 5
