@@ -56,6 +56,19 @@ node "${CLAUDE_PLUGIN_ROOT}/hooks/ticket.js" link '<key>' '<url>' '<tracker>'
 `<key>` is `#12` or `owner/repo#12` for GitHub, `ABC-12` for Jira and Linear. `<url>` is the
 ticket's `https://` address. `<tracker>` is the `tracker` value from `.claude/fabflows.json`.
 
+## Recover a link
+
+Links live per clone. When SessionStart says a ticket was found only in commit trailers:
+
+1. Ask the user whether to link that key. Without a yes, stop.
+2. Write the ticket description to a scratch file with the Write tool, then run
+   `ticket.js recover '<key>' '<url>' '<tracker>' < <file>`. It links the branch and prints
+   `{ "key", "approved", "reason" }`; it trusts the Links Spec only when a commit trailer agrees.
+3. `approved: false`: show the user the full raw `normalize` output, get a yes, then run
+   `ticket.js approve` and add the Spec bullet to Links.
+4. A PR in Links: run `ticket.js pr` only after the tracker or GitHub tools confirm that PR
+   is in this repository and its head branch is the current branch.
+
 ## Parent
 
 When `.claude/fabflows.json` has a non-empty `parent`, create every ticket under it in the
@@ -104,6 +117,7 @@ which the user sees in the raw text. Other servers are untested.
 
 ## Links
 - Branch: <branch> · PR: <url>
+- Spec: <specHash>
 ```
 
 Out of scope replaces a spec's Deferred: each cut item names the ticket that will carry it.
@@ -152,6 +166,9 @@ Edit the description only:
 - when the user agrees to change Behaviour, Check, Out of scope, Decisions or Compliance;
   then re-approve per steps 2 and 3 of `references/spec-from-brainstorming.md`, or the next
   `ticket.js check` fails, and after a Compliance change set the labels again;
+- after each `ticket.js approve`, to put the `- Spec: <specHash>` bullet in Links, with the
+  value `ticket.js status` prints, replacing any earlier Spec bullet; then re-read the
+  description and run `ticket.js check` on it;
 - when the PR opens, to fill Links;
 - at merge, to finish Links.
 
