@@ -10,7 +10,7 @@ the lead prove what those workers claim.
 > destructive shell commands, reads and writes of credential files, and writes to live
 > Claude Code configuration. Read [Guard rules](#guard-rules) before you install it,
 > including its [known gaps](#known-gaps). It behaves like a tripwire. It offers no
-> sandboxing. The ticket hook, `ticket.js`, ships in the companion plugin
+> sandboxing. The ticket hook, `ticket.js`, is part of the companion plugin
 > [fabflows-tickets](../fabflows-tickets/).
 
 ## The problem
