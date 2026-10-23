@@ -430,7 +430,7 @@ const NEXT = {
 const UNCOMMITTED = "The builder's work is uncommitted, staged or not: `git status --porcelain` and `git diff <baseRef>` show it."
 
 // The lead's commit gate on accepted: the workflow has no shell, so the lead commits.
-const ACCEPTED_NEXT = 'Run the commit gate: `git write-tree` equals verdict.head, and `git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; re-run testCommand; make exactly one commit of the staged tree on the feature branch with the ticket\'s `Refs:`/`Spec:` lines; then `git rev-parse HEAD^{tree}` equals verdict.head and `git status --porcelain` prints nothing. If a commit hook refuses the commit or changes the tree, stop and tell the user: never amend it or fix it unreviewed.'
+const ACCEPTED_NEXT = 'Run the commit gate: `git write-tree` equals verdict.head, and `git diff --name-only` and `git ls-files --others --exclude-standard :/` print nothing; re-run testCommand; make exactly one commit of the staged tree on the feature branch with the ticket\'s `Refs:`/`Spec:` lines when the branch is linked, per `fabflows-tickets:ticket`; then `git rev-parse HEAD^{tree}` equals verdict.head and `git status --porcelain` prints nothing. If a commit hook refuses the commit or changes the tree, stop and tell the user: never amend it or fix it unreviewed.'
 
 // A builder's deviation is data: it stands only when it cites a must-fix the builder was
 // actually sent, which is the previous round's review. Rework round r is build round r + 1 and

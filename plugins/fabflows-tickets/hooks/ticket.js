@@ -10,6 +10,9 @@
 //   normalize < spec             print the text the fingerprint is taken over
 //   fingerprint < spec           print the fingerprint approve would store
 //   labels < spec                print the labels for the spec's Compliance section
+//   recover <key> <url> <tracker> < spec
+//                                link from the ticket in a fresh clone, and record the approval
+//                                only when the Links Spec and the newest Refs+Spec trailer agree
 //   pr <url>                     record the pull request
 //   status                       print this branch's confirmed link as JSON, or exit 1
 //   prs                          print each link with a recorded PR, one JSON object a line
@@ -152,11 +155,12 @@ function scan(text) {
     if (nl < 0) break;
     o = nl + 1;
   }
+  const links = cut >= 0 ? lines.slice(cutLine + 1) : []; // what the cut removes, for recover
   if (cut >= 0) {
     out = out.slice(0, cut);
     lines.length = cutLine;
   }
-  return { text: out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd(), unclosedAt, lines };
+  return { text: out.split('\n').map((l) => l.trimEnd()).join('\n').trimEnd(), unclosedAt, lines, links };
 }
 const normalizeInfo = (text) => {
   const { text: t, unclosedAt } = scan(text);
@@ -167,6 +171,23 @@ const unclosed = (line) => `line ${line}: a <!-- is never closed, so it removes 
 
 const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 const fingerprint = (text) => 'sha256:' + sha(normalize(text));
+
+// Branch and Spec from the Links section the cut removes, outside fences: `-` or `*` bullets,
+// each value ending at ` · ` or the line end. A value is null when it is invalid or its label
+// appears more than once.
+function linksValues(text) {
+  const seen = { Branch: [], Spec: [] };
+  for (const { line, code } of scan(text).links) {
+    const m = !code && /^[ \t]*[-*][ \t]+(.*)$/.exec(line);
+    if (!m) continue;
+    for (const part of m[1].split(' · ')) {
+      const f = /^(Branch|Spec):(.*)$/.exec(part.trim());
+      if (f) seen[f[1]].push(f[2].trim());
+    }
+  }
+  const one = (k, ok) => (seen[k].length === 1 && ok(seen[k][0]) ? seen[k][0] : null);
+  return { branch: one('Branch', valid.branch), spec: one('Spec', valid.specHash) };
+}
 
 // ---------------------------------------------------------------- compliance
 // The Compliance section of the spec as written, read from its normalized lines so it sits
@@ -323,6 +344,20 @@ function linked(cwd) {
   const log = b && tryGit(['log', '-n', '200', '--format=%(trailers:key=Refs,valueonly)%x1e', `${b}..HEAD`], cwd);
   const key = (log || '').split(/[\x1e\n]/).map((s) => s.trim()).find(valid.key);
   return key ? { key, confirmed: false } : null;
+}
+
+// The Spec values of the newest first-parent commit in base..HEAD (of the 200 newest) whose
+// trailers, as git parses them, hold both `Refs: <key>` and a Spec, or null.
+function trailerSpecs(cwd, key) {
+  const b = base(cwd);
+  const fmt = '--format=%x1e%(trailers:key=Refs,valueonly,separator=%x1d)%x1f%(trailers:key=Spec,valueonly,separator=%x1d)';
+  const log = b && tryGit(['log', '--first-parent', '--no-show-signature', '-n', '200', fmt, `${b}..HEAD`], cwd);
+  const vals = (s) => s.split('\x1d').map((v) => v.trim()).filter(Boolean);
+  for (const rec of (log || '').split('\x1e').slice(1)) {
+    const [refs = '', specs = ''] = rec.split('\x1f');
+    if (vals(refs).includes(key) && vals(specs).length) return vals(specs);
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- trace
@@ -556,12 +591,16 @@ function cli(cmd, args) {
   };
   const state = ({ key, url, tracker, branch, specHash, pr }) => ({ key, url, tracker, branch, specHash, pr });
   // With compliance on, refuse a spec (as written) without a valid Compliance section.
-  const gate = (raw) => {
+  const gateError = (raw) => {
     const mode = complianceMode(cwd);
     if (mode === 'invalid') process.stderr.write('ticket.js: warning: compliance.frameworks in .claude/fabflows.json is invalid, so compliance is off\n');
-    if (mode !== 'on') return;
+    if (mode !== 'on') return null;
     const { errors } = compliance(raw);
-    if (errors) fail(`compliance is on, so the spec needs a valid Compliance section: ${errors.join('; ')}`);
+    return errors ? `compliance is on, so the spec needs a valid Compliance section: ${errors.join('; ')}` : null;
+  };
+  const gate = (raw) => {
+    const e = gateError(raw);
+    if (e) fail(e);
   };
 
   if (cmd === 'normalize') {
@@ -582,6 +621,34 @@ function cli(cmd, args) {
     gate(raw);
     fs.writeFileSync(approvedPath(statePath(cwd, l.branch)), text + '\n');
     writeState(cwd, { ...state(l), specHash: 'sha256:' + sha(text) });
+  } else if (cmd === 'recover') {
+    // Prints fixed reason codes only: the ticket text is data and never reaches output.
+    const [key, url, tracker] = args;
+    const branch = currentBranch(cwd);
+    const s = { key, url, tracker, branch, specHash: null, pr: null };
+    for (const k of ['key', 'url', 'tracker', 'branch']) if (!valid[k](s[k])) fail(`invalid ${k}`);
+    if (readState(cwd, branch)) fail('this branch already has a link; recover never overwrites one');
+    const raw = stdin();
+    const links = linksValues(raw);
+    if (links.branch && links.branch !== branch) fail("the ticket's Links names another branch, so nothing was written");
+    const { text, unclosedAt } = normalizeInfo(raw);
+    const hash = 'sha256:' + sha(text);
+    let reason;
+    if (unclosedAt || gateError(raw)) reason = 'refused-text';
+    else if (tryGit(['rev-parse', '--is-shallow-repository'], cwd) !== 'false') reason = 'shallow-clone';
+    else if (!links.spec) reason = 'no-spec-line';
+    else if (links.spec !== hash) reason = 'text-changed';
+    else {
+      const specs = trailerSpecs(cwd, key);
+      reason = specs && specs.every((v) => v === hash) ? 'approved' : 'no-matching-trailer';
+    }
+    if (reason === 'approved') {
+      fs.mkdirSync(path.dirname(statePath(cwd, branch)), { recursive: true });
+      fs.writeFileSync(approvedPath(statePath(cwd, branch)), text + '\n');
+      s.specHash = hash;
+    }
+    writeState(cwd, s);
+    process.stdout.write(JSON.stringify({ key, approved: reason === 'approved', reason }) + '\n');
   } else if (cmd === 'fingerprint') {
     const raw = stdin();
     const { text } = normalizeInfo(raw);
@@ -672,7 +739,7 @@ function cli(cmd, args) {
       process.stdout.write(JSON.stringify(rows.map(({ sha, date, pr, keys, keySource, specs, ai }) => ({ sha, date, pr, keys, keySource, specs, ai }))) + '\n');
     }
   } else {
-    fail(`unknown subcommand ${cmd}; use link, approve, check, normalize, fingerprint, labels, pr, status, prs, clear or trace`);
+    fail(`unknown subcommand ${cmd}; use link, recover, approve, check, normalize, fingerprint, labels, pr, status, prs, clear or trace`);
   }
   process.exit(0);
 }
@@ -875,7 +942,7 @@ const isMcp = (tool, verb) => new RegExp(`^mcp__.*${verb}_pull_request$`).test(t
 // What to do once a PR merged or closed. Without a PR URL, `clear` works on the current branch only.
 function afterMerge(key, pr, note = '') {
   const [what, clear] = pr ? [`PR ${pr}`, `ticket.js clear --pr '${pr}'`] : [`the PR for ${key}`, 'ticket.js clear'];
-  return `If ${what} merged${note}: if it carried a closing phrase for ${key}, confirm ${key} is closed and transition it if not, then run \`${clear}\`. If it was Refs-only, leave ${key} open. If it was closed without merging, follow fabflows:ticket "After a PR closes".`;
+  return `If ${what} merged${note}: if it carried a closing phrase for ${key}, confirm ${key} is closed and transition it if not, then run \`${clear}\`. If it was Refs-only, leave ${key} open. If it was closed without merging, follow fabflows-tickets:ticket "After a PR closes".`;
 }
 
 // At startup only: the other confirmed links' keys with a recorded PR, in at most `room` characters.
@@ -884,10 +951,10 @@ function sweepLine(keys, room) {
   if (!n) return null;
   for (let k = n; k > 0; k--) {
     const list = keys.slice(0, k).join(', ') + (k < n ? ` and ${n - k} more` : '');
-    const line = `fabflows: ${n} other linked ticket(s) have a recorded PR (${list}): run \`ticket.js prs\`, check each PR's state, and follow fabflows:ticket "After a PR closes" for each one merged or closed.`;
+    const line = `fabflows: ${n} other linked ticket(s) have a recorded PR (${list}): run \`ticket.js prs\`, check each PR's state, and follow fabflows-tickets:ticket "After a PR closes" for each one merged or closed.`;
     if (line.length <= room) return line;
   }
-  const line = `fabflows: ${n} other linked ticket(s) have a recorded PR: run \`ticket.js prs\` and follow fabflows:ticket "After a PR closes" for each.`;
+  const line = `fabflows: ${n} other linked ticket(s) have a recorded PR: run \`ticket.js prs\` and follow fabflows-tickets:ticket "After a PR closes" for each.`;
   return line.length <= room ? line : null;
 }
 
@@ -915,15 +982,15 @@ function branchLines(cwd, branch) {
   if (l && l.confirmed) {
     // 600: the after-merge text names the PR URL twice.
     const all = [
-      `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`,
-      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`,
-      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, null)}`,
+      `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows-tickets:ticket. ${afterMerge(l.key, l.pr)}`,
+      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows-tickets:ticket. ${afterMerge(l.key, l.pr)}`,
+      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows-tickets:ticket. ${afterMerge(l.key, null)}`,
     ];
     const fit = all.filter((line) => line.length <= 600);
     return fit.length ? fit : [all[2].slice(0, 600)];
   }
   if (l && l.key) {
-    return [`fabflows: ticket ${l.key} found in commit trailers, not confirmed: ask the user before editing it.`];
+    return [`fabflows: ticket ${l.key} found in commit trailers, not confirmed: ask the user, then follow fabflows-tickets:ticket "Recover a link".`];
   }
   const top = branch && tryGit(['rev-parse', '--show-toplevel'], cwd);
   if (!top) return [];
@@ -936,7 +1003,7 @@ function branchLines(cwd, branch) {
   const def = tryGit(['symbolic-ref', '-q', '--short', 'refs/remotes/origin/HEAD'], cwd);
   const defaults = def ? [def.replace(/^origin\//, '')] : ['main', 'master'];
   if (cfg && typeof cfg.tracker === 'string' && cfg.tracker && cfg.tracker !== 'none' && !defaults.includes(branch)) {
-    return ['fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows:ticket to link one before building.'];
+    return ['fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows-tickets:ticket to link one before building.'];
   }
   return [];
 }
@@ -1024,7 +1091,7 @@ function postToolUse(tool, ti, cwd) {
   if (created && (l.tracker === 'jira' || l.tracker === 'linear') && !l.pr) parts.push('web link');
   if (created) parts.push('assignees'); // every new PR, and adding yourself twice is harmless
   const what = `${parts.join(', ')} and status`;
-  let text = `fabflows: update ticket ${l.key}: ${what}, per fabflows:ticket.`;
+  let text = `fabflows: update ticket ${l.key}: ${what}, per fabflows-tickets:ticket.`;
   if (!l.confirmed) text += unconfirmed(l.key);
   context('PostToolUse', text);
 }
@@ -1067,7 +1134,7 @@ function mergeReminder(target, cwd) {
   if (found.length === 0) return;
   if (found.length > 1) {
     const keys = found.map((s) => s.key).join(', ');
-    return context('PostToolUse', `fabflows: this merge matches several linked tickets (${keys}): ask the user which one merged, then follow fabflows:ticket for it.`);
+    return context('PostToolUse', `fabflows: this merge matches several linked tickets (${keys}): ask the user which one merged, then follow fabflows-tickets:ticket for it.`);
   }
   const l = found[0];
   let text = `fabflows: ${afterMerge(l.key, l.pr, ' (check first: this also fires after a failed merge command)')}`;

@@ -98,7 +98,7 @@ jira_new() { createJiraIssue "$(jq -nc --argjson x "$1" '{projectKey: "ABC", sum
 
 @test "linear takes a canceled parent: only setup's check keeps it out" {
   save_issue '{"team": "FAB", "title": "parent", "state": "canceled"}'
-  # Accepted live (FAB-12 under FAB-6), so fabflows-setup must refuse a closed parent itself.
+  # Accepted live (FAB-12 under FAB-6), so fabflows-tickets:setup must refuse a closed parent itself.
   run -0 save_issue '{"team": "FAB", "title": "t", "parentId": "FAB-1"}'
   [ "$(state '.linear.issues["FAB-2"].parentId')" = '"FAB-1"' ]
 }
