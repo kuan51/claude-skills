@@ -295,11 +295,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
-- **fabflows 2.0.1** -- a build-loop round that sweeps callees now runs its spec lens at high
+- **fabflows 2.0.2** -- a build-loop round that sweeps callees now runs its spec lens at high
   effort, not xhigh (#227), so every build-loop reviewer runs at high. The spec lens stopped
   sweeping callees in 0.16.0 and has been round 1's slowest step in every measured run since.
   `agents/refuter.md` keeps its xhigh pin for a refuter launched outside the loop. Not yet
-  measured: the eval in #227 waits on #224, #226 and the other speed changes.
+  measured: the eval in #227 waits on #224 and the other speed changes.
 
 - **fabflows 2.0.1** -- on an accepted build, the lead's commit gate now starts `testCommand`
   with `run_in_background` right after the tree checks, and reads the review reports, the diff
