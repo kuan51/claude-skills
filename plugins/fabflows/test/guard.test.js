@@ -1006,3 +1006,105 @@ test('code review, second pass: braces, plain tails, quoted paths, bracket roots
     allows(shell(cmd), cmd);
   }
 });
+
+// A throwaway repository at <tmp>/<prefix>/.claude/worktrees/wt, with its fixtures committed.
+function worktreeRepo(files = {}, prefix = 'r') {
+  const wt = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-wt-')), prefix, '.claude', 'worktrees', 'wt');
+  fs.mkdirSync(wt, { recursive: true });
+  const git = (...args) => execFileSync('git', args, { cwd: wt, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' });
+  git('init', '-q', '-b', 'feat');
+  for (const [name, body] of Object.entries(files)) fs.writeFileSync(path.join(wt, name), body);
+  git('add', '-A');
+  git('-c', 'user.email=t@example.com', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'init');
+  return { wt: fs.realpathSync(wt), git };
+}
+const testFile = (fails, lines) =>
+  `const test = require('node:test');\nfor (let i = 0; i < ${lines}; i++) console.log('noise line ' + i);\n` +
+  Array.from({ length: fails }, (_, i) => `test('case ${i} breaks', () => { throw new Error('boom ${i}'); });\n`).join('') +
+  `test('fine', () => {});\n`;
+// The hook's raw answer, or null when it printed nothing.
+function hook(command, cwd, extra = {}) {
+  const r = spawnSync(process.execPath, [GUARD], {
+    input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command }, cwd, agent_id: 'a1', tool_use_id: 'toolu_01AB-c_d', ...extra }),
+    encoding: 'utf8',
+  });
+  assert.equal(r.status, 0);
+  return r.stdout.trim() ? JSON.parse(r.stdout).hookSpecificOutput : null;
+}
+// The parent test run's context would turn a nested `node --test` into a child reporter.
+const env = { ...process.env };
+delete env.NODE_TEST_CONTEXT;
+const sh = (command, cwd) => spawnSync('bash', ['-c', command], { cwd, encoding: 'utf8', env });
+
+test('a worker test run in its worktree is rewritten to print only its failures', () => {
+  const { wt, git } = worktreeRepo({ 'noisy.test.js': testFile(2, 120), 'green.test.js': testFile(0, 120), 'short.test.js': testFile(1, 3) });
+  const out = hook('  node --test noisy.test.js ', wt, {
+    tool_input: { command: '  node --test noisy.test.js ', run_in_background: false, timeout: 60000, description: 'run tests' },
+  });
+  assert.equal(out.permissionDecision, 'allow');
+  const { command, ...kept } = out.updatedInput;
+  assert.deepEqual(kept, { run_in_background: false, timeout: 60000, description: 'run tests' });
+  assert.equal(fs.readFileSync(path.join(wt, '.fabflows', 'test-output', '.gitignore'), 'utf8').trim(), '*');
+  assert.equal(spawnSync('bash', ['-n', '-c', command]).status, 0, 'the rewrite parses');
+
+  const log = `${wt}/.fabflows/test-output/toolu_01AB-c_d.log`;
+  const direct = sh('node --test noisy.test.js', wt);
+  const trimmed = sh(command, wt);
+  assert.notEqual(direct.status, 0);
+  assert.equal(trimmed.status, direct.status, 'same exit status');
+  const printed = trimmed.stdout.trimEnd().split('\n');
+  assert.ok(printed.length <= 175, `printed ${printed.length} lines`);
+  assert.ok(trimmed.stdout.includes('--- last 20 lines ---') && !trimmed.stdout.includes('noise line 50'), 'the output was trimmed');
+  assert.ok((direct.stdout + direct.stderr).trimEnd().split('\n').length > 80, 'the suite is noisy');
+  for (const name of ['case 0 breaks', 'case 1 breaks']) assert.ok(trimmed.stdout.includes(name), name);
+  const full = fs.readFileSync(log, 'utf8');
+  assert.ok(trimmed.stdout.includes(full.trimEnd().split('\n').pop()), "the original's last line");
+  assert.ok(trimmed.stdout.includes(log), 'the log path');
+  assert.ok(full.includes('noise line 119') && full.includes('noise line 0'), 'the log holds the full output');
+  assert.equal(full.split('\n').length, (direct.stdout + direct.stderr).split('\n').length);
+
+  const green = hook('node --test green.test.js', wt, { tool_use_id: 'g1' });
+  assert.equal(sh(green.updatedInput.command, wt).status, 0, 'a passing noisy suite exits 0');
+
+  // Durations differ between runs, so digits are blanked before comparing.
+  const digits = (s) => s.replace(/\d+(\.\d+)?/g, 'N');
+  const short = hook('node --test short.test.js', wt, { tool_use_id: 's1' });
+  const shortRun = sh(short.updatedInput.command, wt);
+  const shortDirect = sh('node --test short.test.js', wt);
+  assert.equal(shortRun.status, shortDirect.status);
+  assert.equal(digits(shortRun.stdout), digits(shortDirect.stdout + shortDirect.stderr), 'a short suite passes through');
+
+  assert.equal(git('status', '--porcelain'), '', 'the logs stay out of git');
+});
+
+test('anything else is not rewritten', () => {
+  const { wt } = worktreeRepo();
+  const none = (out, label) => assert.equal(out, null, `${label} must not be rewritten`);
+  none(hook('node --test', wt, { agent_id: undefined }), 'the lead');
+  none(hook('node --test', tempRepo('feat')), 'a worker outside .claude/worktrees');
+  for (const cmd of [
+    'npm test | tail', 'npm test && echo x', 'npm test; ls', 'npm test $X', 'node --test #c', 'npm run test:unit',
+    'npm test --prefix /tmp', 'go test -exec x ./...', 'pytest ../other', 'pytest /abs', 'ls', 'pytest .*', 'pytest "a',
+    'pytest {..,x}/t',
+  ]) {
+    none(hook(cmd, wt), cmd);
+  }
+  for (const cmd of ['npm test', 'npm run test x', 'yarn test', 'pnpm test', 'pytest "a b" t', 'python -m pytest', 'go test ./...', 'cargo test', 'bats t']) {
+    assert.equal(hook(cmd, wt)?.permissionDecision, 'allow', `${cmd} is rewritten`);
+  }
+  none(hook('node --test', wt, { tool_name: 'PowerShell' }), 'PowerShell');
+  none(hook('node --test', wt, { tool_name: 'Monitor' }), 'Monitor');
+  none(hook('node --test', wt, { tool_use_id: "to'olu" }), 'a tool_use_id with a quote');
+  none(hook('node --test', worktreeRepo({}, "q'x").wt), 'a worktree path with a quote');
+
+  const linked = worktreeRepo().wt;
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-out-'));
+  fs.symlinkSync(outside, path.join(linked, '.fabflows'));
+  none(hook('node --test', linked), 'a .fabflows symlink out of the worktree');
+  assert.deepEqual(fs.readdirSync(outside), [], 'nothing is created through the symlink');
+
+  none(hook('node --test', fs.mkdtempSync(path.join(os.tmpdir(), 'fabflows-nogit-'))), 'cwd not a git repository');
+  const denied = hook('npm install x', wt);
+  assert.equal(denied.permissionDecision, 'deny');
+  assert.match(denied.permissionDecisionReason, /blocker/);
+});

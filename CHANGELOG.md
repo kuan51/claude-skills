@@ -8,6 +8,14 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 2.1.0** -- the guard trims a worker's test output to its failures. A worker's plain
+  test run (`npm test`, `node --test`, `pytest`, `go test`, `cargo test`, `bats` and a few more,
+  with only path arguments inside the worktree) in a `.claude/worktrees/` worktree is rewritten
+  to write its full output to `.fabflows/test-output/<tool_use_id>.log`, git-ignored, and print
+  it whole only up to 80 lines; longer output prints the failing lines, the last 20 lines and
+  the log path, with the original exit status. The guard approves the rewrite without a prompt. The lead's calls,
+  any command with a flag or shell operator, and PowerShell and Monitor are unchanged.
+
 - **fabflows-tickets 1.1.0** -- a fresh clone or project thread can rebuild its ticket link.
   After each approval the ticket skill writes the approved fingerprint into the ticket's Links
   section as a `- Spec: <specHash>` bullet. The new `ticket.js recover '<key>' '<url>'

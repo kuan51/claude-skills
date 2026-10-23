@@ -774,6 +774,72 @@ function checkShell(command, cwd) {
   return installs;
 }
 
+// ---------------------------------------------------------------- test output
+// A worker's whole test command, in a build or task worktree, is rewritten so that only the
+// failures reach the model; the full output stays in a log the worker can Read. Any throw
+// (no git, a directory it cannot create) reaches main()'s catch: no rewrite, no decision.
+const TEST_RUNNER = /^(npm\s+test|npm\s+run\s+test|yarn\s+test|pnpm\s+test|node\s+--test|pytest|python\s+-m\s+pytest|go\s+test|cargo\s+test|bats)(?=\s|$)/;
+// Operators, expansions and comments; `{` `}` too, since brace expansion can build a `..`.
+const SHELL_SYNTAX = /[|;&<>$#()`\\\r\n{}]/;
+// One argument: a balanced quote pair around it, or a bare word, then whitespace or the end.
+const TEST_ARG = /\s+(?:"([^"]*)"|'([^']*)'|([^\s"']+))(?=\s|$)/y;
+const FAILURE = 'not ok|fail|error|assert|✖|✗';
+// The check build.js makes on its worktree argument.
+const isWorktree = (w) => {
+  const name = (w.match(/^(?:[A-Za-z]:)?\/(?:.*\/)?\.claude\/worktrees\/([A-Za-z0-9._-]+)$/) || [])[1];
+  return !!name && name !== '.' && name !== '..' && !w.split('/').includes('..') && !/[\x00-\x1f\x7f`$;&|<>()\\"'*?[\]!{}]/.test(w);
+};
+// A path argument that stays in the worktree. A segment starting with `.` and holding a glob
+// character (`.*`, `.?`) can match `..`, so it counts as one.
+const insideArg = (a) =>
+  a !== '' && !/^([-/~]|[A-Za-z]:)/.test(a) && !a.split('/').some((s) => s === '..' || /^\..*[*?[]/.test(s));
+
+function trimTestOutput(input, ti, cwd) {
+  if (!input.agent_id || !/^[A-Za-z0-9_-]+$/.test(input.tool_use_id || '')) return;
+  const cmd = ti.command.trim();
+  const runner = TEST_RUNNER.exec(cmd);
+  if (!runner || SHELL_SYNTAX.test(cmd)) return;
+  const rest = cmd.slice(runner[0].length);
+  let pos = 0;
+  for (let m; (TEST_ARG.lastIndex = pos), (m = TEST_ARG.exec(rest)); pos = TEST_ARG.lastIndex) {
+    if (!insideArg(m[1] ?? m[2] ?? m[3])) return;
+  }
+  if (rest.slice(pos).trim()) return; // a quote that is not one balanced pair
+
+  const top = git(['rev-parse', '--show-toplevel'], cwd);
+  if (!isWorktree(top)) return;
+  const dir = path.join(top, '.fabflows', 'test-output');
+  if (isProtectedPath(dir)) return;
+  // Each level is checked before the next is made, so a committed symlink out of the
+  // worktree gets nothing created through it.
+  const realTop = norm(fs.realpathSync(top));
+  for (const d of [path.dirname(dir), dir]) {
+    if (!fs.existsSync(d)) fs.mkdirSync(d);
+    if (!under(norm(fs.realpathSync(d)), realTop)) return;
+  }
+  const ignore = path.join(dir, '.gitignore');
+  const st = fs.lstatSync(ignore, { throwIfNoEntry: false });
+  if (st && !st.isFile()) return;
+  fs.writeFileSync(ignore, '*\n');
+
+  const log = `${dir.replace(/\\/g, '/')}/${input.tool_use_id}.log`;
+  const command =
+    `${cmd} > '${log}' 2>&1; s=$?; n=$(wc -l < '${log}'); if [ "$n" -le 80 ]; then cat '${log}'; ` +
+    `else grep -n -i -E -A4 '${FAILURE}' '${log}' | head -150; echo '--- last 20 lines ---'; tail -20 '${log}'; ` +
+    `echo "--- full output ($n lines): ${log}"; fi; (exit $s)`;
+  process.stdout.write(
+    JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow',
+        permissionDecisionReason: 'fabflows: a worker test run in its worktree, trimmed to its failures; the full output is in the log.',
+        updatedInput: { ...ti, command },
+      },
+    })
+  );
+  process.exit(0);
+}
+
 // ---------------------------------------------------------------- event handlers
 function preToolUse(input) {
   const tool = input.tool_name;
@@ -784,6 +850,7 @@ function preToolUse(input) {
     if (typeof ti.command !== 'string') return;
     const installs = checkShell(ti.command, cwd);
     if (installs.length) install(installs, input);
+    if (tool === 'Bash') trimTestOutput(input, ti, cwd);
     return;
   }
 

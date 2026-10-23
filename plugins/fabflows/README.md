@@ -6,7 +6,7 @@ the lead prove what those workers claim.
 > **This plugin installs an active hook.** Once enabled, a `PreToolUse` hook runs on
 > every `Bash`, `PowerShell`, `Monitor`, `Read`, `Grep`, `Edit`, `Write`, and `NotebookEdit`
 > call in your session
-> and can block it. It asks before package installs and package runners, and blocks commits and pushes on a default branch,
+> and can block it, or rewrite a worker's test command so only its failures print. It asks before package installs and package runners, and blocks commits and pushes on a default branch,
 > destructive shell commands, reads and writes of credential files, and writes to live
 > Claude Code configuration. Read [Guard rules](#guard-rules) before you install it,
 > including its [known gaps](#known-gaps). It behaves like a tripwire. It offers no
@@ -345,6 +345,22 @@ with a quote still open at the end is split everywhere, which errs toward deny.
   files into the plugin cache. Merging or discarding a stream (`2>&1`, `2>/dev/null`) does
   not count, and a backup name such as `settings.json.bak` is not live configuration.
   Everything else under `~/.claude/` stays writable.
+- **A worker's test output is trimmed to its failures.** This is the one rule that rewrites a
+  call instead of blocking it. A worker's `Bash` call (one with an `agent_id`) is rewritten when its
+  repository root is a build or task worktree (`.claude/worktrees/<name>`, the check
+  `fabflows:build` makes) and the whole command is `npm test`, `npm run test`, `yarn test`,
+  `pnpm test`, `node --test`, `pytest`, `python -m pytest`, `go test`, `cargo test` or `bats`,
+  followed only by relative paths or globs inside the worktree. Any flag, absolute path, `..`
+  segment, shell operator, expansion or comment leaves the command alone, so `--prefix` or
+  `-exec` cannot send the run outside the worktree. The run's output goes to
+  `.fabflows/test-output/<tool_use_id>.log` in the worktree, ignored by a `.gitignore` holding
+  `*`. Up to 80 lines print whole. Longer output prints the lines matching `not ok`, `fail`,
+  `error`, `assert`, `✖` or `✗` with 4 lines after each (at most 150), the last 20 lines and the
+  log path, and the original exit status is kept. The rewrite is allowed without a prompt,
+  because the original command is its first step and the rest only reads the log; your deny and
+  ask rules still apply to each step. In exchange, a test runner runs project code the worker can
+  edit (a `package.json` script, `conftest.py`), and that code is approved too. Rewriting before
+  the call is the only option, because a failing call's output cannot be replaced afterwards.
 
 A `SubagentStop` hook checks that a worker's final report actually includes its contract
 fields, and sends it back to be re-emitted if two or more are missing. A researcher's
