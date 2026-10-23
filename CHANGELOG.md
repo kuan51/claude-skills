@@ -8,6 +8,23 @@ per-plugin history until entries are recorded here going forward.
 
 ### Added
 
+- **fabflows 2.0.0** -- ticketing moves to a new companion plugin, **fabflows-tickets 1.0.0**,
+  which depends on fabflows `^2.0`; fabflows itself names no dependency. Sessions in a repo
+  with no tracker no longer load three ticket skill descriptions or run the ticket hook on every
+  Bash call. `hooks/ticket.js`, the `ticket` and `trace` skills, the setup skill (renamed
+  `setup`), their tests and the bats suite now live under `plugins/fabflows-tickets/`, and
+  fabflows' hook config keeps only the guard. Breaking renames: `fabflows:ticket` is now
+  `fabflows-tickets:ticket`, `fabflows:trace` is `fabflows-tickets:trace`, and the setup skill
+  is `fabflows-tickets:setup` (`/fabflows-tickets:setup`). Brainstorming's "Spec in a ticket"
+  steps moved to the ticket skill. `.claude/fabflows.json` and the ticket state under the git
+  common dir keep their names and formats, so links recorded by fabflows 1.x still work. With a
+  tracker configured and `fabflows-tickets:ticket` missing from the session, brainstorming and
+  the fabflows skill stop and ask for the plugin instead of writing a spec to a ticket or
+  building. Upgrade step: a repo whose `.claude/fabflows.json` names a tracker needs
+  `fabflows-tickets` installed and enabled wherever fabflows runs, including a project's own
+  plugin settings (project threads load plugins only from there). Without it, builds stop, and
+  plain commits and PRs on a linked branch are no longer checked for trailers.
+
 - **fabflows 1.0.0** -- every `fabflows:build` runs in its own git worktree under
   `.claude/worktrees/`, so isolation is the first line of defence and the guard the backstop.
   The lead sets the worktree up with EnterWorktree before it links a ticket, and the workflow

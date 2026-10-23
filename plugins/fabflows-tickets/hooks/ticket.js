@@ -875,7 +875,7 @@ const isMcp = (tool, verb) => new RegExp(`^mcp__.*${verb}_pull_request$`).test(t
 // What to do once a PR merged or closed. Without a PR URL, `clear` works on the current branch only.
 function afterMerge(key, pr, note = '') {
   const [what, clear] = pr ? [`PR ${pr}`, `ticket.js clear --pr '${pr}'`] : [`the PR for ${key}`, 'ticket.js clear'];
-  return `If ${what} merged${note}: if it carried a closing phrase for ${key}, confirm ${key} is closed and transition it if not, then run \`${clear}\`. If it was Refs-only, leave ${key} open. If it was closed without merging, follow fabflows:ticket "After a PR closes".`;
+  return `If ${what} merged${note}: if it carried a closing phrase for ${key}, confirm ${key} is closed and transition it if not, then run \`${clear}\`. If it was Refs-only, leave ${key} open. If it was closed without merging, follow fabflows-tickets:ticket "After a PR closes".`;
 }
 
 // At startup only: the other confirmed links' keys with a recorded PR, in at most `room` characters.
@@ -884,10 +884,10 @@ function sweepLine(keys, room) {
   if (!n) return null;
   for (let k = n; k > 0; k--) {
     const list = keys.slice(0, k).join(', ') + (k < n ? ` and ${n - k} more` : '');
-    const line = `fabflows: ${n} other linked ticket(s) have a recorded PR (${list}): run \`ticket.js prs\`, check each PR's state, and follow fabflows:ticket "After a PR closes" for each one merged or closed.`;
+    const line = `fabflows: ${n} other linked ticket(s) have a recorded PR (${list}): run \`ticket.js prs\`, check each PR's state, and follow fabflows-tickets:ticket "After a PR closes" for each one merged or closed.`;
     if (line.length <= room) return line;
   }
-  const line = `fabflows: ${n} other linked ticket(s) have a recorded PR: run \`ticket.js prs\` and follow fabflows:ticket "After a PR closes" for each.`;
+  const line = `fabflows: ${n} other linked ticket(s) have a recorded PR: run \`ticket.js prs\` and follow fabflows-tickets:ticket "After a PR closes" for each.`;
   return line.length <= room ? line : null;
 }
 
@@ -915,9 +915,9 @@ function branchLines(cwd, branch) {
   if (l && l.confirmed) {
     // 600: the after-merge text names the PR URL twice.
     const all = [
-      `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`,
-      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, l.pr)}`,
-      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows:ticket. ${afterMerge(l.key, null)}`,
+      `fabflows: this branch is linked to ticket ${l.key} (${l.url}). Follow fabflows-tickets:ticket. ${afterMerge(l.key, l.pr)}`,
+      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows-tickets:ticket. ${afterMerge(l.key, l.pr)}`,
+      `fabflows: this branch is linked to ticket ${l.key}. Follow fabflows-tickets:ticket. ${afterMerge(l.key, null)}`,
     ];
     const fit = all.filter((line) => line.length <= 600);
     return fit.length ? fit : [all[2].slice(0, 600)];
@@ -936,7 +936,7 @@ function branchLines(cwd, branch) {
   const def = tryGit(['symbolic-ref', '-q', '--short', 'refs/remotes/origin/HEAD'], cwd);
   const defaults = def ? [def.replace(/^origin\//, '')] : ['main', 'master'];
   if (cfg && typeof cfg.tracker === 'string' && cfg.tracker && cfg.tracker !== 'none' && !defaults.includes(branch)) {
-    return ['fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows:ticket to link one before building.'];
+    return ['fabflows: this repository tracks work in a ticket tracker (.claude/fabflows.json), but this branch has no linked ticket. Follow fabflows-tickets:ticket to link one before building.'];
   }
   return [];
 }
@@ -1024,7 +1024,7 @@ function postToolUse(tool, ti, cwd) {
   if (created && (l.tracker === 'jira' || l.tracker === 'linear') && !l.pr) parts.push('web link');
   if (created) parts.push('assignees'); // every new PR, and adding yourself twice is harmless
   const what = `${parts.join(', ')} and status`;
-  let text = `fabflows: update ticket ${l.key}: ${what}, per fabflows:ticket.`;
+  let text = `fabflows: update ticket ${l.key}: ${what}, per fabflows-tickets:ticket.`;
   if (!l.confirmed) text += unconfirmed(l.key);
   context('PostToolUse', text);
 }
@@ -1067,7 +1067,7 @@ function mergeReminder(target, cwd) {
   if (found.length === 0) return;
   if (found.length > 1) {
     const keys = found.map((s) => s.key).join(', ');
-    return context('PostToolUse', `fabflows: this merge matches several linked tickets (${keys}): ask the user which one merged, then follow fabflows:ticket for it.`);
+    return context('PostToolUse', `fabflows: this merge matches several linked tickets (${keys}): ask the user which one merged, then follow fabflows-tickets:ticket for it.`);
   }
   const l = found[0];
   let text = `fabflows: ${afterMerge(l.key, l.pr, ' (check first: this also fires after a failed merge command)')}`;

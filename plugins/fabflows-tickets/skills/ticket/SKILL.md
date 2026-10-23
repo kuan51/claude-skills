@@ -1,7 +1,7 @@
 ---
 name: ticket
-compatibility: Claude Code with the fabflows plugin enabled. Needs its ticket.js hooks, a .claude/fabflows.json written by fabflows-setup, and the tracker's MCP server. Not portable to Claude.ai or the API.
-description: 'How fabflows keeps a spec in a tracker ticket: which MCP tools to use for GitHub Issues, Jira and Linear, the ticket body template, when the description may be edited, what needs the user''s yes, and how status moves from in progress to done. Use whenever a branch is linked to a ticket, a hook names fabflows:ticket, a PR is about to open or has merged or closed on a linked branch, or the user asks to link, create, update or close a ticket. Triggers on "link the ticket", "create a ticket for this", "update the ticket", "close the ticket", "move it to in review", "/fabflows:ticket".'
+compatibility: Claude Code with the fabflows and fabflows-tickets plugins enabled. Needs its ticket.js hooks, a .claude/fabflows.json written by fabflows-tickets:setup, and the tracker's MCP server. Not portable to Claude.ai or the API.
+description: 'How fabflows keeps a spec in a tracker ticket: which MCP tools to use for GitHub Issues, Jira and Linear, the ticket body template, when the description may be edited, what needs the user''s yes, and how status moves from in progress to done. Use whenever a branch is linked to a ticket, a hook names fabflows-tickets:ticket, a PR is about to open or has merged or closed on a linked branch, or the user asks to link, create, update or close a ticket. Triggers on "link the ticket", "create a ticket for this", "update the ticket", "close the ticket", "move it to in review", "/fabflows-tickets:ticket".'
 ---
 
 # Ticket
@@ -69,7 +69,7 @@ create call itself, so a refused parent leaves no ticket behind:
 - Linear: pass `team`, `project` and `parentId` to `save_issue`. A child does not inherit
   its parent's project, so always pass `project`. Linear refuses a missing parent and a
   loop. A config with no `team` predates Linear projects: its `project` is the team key, so
-  pass it as `team`, file no project, and tell the user to run `/fabflows-setup` again.
+  pass it as `team`, file no project, and tell the user to run `/fabflows-tickets:setup` again.
 
 This applies only to tickets you create: linking an existing ticket never re-parents it.
 Attaching the new ticket is the only change the parent gets, and the user's yes to create
@@ -172,6 +172,13 @@ rendered, per `fabflows:brainstorming` section 6:
 
 Put raw text in a fence longer than any run of backticks or tildes inside it, so the ticket
 cannot close the fence early.
+
+## Spec from brainstorming
+
+When `fabflows:brainstorming` writes a spec to the linked ticket, read
+`references/spec-from-brainstorming.md` in this skill's directory and follow its steps.
+Ticket text reaches `ticket.js` only through a scratch file in the session scratchpad
+written with the Write tool, never inside a shell command: no heredoc, no `echo`.
 
 ## Status
 

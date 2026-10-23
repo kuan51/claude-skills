@@ -2,7 +2,8 @@
 # docs-warden's audit (which also checks that generated documents are
 # current), then Vale on the changed files, as .pre-commit-config.yaml runs
 # it, then self-tests of the vale-warn-gate script and the Prompting style,
-# then a report of every Prompting suggestion in the fabflows prompts.
+# then a report of every Prompting suggestion in the fabflows and
+# fabflows-tickets prompts.
 # The Node tests run in tests.yml.
 name: docs
 
@@ -78,10 +79,11 @@ jobs:
       - name: Prompting style self-test
         if: ${{ !cancelled() }}
         run: bash plugins/fabflows/evals/prose/test_prompting_style.sh
-      # Prints every Prompting suggestion in the fabflows prompts. The filter
+      # Prints every Prompting suggestion in the fabflows and fabflows-tickets
+      # prompts. The filter
       # keeps only Prompting's suggestions, so Vale exits 0 whatever it finds;
       # only a Vale that cannot run fails the step. Relative paths, since an
       # absolute path skips every path-specific .vale.ini section.
       - name: Prompting report
         if: ${{ !cancelled() }}
-        run: vale --minAlertLevel=suggestion --filter='.Name matches "^Prompting"' plugins/fabflows/agents plugins/fabflows/skills
+        run: vale --minAlertLevel=suggestion --filter='.Name matches "^Prompting"' plugins/fabflows/agents plugins/fabflows/skills plugins/fabflows-tickets/skills

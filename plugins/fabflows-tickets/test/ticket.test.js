@@ -471,7 +471,7 @@ test('SessionStart prints one line per case', () => {
     assert.equal(cli(r.dir, ['pr', 'https://github.com/o/r/pull/3']).status, 0);
     const line = start(r.dir);
     assert.ok(line.length <= 600);
-    for (const s of ['ABC-1', URL, 'https://github.com/o/r/pull/3', 'fabflows:ticket', "clear --pr 'https://github.com/o/r/pull/3'", 'Refs-only']) {
+    for (const s of ['ABC-1', URL, 'https://github.com/o/r/pull/3', 'fabflows-tickets:ticket', "clear --pr 'https://github.com/o/r/pull/3'", 'Refs-only']) {
       assert.ok(line.includes(s), s);
     }
     assert.ok(!line.includes('close the ticket'), 'no bare close instruction');
@@ -523,7 +523,7 @@ test('SessionStart puts the branch line and the sweep line in one output of at m
     assert.ok(text.startsWith(own + '\n'), 'the branch line first, unchanged');
     // Here the branch line leaves too little room for the list, so the sweep line is the short one.
     const sweep = text.slice(own.length + 1);
-    assert.equal(sweep, 'fabflows: 1 other linked ticket(s) have a recorded PR: run `ticket.js prs` and follow fabflows:ticket "After a PR closes" for each.');
+    assert.equal(sweep, 'fabflows: 1 other linked ticket(s) have a recorded PR: run `ticket.js prs` and follow fabflows-tickets:ticket "After a PR closes" for each.');
     assert.ok(!sweep.includes('ABC-1'), 'the current key is not swept');
     assert.ok(!text.includes('feature') && !text.includes('feat-other'), 'no branch name');
 
@@ -741,26 +741,26 @@ test('PostToolUse asks for a ticket update after push and PR creation', () => {
   try {
     assert.equal(after(r.dir, 'Bash', { command: 'git push' }).context, undefined, 'not linked');
     cli(r.dir, ['link', 'ABC-1', URL, 'jira']);
-    assert.equal(after(r.dir, 'Bash', { command: 'git push -u origin feature' }).context, 'fabflows: update ticket ABC-1: Links and status, per fabflows:ticket.');
+    assert.equal(after(r.dir, 'Bash', { command: 'git push -u origin feature' }).context, 'fabflows: update ticket ABC-1: Links and status, per fabflows-tickets:ticket.');
     for (const [tool, input] of [
       ['Bash', { command: 'gh pr create --title "ABC-1 x"' }],
       ['Bash', { command: 'url=$(gh pr create --title "ABC-1 x")' }],
       ['mcp__github__create_pull_request', { title: 'ABC-1 x' }],
       ['Bash', { command: 'git push -u origin feature && gh pr create --title "ABC-1 x"' }],
     ]) {
-      assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket ABC-1: Links, web link, assignees and status, per fabflows:ticket.', tool);
+      assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket ABC-1: Links, web link, assignees and status, per fabflows-tickets:ticket.', tool);
     }
     cli(r.dir, ['pr', 'https://github.com/o/r/pull/9']);
-    assert.equal(after(r.dir, 'Bash', { command: 'gh pr create --title "ABC-1 x"' }).context, 'fabflows: update ticket ABC-1: Links, assignees and status, per fabflows:ticket.', 'PR already recorded: no second web link');
+    assert.equal(after(r.dir, 'Bash', { command: 'gh pr create --title "ABC-1 x"' }).context, 'fabflows: update ticket ABC-1: Links, assignees and status, per fabflows-tickets:ticket.', 'PR already recorded: no second web link');
     cli(r.dir, ['link', '#7', 'https://github.com/o/r/issues/7', 'github']);
     for (const [tool, input] of [
       ['Bash', { command: 'gh pr create --title "#7 x"' }],
       ['mcp__github__create_pull_request', { title: '#7 x' }],
     ]) {
-      assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket #7: Links, assignees and status, per fabflows:ticket.', `github has no web link: ${tool}`);
+      assert.equal(after(r.dir, tool, input).context, 'fabflows: update ticket #7: Links, assignees and status, per fabflows-tickets:ticket.', `github has no web link: ${tool}`);
     }
     cli(r.dir, ['link', 'FAB-1', 'https://linear.app/acme/issue/FAB-1/x', 'linear']);
-    assert.equal(after(r.dir, 'mcp__github__create_pull_request', { title: 'FAB-1 x' }).context, 'fabflows: update ticket FAB-1: Links, web link, assignees and status, per fabflows:ticket.', 'linear gets the web link');
+    assert.equal(after(r.dir, 'mcp__github__create_pull_request', { title: 'FAB-1 x' }).context, 'fabflows: update ticket FAB-1: Links, web link, assignees and status, per fabflows-tickets:ticket.', 'linear gets the web link');
     cli(r.dir, ['link', 'ABC-1', URL, 'jira']);
     assert.equal(after(r.dir, 'Bash', { command: 'git status' }).context, undefined, 'unrelated command');
     cli(r.dir, ['clear']);
