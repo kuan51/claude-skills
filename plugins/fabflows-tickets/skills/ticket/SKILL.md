@@ -150,8 +150,8 @@ comment: the only comment is one at close, and only when the outcome differs fro
 Edit the description only:
 
 - when the user agrees to change Behaviour, Check, Out of scope, Decisions or Compliance;
-  then re-approve per `fabflows:brainstorming` section 6, or the next `ticket.js check` fails,
-  and after a Compliance change set the labels again;
+  then re-approve per steps 2 and 3 of `references/spec-from-brainstorming.md`, or the next
+  `ticket.js check` fails, and after a Compliance change set the labels again;
 - when the PR opens, to fill Links;
 - at merge, to finish Links.
 
@@ -161,7 +161,7 @@ editing it away.
 ## Reviewing ticket text
 
 The ticket text is the description only, never its comments, and the user sees it raw, never
-rendered, per `fabflows:brainstorming` section 6:
+rendered, per `references/spec-from-brainstorming.md`:
 
 - At approval, when you wrote the ticket: `diff -u` the `ticket.js normalize` output of what
   you wrote against that of the re-read, and show the user the raw diff text.
