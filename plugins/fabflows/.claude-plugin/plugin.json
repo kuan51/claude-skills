@@ -1,6 +1,6 @@
 {
   "name": "fabflows",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Routes work from an expensive lead model to tool-scoped workers and makes the lead re-verify their reports. Adds a build loop in a git worktree where Opus builders implement a spec (independent tasks at once) and fresh reviewers return ACCEPT or REWORK, and brainstorming for that spec. Tickets and trace reports are in fabflows-tickets. An ACTIVE guard hook asks before package installs and blocks default-branch commits, destructive commands and credential-file access. It fails open.",
   "author": {
     "name": "claude-skills"
