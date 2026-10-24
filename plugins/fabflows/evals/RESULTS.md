@@ -2414,3 +2414,109 @@ node plugins/fabflows/evals/harness/run.js --iteration 18 --tasks 23 --arms loop
 node plugins/fabflows/evals/harness/run.js --iteration 18 --tasks 23 --arms loop --config-name variant-background --confirm
 node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-18
 ```
+
+## Iteration 26: the commit gate's tests in the background
+
+Tracked in [#229](https://github.com/kuan51/claude-skills/issues/229), merged in #236. On an
+accepted build the lead re-runs `testCommand` before its one commit. #229 has it start that run
+with `run_in_background` right after the tree checks and read the round reports, the diff stat
+and an earlier must-fix item while it runs, committing only after it has seen the exit status.
+Task 23's 60 s suite is the one where that wait shows.
+
+The data is in `runs/iteration-26/`: `cells.json` has one row per run. The transcripts are not
+tracked.
+
+### Decision rule
+
+Set by #229 before the runs: the variant's mean lead time outside the workflow (the per-stage
+table from #226) is at least 30 s below the control's; every variant transcript shows the
+gate's test exit status before the commit, checked by hand; and every variant run grades 19/19.
+
+### Setup
+
+- **The plugin.** fabflows 2.1.0 at master `05efdfb`, which carries #229 and every other speed
+  change (#226, #227, #228, #230, #231). The variant is that plugin as it is. The control is a
+  copy of it with #229's two hunks reversed (`ACCEPTED_NEXT` in `workflows/build.js` and the gate
+  paragraph in `skills/fabflows/SKILL.md`), so the lead re-runs the tests in the foreground and
+  the arms differ in nothing else. The issue named master as the control, but master already
+  had #229 when the runs started.
+- **Runs.** Task 23's `loop` arm, lead claude-fable-5-1 at medium effort, caps 120 turns, $15
+  list price and 30 minutes a run. 5 control runs, then 5 variant runs, one at a time, 08:04 to
+  10:02 UTC on 2026-10-24.
+- **Machine.** A cloud container, both arms in one sitting.
+
+### Runs
+
+"Lead s" is the run's time minus each workflow stage, the slower lens for a split review, as
+`summarize.js` prints it. "Gate s" is read from the transcript timestamps: from the lead's first
+message after the workflow returns to the result of its `git commit`. "Tests" is how the lead's
+gate ran `npm test`: in the foreground (fg) or with `run_in_background` (bg).
+
+| Arm | Run | Cost | Time s | Lead s | Gate s | Tests | Rounds | Grade | Hidden suite |
+|---|---|---|---|---|---|---|---|---|---|
+| control | 1 | $2.4990 | 743 | 310 | 148 | fg | 2 | 19/19 | 9/9 |
+| control | 2 | $2.4742 | 705 | 273 | 133 | fg | 2 | 19/19 | 9/9 |
+| control | 3 | $2.4361 | 679 | 196 | 112 | fg | 2 | 19/19 | 9/9 |
+| control | 4 | $2.2760 | 563 | 213 | 89 | fg | 2 | 19/19 | 9/9 |
+| control | 5 | $2.6238 | 607 | 245 | 97 | fg | 2 | 19/19 | 9/9 |
+| control | Mean | $2.4618 | 659 | 247 | 116 | | | | |
+| variant | 1 | $2.3521 | 570 | 169 | 88 | bg | 2 | 19/19 | 9/9 |
+| variant | 2 | $2.3127 | 701 | 271 | 112 | bg | 2 | 19/19 | 9/9 |
+| variant | 3 | $2.1701 | 448 | 190 | 72 | bg | 1 | 16/19 | 7/9 |
+| variant | 4 | $2.7562 | 706 | 293 | 116 | bg | 2 | 18/19 | 9/9 |
+| variant | 5 | $2.6735 | 774 | 285 | 104 | bg | 2 | 18/19 | 9/9 |
+| variant | Mean | $2.4529 | 640 | 242 | 98 | | | | |
+
+Every variant lead started the gate's `npm test` in the background and read its output, with
+`# fail 0` and exit 0, before calling `git commit`: checked by hand in runs 1 and 3 and by a
+transcript scan in all five. No control lead did.
+
+### What the runs show
+
+- **The gate got 17 s shorter, the lead 5 s.** The variant's gate took 98 s against 116 s. The
+  lead finishes reading the reports and the diff before the 60 s suite does, then waits for it
+  (runs 1 and 3 say so in their text), so the overlap is the reading time, not the suite. Lead time fell only 247 s to 242 s:
+  the lead's other work (setup, worktree, reading the spec) varies by more than a minute between
+  runs and hides the gate's saving.
+- **Variant run 3 shipped the planted defect.** Its round-1 review returned ACCEPT from both
+  lenses without naming `caret-on-zero`, so the build had no rework round and the hidden suite
+  failed 2 of 9. That review ran before the gate, on reviewer prompts #229 does not change. #227's eval
+  saw the same kind of miss on task 22 with the spec lens at high effort, which both arms here
+  run.
+- **Variant runs 4 and 5 each had one denied Bash call,** after the commit: the lead's
+  `rmdir .claude/worktrees` and `git worktree remove` cleanup of its build worktree. The gate was
+  already done, and #229 does not touch that step.
+- **Cost did not move:** $2.46 against $2.45 a run.
+
+### Verdict
+
+Failed the pre-set rule on two of its three lines: the lead-time saving is 5 s, not 30 s, and
+three variant runs graded below 19/19. The gate line held: every variant lead saw the exit
+status before it committed. Neither grading failure is in the code #229 changes, but the rule
+counts them anyway.
+
+### Cost of this iteration
+
+10 runs, $24.57 at list price, about 2 h of wall time.
+
+### Confounds
+
+- **The control is an edit, not an old release.** Reversing #229 on top of 2.1.0 keeps #227's
+  and #228's changes in both arms, which master at #229's parent would not.
+- **Lead time is noisy.** Its per-run spread (169 to 310 s) is several times the effect, so five
+  runs a side cannot show a 17 s gate saving in it. The gate time from timestamps is the direct
+  measure, and it was not part of the rule.
+- **Variant run 3 was short.** With no rework round its lead time includes less waiting, which
+  pulls the variant's mean down.
+
+### Commands
+
+```bash
+mkdir -p plugins/fabflows/evals/runs/snapshots/control-229
+cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/control-229/
+git diff eb70af2^ eb70af2 -- plugins/fabflows/workflows/build.js plugins/fabflows/skills/fabflows/SKILL.md > revert.patch
+patch -R -p3 -d plugins/fabflows/evals/runs/snapshots/control-229 < revert.patch
+node plugins/fabflows/evals/harness/run.js --iteration 26 --tasks 23 --arms loop --config-name control-foreground --plugin-dir plugins/fabflows/evals/runs/snapshots/control-229 --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 26 --tasks 23 --arms loop --config-name variant-background --confirm
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-26
+```
