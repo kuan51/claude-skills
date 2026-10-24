@@ -552,10 +552,12 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
   }
 
   // A round that sweeps callees (round 1, or no valid head) splits its review into two lenses on
-  // the same staged tree, run at once: the spec lens at high (#227), and the sweep lens on Sonnet at high
-  // effort, outside reviewerModel (#181). A rework-only round after a valid head has one reviewer
-  // at high (#182). Promise.all, not parallel(): a thrown agent() must end the run so the lead can
-  // resume it (the README's build loop section says why), and parallel() turns a throw into null.
+  // the same staged tree, run at once: the spec lens at xhigh, and the sweep lens on Sonnet at high
+  // effort, outside reviewerModel (#181). The spec lens at high was 55-65% faster but shipped a
+  // callee defect in 2 of 5 task 22 runs, so it stays at xhigh (#227). A rework-only round after
+  // a valid head has one reviewer at high (#182). Promise.all, not parallel(): a thrown agent()
+  // must end the run so the lead can resume it (the README's build loop section says why), and
+  // parallel() turns a throw into null.
   const head = previousHead()
   const reviewer = (lens) =>
     agent(reviewBrief(round, head, lens), {
@@ -563,7 +565,7 @@ for (let round = 1; round <= MAX_REWORK + 1; round++) {
       phase: 'Review',
       agentType: lens === 'sweep' ? 'fabflows:sweeper' : 'fabflows:refuter',
       model: lens === 'sweep' ? 'sonnet' : reviewerModel,
-      effort: 'high',
+      effort: lens === 'spec' ? 'xhigh' : 'high',
       schema: lens === 'sweep' ? SWEEP_VERDICT : VERDICT,
     })
   let review
