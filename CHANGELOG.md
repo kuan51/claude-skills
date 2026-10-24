@@ -303,6 +303,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Changed
 
+- **fabflows 2.1.1** -- the build loop's round-1 spec lens runs at xhigh again, undoing 2.0.3
+  (#227). Iteration 25 measured it on tasks 8 and 22: high was 55-65% faster and 15-19% cheaper
+  a run, but two of five task 22 runs left the `parseVersion` defect in place, which no xhigh run
+  did. That fails the rule #227 set before the runs. Details in `plugins/fabflows/evals/RESULTS.md`.
+
 - **fabflows 2.0.3** -- a build-loop round that sweeps callees now runs its spec lens at high
   effort, not xhigh (#227), so every build-loop reviewer runs at high. The spec lens stopped
   sweeping callees in 0.16.0 and has been round 1's slowest step in every measured run since.
