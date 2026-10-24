@@ -2495,6 +2495,11 @@ three variant runs graded below 19/19. The gate line held: every variant lead sa
 status before it committed. Neither grading failure is in the code #229 changes, but the rule
 counts them anyway.
 
+Kept on Rex's decision (2026-10-24), despite the failed rule. The change saves about 17 s
+per gate on a 60 s suite, costs nothing extra, and kept the gate line in every run. The three
+grading failures came from a round-1 review and a cleanup step after the commit, neither of
+which #229 changes.
+
 ### Cost of this iteration
 
 10 runs, $24.57 at list price, about 2 h of wall time.
