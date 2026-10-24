@@ -2414,3 +2414,122 @@ node plugins/fabflows/evals/harness/run.js --iteration 18 --tasks 23 --arms loop
 node plugins/fabflows/evals/harness/run.js --iteration 18 --tasks 23 --arms loop --config-name variant-background --confirm
 node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-18
 ```
+
+## Iteration 25: the spec lens at high effort
+
+Tracked in [#227](https://github.com/kuan51/claude-skills/issues/227). Since the sweep lens moved
+to Sonnet (#181), round 1 has waited on the spec lens in every measured run, and the spec lens
+ran at `xhigh`. #235 moved it to `high` before this measurement, and this iteration checks that
+change against the rule #227 set before the runs.
+
+The data is in `runs/iteration-25/`: `cells.json` has one row per run, including the control run
+that died (see A re-run below). The transcripts are not tracked. Iterations 19 to 24 belong to other evals run the same day in other checkouts.
+
+### Decision rule
+
+Set by #227 before the runs, for the loop arm of tasks 8 and 22:
+
+1. The variant's mean round-1 spec lens `durationMs` is at least 20% below the control's on both
+   tasks.
+2. Every variant run returns `accepted` with no denied tool call.
+3. No variant run passes fewer hidden tests than the control's worst run.
+4. On task 22, the round-1 spec lens raises at least one must-fix item in at least 4 of 5
+   variant runs.
+
+### Setup
+
+- **The plugin.** fabflows 2.1.0 at master `05efdfb`. The variant is that plugin as it is, with
+  the spec lens at `high`. The control is a scratch copy with only `workflows/build.js:566` set
+  back to `effort: lens === 'spec' ? 'xhigh' : 'high'`. Each spec lens transcript confirms the
+  effort it ran at: `"effort":"xhigh"` in the control and `"effort":"high"` in the variant.
+- **Runs.** The `loop` arm of tasks 8 and 22, lead claude-fable-5-1 at medium effort, caps 120
+  turns, $15 list price and 30 minutes a run, one at a time. The control ran from 19:44 to 21:14
+  UTC on 2026-10-23, and the variant from 00:03 to 01:04 UTC on 2026-10-24.
+- **A re-run.** Control task 22 run 5 died on an API error at 21:14 after 23 turns, before it
+  committed. It is left out, and `control-xhigh-rerun` replaces it.
+- **Machine.** A 4-CPU cloud container, so absolute times are not comparable with earlier
+  iterations run elsewhere.
+
+### Runs
+
+Round-1 times are each agent's `durationMs` from `metrics.json`, by the `review:1:spec` and
+`review:1:sweep` labels. Every run took two rounds, so round 1 returned REWORK every time.
+
+| Task | Arm | Run | Cost | Time s | Spec lens s | Sweep lens s | Hidden suite | Denied call |
+|---|---|---|---|---|---|---|---|---|
+| 8 | control | 1 | $2.6496 | 368 | 115 | 50 | 9/9 | no |
+| 8 | control | 2 | $2.5280 | 345 | 112 | 83 | 9/9 | no |
+| 8 | control | 3 | $2.9348 | 429 | 109 | 112 | 7/9 | no |
+| 8 | control | 4 | $2.8020 | 440 | 137 | 130 | 9/9 | no |
+| 8 | control | 5 | $2.8654 | 513 | 153 | 88 | 9/9 | no |
+| 8 | control | Mean | $2.7560 | 419 | 125.1 | 92.6 | | |
+| 8 | variant | 1 | $2.3891 | 312 | 39 | 71 | 9/9 | no |
+| 8 | variant | 2 | $2.1008 | 339 | 40 | 61 | 9/9 | no |
+| 8 | variant | 3 | $2.4537 | 403 | 43 | 78 | 9/9 | yes |
+| 8 | variant | 4 | $2.4034 | 363 | 45 | 55 | 9/9 | yes |
+| 8 | variant | 5 | $2.3356 | 328 | 51 | 64 | 9/9 | no |
+| 8 | variant | Mean | $2.3365 | 349 | 43.7 | 65.6 | | |
+| 22 | control | 1 | $3.7298 | 526 | 147 | 89 | 14/16 | no |
+| 22 | control | 2 | $3.7812 | 519 | 121 | 119 | 14/16 | yes |
+| 22 | control | 3 | $4.1574 | 1432 | 181 | 91 | 14/16 | yes |
+| 22 | control | 4 | $3.0344 | 374 | 115 | 93 | 14/16 | yes |
+| 22 | control | 5 (re-run) | $3.4157 | 495 | 109 | 98 | 14/16 | no |
+| 22 | control | Mean | $3.6237 | 669 | 134.5 | 98.3 | | |
+| 22 | variant | 1 | $3.2171 | 402 | 63 | 68 | 14/16 | no |
+| 22 | variant | 2 | $2.4750 | 312 | 58 | 60 | 14/16 | no |
+| 22 | variant | 3 | $3.1279 | 494 | 69 | 39 | 12/16 | no |
+| 22 | variant | 4 | $3.2555 | 401 | 65 | 58 | 12/16 | no |
+| 22 | variant | 5 | $2.5214 | 346 | 50 | 66 | 14/16 | no |
+| 22 | variant | Mean | $2.9194 | 391 | 61.1 | 58.1 | | |
+
+On task 22, every run of both arms left the `parseRange` defect (`||` without spaces) in place.
+Variant runs 3 and 4 also left the `parseVersion` defect (a leading zero in build metadata). No
+control run did. On task 8, control run 3 left the planted caret-on-zero defect, and every
+variant run fixed it.
+
+### What the runs show
+
+- **Rule 1 holds.** The spec lens took 43.7 s against 125.1 s on task 8, 65% less, and 61.1 s
+  against 134.5 s on task 22, 55% less. The run cost fell 15% on task 8 and 19% on task 22.
+- **Rule 2 fails as written.** Variant task 8 runs 3 and 4 each had one denied Bash call. Both
+  were the lead's cleanup after its commit (`rmdir .claude/worktrees .claude`, and
+  `git worktree remove` followed by `git switch`). Three control task 22 runs had the same kind
+  of denial, so it predates this change (inferred).
+- **Rule 3 fails.** Variant task 22 runs 3 and 4 passed 12 of 16 hidden tests, below the
+  control's worst run at 14.
+- **Rule 4 is undetermined.** Three variant task 22 runs kept their workflow journal: runs 1 and
+  4 raised one must-fix item each, and run 5 raised none. Runs 2 and 3 lost their journal when the
+  lead removed its worktree, so the count is at most 4 of 5 and at least 2.
+
+### Verdict
+
+Not adopted. The rule fails on quality, so #235's change is reverted and the spec lens runs at
+`xhigh` again. Finding callee defects is mostly the sweep lens's job, and the sweep lens did not
+change, so the two misses may be noise (inferred). Five runs cannot tell noise from a real loss,
+and the rule was set before the runs so that this argument does not decide the result.
+
+### Cost of this iteration
+
+21 runs, including the run that died, $60.97 at list price, about 2 h 30 min of wall time.
+
+### Confounds
+
+- **A pause between the arms.** The control and the variant ran about three hours apart, after
+  the session that ran them was interrupted. Same machine and plugin, different hour.
+- **Lost journals.** When the lead removes its build worktree, the workflow journal goes with
+  it. Must-fix counts survive for 5 of the 10 task 22 runs in the table. Pass and fail and the stage times come
+  from `metrics.json` and are not affected.
+
+### Commands
+
+```bash
+mkdir -p plugins/fabflows/evals/runs/snapshots/spec-lens-xhigh
+cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/spec-lens-xhigh/
+# then set the review effort in its workflows/build.js back to: lens === 'spec' ? 'xhigh' : 'high'
+node plugins/fabflows/evals/harness/run.js --iteration 25 --tasks 8,22 --arms loop --repeats 5 --config-name control-xhigh --plugin-dir plugins/fabflows/evals/runs/snapshots/spec-lens-xhigh --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 25 --tasks 8,22 --arms loop --repeats 5 --config-name variant-high --confirm
+node plugins/fabflows/evals/harness/run.js --iteration 25 --tasks 22 --arms loop --repeats 1 --config-name control-xhigh-rerun --plugin-dir plugins/fabflows/evals/runs/snapshots/spec-lens-xhigh --confirm
+node plugins/fabflows/evals/harness/summarize.js plugins/fabflows/evals/runs/iteration-25
+```
+
+The runs were made under the local number 21 and renamed 25 for this record.
