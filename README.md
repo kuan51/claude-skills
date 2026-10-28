@@ -107,11 +107,9 @@ first session.
     reads and writes. In a build worktree it trims a worker's test output to the failures.
     Read the plugin's README, including its "Known gaps" section, before
     installing.
-  - **Measured.** In iteration 1 ([#123](https://github.com/kuan51/claude-skills/issues/123)),
-    a fabflows run's list price was 36.6% above no skill and 15.7% above superpowers. Quality
-    differed on one check only, a grader artifact. After the regrade in
-    [#132](https://github.com/kuan51/claude-skills/issues/132), quality is the same in every arm
-    (`plugins/fabflows/evals/RESULTS.md:290`). See [docs/EVALS.md](docs/EVALS.md).
+  - **Measured.** Not at the moment. The old benchmark was retired as biased toward fabflows,
+    and one held-out comparison replaces it
+    ([#248](https://github.com/kuan51/claude-skills/issues/248)). See [docs/EVALS.md](docs/EVALS.md).
 - **[fabflows-tickets](plugins/fabflows-tickets/)**: companion to fabflows. `setup` and `ticket`
   keep specs in a GitHub Issues, Jira or Linear ticket. On a linked branch a hook requires the
   ticket's trailers on commits and its key in the PR title, and at session start it reminds

@@ -79,7 +79,8 @@ If a transcript contains the literal text `</script>`, `generate_review.py` embe
 and the browser cuts the page off there: replace it with `<\/script>` on the page's
 `EMBEDDED_DATA` line after generating.
 
-Results are summarised in `RESULTS.md`. Raw runs under `runs/` are gitignored.
+Results are summarised in `RESULTS.md`, which has none yet: the old suite's results were retired
+(see [#248](https://github.com/kuan51/claude-skills/issues/248)). Raw runs under `runs/` are gitignored.
 
 ## What each run does
 
@@ -350,7 +351,8 @@ such as a new run and its rerun.
 
 An assertion is stable when it passes in every baseline run on master's prompts. A prose pass
 counts a regression only on a stable assertion: some fail on master itself (see #120 and #140).
-`RESULTS.md`, iteration 4, lists the stable set of tasks 10, 12 and 16.
+The retired iteration 4 (`git show 2b1ac1d:plugins/fabflows/evals/RESULTS.md`) lists the stable set
+of tasks 10, 12 and 16.
 To show its check can fail, a planted regression must fail a stable assertion of its family, so
 it runs only on the tasks where its family has one.
 
@@ -395,14 +397,14 @@ its whole cached tree, which is already what an install carries.
 
 A hypothesis about the skill's prose runs against a modified copy of the plugin loaded with
 `--plugin-dir`, never against the installed cache. The copy lives under `runs/snapshots/`
-(gitignored) and is reproducible from a tracked patch under `snapshots/`:
+(gitignored) and is reproducible from a patch kept with the issue that tests it:
 
 ```bash
 mkdir -p plugins/fabflows/evals/runs/snapshots/<variant>
 cp -r plugins/fabflows/{.claude-plugin,agents,hooks,skills,workflows,README.md} plugins/fabflows/evals/runs/snapshots/<variant>/
-patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant> < plugins/fabflows/evals/snapshots/<variant>.patch
+patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant> < <variant>.patch
 cp -r plugins/fabflows/test plugins/fabflows/evals/runs/snapshots/<variant>/
-patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant> < plugins/fabflows/evals/snapshots/<second-variant>.patch
+patch -p3 -d plugins/fabflows/evals/runs/snapshots/<variant> < <second-variant>.patch
 node plugins/fabflows/evals/harness/run.js --iteration <n> --arms with_skill --plugin-dir plugins/fabflows/evals/runs/snapshots/<variant> --tasks 1,5,6 --confirm
 ```
 
