@@ -44,7 +44,7 @@
     {
       "name": "fabflows-tickets",
       "description": "Companion to fabflows. Keeps each fabflows spec in a GitHub Issues, Jira or Linear ticket and writes audit trace reports. A hook links a branch to its ticket, requires Refs and Spec commit trailers and the ticket key in the PR title, and reminds Claude to update the ticket after a push, PR creation and merge. Requires fabflows 2.x.",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "source": "./plugins/fabflows-tickets",
       "author": {
         "name": "claude-skills"

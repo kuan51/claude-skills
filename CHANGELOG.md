@@ -528,6 +528,11 @@ per-plugin history until entries are recorded here going forward.
 
 ### Fixed
 
+- **fabflows-tickets 1.1.1** -- the ticket skill no longer says the Atlassian Rovo server
+  cannot create a Jira web link. Its `addTeamworkGraphContext` tool does, with
+  `relationshipType: "jira-work-item-links-jira-work-item-remote-link"`, so Claude adds the PR
+  to the Web links panel instead of asking you to do it by hand.
+
 - **fabflows 0.18.3** -- the low-severity fabflows findings from the plugin-agent audit (#199):
   the sweeper carries on past a denied probe instead of ending with no verdict rule, the
   test-runner puts new cases in a new file because `Write` replaces a whole file, the editor
