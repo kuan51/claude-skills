@@ -108,8 +108,8 @@ the loop overrides `editor`'s Sonnet pin. Rounds 2 and 3 build on Sonnet at high
 rework builder only fixes a short must-fix list on work already staged. That setting halved the sweep
 lens's time with quality unchanged (#181). The build-then-review order and the rework cap live
 in the workflow script, so they hold whatever the lead remembers, and the loop never merges, so
-merging stays a human pull request. The loop reviews on Opus by default because iteration 5
-measured the Fable reviewer at $1.33 against $0.70 on Opus. Structured `status` and `blocker`
+merging stays a human pull request. The loop reviews on Opus by default because the retired
+iteration 5 measured the Fable reviewer at $1.33 against $0.70 on Opus. Structured `status` and `blocker`
 fields decide escalation, never report prose. Any non-blank `blocker` from the builder
 escalates to the lead whatever its status says, so the loop never reviews a reply the builder
 itself flagged. A reviewer that cannot run the diff or tests answers BLOCKED and the loop
@@ -155,53 +155,17 @@ queue rather than run together.
 
 ## Measured performance
 
-fabflows includes a benchmark (`evals/`) that runs a headless Fable lead on the same task
-with and without the plugin and grades the result programmatically, never from what the lead
-said it did.
+fabflows includes a benchmark harness (`evals/`) that runs a headless Fable lead on the same task
+in each arm and grades the result programmatically, never from what the lead said it did.
 
-Iteration 1 measured fabflows 0.13.3 against no skill and against superpowers
-([#123](https://github.com/kuan51/claude-skills/issues/123)). Pooled over the 60 task runs, a
-run cost $0.874 with fabflows, $0.640 without it (+36.6%) and $0.756 with superpowers (+18.0%).
-Quality differed on one text-match check only, which failed two superpowers runs. It was a grader
-artifact, and after the regrade quality is the same in every arm (`evals/RESULTS.md:290`).
-On short tasks, most of the extra cost is a fixed start-up
-charge of about $0.15 per run for the plugin listing and the two Skill loads, while the build
-task's extra cost is the Opus builder and reviewer. The routing aims to save money on large
-reads, and in iteration 1 delegation saved money only on the task that reads 13 files.
-[evals/RESULTS.md](evals/RESULTS.md) has the per-task figures, the attribution and the
-confounds. Iteration 2 ([#133](https://github.com/kuan51/claude-skills/issues/133)) moved the
-recovery table and four long-session habits out of the skill's start-up text, into
-`skills/fabflows/references/recovery.md`. A run now writes about 470 fewer tokens at start-up,
-about $0.009, and every run still passed.
-Iteration 3 ([#120](https://github.com/kuan51/claude-skills/issues/120)) measured clearer stop,
-quote and empty-item rules in the six agent files. The Opus and Sonnet agents then stopped on
-every brief with a missing part, and the two Haiku agents in 2 of 6. The rules were not adopted
-then. Iteration 4 ([#140](https://github.com/kuan51/claude-skills/issues/140)) adopted them in
-the investigator, editor and test-runner, and measured the stop rule as a first-paragraph check
-for the two Haiku agents: the explorer stopped in 4 of 5 runs and the researcher in 3 of 5, so
-their files and the refuter's stay as they are.
-Iteration 5 ([#145](https://github.com/kuan51/claude-skills/issues/145)) told the refuter that
-the code a diff calls is in scope and let it probe that code with one line. The build loop's
-review then named a planted defect in a callee the spec never mentions in 5 of 5 runs, against
-0 of 3 on master, but the rework left the defect in place in 4 of 5: the builders read the
-fixture's spec as forbidding the library change. The rule was not adopted then.
-Iteration 6 ([#146](https://github.com/kuan51/claude-skills/issues/146)) let the builder treat a
-reviewer's must-fix as permission to fix a bug in code the change calls. The builders then fixed
-every caret defect the review named, 3 of 3, but the lead session reverted two of those fixes
-after the loop, citing the fixture's spec, and two reviews never named the defect. The plugin's
-text did not change then.
-Iteration 7 ([#148](https://github.com/kuan51/claude-skills/issues/148)) landed both patches in
-0.14.0 and made the loop return the builder's deviations matched to the must-fix that demanded
-each one, with a gate rule that a matched fix stands. The lead kept the caret fix in 4 of 4 runs
-where the loop made it, against 1 of 3 before; 3 of 5 runs passed the whole bar, the misses being
-a review that never read the callee and a run that hit the rework cap with the fix in place.
-Iteration 8 ([#154](https://github.com/kuan51/claude-skills/issues/154)) made the first review
-sweep each callee case by case and later reviews judge the rework only, in 0.15.0. All 5 runs
-passed the whole bar: every first review listed `caret()`'s cases and probed the `^0.M.P` one,
-every loop ended ACCEPT after one rework round, and no lead reverted the fix.
+Its old suite was retired on 2026-10-24, because its head-to-head comparison was biased toward
+fabflows: the build task was the one fabflows' review rules had been tuned on, its spec vouched
+for the faulty code, and the arms reviewed on different models. One held-out comparison replaces
+it ([#248](https://github.com/kuan51/claude-skills/issues/248)). The retired results stay in git
+history: `git show 2b1ac1d:plugins/fabflows/evals/RESULTS.md`.
 
-The skill's description keeps it off short tasks, because iterations 1 to 3 measured the same
-quality there at extra cost. Reading more than a handful of files counts as volume even when
+The skill's description keeps it off short tasks, because the retired iterations 1 to 3
+measured the same quality there at extra cost. Reading more than a handful of files counts as volume even when
 the lead will judge the result, because with narrower wording one of two leads read all 13
 files itself.
 

@@ -360,7 +360,7 @@ test('escalates a builder reply the lead cannot act on, but reviews one that rec
 
   // A builder that hit a denial, worked around it and finished says so: status done, no blocker.
   // Its prose must not cost it the review -- that is what the loop exists to run. Benchmark
-  // iteration 5 lost a review to exactly these openings (evals/RESULTS.md, iteration 5).
+  // iteration 5 lost a review to exactly these openings.
   const recoveredLines = [
     'Permission denied: npm test',
     'Permission denied: none of the tests could run',

@@ -37,9 +37,9 @@ const FORBIDDEN_TOOLS = ['Agent'];
 //   - investigator: Opus at high effort for hypothesis-driven narrowing. Same tools as the
 //                  refuter for the same reason: it gathers evidence, the lead decides.
 //   - sweeper:     Sonnet at high effort: the build loop's measured sweep prompt in its own
-//                  file (RESULTS.md iterations 11 and 13: Sonnet high matched Opus on that
-//                  narrow, checkable job; Haiku could not hold a verdict). Bash runs the diff
-//                  and the probes; no Edit or Write.
+//                  file (the retired benchmark's iterations 11 and 13: Sonnet high matched
+//                  Opus on that narrow, checkable job; Haiku could not hold a verdict). Bash
+//                  runs the diff and the probes; no Edit or Write.
 //   - reproducer:  Sonnet at low effort: runs one command and reports what it printed, no
 //                  hypotheses. Bash runs the command; no Edit or Write.
 //   - security-lens, coverage-lens: Sonnet at high effort, hand-spawned lenses that return

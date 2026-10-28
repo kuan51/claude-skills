@@ -13,17 +13,11 @@ disagrees with them.
 
 | Plugin or skill | Useful compared with no skill? | Cost compared with no skill | Runs | Source |
 | --- | --- | --- | --- | --- |
-| fabflows, a spec'd build | No measured gain: quality 1 / 1 / 1. On task 8, a planted defect in a callee the spec never names, the build loop's review named it in 0 of 3 runs; with the unadopted review-callees rule it named it in 5 of 5 but the rework left it in place in 4 of 5; with the unadopted rework permission on top, the builders fixed it in 3 of 3 runs where the review named it, but the lead reverted two of those fixes after the loop and two reviews never named it, so the loop fixed it in 1 of 5 | $3.2343 against $2.6093, +$0.6250 (+24.0%). superpowers +$0.3505 (+13.4%). Task 8 has no no-skill arm: $1.2758 a run on master, $2.9972 with the rule, $2.8099 with the permission | 2 per arm; task 8: 3, 5 and 5 | `RESULTS.md:69`, `:29`, `:951-952`, `:1157-1158` |
-| fabflows, reading 13 files | No measured gain: quality 1 / 1 / 1, and 178.9 s against 35.5 s | $1.0014 against $0.8977, +$0.1037 (+11.5%). superpowers +$0.0490 (+5.5%) | 3 per arm | `RESULTS.md:67` |
-| fabflows, a wide search | No measured gain: quality 1 / 1 / 1 | $0.5316 against $0.3129, +$0.2186 (+69.9%). superpowers +$0.0807 (+25.8%) | 3 per arm | `RESULTS.md:63` |
-| fabflows, running and triaging a failing test suite | No measured gain: quality 1 / 1 / 1 | $0.5481 against $0.3357, +$0.2124 (+63.3%). superpowers +$0.0613 (+18.3%) | 3 per arm | `RESULTS.md:68` |
-| fabflows, short tasks (a scoped edit, a small test file, a version bump) | No measured gain: quality 1 in every arm on each, after the regrade. Before it, superpowers scored 0.917 on the scoped edit, a grader artifact | +$0.1887 (+54.8%), +$0.2360 (+71.8%) and +$0.1846 (+59.5%). superpowers +$0.1169 (+34.0%), +$0.1741 (+52.9%) and +$0.0540 (+17.4%) | 3 per arm per task | `RESULTS.md:64-66`, `:163`, `:292` |
+| fabflows | Not measured: the old benchmark was retired as biased toward fabflows, and one held-out comparison replaces it ([#248](https://github.com/kuan51/claude-skills/issues/248)) | Not measured | none yet | retired results: `git show 2b1ac1d:plugins/fabflows/evals/RESULTS.md` |
 | fabflows `brainstorming` | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | Not yet re-measured (results reset in [#122](https://github.com/kuan51/claude-skills/issues/122)) | none yet | `plugins/fabflows/skills/brainstorming/evals/evals.json` (no results yet) |
 | docs-warden | Not measured | Not measured | none | see below |
 | ciso | Not measured | Not measured | none | see below |
 | data-analysis | Not measured | Not measured | none | see below |
-
-`RESULTS.md` is [plugins/fabflows/evals/RESULTS.md](../plugins/fabflows/evals/RESULTS.md).
 
 ## Not yet measured against no skill
 
